@@ -1,0 +1,31 @@
+{
+  "name": "web-ecommerce",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": "24.21.0",
+    "pnpm": "12.8.1"
+  },
+  "scripts": {
+    "infra:up": "docker compose --env-file docker/.env -f docker/compose.dev.yml up -d --wait",
+    "infra:down": "docker compose --env-file docker/.env -f docker/compose.dev.yml down",
+    "infra:ps": "docker compose --env-file docker/.env -f docker/compose.dev.yml ps",
+    "infra:logs": "docker compose --env-file docker/.env -f docker/compose.dev.yml logs -f",
+    "infra:stripe": "docker compose --env-file docker/.env -f docker/compose.dev.yml --profile stripe up -d stripe-cli",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "build": "pnpm -r --if-present build"
+  },
+  "devDependencies": {
+    "@types/node": "24.9.2",
+    "@web-ecommerce/config": "workspace:*",
+    "eslint": "10.11.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3"
+  }
+}

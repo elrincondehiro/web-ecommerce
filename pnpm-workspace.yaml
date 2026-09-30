@@ -1,0 +1,21 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Versiones exactas al añadir dependencias (política README §4)
+saveExact: true
+# Falla si Node/pnpm no cumplen "engines"
+engineStrict: true
+
+# Requisito de Medusa con pnpm (doc oficial, escrito en .npmrc).
+# pnpm >= 11 solo aplica ajustes de estructura de node_modules desde este fichero.
+# Mantener sincronizado con .npmrc.
+publicHoistPattern:
+  - "*@medusajs/*"
+  - "@tanstack/react-query"
+  - "react-i18next"
+  - "react-router-dom"
+
+# Scripts de build de dependencias permitidos (strictDepBuilds=true por defecto en pnpm 12).
+# Se ampliará al añadir Medusa (fase 2) y Astro (fase 3).
+allowBuilds: {}

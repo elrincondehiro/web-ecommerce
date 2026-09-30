@@ -1,0 +1,34 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Builds y cachés
+dist/
+build/
+.astro/
+.medusa/
+.cache/
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# Entorno (secretos). Solo se versionan los .env.example
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
