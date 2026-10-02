@@ -20,7 +20,7 @@ E-commerce **autoalojado**, pensado para ir a **máxima velocidad**: todo lo pos
 
 > Las directrices para agentes de IA están en [`AGENTS.md`](./AGENTS.md). Léelas antes de tocar código.
 >
-> **Estado:** [prefase](./docs/fases/prefase.md) ✅ completada · [fase 0](./docs/fases/fase0.md) ✅ · [fase 1](./docs/fases/fase1.md) 🚧 en curso. Detalle de cada fase en [`docs/fases/`](./docs/fases/).
+> **Estado:** [prefase](./docs/fases/prefase.md) ✅ completada · [fase 0](./docs/fases/fase0.md) ✅ · [fase 1](./docs/fases/fase1.md) ✅ · fase 2 ⏳ siguiente. Detalle de cada fase en [`docs/fases/`](./docs/fases/).
 >
 > ⛔ **Regla nº 1 para agentes**: antes de empezar cualquier parte nueva (fase, storefront, backend, módulo, infraestructura…) se consulta la documentación — primero el **MCP específico**, si no **context7** —, se presenta un plan y **se espera confirmación del usuario**. Ante cualquier duda, no se ejecuta nada. Detalle en [`AGENTS.md`](./AGENTS.md#-regla-nº-1--consultar-documentación-y-confirmar-antes-de-empezar).
 
@@ -169,16 +169,16 @@ Política:
 
 ### 4.1 Sistema y herramientas (host)
 
-| Herramienta                       | Versión                                 | Dónde se fija                                                                                       |
-| --------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Node.js (LTS "Krypton")           | **24.21.0**                             | `.node-version` (fnm) y `engines`                                                                   |
-| pnpm                              | **12.8.1**                              | `packageManager` en `package.json` raíz                                                             |
-| fnm                               | 1.39.0                                  | host                                                                                                |
-| Docker Engine                     | 29.8.1                                  | host / VPS                                                                                          |
-| Docker Compose                    | 5.5.1                                   | host / VPS                                                                                          |
-| git                               | 2.55.0                                  | host                                                                                                |
-| Gitea                             | **28.0.0** (nuevo esquema: 1.27.x → 28) | servidor Gitea (LXC Debian 13, binario)                                                             |
-| gitea-runner (antes `act_runner`) | 4.0.1                                   | binario en el LXC, runner **de usuario**; etiqueta `ubuntu-latest` → `docker://node:24.21.0-trixie` |
+| Herramienta                       | Versión                                 | Dónde se fija                                                                                                                                    |
+| --------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Node.js (LTS "Krypton")           | **24.21.0**                             | `.node-version` (fnm) y `engines`                                                                                                                |
+| pnpm                              | **12.8.1**                              | `packageManager` en `package.json` raíz                                                                                                          |
+| fnm                               | 1.39.0                                  | host                                                                                                                                             |
+| Docker Engine                     | 29.8.1                                  | host / VPS                                                                                                                                       |
+| Docker Compose                    | 5.5.1                                   | host / VPS                                                                                                                                       |
+| git                               | 2.55.0                                  | host                                                                                                                                             |
+| Gitea                             | **28.0.0** (nuevo esquema: 1.27.x → 28) | servidor Gitea (LXC Debian 13, binario)                                                                                                          |
+| gitea-runner (antes `act_runner`) | 4.0.1                                   | binario en el LXC (≥ 4 GB RAM + 1 GB swap: Renovate usa ~1 GB), runner **de usuario**; etiqueta `ubuntu-latest` → `docker://node:24.21.0-trixie` |
 
 ### 4.2 Imágenes Docker
 

@@ -1,18 +1,35 @@
 # Fase 1 — CI básico (PR) + Renovate
 
-> **Estado:** 🚧 en curso — ficheros creados en `chore/fase1-ci-basico`; pendiente: secret del bot, PR en Gitea, push mirror y checks obligatorios
-> **Rama/PR:** `chore/fase1-ci-basico` → **PR en Gitea** (primer PR bajo protección de `main`)
-> **Anterior:** [Fase 0](./fase0.md) · **Siguiente:** Fase 2 — Backend base
+> **Estado:** ✅ completada (01-oct-2026) · PR #1 (`70e8033`) en `main` de Gitea y GitHub
+> **Rama/PR:** `chore/fase1-ci-basico` → PR #1 en Gitea (squash) · cierre: `docs/fase1-cierre`
+> **Anterior:** [Fase 0](./fase0.md) · **Siguiente:** [Fase 2 — Backend base](./fase2.md)
 
 ## 1. Objetivos
 
-- [ ] `ci.yml` único que funcione **igual** en Gitea Actions y GitHub Actions.
-- [ ] Usar el runner del homelab (ya instalado por el usuario).
-- [ ] Gitea → GitHub sincronizado con **push mirror** (Gitea es la fuente de verdad).
-- [ ] Checks obligatorios en Gitea (protección de rama) y GitHub (ruleset).
-- [ ] PR de prueba: bloqueado si falla, mergeable si pasa.
-- [ ] Renovate autoalojado contra Gitea (workflow programado en el runner).
-- [ ] Actualizar estado de fase 0 y versiones (Gitea 28.0.0).
+- [x] `ci.yml` único que funciona **igual** en Gitea Actions y GitHub Actions.
+- [x] Runner del homelab (runner **de usuario**, etiqueta `ubuntu-latest` → `node:24.21.0-trixie`).
+- [x] Gitea → GitHub sincronizado con **push mirror HTTPS + PAT**.
+- [x] Checks obligatorios: Gitea `CI / quality*` (protección de rama) y GitHub `quality` (ruleset, origen GitHub Actions).
+- [x] PR de prueba: rojo bloqueado (`test/ci-rojo`), verde mergeable (PR #1).
+- [x] Renovate autoalojado contra Gitea: ejecución manual en verde.
+- [x] Estado de fase 0 y versiones actualizados (Gitea 28.0.0, gitea-runner 4.0.1).
+
+## Resumen de lo realizado
+
+| Elemento                         | Resultado                                                                                          |
+| -------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `.github/workflows/ci.yml`       | job `quality`: install `--frozen-lockfile` → lint → format:check → typecheck → test → build        |
+| `.github/workflows/renovate.yml` | lunes 04:00 UTC + manual, solo en Gitea (`if: github.server_url != 'https://github.com'`)          |
+| Prueba de bloqueo                | `test/ci-rojo` (variable sin usar) → `quality` rojo → merge bloqueado → PR cerrado y rama borrada  |
+| PR #1                            | `quality` verde en Gitea → squash merge → mirror → GitHub Actions `CI` `success` en `70e8033`      |
+| Renovate                         | 1ª ejecución: **exit 137 (OOM)** con LXC de 512 MB → LXC subido a **4 GB RAM + 1 GB swap** → verde |
+| Token GitHub de Renovate         | 401 en la 1ª ejecución → regenerado (`RENOVATE_GITHUB_COM_TOKEN`) → OK                             |
+
+### Incidencias y lecciones
+
+- **Renovate necesita ~1 GB de RAM** (pico medido: ~945 MiB con este repo, que aún es pequeño; crecerá con Medusa/Astro). El LXC que ejecuta el runner necesita **≥ 3–4 GB**. Requisito apuntado en README §4.1.
+- **Gitea no admite push mirror por SSH** → HTTPS + PAT fine-grained (Contents RW + Workflows RW). El PAT caduca en 1 año.
+- La etiqueta `ubuntu-latest` del runner de Gitea es Debian 13 + Node 24: no trae herramientas de la imagen Ubuntu de GitHub.
 
 ## 2. Decisiones
 
@@ -48,7 +65,7 @@
 
 `debian:13` **no trae Node ni git** (verificado). Las actions JavaScript (`actions/checkout`, `pnpm/action-setup`, `actions/setup-node`) se ejecutan con `node` **dentro del contenedor del job** (`gitea_runner/act/runner/action.go`: `node --preserve-symlinks-main …`), así que el job fallaría en el primer paso. Ver §7-A.
 
-## 5. Plan de ejecución (tras confirmar §7)
+## 5. Plan de ejecución (ejecutado)
 
 ### 5.1 `.github/workflows/ci.yml`
 
@@ -119,7 +136,7 @@ git push -u gitea chore/fase1-ci-basico
 # → abrir PR en Gitea; ver ejecución en el runner del homelab
 ```
 
-## 6. Cómo testear (cuando esté hecha)
+## 6. Cómo testear esta fase
 
 ```bash
 # En el homelab
