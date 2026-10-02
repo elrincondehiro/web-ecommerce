@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: renovate/renovate:44.125.2
+      image: renovate/renovate:44.132.2
     steps:
       - name: Renovate
         env:
