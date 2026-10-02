@@ -10,6 +10,9 @@ on:
     # Lunes 04:00 UTC (06:00/05:00 Madrid) → dentro del "before 7am on monday" de renovate.json
     - cron: "0 4 * * 1"
   workflow_dispatch:
+  # Marcar una casilla del Dependency Dashboard edita el issue → Renovate se ejecuta en el acto.
+  issues:
+    types: [edited]
 
 concurrency:
   group: renovate
@@ -20,7 +23,11 @@ permissions:
 
 jobs:
   renovate:
-    if: ${{ github.server_url != 'https://github.com' }}
+    # Solo en Gitea. Con evento `issues`, solo para el Dependency Dashboard editado por un humano (no por el bot).
+    if: >-
+      ${{ github.server_url != 'https://github.com' &&
+          (github.event_name != 'issues' ||
+           (github.event.issue.title == 'Dependency Dashboard' && github.actor != 'renovate-bot')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:

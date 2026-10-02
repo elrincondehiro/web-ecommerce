@@ -158,13 +158,13 @@ web-ecommerce/
 
 ## 4. Versiones fijadas
 
-Verificadas el **30-sep-2026** en npm, Docker Hub y nodejs.org. **Son la fuente de verdad**: cualquier cambio de versión se hace en un PR `chore(deps): …` que actualice esta tabla.
+**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 02-oct-2026 (cierre de Renovate).
 
 Política:
 
 - `package.json`: versiones **exactas** (sin `^` ni `~`). `saveExact: true` en `pnpm-workspace.yaml`.
 - Imágenes Docker: tag **completo** `x.y.z` (nunca `latest`, ni en dev).
-- Actualizaciones mediante **Renovate** (PRs agrupados por familia: medusa, astro, svelte, tailwind, react-email, imágenes docker).
+- Actualizaciones mediante **Renovate** (`renovate.json`): **un PR semanal** con todo lo minor/patch; **majors solo con aprobación** en el Dependency Dashboard; **PostgreSQL < 18**; ninguna versión npm de menos de 24 h (coincide con `minimumReleaseAge` de pnpm).
 - Todos los paquetes `@medusajs/*` en la **misma** versión. Todos los `@tailwindcss/*` igual que `tailwindcss`.
 
 ### 4.1 Sistema y herramientas (host)
@@ -185,13 +185,14 @@ Política:
 | Servicio                | Imagen                            | Uso                                                               |
 | ----------------------- | --------------------------------- | ----------------------------------------------------------------- |
 | Node (base Dockerfiles) | `node:24.21.0-alpine3.24`         | build y runtime de backend y storefront                           |
-| PostgreSQL              | `postgres:17.9-alpine`            | dev + prod                                                        |
-| Redis                   | `redis:8.8.3-alpine`              | dev + prod                                                        |
-| Meilisearch             | `getmeili/meilisearch:v1.54.2`    | dev + prod                                                        |
+| PostgreSQL              | `postgres:17.11-alpine`           | dev + prod                                                        |
+| Redis                   | `redis:8.10.2-alpine`             | dev + prod                                                        |
+| Meilisearch             | `getmeili/meilisearch:v1.54.3`    | dev + prod                                                        |
 | Caddy                   | `caddy:2.11.4-alpine`             | prod                                                              |
 | SeaweedFS (S3 local)    | `chrislusf/seaweedfs:4.48`        | solo dev (en prod → Cloudflare R2)                                |
 | Mailpit                 | `axllent/mailpit:v1.31.3`         | solo dev                                                          |
-| Stripe CLI              | `stripe/stripe-cli:v1.52.1`       | solo dev (webhooks)                                               |
+| Stripe CLI              | `stripe/stripe-cli:v1.53.0`       | solo dev (webhooks)                                               |
+| Renovate                | `renovate/renovate:44.132.2`      | CI (Gitea Actions, workflow `renovate.yml`)                       |
 | Uptime Kuma             | `louislam/uptime-kuma:2.5.5`      | monitorización · homelab                                          |
 | Beszel hub              | `henrygd/beszel:0.20.0`           | monitorización · homelab                                          |
 | Beszel agent            | `henrygd/beszel-agent:0.20.0`     | monitorización · VPS Hetzner (y homelab)                          |
@@ -205,35 +206,35 @@ Política:
 
 > Se instalan **siempre con pnpm**. Las versiones son las publicadas en el registro público de paquetes JavaScript (registry.npmjs.org), del que pnpm también descarga; `npm` como herramienta no se usa nunca.
 
-| Paquete                                                                                                                   | Versión    | App                                               |
-| ------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------- |
-| `@medusajs/medusa`, `@medusajs/framework`, `@medusajs/cli`, `@medusajs/admin-sdk`, `@medusajs/test-utils`                 | **2.21.2** | backend                                           |
-| `create-medusa-app`                                                                                                       | 2.21.2     | scaffolding                                       |
-| `@medusajs/js-sdk`, `@medusajs/types`                                                                                     | 2.21.2     | storefront                                        |
-| `astro`                                                                                                                   | **7.3.5**  | storefront                                        |
-| `@astrojs/svelte`                                                                                                         | 9.0.1      | storefront                                        |
-| `@astrojs/node`                                                                                                           | 11.1.6     | storefront                                        |
-| `@astrojs/partytown`                                                                                                      | 2.1.8      | storefront                                        |
-| `@astrojs/sitemap`                                                                                                        | 3.7.4      | storefront                                        |
-| `svelte`                                                                                                                  | **5.57.1** | storefront                                        |
-| `tailwindcss`, `@tailwindcss/vite`                                                                                        | **4.3.3**  | storefront                                        |
-| `shadcn-svelte` (CLI)                                                                                                     | 1.7.0      | storefront (dev)                                  |
-| `bits-ui`                                                                                                                 | 2.19.3     | storefront                                        |
-| `@stripe/stripe-js`                                                                                                       | 9.17.0     | storefront                                        |
-| `meilisearch` (cliente JS)                                                                                                | 0.62.0     | storefront + backend                              |
-| `stripe` (Node)                                                                                                           | 22.6.2     | backend (si se usa fuera del provider oficial)    |
-| `resend`                                                                                                                  | 6.31.0     | backend                                           |
-| `react-email` (CLI preview)                                                                                               | 6.11.0     | emails (dev)                                      |
-| `@react-email/components`                                                                                                 | 1.0.12     | emails                                            |
-| `@react-email/render`                                                                                                     | 2.1.0      | emails / backend                                  |
-| `typescript`                                                                                                              | **6.0.3**  | todo el monorepo                                  |
-| `vitest`                                                                                                                  | 5.0.3      | tests                                             |
-| `@playwright/test`                                                                                                        | 1.63.0     | e2e                                               |
-| `eslint` 10.11.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.12.0 | —          | `packages/config` (lint)                          |
-| `prettier`                                                                                                                | 3.9.9      | `packages/config` (formato)                       |
-| `@types/node`                                                                                                             | 24.9.2     | raíz (alineado con Node 24)                       |
-| `@sentry/node` _(propuesto, fase 12)_                                                                                     | 11.1.0     | backend → envía errores a GlitchTip               |
-| `@sentry/astro` _(propuesto, fase 12)_                                                                                    | 11.1.0     | storefront, **solo servidor** (sin JS de cliente) |
+| Paquete                                                                                                                   | Versión                                                                          | App                                               |
+| ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `@medusajs/medusa`, `@medusajs/framework`, `@medusajs/cli`, `@medusajs/admin-sdk`, `@medusajs/test-utils`                 | **2.21.2**                                                                       | backend                                           |
+| `create-medusa-app`                                                                                                       | 2.21.2                                                                           | scaffolding                                       |
+| `@medusajs/js-sdk`, `@medusajs/types`                                                                                     | 2.21.2                                                                           | storefront                                        |
+| `astro`                                                                                                                   | **7.3.5**                                                                        | storefront                                        |
+| `@astrojs/svelte`                                                                                                         | 9.0.1                                                                            | storefront                                        |
+| `@astrojs/node`                                                                                                           | 11.1.6                                                                           | storefront                                        |
+| `@astrojs/partytown`                                                                                                      | 2.1.8                                                                            | storefront                                        |
+| `@astrojs/sitemap`                                                                                                        | 3.7.4                                                                            | storefront                                        |
+| `svelte`                                                                                                                  | **5.57.1**                                                                       | storefront                                        |
+| `tailwindcss`, `@tailwindcss/vite`                                                                                        | **4.3.3**                                                                        | storefront                                        |
+| `shadcn-svelte` (CLI)                                                                                                     | 1.7.0                                                                            | storefront (dev)                                  |
+| `bits-ui`                                                                                                                 | 2.19.3                                                                           | storefront                                        |
+| `@stripe/stripe-js`                                                                                                       | 9.17.0                                                                           | storefront                                        |
+| `meilisearch` (cliente JS)                                                                                                | 0.62.0                                                                           | storefront + backend                              |
+| `stripe` (Node)                                                                                                           | 22.6.2                                                                           | backend (si se usa fuera del provider oficial)    |
+| `resend`                                                                                                                  | 6.31.0                                                                           | backend                                           |
+| `react-email` (CLI preview)                                                                                               | 6.11.0                                                                           | emails (dev)                                      |
+| `@react-email/components`                                                                                                 | 1.0.12                                                                           | emails                                            |
+| `@react-email/render`                                                                                                     | 2.1.0                                                                            | emails / backend                                  |
+| `typescript`                                                                                                              | **6.0.3**                                                                        | todo el monorepo                                  |
+| `vitest`                                                                                                                  | 5.0.3                                                                            | tests                                             |
+| `@playwright/test`                                                                                                        | 1.63.0                                                                           | e2e                                               |
+| `eslint` 10.11.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                                                                                | `packages/config` (lint)                          |
+| `prettier`                                                                                                                | 3.9.9                                                                            | `packages/config` (formato)                       |
+| `@types/node`                                                                                                             | 24.9.2 (PR de Renovate a 24.19.x pendiente: espera 24 h por `minimumReleaseAge`) | raíz (alineado con Node 24)                       |
+| `@sentry/node` _(propuesto, fase 12)_                                                                                     | 11.1.0                                                                           | backend → envía errores a GlitchTip               |
+| `@sentry/astro` _(propuesto, fase 12)_                                                                                    | 11.1.0                                                                           | storefront, **solo servidor** (sin JS de cliente) |
 
 > **TypeScript 7 no se usa todavía**: Astro y Medusa declaran `typescript ^5 \|\| ^6`.
 > **Astro 7** requiere `@astrojs/node` ≥ 11 y `@astrojs/svelte` ≥ 9 (`@astrojs/node` 9.x y `@astrojs/svelte` 8.x son para Astro 6).
@@ -573,7 +574,7 @@ feat/*, fix/*, chore/*  ──PR──▶  CI (lint · typecheck · test · buil
 - **Ramas**: `feat/<descripcion-corta>`, `fix/…`, `chore/…`, `docs/…`. Nunca commits directos a `main`.
 - **PR y merge en Gitea**; GitHub recibe `main` por push mirror (ver §7.3).
 - **Check obligatorio**: job `quality` de `ci.yml` (Gitea y GitHub).
-- **Renovate**: `renovate.yml` programado (lunes 04:00 UTC) en Gitea Actions con el bot `renovate-bot`; abre PRs agrupados que pasan por el mismo CI.
+- **Renovate**: `renovate.yml` en Gitea Actions con el bot `renovate-bot`: lunes 04:00 UTC, manual, y **al marcar una casilla del Dependency Dashboard** (evento `issues: edited`). Abre PRs que pasan por el mismo CI y se re-basan solos si `main` avanza.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) (`feat(storefront): …`).
 - **Versionado**: SemVer. Release = `git tag -a v1.2.3 -m "v1.2.3" && git push origin v1.2.3`.
 - **Workflows** (`.github/workflows/`):

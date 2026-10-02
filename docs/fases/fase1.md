@@ -185,3 +185,31 @@ Gitea tiene runners de **instancia**, **organización**, **usuario** y **reposit
 4. Opcional, para reforzarlo: en `app.ini`, sección `[actions]`, deja Actions activado y desactiva el uso de runners globales en los repos de otros usuarios. Además, que esos usuarios no tengan permiso para crear runners propios en el LXC, que es el que tiene acceso a Docker.
 
 > Ojo: el grupo `docker` equivale a root en ese LXC. Si algún día abres la instancia, considera un runner en **otro LXC/VM** o la variante rootless.
+
+## 9. Ajustes posteriores (rama `chore/renovate-majors`)
+
+Tras los primeros PRs de Renovate (#5, #7 y #8 mergeados; `@types/node` bloqueado por la política de pnpm):
+
+| Problema observado                                                                                      | Causa (documentación)                                                                      | Ajuste                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR de `@types/node` falla en `pnpm install`                                                             | pnpm ≥ 11: `minimumReleaseAge` = **1440 min (1 día)** por defecto; la versión tenía < 24 h | Renovate: `minimumReleaseAge: "1 day"` + `internalChecksFilter: "strict"` para npm → no abre PRs que pnpm rechazaría                                                                     |
+| Marcar casillas del Dashboard no hacía nada hasta otra ejecución manual                                 | Renovate autoalojado solo actúa cuando se ejecuta                                          | `renovate.yml` también se lanza con `issues: types: [edited]` (Gitea lo admite; código v28 `matchIssuesEvent`), solo para el issue "Dependency Dashboard" y si no lo edita el propio bot |
+| Tras mergear un PR, los demás quedan "desactualizados" → _actualizar rama_ + re-ejecutar CI en cada uno | Varias ramas paralelas sobre la misma `main` y la protección exige ir al día               | **Un único PR semanal** para todo lo minor/patch/digest (`groupName: dependencias no-major`) + `rebaseWhen: behind-base-branch` (Renovate rebasa solo en su siguiente ejecución)         |
+| Propuesta de `postgres` 18                                                                              | Major disponible                                                                           | `allowedVersions: "<18"` para `postgres` (decisión D6)                                                                                                                                   |
+| Majors en general                                                                                       | —                                                                                          | `dependencyDashboardApproval: true` para `major`: solo aparecen como casilla en el Dashboard, sin PR hasta aprobarlas                                                                    |
+
+**Fuente de verdad de versiones (decisión del usuario):** los ficheros (`package.json`/lockfile, `docker/*.yml`, workflows). README §4 = referencia sincronizada al cerrar cada fase.
+
+**Dry-run local** (`RENOVATE_PLATFORM=local`, 44.132.2): `renovate/all-non-major` agrupa `@types/node` (pendiente por edad, `pendingVersions: 24.19.1`); `typescript` 7 detectado como `major` → queda en espera de aprobación; postgres respeta `<18`.
+
+### Capacidad del runner (`capacity`)
+
+`gitea-runner` ejecuta tantos jobs a la vez como indique `runner.capacity` en `config.yaml` (por defecto **1**; código `internal/app/poll/poller.go`).
+
+- **Recomendado con 4 GB / 1 GB swap: `capacity: 2`.** Picos medidos: Renovate ≈ 1 GB; `quality` (pnpm install + lint) ≈ 0,5 GB. Cuando lleguen Medusa y Astro, el `build` subirá a ~1,5–2 GB por job.
+- `capacity: 3` o más solo si subes el LXC a **≥ 6–8 GB**.
+- Cambio en el LXC:
+  ```bash
+  sudo -e /etc/gitea-runner/config.yaml     # runner:\n  capacity: 2
+  sudo systemctl restart gitea-runner
+  ```

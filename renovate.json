@@ -51,10 +51,35 @@
       "matchManagers": ["github-actions"]
     },
     {
+      "description": "Un único PR semanal con todas las actualizaciones no-major (menos PRs, menos 'actualizar rama')",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
+      "groupName": "dependencias no-major",
+      "groupSlug": "all-non-major"
+    },
+    {
       "description": "Node y TypeScript: majors solo manualmente (compatibilidad Astro/Medusa)",
       "matchPackageNames": ["node", "typescript", "@types/node"],
       "matchUpdateTypes": ["major"],
       "enabled": false
+    },
+    {
+      "description": "Majors: solo con aprobación explícita en el Dependency Dashboard",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "PostgreSQL fijado a 17.x (decisión D6, prefase). Subir de major requiere migración de datos",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "allowedVersions": "<18"
+    },
+    {
+      "description": "Igual que pnpm minimumReleaseAge (1 día): no proponer versiones npm de menos de 24 h",
+      "matchDatasources": ["npm"],
+      "minimumReleaseAge": "1 day",
+      "internalChecksFilter": "strict"
     }
-  ]
+  ],
+  "rebaseWhen": "behind-base-branch",
+  "prConcurrentLimit": 5
 }

@@ -2,7 +2,7 @@
 
 Este fichero es de **lectura obligatoria** para cualquier agente de IA (y persona) que trabaje en este repositorio. Si hay contradicción entre el código existente y este documento, **manda este documento**. Si algo no está cubierto, pregunta antes de inventar convenciones.
 
-Contexto del proyecto, arquitectura, **versiones fijadas (README §4)** y roadmap: [`README.md`](./README.md).
+Contexto del proyecto, arquitectura, **versiones de referencia (README §4)** y roadmap: [`README.md`](./README.md).
 
 > **Estado de las fases:** ver [`docs/fases/`](./docs/fases/) (empieza por [`prefase.md`](./docs/fases/prefase.md)). No inicies ninguna fase sin autorización explícita del usuario.
 
@@ -18,7 +18,7 @@ Esta regla está **por encima de todas las demás**.
    1. **MCP específico** de la tecnología (`astro-docs`, `svelte`, `cloudflare-docs`, `meilisearch-docs`, `resend-docs`, `stripe`).
    2. Si no hay MCP específico o no cubre el tema → **`context7`** (p. ej. Medusa `/medusajs/medusa`, Tailwind, shadcn-svelte, SeaweedFS, Caddy…).
    3. Solo si ninguno responde → documentación oficial por HTTP (p. ej. `docs.medusajs.com/llms-full.txt`), indicándolo.
-2. **Verifica** que lo consultado corresponde a las **versiones fijadas** (README §4).
+2. **Verifica** que lo consultado corresponde a las **versiones fijadas** (las de los ficheros: `package.json`, `docker/*.yml`, workflows; README §4 como referencia).
 3. **Presenta un plan** al usuario: qué vas a crear/ejecutar, comandos exactos, ficheros afectados y fuentes consultadas.
 4. **Espera confirmación explícita del usuario.** No ejecutes nada (ni scaffolding, ni `pnpm add`, ni `docker compose up`, ni migraciones, ni escritura de ficheros de código) hasta recibirla.
 
@@ -38,14 +38,14 @@ Esta regla está **por encima de todas las demás**.
 8. **Conventional Commits** con scope: `feat(storefront): …`, `fix(backend): …`.
 9. **Cero secretos en el repo.** Solo `.env.example`. Nunca registres claves en logs ni las envíes al cliente (salvo las `PUBLIC_*` pensadas para ello).
 10. **Antes de terminar una tarea**: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` sin errores.
-11. **Versiones fijadas.** Usa exactamente las de README §4. No subas ni bajes versiones por iniciativa propia.
+11. **Versiones fijadas.** La **fuente de verdad** son los ficheros (`package.json`/`pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`). README §4 es una **referencia** que se revisa al cerrar cada fase. No subas ni bajes versiones por iniciativa propia.
 12. **Documentación vía MCP, no de memoria.** Antes de escribir código contra una API, consúltala en el MCP correspondiente (§1.1).
 
 ---
 
 ## 1. Stack y versiones
 
-Resumen (la tabla completa y autoritativa está en **README §4**):
+Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referencia en **README §4**, revisada al cerrar cada fase):
 
 | Pieza       | Versión                                               | Notas                                                                                                                  |
 | ----------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -57,9 +57,9 @@ Resumen (la tabla completa y autoritativa está en **README §4**):
 | Tailwind    | **4.3.3**                                             | plugin `@tailwindcss/vite`, config CSS-first (`@theme` en `global.css`); **no** `tailwind.config.js`                   |
 | UI          | shadcn-svelte 1.7.0 + bits-ui 2.19.3                  | componentes copiados en `src/lib/components/ui`                                                                        |
 | TypeScript  | **6.0.3**                                             | TS 7 no soportado aún por Astro/Medusa                                                                                 |
-| PostgreSQL  | `postgres:17.9-alpine`                                |                                                                                                                        |
-| Redis       | `redis:8.8.3-alpine`                                  |                                                                                                                        |
-| Meilisearch | `getmeili/meilisearch:v1.54.2`                        |                                                                                                                        |
+| PostgreSQL  | `postgres:17.11-alpine`                               |                                                                                                                        |
+| Redis       | `redis:8.10.2-alpine`                                 |                                                                                                                        |
+| Meilisearch | `getmeili/meilisearch:v1.54.3`                        |                                                                                                                        |
 | S3 local    | `chrislusf/seaweedfs:4.48`                            | solo dev; prod = Cloudflare R2. MinIO descartado                                                                       |
 | Caddy       | `caddy:2.11.4-alpine`                                 |                                                                                                                        |
 | React Email | react-email 6.11.0 · components 1.0.12 · render 2.1.0 | solo en `packages/emails`                                                                                              |
@@ -67,8 +67,9 @@ Resumen (la tabla completa y autoritativa está en **README §4**):
 Reglas de dependencias:
 
 - Añade dependencias con `pnpm --filter <app> add <pkg>@<versión exacta>` (o `-D`). Nunca edites el lockfile a mano.
-- Una dependencia nueva que no esté en README §4 requiere aprobación del usuario y añadirla a esa tabla en el mismo PR.
-- Cambios de versión: solo en PRs `chore(deps): …` (Renovate o explícitos) que actualicen README §4 y `AGENTS.md` §1.
+- Una dependencia **nueva** requiere aprobación del usuario y añadirla a README §4 en el mismo PR.
+- Cambios de versión de dependencias existentes: vía PRs de **Renovate** (o `chore(deps): …` explícitos). No hace falta tocar README §4 en ese PR: se sincroniza al **cerrar cada fase** (paso obligatorio del documento de fase).
+- Renovate (`renovate.json`): minor/patch agrupados en un PR semanal; **majors solo con aprobación** en el Dependency Dashboard; PostgreSQL fijado a `<18`; nada de npm con menos de 24 h (igual que `minimumReleaseAge` de pnpm).
 - Antes de añadir una dependencia al **storefront cliente**, comprueba su peso (bundlephobia / `pnpm build` + análisis). Prefiere APIs nativas del navegador.
 - No introduzcas React en el storefront. React solo existe en `packages/emails`.
 - No asumas APIs de Medusa v1, Astro ≤ 6, Svelte 4 ni Tailwind v3: **consulta la documentación** (§1.1).
@@ -204,7 +205,7 @@ Lighthouse móvil: Performance ≥ 95, Accesibilidad ≥ 95, SEO 100. Si un camb
   - Cache de pnpm con `--mount=type=cache,target=/pnpm/store`.
   - `.dockerignore` que excluya `node_modules`, `.env*`, `.git`, `dist`, `.astro`, `.medusa`.
 - La imagen del backend es **una sola** para `server` y `worker`, diferenciada por `MEDUSA_WORKER_MODE`. Solo `server` ejecuta migraciones al arrancar.
-- Usa **exactamente** los tags de README §4.2 (`node:24.21.0-alpine3.24`, `postgres:17.9-alpine`, `redis:8.8.3-alpine`, `getmeili/meilisearch:v1.54.2`, `caddy:2.11.4-alpine`, `chrislusf/seaweedfs:4.48`, `axllent/mailpit:v1.31.3`, `stripe/stripe-cli:v1.52.1`). **Prohibido `:latest`** en compose y Dockerfiles (dev y prod). El tag `:latest` solo existe como etiqueta de publicación de _nuestras_ imágenes.
+- Usa tags **completos y fijos** (los vigentes están en `docker/*.yml`; referencia en README §4.2). **Prohibido `:latest`** en compose y Dockerfiles (dev y prod). El tag `:latest` solo existe como etiqueta de publicación de _nuestras_ imágenes.
 - Imágenes referenciadas como `${REGISTRY}/${IMAGE_NAMESPACE}/ecommerce-<app>:${IMAGE_TAG}` para poder elegir Gitea o GHCR.
 
 ---
@@ -293,7 +294,7 @@ git push -u origin feat/carrito-server-island    # origin empuja a Gitea y GitHu
 2. **Consulta la documentación** según la REGLA Nº 1: primero el MCP específico, si no `context7`.
 3. **Planifica** en pocas líneas: qué ficheros, qué comandos, qué estrategia de render (§3.1), el impacto en JS de cliente y qué fuentes consultaste.
 4. **Espera confirmación** del usuario antes de ejecutar. Si surge una duda a mitad de trabajo, **para** y vuelve a preguntar.
-5. **Documento de fase**: al iniciar una fase crea `docs/fases/faseN.md` desde [`PLANTILLA.md`](./docs/fases/PLANTILLA.md); al terminarla, rellénalo (qué se hizo, decisiones con su fuente, **comandos para testear**, criterio de salida) y actualiza la tabla de estado en README §13. Los detalles van ahí, **no** en el README.
+5. **Documento de fase**: al iniciar una fase crea `docs/fases/faseN.md` desde [`PLANTILLA.md`](./docs/fases/PLANTILLA.md); al terminarla, rellénalo (qué se hizo, decisiones con su fuente, **comandos para testear**, criterio de salida), actualiza la tabla de estado en README §13 y **sincroniza README §4 con las versiones reales de los ficheros**. Los detalles van ahí, **no** en el README.
 6. **Cambios pequeños y verificables.** No refactorices lo que no te han pedido.
 7. **Verifica**: levanta infra (`pnpm infra:up`), ejecuta lint/typecheck/test/build, y cuando toque UI, comprueba el JS enviado (`dist/` o DevTools).
 8. **Documenta**: actualiza `README.md`/`.env.example`/este fichero si cambias comandos, variables o convenciones.
