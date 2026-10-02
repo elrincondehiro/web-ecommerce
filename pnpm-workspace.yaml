@@ -18,4 +18,14 @@ publicHoistPattern:
 
 # Scripts de build de dependencias permitidos (strictDepBuilds=true por defecto en pnpm 12).
 # Se ampliará al añadir Medusa (fase 2) y Astro (fase 3).
-allowBuilds: {}
+allowBuilds:
+  # Binario nativo de SWC (Medusa, jest)
+  "@swc/core": true
+  # Binario nativo de esbuild (Vite / admin de Medusa)
+  esbuild: true
+  # Extensión nativa opcional de msgpackr (BullMQ / Redis)
+  msgpackr-extract: true
+  # Solo muestra un aviso de versión
+  protobufjs: false
+  # Alta de telemetría de Medusa: desactivada (decisión P6 fase 2)
+  "@medusajs/telemetry": false

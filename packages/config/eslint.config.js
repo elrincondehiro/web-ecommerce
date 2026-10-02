@@ -27,6 +27,17 @@ export default defineConfig([
       "no-console": "error",
     },
   },
+  // Ficheros CommonJS (configs de jest, setup de tests de Medusa): require() permitido
+  {
+    files: ["**/*.cjs", "**/jest.config.js", "**/integration-tests/setup.js"],
+    languageOptions: { sourceType: "commonjs", globals: { ...globals.node } },
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
+  // Tests (jest)
+  {
+    files: ["**/__tests__/**", "**/*.spec.ts", "**/integration-tests/**"],
+    languageOptions: { globals: { ...globals.jest } },
+  },
   // Desactiva reglas de estilo que chocan con Prettier (debe ir al final)
   prettier,
 ]);

@@ -18,6 +18,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Sin telemetría de Medusa en CI (decisión P6 fase 2)
+  MEDUSA_DISABLE_TELEMETRY: "true"
+
 jobs:
   # Nombre estable: es el check obligatorio en la protección de main (Gitea) y en el ruleset (GitHub).
   # Sin filtros `paths:` → un job saltado no cumple un check obligatorio.

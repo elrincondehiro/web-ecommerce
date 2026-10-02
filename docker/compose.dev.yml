@@ -42,6 +42,8 @@ services:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       MEILI_ENV: development
       MEILI_NO_ANALYTICS: "true"
+      # Solo dev: migra la BD al subir de versión (Renovate). En prod: snapshot + upgrade controlado.
+      MEILI_UPGRADE_DB: "true"
     ports:
       - "127.0.0.1:${MEILI_PORT:-7700}:7700"
     volumes:

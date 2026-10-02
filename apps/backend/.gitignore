@@ -1,0 +1,5 @@
+# Específico del backend (el .gitignore raíz cubre node_modules, .env, dist…)
+/uploads
+/.medusa
+/build
+medusa-db.sql

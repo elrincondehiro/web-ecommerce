@@ -20,7 +20,7 @@ E-commerce **autoalojado**, pensado para ir a **máxima velocidad**: todo lo pos
 
 > Las directrices para agentes de IA están en [`AGENTS.md`](./AGENTS.md). Léelas antes de tocar código.
 >
-> **Estado:** [prefase](./docs/fases/prefase.md) ✅ completada · [fase 0](./docs/fases/fase0.md) ✅ · [fase 1](./docs/fases/fase1.md) ✅ · fase 2 ⏳ siguiente. Detalle de cada fase en [`docs/fases/`](./docs/fases/).
+> **Estado:** [prefase](./docs/fases/prefase.md) ✅ completada · [fase 0](./docs/fases/fase0.md) ✅ · [fase 1](./docs/fases/fase1.md) ✅ · [fase 2](./docs/fases/fase2.md) 🚧 en curso. Detalle de cada fase en [`docs/fases/`](./docs/fases/).
 >
 > ⛔ **Regla nº 1 para agentes**: antes de empezar cualquier parte nueva (fase, storefront, backend, módulo, infraestructura…) se consulta la documentación — primero el **MCP específico**, si no **context7** —, se presenta un plan y **se espera confirmación del usuario**. Ante cualquier duda, no se ejecuta nada. Detalle en [`AGENTS.md`](./AGENTS.md#-regla-nº-1--consultar-documentación-y-confirmar-antes-de-empezar).
 
@@ -233,10 +233,15 @@ Política:
 | `eslint` 10.11.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                                                                                | `packages/config` (lint)                          |
 | `prettier`                                                                                                                | 3.9.9                                                                            | `packages/config` (formato)                       |
 | `@types/node`                                                                                                             | 24.9.2 (PR de Renovate a 24.19.x pendiente: espera 24 h por `minimumReleaseAge`) | raíz (alineado con Node 24)                       |
+| `react` / `react-dom` (solo admin de Medusa)                                                                              | 18.3.1                                                                           | backend                                           |
+| `@types/react` / `@types/react-dom`                                                                                       | 18.3.31 / 18.3.7                                                                 | backend                                           |
+| `@swc/core` / `@swc/jest`                                                                                                 | 1.16.13 / 0.2.39                                                                 | backend                                           |
+| `jest` / `@types/jest`                                                                                                    | 29.7.0 / 29.5.14                                                                 | backend (tests de Medusa)                         |
+| `ts-node`                                                                                                                 | 10.9.2                                                                           | backend                                           |
 | `@sentry/node` _(propuesto, fase 12)_                                                                                     | 11.1.0                                                                           | backend → envía errores a GlitchTip               |
 | `@sentry/astro` _(propuesto, fase 12)_                                                                                    | 11.1.0                                                                           | storefront, **solo servidor** (sin JS de cliente) |
 
-> **TypeScript 7 no se usa todavía**: Astro y Medusa declaran `typescript ^5 \|\| ^6`.
+> **TypeScript 7 no se usa todavía**: Astro declara `typescript ^5 \|\| ^6`. **Medusa** documenta `^5.6.2`; en la fase 2 se probó **6.0.3** y `typecheck`/`build`/tests pasan (si diera problemas: 5.9.3 solo en `apps/backend`).
 > **Astro 7** requiere `@astrojs/node` ≥ 11 y `@astrojs/svelte` ≥ 9 (`@astrojs/node` 9.x y `@astrojs/svelte` 8.x son para Astro 6).
 
 ## 5. MCPs de documentación para agentes
@@ -450,33 +455,20 @@ pnpm infra:ps
 
 ### 8.3 Backend (Medusa v2)
 
-```bash
-mkdir -p apps packages
-# Revisa flags actuales: pnpm dlx create-medusa-app@2.21.2 --help
-pnpm dlx create-medusa-app@2.21.2 backend \
-  --directory-path apps \
-  --db-url "postgres://medusa:medusa@localhost:5432/medusa" \
-  --no-browser
-# Rechaza el starter de Next.js (la tienda es Astro).
-cd apps/backend
-rm -f package-lock.json yarn.lock      # solo pnpm
-```
-
-Ajustes:
-
-- `package.json` → `"name": "backend"`.
-- Fijar todos los `@medusajs/*` a `2.21.2` exactos.
-- `.env` (ver §14): `DATABASE_URL`, `REDIS_URL`, `STORE_CORS=http://localhost:4321`, `ADMIN_CORS`, `AUTH_CORS`, `JWT_SECRET`, `COOKIE_SECRET`, Stripe, S3/R2, Meilisearch, Resend.
-- `medusa-config.ts` → registrar módulos Redis (event bus, workflow engine, locking, cache), `payment-stripe`, `file-s3`, notificación Resend y Meilisearch (las fases del roadmap los van añadiendo).
+Implementado en la **fase 2** ([`docs/fases/fase2.md`](./docs/fases/fase2.md)): starter oficial fijado por commit, Medusa 2.21.2, módulos Redis, región **España** con **IVA incluido 21/10/4 %**.
 
 ```bash
-pnpm install                     # desde la raíz del monorepo
+pnpm infra:up
+cp apps/backend/.env.example apps/backend/.env            # y genera secretos: openssl rand -hex 32
+cp apps/backend/.env.test.example apps/backend/.env.test  # tests de integración
 pnpm --filter backend exec medusa db:migrate
-pnpm --filter backend exec medusa user -e admin@local.test -p supersecret
-pnpm dev:backend                 # API http://localhost:9000 · Admin http://localhost:9000/app
+pnpm --filter backend seed                                # región ES, IVA, envíos, publishable key
+pnpm --filter backend seed:mock                           # catálogo de prueba (24; o `-- 100`)
+pnpm --filter backend exec medusa user -e <email> -p <contraseña>   # admin (lo creas tú)
+pnpm dev:backend                                          # API :9000 · Admin :9000/app
 ```
 
-En el Admin: crear región (EUR), canal de venta y **Publishable API Key** → copiarla a `apps/storefront/.env` como `PUBLIC_MEDUSA_PUBLISHABLE_KEY`.
+La **publishable key** sale en el log del seed (para `PUBLIC_MEDUSA_PUBLISHABLE_KEY` del storefront en la fase 3).
 
 ### 8.4 Storefront (Astro 7 + Svelte 5 + Tailwind v4 + shadcn-svelte)
 
@@ -672,8 +664,9 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
 | Prefase (SSH, repos, MCPs, decisiones) | [prefase.md](./docs/fases/prefase.md)                                                            | ✅     |
 | 0 Fundaciones                          | [fase0.md](./docs/fases/fase0.md)                                                                | ✅     |
-| 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | 🚧     |
-| 2 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | ✅     |
+| 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | 🚧     |
+| 3 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 
