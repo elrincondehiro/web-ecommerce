@@ -1,0 +1,40 @@
+# Renovate autoalojado contra Gitea (fase 1). Solo se ejecuta en Gitea, nunca en GitHub.
+# Requisitos (ver docs/fases/fase1.md §5.2):
+#   - usuario bot `renovate-bot` con permiso de escritura en el repo
+#   - secret de repo RENOVATE_TOKEN (PAT del bot)
+#   - opcional: secret RENOVATE_GITHUB_COM_TOKEN (PAT de GitHub de solo lectura, para changelogs)
+name: Renovate
+
+on:
+  schedule:
+    # Lunes 04:00 UTC (06:00/05:00 Madrid) → dentro del "before 7am on monday" de renovate.json
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  renovate:
+    if: ${{ github.server_url != 'https://github.com' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: renovate/renovate:44.125.2
+    steps:
+      - name: Renovate
+        env:
+          RENOVATE_PLATFORM: gitea
+          RENOVATE_ENDPOINT: ${{ github.server_url }}/api/v1
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_GITHUB_COM_TOKEN }}
+          # El repo ya tiene renovate.json: sin PR de onboarding
+          RENOVATE_ONBOARDING: "false"
+          RENOVATE_REQUIRE_CONFIG: "required"
+          LOG_LEVEL: info
+        run: renovate

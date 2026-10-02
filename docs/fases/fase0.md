@@ -1,8 +1,8 @@
 # Fase 0 — Fundaciones
 
-> **Estado:** ✅ implementada y verificada en local (30-sep-2026) · ⏳ pendiente primer commit/push
+> **Estado:** ✅ completada (30-sep-2026) · commit `343e0ce` en `main` de Gitea y GitHub
 > **Rama/PR:** commit inicial directo a `main` (única excepción; reglas desactivadas temporalmente)
-> **Anterior:** [Prefase](./prefase.md) · **Siguiente:** Fase 1 — CI básico (PR)
+> **Anterior:** [Prefase](./prefase.md) · **Siguiente:** [Fase 1 — CI básico (PR)](./fase1.md)
 
 ## 1. Objetivos
 
@@ -14,8 +14,8 @@
 - [x] Config compartida en `packages/config`: TypeScript, ESLint (flat), Prettier.
 - [x] `renovate.json` (ejecución a decidir en fase 1).
 - [x] `.gitignore`, `.editorconfig`, `.env.example`, `docker/.env.example`.
-- [ ] Primer commit y push a Gitea y GitHub.
-- [ ] Reactivar protección de `main` (usuario).
+- [x] Primer commit y push a Gitea y GitHub (`343e0ce`).
+- [x] Reactivar protección de `main` (usuario).
 
 ## 2. Qué se ha hecho
 
@@ -101,8 +101,8 @@ pnpm infra:down
 - [x] `pnpm install --frozen-lockfile` limpio.
 - [x] Los 5 servicios healthy en `127.0.0.1` (Meilisearch: 401 sin key / 200 con key); bucket `medusa` con lectura anónima y escritura autenticada (probado con aws-cli: subida OK, GET anónimo 200, PUT anónimo 403).
 - [x] `pnpm lint` y `pnpm format:check` en verde.
-- [ ] Mismo commit en `main` de Gitea y GitHub.
-- [ ] Protección de `main` reactivada en ambos.
+- [x] Mismo commit en `main` de Gitea y GitHub.
+- [x] Protección de `main` reactivada en ambos.
 
 ## 7. Pendientes / riesgos
 

@@ -245,8 +245,11 @@ git push -u origin feat/carrito-server-island    # origin empuja a Gitea y GitHu
 ### 8.2 CI
 
 - Orden del roadmap: el **CI básico de PR** (fase 1) va justo después de las fundaciones; la publicación de imágenes (CD) llega en la fase 10.
-- Remotos: `gitea:jacknoddy/web-ecommerce.git` y `git@github.com:elrincondehiro/web-ecommerce.git`. `origin` hace push a ambos.
-- SSH con ssh-agent: si `git push` falla por clave, **no** pidas la passphrase ni la guardes; pide al usuario que ejecute `ssh-add`.
+- Remotos: `gitea:jacknoddy/web-ecommerce.git` (**fuente de verdad**: PR y merge aquí) y `git@github.com:elrincondehiro/web-ecommerce.git` (réplica por **push mirror HTTPS + PAT** de Gitea, con force push: nunca escribir directamente en GitHub). Las ramas se empujan a `origin` (= Gitea).
+- Runner de Gitea: la etiqueta `ubuntu-latest` es en realidad `docker://node:24.21.0-trixie` (Debian 13 + Node 24). No asumas herramientas de la imagen Ubuntu de GitHub (p. ej. `docker`, `jq`, navegadores): instálalas en el job o usa `container:`.
+- Actions **fijadas por SHA** con el tag en comentario (`uses: actions/checkout@<sha> # v7.0.1`). Nunca por tag flotante.
+- Workflows solo para Gitea: condición `if: ${{ github.server_url != 'https://github.com' }}` (p. ej. `renovate.yml`).
+- SSH con ssh-agent: el usuario carga la clave con caducidad (~8 h). Si `git push` falla por clave, **no** pidas la passphrase ni la guardes; pide al usuario que ejecute `ssh-add ~/.ssh/id_ed25519`.
 
 - `ci.yml` (PR): `pnpm install --frozen-lockfile` → `lint` → `typecheck` → `test` → `build` → comprobación de presupuesto de JS → Lighthouse CI.
 - `images.yml`:

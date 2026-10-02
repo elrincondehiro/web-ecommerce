@@ -20,7 +20,7 @@ E-commerce **autoalojado**, pensado para ir a **máxima velocidad**: todo lo pos
 
 > Las directrices para agentes de IA están en [`AGENTS.md`](./AGENTS.md). Léelas antes de tocar código.
 >
-> **Estado:** [prefase](./docs/fases/prefase.md) ✅ completada · [fase 0](./docs/fases/fase0.md) 🚧 en curso. Detalle de cada fase en [`docs/fases/`](./docs/fases/).
+> **Estado:** [prefase](./docs/fases/prefase.md) ✅ completada · [fase 0](./docs/fases/fase0.md) ✅ · [fase 1](./docs/fases/fase1.md) 🚧 en curso. Detalle de cada fase en [`docs/fases/`](./docs/fases/).
 >
 > ⛔ **Regla nº 1 para agentes**: antes de empezar cualquier parte nueva (fase, storefront, backend, módulo, infraestructura…) se consulta la documentación — primero el **MCP específico**, si no **context7** —, se presenta un plan y **se espera confirmación del usuario**. Ante cualquier duda, no se ejecuta nada. Detalle en [`AGENTS.md`](./AGENTS.md#-regla-nº-1--consultar-documentación-y-confirmar-antes-de-empezar).
 
@@ -169,16 +169,16 @@ Política:
 
 ### 4.1 Sistema y herramientas (host)
 
-| Herramienta             | Versión     | Dónde se fija                           |
-| ----------------------- | ----------- | --------------------------------------- |
-| Node.js (LTS "Krypton") | **24.21.0** | `.node-version` (fnm) y `engines`       |
-| pnpm                    | **12.8.1**  | `packageManager` en `package.json` raíz |
-| fnm                     | 1.39.0      | host                                    |
-| Docker Engine           | 29.8.1      | host / VPS                              |
-| Docker Compose          | 5.5.1       | host / VPS                              |
-| git                     | 2.55.0      | host                                    |
-| Gitea                   | 1.27.3      | servidor Gitea                          |
-| Gitea act_runner        | 0.6.1       | `gitea/act_runner:0.6.1`                |
+| Herramienta                       | Versión                                 | Dónde se fija                                                                                       |
+| --------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Node.js (LTS "Krypton")           | **24.21.0**                             | `.node-version` (fnm) y `engines`                                                                   |
+| pnpm                              | **12.8.1**                              | `packageManager` en `package.json` raíz                                                             |
+| fnm                               | 1.39.0                                  | host                                                                                                |
+| Docker Engine                     | 29.8.1                                  | host / VPS                                                                                          |
+| Docker Compose                    | 5.5.1                                   | host / VPS                                                                                          |
+| git                               | 2.55.0                                  | host                                                                                                |
+| Gitea                             | **28.0.0** (nuevo esquema: 1.27.x → 28) | servidor Gitea (LXC Debian 13, binario)                                                             |
+| gitea-runner (antes `act_runner`) | 4.0.1                                   | binario en el LXC, runner **de usuario**; etiqueta `ubuntu-latest` → `docker://node:24.21.0-trixie` |
 
 ### 4.2 Imágenes Docker
 
@@ -388,10 +388,14 @@ git remote set-url --add --push origin git@github.com:elrincondehiro/web-ecommer
 git remote -v
 ```
 
-- `git push origin <rama>` publica en los dos.
-- `git push gitea` / `git push github` para uno solo.
-- La fuente de verdad para _fetch/pull_ se elige cambiando la URL de fetch de `origin`.
-- Alternativa: **mirror push** desde Gitea (Ajustes del repo → Mirror → Push mirror a GitHub).
+> **Desde la fase 1 (decisión P1): Gitea es la fuente de verdad.**
+>
+> - Los PR se abren y mergean **en Gitea**.
+> - GitHub se actualiza con un **push mirror de Gitea por HTTPS + PAT fine-grained** (Gitea no admite mirror por SSH); bypass _Repository admin_ en el ruleset de GitHub. El mirror hace force push: **nunca** commits directos en GitHub. Pasos: [fase1.md §5.3](./docs/fases/fase1.md).
+> - `origin` deja de empujar a GitHub: `git remote set-url --delete --push origin git@github.com:elrincondehiro/web-ecommerce.git`.
+> - Flujo diario: `git push -u origin feat/x` → PR en Gitea → CI verde → squash merge → el mirror lleva `main` a GitHub.
+
+- `git push gitea` / `git push github` para uno solo (GitHub solo excepcionalmente; `main` en GitHub lo gestiona el mirror).
 
 Los workflows viven en `.github/workflows/`: **Gitea Actions los ejecuta también** (usa `.gitea/workflows/` si existe y si no `.github/workflows/`). Así un único CI sirve en ambas plataformas. El registro destino se decide con variables del repo (`REGISTRY`, `IMAGE_NAMESPACE`) — ver §10.
 
@@ -567,6 +571,9 @@ feat/*, fix/*, chore/*  ──PR──▶  CI (lint · typecheck · test · buil
 ```
 
 - **Ramas**: `feat/<descripcion-corta>`, `fix/…`, `chore/…`, `docs/…`. Nunca commits directos a `main`.
+- **PR y merge en Gitea**; GitHub recibe `main` por push mirror (ver §7.3).
+- **Check obligatorio**: job `quality` de `ci.yml` (Gitea y GitHub).
+- **Renovate**: `renovate.yml` programado (lunes 04:00 UTC) en Gitea Actions con el bot `renovate-bot`; abre PRs agrupados que pasan por el mismo CI.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) (`feat(storefront): …`).
 - **Versionado**: SemVer. Release = `git tag -a v1.2.3 -m "v1.2.3" && git push origin v1.2.3`.
 - **Workflows** (`.github/workflows/`):
@@ -663,8 +670,9 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | Fase                                   | Documento                                                                                        | Estado |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
 | Prefase (SSH, repos, MCPs, decisiones) | [prefase.md](./docs/fases/prefase.md)                                                            | ✅     |
-| 0 Fundaciones                          | [fase0.md](./docs/fases/fase0.md)                                                                | 🚧     |
-| 1 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 0 Fundaciones                          | [fase0.md](./docs/fases/fase0.md)                                                                | ✅     |
+| 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | 🚧     |
+| 2 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 
@@ -717,7 +725,7 @@ gantt
 | #   | Fase                         | Qué hace                                                                                                                                                                                                                                                                   | Tiempo    | Test / criterio de salida                                                                           | Coste servicios                                      |
 | --- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | 0   | **Fundaciones**              | Monorepo pnpm, `.node-version`, `.npmrc`, `compose.dev.yml` (Postgres, Redis, Meilisearch, SeaweedFS, Mailpit, Stripe CLI), bucket local, ESLint/Prettier/TS compartidos, Renovate, `.gitignore`, remotos Gitea+GitHub, primer push                                        | 1–2 d     | `pnpm infra:up` + `pnpm install` limpios; push en ambos remotos                                     | 0 €                                                  |
-| 1   | **CI básico (PR)**           | `ci.yml`: install `--frozen-lockfile` → lint → typecheck → test → build. Runner de Gitea (`act_runner`) en el homelab + GitHub Actions. Añadir los checks como obligatorios en Gitea y en el ruleset de GitHub                                                             | 1 d       | Un PR de prueba bloqueado si falla un check y mergeable si pasa, en **ambas** plataformas           | 0 €                                                  |
+| 1   | **CI básico (PR)**           | `ci.yml`: install `--frozen-lockfile` → lint → typecheck → test → build. Runner de Gitea (`gitea-runner`) en el homelab + GitHub Actions + Renovate autoalojado. Añadir los checks como obligatorios en Gitea y en el ruleset de GitHub                                    | 1 d       | Un PR de prueba bloqueado si falla un check y mergeable si pasa, en **ambas** plataformas           | 0 €                                                  |
 | 2   | **Backend base**             | Medusa 2.21.2, módulos Redis (event bus, workflow engine, locking, caché), admin, región EUR, canal, publishable key, seed                                                                                                                                                 | 1–2 d     | Admin operativo; Store API responde; CI verde                                                       | 0 €                                                  |
 | 3   | **Storefront base**          | Astro 7 + Svelte 5 + Tailwind 4 + shadcn-svelte, layout, home, listado y ficha **estáticos**, precio/stock en server island, SEO (meta, JSON-LD, sitemap), fuentes e imágenes                                                                                              | 4–6 d     | Lighthouse móvil ≥ 95; **0 KB JS** propio en ficha                                                  | 0 €                                                  |
 | 4   | **Carrito**                  | Cookie `cart_id` httpOnly, Astro Actions sin JS (añadir/actualizar/quitar), contador en server island, mejora progresiva                                                                                                                                                   | 3–4 d     | Playwright **con JS desactivado**                                                                   | 0 €                                                  |

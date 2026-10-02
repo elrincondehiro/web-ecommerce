@@ -47,14 +47,15 @@ Todo lo que ocurre **antes de la fase 0**: preparación del equipo, conexión co
 
 ### 3.1 Entorno local (Arch Linux, zsh)
 
-| Herramienta      | Versión detectada |
-| ---------------- | ----------------- |
-| Node (fnm)       | 24.21.0           |
-| pnpm             | 12.8.1            |
-| fnm              | 1.39.0            |
-| Docker / Compose | 29.8.1 / 5.5.1    |
-| git              | 2.55.0            |
-| openssh          | 10.5p1            |
+| Herramienta               | Versión detectada                    |
+| ------------------------- | ------------------------------------ |
+| Node (fnm)                | 24.21.0                              |
+| pnpm                      | 12.8.1                               |
+| fnm                       | 1.39.0                               |
+| Docker / Compose          | 29.8.1 / 5.5.1                       |
+| git                       | 2.55.0                               |
+| Gitea (servidor, homelab) | 28.0.0 (actualizado tras la prefase) |
+| openssh                   | 10.5p1                               |
 
 ### 3.2 SSH + ssh-agent
 

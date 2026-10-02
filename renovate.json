@@ -1,19 +1,36 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "rangeStrategy": "pin",
   "labels": ["dependencies"],
   "timezone": "Europe/Madrid",
   "schedule": ["before 7am on monday"],
   "docker-compose": {
-    "digest": { "enabled": false }
+    "digest": {
+      "enabled": false
+    }
   },
   "packageRules": [
-    { "groupName": "medusa", "matchPackageNames": ["@medusajs/**", "create-medusa-app"] },
-    { "groupName": "astro", "matchPackageNames": ["astro", "@astrojs/**"] },
-    { "groupName": "svelte", "matchPackageNames": ["svelte", "bits-ui", "shadcn-svelte"] },
-    { "groupName": "tailwind", "matchPackageNames": ["tailwindcss", "@tailwindcss/**"] },
-    { "groupName": "react-email", "matchPackageNames": ["react-email", "@react-email/**"] },
+    {
+      "groupName": "medusa",
+      "matchPackageNames": ["@medusajs/**", "create-medusa-app"]
+    },
+    {
+      "groupName": "astro",
+      "matchPackageNames": ["astro", "@astrojs/**"]
+    },
+    {
+      "groupName": "svelte",
+      "matchPackageNames": ["svelte", "bits-ui", "shadcn-svelte"]
+    },
+    {
+      "groupName": "tailwind",
+      "matchPackageNames": ["tailwindcss", "@tailwindcss/**"]
+    },
+    {
+      "groupName": "react-email",
+      "matchPackageNames": ["react-email", "@react-email/**"]
+    },
     {
       "groupName": "eslint-prettier",
       "matchPackageNames": [
@@ -25,7 +42,14 @@
         "prettier-plugin-*"
       ]
     },
-    { "groupName": "docker images", "matchDatasources": ["docker"] },
+    {
+      "groupName": "docker images",
+      "matchDatasources": ["docker"]
+    },
+    {
+      "groupName": "github actions",
+      "matchManagers": ["github-actions"]
+    },
     {
       "description": "Node y TypeScript: majors solo manualmente (compatibilidad Astro/Medusa)",
       "matchPackageNames": ["node", "typescript", "@types/node"],
