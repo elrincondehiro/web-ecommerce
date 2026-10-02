@@ -5,7 +5,7 @@ name: web-ecommerce-dev
 
 services:
   postgres:
-    image: postgres:17.9-alpine
+    image: postgres:17.11-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -22,7 +22,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:8.8.3-alpine
+    image: redis:8.10.2-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
@@ -36,7 +36,7 @@ services:
       retries: 20
 
   meilisearch:
-    image: getmeili/meilisearch:v1.54.2
+    image: getmeili/meilisearch:v1.54.3
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
@@ -92,7 +92,7 @@ services:
 
   # Reenvío de webhooks de Stripe al backend local. Solo con: pnpm infra:stripe
   stripe-cli:
-    image: stripe/stripe-cli:v1.52.1
+    image: stripe/stripe-cli:v1.53.0
     profiles: ["stripe"]
     command:
       ["listen", "--forward-to", "http://host.docker.internal:9000/hooks/payment/stripe_stripe"]
