@@ -1,11 +1,22 @@
 ---
 import { Font } from "astro:assets";
 import Seo from "../components/Seo.astro";
+import CartClient from "../components/CartClient.astro";
+import CartCountBadge from "../components/CartCountBadge.astro";
+import CartNotice from "../components/CartNotice.astro";
+import CartCount from "../components/server/CartCount.astro";
+import { CART_PATH } from "$lib/cart";
 import { getCategories } from "$lib/medusa";
 import "../styles/global.css";
 
-type Props = Parameters<typeof Seo>[0];
+type Props = Parameters<typeof Seo>[0] & {
+  /** Páginas on-demand: nº de artículos ya conocido → sin server island. */
+  cartCount?: number | undefined;
+  /** Script del carrito (fetch, toasts, flyout). /carrito/ no lo necesita (0 JS). */
+  cartClient?: boolean | undefined;
+};
 
+const { cartCount, cartClient = true, ...seo } = Astro.props;
 const categories = await getCategories();
 const current = Astro.url.pathname;
 ---
@@ -18,7 +29,7 @@ const current = Astro.url.pathname;
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <Font cssVariable="--font-inter" preload={[{ weight: 400 }]} />
-    <Seo {...Astro.props} />
+    <Seo {...seo} />
   </head>
   <body class="flex min-h-dvh flex-col antialiased">
     <a
@@ -28,14 +39,18 @@ const current = Astro.url.pathname;
       Saltar al contenido
     </a>
     <header class="border-b">
-      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4">
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-4">
         <a href="/" class="text-lg font-semibold tracking-tight">
           El Rincón de Hiro
         </a>
         {/* Menú en UNA línea con scroll horizontal si no cabe: la altura de la cabecera no
             depende de la fuente (con flex-wrap, Inter partía la última categoría a otra línea
-            al cargar → CLS 0,33). py-1 deja sitio al anillo de foco dentro del overflow. */}
-        <nav aria-label="Categorías" class="max-w-full min-w-0">
+            al cargar → CLS 0,33). py-1 deja sitio al anillo de foco dentro del overflow. 
+            Móvil: logo + carrito en la 1.ª fila y menú a todo el ancho en la 2.ª (order-last). */}
+        <nav
+          aria-label="Categorías"
+          class="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1"
+        >
           <ul class="-my-1 flex gap-x-4 overflow-x-auto py-1 text-sm whitespace-nowrap [scrollbar-width:none]">
             <li>
               <a
@@ -62,9 +77,43 @@ const current = Astro.url.pathname;
             })}
           </ul>
         </nav>
+        {/* Icono del carrito: enlace a /carrito/ (sin JS y en móvil); en escritorio el script
+            del carrito abre el flyout. Contador: server island en páginas estáticas. */}
+        <a
+          href={CART_PATH}
+          data-cart-link
+          class="relative -mr-1 ml-auto rounded-md p-1 hover:bg-muted"
+          aria-label="Carrito"
+          aria-current={current === CART_PATH ? "page" : undefined}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="8" cy="21" r="1" />
+            <circle cx="19" cy="21" r="1" />
+            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+          </svg>
+          {cartCount !== undefined ? (
+            <CartCountBadge count={cartCount} />
+          ) : (
+            <CartCount server:defer>
+              <CartCountBadge slot="fallback" />
+            </CartCount>
+          )}
+        </a>
       </div>
     </header>
     <main id="contenido" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <CartNotice />
       <slot />
     </main>
     <footer class="border-t text-sm text-muted-foreground">
@@ -72,5 +121,6 @@ const current = Astro.url.pathname;
         © {new Date().getFullYear()} El Rincón de Hiro · Precios con IVA incluido
       </div>
     </footer>
+    {cartClient && <CartClient />}
   </body>
 </html>

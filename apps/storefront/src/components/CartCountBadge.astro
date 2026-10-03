@@ -1,0 +1,17 @@
+---
+// Número de artículos del carrito junto al icono de la cabecera. Oculto si es 0 o desconocido.
+// Mismo marcado en el fallback de la island, en la island y en páginas on-demand.
+interface Props {
+  count?: number | null | undefined;
+}
+const { count = null } = Astro.props;
+const visible = count != null && count > 0;
+---
+
+<span
+  data-cart-count
+  class="absolute -top-1.5 -right-2 min-w-5 rounded-full bg-primary px-1 text-center text-xs leading-5 font-semibold text-primary-foreground tabular-nums"
+  hidden={!visible}
+>
+  {visible ? count : ""}
+</span>

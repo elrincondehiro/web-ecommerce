@@ -22,7 +22,7 @@ Todo lo que ocurre **antes de la fase 0**: preparación del equipo, conexión co
 
 | #   | Tema                      | Decisión                                                                                                | Motivo / alternativa descartada                                                           |
 | --- | ------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| D1  | Gestor de paquetes        | **pnpm 12.8.1** (nunca npm/npx/yarn)                                                                    | Preferencia del usuario, workspaces, velocidad                                            |
+| D1  | Gestor de paquetes        | **pnpm 12.8.1** (12.8.2 desde la fase 4) (nunca npm/npx/yarn)                                           | Preferencia del usuario, workspaces, velocidad                                            |
 | D2  | Versiones de Node         | **fnm** + `.node-version` = **24.21.0** (LTS)                                                           | nvm descartado                                                                            |
 | D3  | Framework tienda          | **Astro 7.3.5**                                                                                         | Se pidió Astro 6, pero Astro 7 ya es estable; proyecto nuevo → evitar migración inmediata |
 | D4  | Backend                   | **Medusa 2.21.2** (todos los `@medusajs/*` iguales)                                                     | —                                                                                         |
@@ -50,7 +50,7 @@ Todo lo que ocurre **antes de la fase 0**: preparación del equipo, conexión co
 | Herramienta               | Versión detectada                    |
 | ------------------------- | ------------------------------------ |
 | Node (fnm)                | 24.21.0                              |
-| pnpm                      | 12.8.1                               |
+| pnpm                      | 12.8.1 (12.8.2 desde la fase 4)      |
 | fnm                       | 1.39.0                               |
 | Docker / Compose          | 29.8.1 / 5.5.1                       |
 | git                       | 2.55.0                               |
@@ -109,7 +109,7 @@ Detalle y login de Stripe: README §5.
 ```bash
 # Herramientas
 node -v            # v24.21.0
-pnpm -v            # 12.8.1
+pnpm -v            # 12.8.2 (12.8.1 hasta la fase 4)
 fnm --version
 docker --version && docker compose version
 

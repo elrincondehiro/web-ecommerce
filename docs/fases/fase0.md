@@ -29,7 +29,7 @@ docker/{compose.dev.yml, .env.example}      (docker/.env local, ignorado)
 docs/fases/{prefase.md, fase0.md, PLANTILLA.md}
 ```
 
-- **`package.json` raíz**: `packageManager: pnpm@12.8.1`, `engines` exactos, scripts `infra:up|down|ps|logs|stripe`, `lint`, `lint:fix`, `format`, `format:check`, `typecheck`, `test`, `build` (los tres últimos recursivos con `--if-present`).
+- **`package.json` raíz**: `packageManager: pnpm@12.8.1` (12.8.2 desde la fase 4), `engines` exactos, scripts `infra:up|down|ps|logs|stripe`, `lint`, `lint:fix`, `format`, `format:check`, `typecheck`, `test`, `build` (los tres últimos recursivos con `--if-present`).
 - **`@web-ecommerce/config`** (paquete de workspace): contiene las dependencias de lint/format; la raíz lo consume con `workspace:*`.
 - **`compose.dev.yml`**: proyecto `web-ecommerce-dev`, tags de README §4.2, **puertos solo en `127.0.0.1` y configurables** por `docker/.env`, healthchecks, `up --wait`.
 
@@ -77,7 +77,7 @@ docker compose --env-file docker/.env -f docker/compose.dev.yml exec -T seaweedf
 
 ```bash
 fnm current                                   # v24.21.0
-pnpm -v                                       # 12.8.1
+pnpm -v                                       # 12.8.2 (12.8.1 hasta la fase 4)
 pnpm install --frozen-lockfile                # sin errores
 pnpm infra:up && pnpm infra:ps                # todos running (healthy)
 C="docker compose --env-file docker/.env -f docker/compose.dev.yml"

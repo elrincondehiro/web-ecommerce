@@ -50,7 +50,7 @@ Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referenci
 | Pieza       | Versión                                               | Notas                                                                                                                  |
 | ----------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Node        | **24.21.0** (`.node-version`)                         | gestionado con fnm                                                                                                     |
-| pnpm        | **12.8.1** (`packageManager`)                         | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
+| pnpm        | **12.8.2** (`packageManager`)                         | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
 | Medusa      | **2.21.2**                                            | `@medusajs/*` todos en la **misma** versión                                                                            |
 | Astro       | **7.3.5**                                             | `@astrojs/node` 11.1.6 standalone, `@astrojs/svelte` 9.0.1                                                             |
 | Svelte      | **5.57.1** (runes)                                    | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
@@ -165,7 +165,9 @@ Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>
 | Carrito                   | ≤ 15 KB                                      | < 2.0 s        | < 0.05 |
 | Checkout (con Stripe)     | ≤ 30 KB propios (+ Stripe.js)                | < 2.5 s        | < 0.1  |
 
-Lighthouse móvil: Performance ≥ 95, Accesibilidad ≥ 95, SEO 100. Si un cambio empeora estas cifras, el PR debe explicar por qué.
+Lighthouse móvil: Performance ≥ 95, Accesibilidad ≥ 95, SEO 100 (salvo páginas `noindex` como `/carrito/`). Si un cambio empeora estas cifras, el PR debe explicar por qué.
+
+Excepción aprobada en la fase 4: home, listados y fichas cargan **un único bundle de carrito** (`CartClient`, ≤ 2 KB gzip, sin imports; fetch + contador + toasts + flyout). Va como fichero en `/_astro/` (caché inmutable) y no inline. `check:budget` lo comprueba; cualquier otro bundle sigue prohibido. El JS inline (runtime de server islands + LiveSync) sigue en ≤ 1 KB gzip.
 
 ---
 

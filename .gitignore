@@ -9,6 +9,9 @@ build/
 .medusa/
 .cache/
 coverage/
+# Playwright (e2e del storefront)
+test-results/
+playwright-report/
 *.tsbuildinfo
 .eslintcache
 

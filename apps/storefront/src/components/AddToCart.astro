@@ -1,0 +1,71 @@
+---
+// Formulario "Añadir al carrito" (fase 4). Funciona SIN JS: POST a la action en la ruta
+// on-demand /carrito/ → 303 de vuelta a `back` con aviso (#carrito-<código>). Con JS lo
+// intercepta el script de CartClient.astro (fetch + contador + toast/flyout).
+// - variantId: producto de una sola variante (input hidden). Si no se pasa, el formulario debe
+//   contener radios name="variant_id" (slot "before", tabla de variantes de la ficha).
+// - El botón respeta data-stock del contenedor más cercano (data-if-stock, corregido por LiveSync).
+import { buttonVariants } from "$lib/components/ui/button";
+import { MAX_QUANTITY, actionUrl } from "$lib/cart";
+
+interface Props {
+  variantId?: string | undefined;
+  /** Ruta de vuelta sin JS (la página actual). */
+  back: string;
+  /** Nombre accesible del producto, para el id del campo cantidad y aria-label. */
+  productId: string;
+  productTitle: string;
+  size?: "sm" | "default" | "lg";
+  class?: string;
+}
+const {
+  variantId,
+  back,
+  productId,
+  productTitle,
+  size = "default",
+  class: className = "",
+} = Astro.props;
+const qtyId = `qty-${productId}`;
+const inputSize = size === "sm" ? "h-8 w-14" : size === "lg" ? "h-10 w-16" : "h-9 w-16";
+---
+
+<form method="post" action={actionUrl("cart.add")} data-cart-form class={className}>
+  <input type="hidden" name="back" value={back} />
+  {variantId && <input type="hidden" name="variant_id" value={variantId} />}
+  <slot name="before" />
+  <div class="flex items-end gap-2">
+    <div class="flex flex-col gap-1">
+      <label for={qtyId} class="text-xs text-muted-foreground">
+        Cantidad
+      </label>
+      <input
+        id={qtyId}
+        name="quantity"
+        type="number"
+        inputmode="numeric"
+        min="1"
+        max={MAX_QUANTITY}
+        value="1"
+        required
+        class={`${inputSize} rounded-md border bg-background px-2 text-sm tabular-nums`}
+      />
+    </div>
+    <button
+      type="submit"
+      class={buttonVariants({ size })}
+      data-if-stock="in"
+      aria-label={`Añadir ${productTitle} al carrito`}
+    >
+      Añadir
+    </button>
+    <button
+      type="button"
+      class={buttonVariants({ size, variant: "secondary" })}
+      data-if-stock="out"
+      disabled
+    >
+      Agotado
+    </button>
+  </div>
+</form>

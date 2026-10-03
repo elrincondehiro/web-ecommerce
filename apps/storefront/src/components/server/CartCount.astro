@@ -1,0 +1,26 @@
+---
+// Server island (server:defer) del contador del carrito en la cabecera (fase 4).
+// Lee la cookie httpOnly y devuelve solo el número; respuesta por usuario → private, no-store.
+// El fallback (CartCountBadge sin número) lo pone BaseLayout. El script del carrito actualiza
+// todos los [data-cart-count] tras añadir con fetch.
+import { CART_COOKIE, isValidId, itemCount } from "$lib/cart";
+import { retrieveCart } from "$lib/medusa";
+import { STOREFRONT_DATA } from "astro:env/server";
+import CartCountBadge from "../CartCountBadge.astro";
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+
+const cartId = Astro.cookies.get(CART_COOKIE)?.value;
+let count = 0;
+if (STOREFRONT_DATA !== "fixtures" && isValidId(cartId)) {
+  try {
+    const cart = await retrieveCart(cartId);
+    count = cart.completed_at ? 0 : itemCount(cart);
+  } catch {
+    // Carrito inexistente o backend caído: se muestra sin número; la próxima action lo recrea.
+    count = 0;
+  }
+}
+---
+
+<CartCountBadge count={count} />

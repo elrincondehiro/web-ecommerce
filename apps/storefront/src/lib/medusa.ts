@@ -14,6 +14,7 @@ import {
 import { productsInCategory, sliceRange, type StoreProduct } from "./catalog";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
+export type StoreCart = HttpTypes.StoreCart;
 export interface StoreRegionRef {
   id: string;
   name: string;
@@ -140,6 +141,68 @@ export async function getPricedProducts(q: {
     ...(q.categoryId ? { category_id: q.categoryId } : {}),
   });
   return products;
+}
+
+// ── Carrito (runtime: actions, /carrito/, island del contador). Fase 4. ─────────────────────
+// Importes en unidad principal y con IVA incluido (item_total, unit_price…). Ver fase4.md §3.
+
+/** Campos mínimos para contar artículos (contador de la cabecera, respuesta de las actions). */
+export const CART_COUNT_FIELDS =
+  "id,completed_at,items.id,items.quantity,items.variant_id,items.product_title";
+/** Campos de la página /carrito/ y del flyout. */
+export const CART_FULL_FIELDS =
+  "id,completed_at,currency_code,item_total,item_subtotal,item_tax_total," +
+  "items.id,items.quantity,items.product_title,items.variant_title,items.product_handle," +
+  "items.thumbnail,items.unit_price,items.total,items.variant_id";
+
+function cartSdk(): Medusa {
+  if (useFixtures) throw new Error("El carrito no está disponible con STOREFRONT_DATA=fixtures.");
+  return sdk();
+}
+
+export async function createCart(fields = CART_COUNT_FIELDS): Promise<StoreCart> {
+  const region = await getRegionES();
+  const { cart } = await cartSdk().store.cart.create({ region_id: region.id }, { fields });
+  return cart;
+}
+
+export async function retrieveCart(id: string, fields = CART_COUNT_FIELDS): Promise<StoreCart> {
+  const { cart } = await cartSdk().store.cart.retrieve(id, { fields });
+  return cart;
+}
+
+export async function addLineItem(
+  cartId: string,
+  variantId: string,
+  quantity: number,
+): Promise<StoreCart> {
+  const { cart } = await cartSdk().store.cart.createLineItem(
+    cartId,
+    { variant_id: variantId, quantity },
+    { fields: CART_COUNT_FIELDS },
+  );
+  return cart;
+}
+
+export async function updateLineItem(
+  cartId: string,
+  lineId: string,
+  quantity: number,
+): Promise<StoreCart> {
+  const { cart } = await cartSdk().store.cart.updateLineItem(
+    cartId,
+    lineId,
+    { quantity },
+    { fields: CART_COUNT_FIELDS },
+  );
+  return cart;
+}
+
+export async function deleteLineItem(cartId: string, lineId: string): Promise<StoreCart | null> {
+  const { parent } = await cartSdk().store.cart.deleteLineItem(cartId, lineId, {
+    fields: CART_COUNT_FIELDS,
+  });
+  return parent ?? null;
 }
 
 /** Un producto con precio y stock por id (server island de la ficha). */

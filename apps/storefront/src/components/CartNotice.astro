@@ -1,0 +1,29 @@
+---
+// Avisos del carrito SIN JS (fase 4). Tras el POST de un formulario, el middleware redirige
+// (303) a la página de origen con `#carrito-<código>`; la regla :target de global.css muestra
+// solo el aviso correspondiente. HTML estático e idéntico en todas las páginas (cacheable).
+import { CART_PATH, NOTICES, NOTICE_CODES, isErrorNotice } from "$lib/cart";
+---
+
+<div class="cart-notices">
+  {NOTICE_CODES.map((code) => (
+    <p
+      id={`carrito-${code}`}
+      tabindex="-1"
+      class:list={[
+        "cart-notice mb-6 rounded-md border px-4 py-3 text-sm",
+        isErrorNotice(code) ? "border-destructive/40 text-destructive" : "bg-muted",
+      ]}
+    >
+      {NOTICES[code]}
+      {code === "added" && (
+        <>
+          {" · "}
+          <a href={CART_PATH} class="font-medium underline underline-offset-4">
+            Ver carrito
+          </a>
+        </>
+      )}
+    </p>
+  ))}
+</div>

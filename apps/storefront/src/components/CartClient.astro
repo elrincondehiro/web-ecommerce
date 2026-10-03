@@ -1,0 +1,132 @@
+---
+// Mejora progresiva del carrito (fase 4): UN único bundle (≤ 2 KB gzip, check:budget).
+// Sin framework (medido en fase4.md §2.3: Svelte ≈ 23 KB, nanostores +0,4 KB).
+//   - Intercepta los <form data-cart-form> y los envía con fetch (Accept: JSON → middleware).
+//   - Actualiza todos los [data-cart-count] con animación (clase "bump", CSS).
+//   - Toasts globales por eventos DOM: dispatchEvent(new CustomEvent("toast", {detail:{msg,kind}}))
+//     → cualquier isla futura (fases 5/7) puede lanzarlos.
+//   - Escritorio (≥ 768px): flyout lateral <dialog> con HTML del partial /carrito/flyout/.
+//     Móvil: solo contador + toast; el icono lleva a /carrito/.
+// Sin JS no se carga nada de esto: los formularios hacen POST → 303 y el aviso es CSS (:target).
+---
+
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<dialog id="cart-flyout" class="flyout" aria-labelledby="cart-flyout-title">
+  <div class="flex items-center justify-between border-b px-4 py-3">
+    <h2 id="cart-flyout-title" class="font-semibold">
+      Carrito
+    </h2>
+    <form method="dialog">
+      <button
+        type="submit"
+        class="rounded-md px-2 py-1 text-sm hover:bg-muted"
+        aria-label="Cerrar carrito"
+      >
+        ✕
+      </button>
+    </form>
+  </div>
+  <div data-flyout-body class="overflow-y-auto px-4 pb-4" aria-busy="true"></div>
+</dialog>
+
+<script>
+  const FLYOUT_URL = "/carrito/flyout/";
+  const desktop = matchMedia("(min-width: 768px)");
+  const box = document.getElementById("toasts")!;
+  const dialog = document.getElementById("cart-flyout") as HTMLDialogElement;
+  const body = dialog.querySelector<HTMLElement>("[data-flyout-body]")!;
+
+  type Kind = "ok" | "error";
+
+  function toast(msg: string, kind: Kind = "ok") {
+    const el = document.createElement("div");
+    el.className = `toast toast-${kind}`;
+    if (kind === "error") el.setAttribute("role", "alert");
+    const text = document.createElement("span");
+    text.textContent = msg;
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "✕";
+    close.setAttribute("aria-label", "Cerrar aviso");
+    el.append(text, close);
+    const hide = () => {
+      el.classList.add("out");
+      el.addEventListener("transitionend", () => el.remove(), { once: true });
+      // Sin transición (prefers-reduced-motion) transitionend no llega
+      setTimeout(() => el.remove(), 400);
+    };
+    close.onclick = hide;
+    setTimeout(hide, 4000);
+    box.append(el);
+  }
+
+  addEventListener("toast", (e) => {
+    const d = (e as CustomEvent<{ msg?: string; kind?: Kind }>).detail;
+    if (d?.msg) toast(d.msg, d.kind);
+  });
+
+  function setCount(count: number) {
+    for (const el of document.querySelectorAll<HTMLElement>("[data-cart-count]")) {
+      el.textContent = count > 0 ? String(count) : "";
+      el.hidden = count <= 0;
+      el.classList.remove("bump");
+      void el.offsetWidth; // reinicia la animación
+      el.classList.add("bump");
+    }
+  }
+
+  async function openFlyout() {
+    body.setAttribute("aria-busy", "true");
+    if (!dialog.open) dialog.showModal();
+    try {
+      const res = await fetch(FLYOUT_URL, { headers: { Accept: "text/html" } });
+      if (!res.ok) throw new Error(String(res.status));
+      // HTML de nuestro propio servidor, sin scripts (partial de CartView.astro)
+      body.innerHTML = await res.text();
+    } catch {
+      dialog.close();
+      location.href = "/carrito/";
+    } finally {
+      body.removeAttribute("aria-busy");
+    }
+  }
+
+  const send = (e: Event) => {
+    const form = e.target as HTMLFormElement;
+    if (!form.matches("form[data-cart-form]")) return;
+    e.preventDefault();
+    const button = form.querySelector<HTMLButtonElement>("button[type=submit]");
+    if (button?.disabled) return;
+    if (button) button.disabled = true;
+    fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: { Accept: "application/json" },
+    })
+      .then((r) => r.json() as Promise<{ code: string; count: number | null; msg: string }>)
+      .then((r) => {
+        const ok = r.code === "added";
+        if (r.count != null) setCount(r.count);
+        toast(r.msg, ok ? "ok" : "error");
+        if (ok && desktop.matches) void openFlyout();
+      })
+      .catch(() => toast("No se ha podido añadir. Inténtalo de nuevo.", "error"))
+      .finally(() => {
+        if (button) button.disabled = false;
+      });
+  };
+  addEventListener("submit", send);
+
+  // Icono del carrito: flyout en escritorio, /carrito/ en móvil (enlace normal)
+  addEventListener("click", (e) => {
+    const link = (e.target as Element).closest?.("a[data-cart-link]");
+    if (!link || !desktop.matches || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    void openFlyout();
+  });
+
+  // Clic en el fondo (fuera del panel) cierra el diálogo
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+</script>

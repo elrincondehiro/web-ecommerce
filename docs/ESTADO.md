@@ -2,29 +2,30 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 03-oct-2026 · plan de la fase 4 aprobado (sin código todavía).
+> Última actualización: 04-oct-2026 · fase 4 (carrito) implementada en `feat/fase4-carrito`, pendiente de PR/merge.
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado           | Doc                              |
-| ------------------------------------------- | ---------------- | -------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅               | [prefase.md](./fases/prefase.md) |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅               | [fase0.md](./fases/fase0.md)     |
-| 1 CI básico + Renovate                      | ✅               | [fase1.md](./fases/fase1.md)     |
-| 2 Backend Medusa                            | ✅               | [fase2.md](./fases/fase2.md)     |
-| 3 Storefront base (Astro)                   | ✅               | [fase3.md](./fases/fase3.md)     |
-| 6 Ficheros R2 + imágenes                    | ✅               | [fase6.md](./fases/fase6.md)     |
-| 4 Carrito                                   | ⏳ plan aprobado | [fase4.md](./fases/fase4.md)     |
+| Fase                                        | Estado            | Doc                              |
+| ------------------------------------------- | ----------------- | -------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅                | [prefase.md](./fases/prefase.md) |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅                | [fase0.md](./fases/fase0.md)     |
+| 1 CI básico + Renovate                      | ✅                | [fase1.md](./fases/fase1.md)     |
+| 2 Backend Medusa                            | ✅                | [fase2.md](./fases/fase2.md)     |
+| 3 Storefront base (Astro)                   | ✅                | [fase3.md](./fases/fase3.md)     |
+| 6 Ficheros R2 + imágenes                    | ✅                | [fase6.md](./fases/fase6.md)     |
+| 4 Carrito                                   | ✅ (PR pendiente) | [fase4.md](./fases/fase4.md)     |
 
 Roadmap completo y tiempos: README §13.
 
 ## 2. Qué hay construido
 
-- **Monorepo pnpm 12.8.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
+- **Monorepo pnpm 12.8.2**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar, 0 bundles JS. Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS (`CartClient`, ~1 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
+    - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand con 0 JS. e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
     - **Imágenes**: `<Picture>` AVIF/WebP en build desde el bucket. El primer build tarda unos 30 min con 1000 productos × 4 fotos (`avif.effort: 2`); con la caché `node_modules/.astro`, unos 20 s.
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
 - **Backend**:
@@ -74,6 +75,7 @@ pnpm backend:seed:mock       # idempotente; `backend:seed:mock 100` para 100 (pn
 pnpm --filter backend images:import <carpeta> [dry-run] [replace]
 pnpm --filter backend exec medusa db:migrate
 pnpm --filter backend test:integration:http   # necesita apps/backend/.env.test
+pnpm --filter storefront test:e2e             # Playwright (infra + backend + build del storefront)
 pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build
 ```
 
@@ -88,18 +90,8 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 6. Siguiente
 
-- **Fase 4 (carrito): plan APROBADO, implementación sin empezar.** Leer [fase4.md](./fases/fase4.md) §2, que recoge todas las decisiones del usuario.
-  - Rama `feat/fase4-carrito`, creada desde `main` (`d007112`); por ahora solo contiene `fase4.md` y este fichero.
-  - Resumen:
-    - Cookie `cart_id` httpOnly con `COOKIE_SECURE` (`true` por defecto, `false` en el `.env` local).
-    - Astro Actions sin JS con POST/Redirect/GET a la página de origen.
-    - Contador del carrito en una server island.
-    - Un único bundle de carrito ≤ 2 KB gzip: `fetch`, contador con animación, **toasts globales por eventos del DOM + CSS** y **flyout `<dialog>` solo en escritorio**.
-    - "Añadir" en la ficha y en el listado (productos de 1 variante, con cantidad).
-    - `/carrito/` on-demand con 0 JS.
-    - Playwright `@playwright/test@1.63.0` (aprobado), e2e solo en local (`test:e2e`), CI en la fase 10.
-  - Primer paso de implementación: medir el cliente `astro:actions` frente a un `fetch` directo (fase4.md §2.5).
-- Después: fase 5 (checkout + Stripe).
+- **Fase 4 (carrito): implementada** en `feat/fase4-carrito` (2 commits sobre `main` `3308c70`: pnpm 12.8.2 + carrito). **El usuario abre el PR y hace el merge.** Detalle, medidas y pendientes en [fase4.md](./fases/fase4.md) §5–8.
+- **Siguiente: fase 5 (checkout + Stripe).** Habilitar "Ir a pagar" en `CartView.astro`. Login del MCP de Stripe (cuenta test).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).

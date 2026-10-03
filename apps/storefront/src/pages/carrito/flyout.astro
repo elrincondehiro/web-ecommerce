@@ -1,0 +1,16 @@
+---
+// Partial (sin <html>/<head>) con el contenido del flyout del carrito (fase 4). Lo pide el
+// script de CartClient.astro y lo inserta en el <dialog>. HTML de servidor sin scripts ni
+// estilos (compatible con CSP). Fuente: astro-docs (basics/astro-pages#page-partials).
+import { currentCart } from "$lib/cart-server";
+import CartView from "../../components/CartView.astro";
+
+export const prerender = false;
+export const partial = true;
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+const cart = await currentCart(Astro.cookies);
+---
+
+<CartView cart={cart} variant="flyout" />

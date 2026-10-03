@@ -1,8 +1,10 @@
 ---
 // Precio con IVA, disponibilidad y stock por variante (HTML estático del build).
 // <LiveSync productId> los corrige en runtime (data-pid/data-price/data-vstock, lib/live-sync.ts).
-// (Añadir al carrito llega en la fase 4.)
+// Añadir al carrito (fase 4): <AddToCart> con la variante (hidden si hay una; radios en la tabla
+// si hay varias) y la cantidad. Los radios de variantes agotadas se ocultan con data-if-vstock.
 import { Badge } from "$lib/components/ui/badge";
+import AddToCart from "./AddToCart.astro";
 import { getProductPricing, type StoreProduct } from "$lib/catalog";
 import { formatPrice } from "$lib/format";
 
@@ -13,6 +15,9 @@ const { product } = Astro.props;
 const pricing = getProductPricing(product);
 const multi = pricing.variants.length > 1;
 const currency = pricing.currencyCode;
+const back = `/producto/${product.handle}/`;
+// Preselección: la primera variante con stock (en el build) o, si no hay, la primera.
+const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants[0])?.id;
 ---
 
 {pricing.fromAmount != null && currency ? (
@@ -40,42 +45,69 @@ const currency = pricing.currencyCode;
         Agotado
       </Badge>
     </p>
-    {multi && (
-      <table class="w-full max-w-sm text-sm tabular-nums">
-        <caption class="sr-only">Precio y disponibilidad por variante</caption>
-        <thead class="text-left text-muted-foreground">
-          <tr>
-            <th scope="col" class="py-1 font-normal">
-              Variante
-            </th>
-            <th scope="col" class="py-1 font-normal">
-              Precio
-            </th>
-            <th scope="col" class="py-1 font-normal">
-              Disponibilidad
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {pricing.variants.map((v) => (
-            <tr class="border-t" data-pid={v.id} data-vstock={v.inStock ? "in" : "out"}>
-              <th scope="row" class="py-1.5 font-medium">
-                {v.title}
-              </th>
-              <td class="py-1.5" data-price={v.id}>
-                {v.amount != null ? formatPrice(v.amount, currency) : "—"}
-              </td>
-              <td class="py-1.5">
-                <span data-if-vstock="in">Disponible</span>
-                <span class="text-muted-foreground" data-if-vstock="out">
-                  Agotado
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
+    <AddToCart
+      back={back}
+      productId={product.id}
+      productTitle={product.title}
+      variantId={multi ? undefined : pricing.variants[0]?.id}
+      size="lg"
+      class="flex flex-col gap-4"
+    >
+      {multi && (
+        <fieldset slot="before">
+          <legend class="sr-only">Elige una variante</legend>
+          <table class="w-full max-w-sm text-sm tabular-nums">
+            <caption class="sr-only">Precio y disponibilidad por variante</caption>
+            <thead class="text-left text-muted-foreground">
+              <tr>
+                <th scope="col" class="w-8 py-1 font-normal">
+                  <span class="sr-only">Elegir</span>
+                </th>
+                <th scope="col" class="py-1 font-normal">
+                  Variante
+                </th>
+                <th scope="col" class="py-1 font-normal">
+                  Precio
+                </th>
+                <th scope="col" class="py-1 font-normal">
+                  Disponibilidad
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {pricing.variants.map((v) => (
+                <tr class="border-t" data-pid={v.id} data-vstock={v.inStock ? "in" : "out"}>
+                  <td class="py-1.5">
+                    <input
+                      type="radio"
+                      name="variant_id"
+                      value={v.id}
+                      id={`v-${v.id}`}
+                      checked={v.id === preselected}
+                      required
+                      data-if-vstock="in"
+                      class="size-4 accent-primary"
+                    />
+                  </td>
+                  <th scope="row" class="py-1.5 font-medium">
+                    <label for={`v-${v.id}`}>{v.title}</label>
+                  </th>
+                  <td class="py-1.5" data-price={v.id}>
+                    {v.amount != null ? formatPrice(v.amount, currency) : "—"}
+                  </td>
+                  <td class="py-1.5">
+                    <span data-if-vstock="in">Disponible</span>
+                    <span class="text-muted-foreground" data-if-vstock="out">
+                      Agotado
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </fieldset>
+      )}
+    </AddToCart>
   </div>
 ) : (
   <p class="text-muted-foreground">Precio no disponible en este momento.</p>

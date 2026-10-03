@@ -13,7 +13,8 @@
     "test": "vitest run",
     "check:budget": "node ./scripts/check-js-budget.mjs",
     "fixtures:update": "node ./scripts/update-fixtures.mjs",
-    "start": "HOST=0.0.0.0 PORT=4321 node --env-file-if-exists=.env ./dist/server/entry.mjs"
+    "start": "HOST=0.0.0.0 PORT=4321 node --env-file-if-exists=.env ./dist/server/entry.mjs",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": "24.21.0"
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
+    "@playwright/test": "1.63.0",
     "@types/node": "24.9.2",
     "svelte-check": "4.7.6",
     "typescript": "6.0.3",

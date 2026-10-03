@@ -172,7 +172,7 @@ Política:
 | Herramienta                       | Versión                                 | Dónde se fija                                                                                                                                    |
 | --------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Node.js (LTS "Krypton")           | **24.21.0**                             | `.node-version` (fnm) y `engines`                                                                                                                |
-| pnpm                              | **12.8.1**                              | `packageManager` en `package.json` raíz                                                                                                          |
+| pnpm                              | **12.8.2**                              | `packageManager` en `package.json` raíz                                                                                                          |
 | fnm                               | 1.39.0                                  | host                                                                                                                                             |
 | Docker Engine                     | 29.8.1                                  | host / VPS                                                                                                                                       |
 | Docker Compose                    | 5.5.1                                   | host / VPS                                                                                                                                       |
@@ -232,7 +232,7 @@ Política:
 | `@react-email/render`                                                                                                     | 2.1.0                                                                            | emails / backend                                  |
 | `typescript`                                                                                                              | **6.0.3**                                                                        | todo el monorepo                                  |
 | `vitest`                                                                                                                  | 5.0.3                                                                            | storefront (tests de `src/lib`)                   |
-| `@playwright/test`                                                                                                        | 1.63.0                                                                           | e2e                                               |
+| `@playwright/test`                                                                                                        | 1.63.0                                                                           | storefront (e2e, solo local; CI en la fase 10)    |
 | `eslint` 10.11.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                                                                                | `packages/config` (lint)                          |
 | `prettier`                                                                                                                | 3.9.9                                                                            | `packages/config` (formato)                       |
 | `eslint-plugin-astro` 3.2.1 · `eslint-plugin-svelte` 3.23.0                                                               | —                                                                                | `packages/config` (lint, fase 3)                  |
@@ -329,7 +329,7 @@ Reglas: la cuenta **live** de Stripe **nunca** se conecta al MCP; las claves liv
   eval "$(fnm env --use-on-cd --version-file-strategy=recursive)"
   ```
 - **Node 24.21.0** (vía fnm, ver `.node-version`).
-- **pnpm 12.8.1** (el proyecto fija la versión en `packageManager`).
+- **pnpm 12.8.2** (el proyecto fija la versión en `packageManager`).
 - **Docker** + **Docker Compose v2**.
 - **Stripe CLI**: no se instala; se usa como contenedor.
 - Cuentas: Stripe (modo test para desarrollo; live solo en producción), Resend, Cloudflare (R2 + DNS).
@@ -440,7 +440,7 @@ Implementados en la **fase 0** — ver [`docs/fases/fase0.md`](./docs/fases/fase
 
 | Fichero                                   | Contenido                                                                                                                                                                                                              |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `package.json`                            | `packageManager: pnpm@12.8.1`, `engines` (Node 24.21.0 / pnpm 12.8.1), scripts `infra:*`, `lint`, `format`, `typecheck`, `test`, `build`                                                                               |
+| `package.json`                            | `packageManager: pnpm@12.8.2`, `engines` (Node 24.21.0 / pnpm 12.8.2), scripts `infra:*`, `lint`, `format`, `typecheck`, `test`, `build`                                                                               |
 | `pnpm-workspace.yaml`                     | workspaces, `saveExact`, `engineStrict`, `publicHoistPattern` (requisito Medusa), `allowBuilds`                                                                                                                        |
 | `.npmrc`                                  | `public-hoist-pattern[]` exigido por la **doc oficial de Medusa**. pnpm ≥ 11 solo lee auth/registry de `.npmrc`, por eso los mismos patrones están también en `pnpm-workspace.yaml` (**mantener ambos sincronizados**) |
 | `.node-version`                           | `24.21.0` (fnm)                                                                                                                                                                                                        |
@@ -495,12 +495,14 @@ pnpm dev:storefront                                    # http://localhost:4321
 pnpm --filter storefront build && pnpm --filter storefront preview   # servidor de producción (node standalone)
 pnpm --filter storefront start                         # igual, pero en 0.0.0.0:4321 (probar desde el móvil por LAN)
 STOREFRONT_DATA=fixtures pnpm --filter storefront build              # sin backend (como en CI)
-pnpm --filter storefront check:budget                  # 0 bundles JS en home/listado/ficha
+pnpm --filter storefront check:budget                  # home/listado/ficha: solo el bundle del carrito (≤ 2 KB gzip)
+pnpm --filter storefront test:e2e                      # Playwright (fase 4): infra + backend + build; con y sin JS
 pnpm --filter storefront fixtures:update               # regenera src/lib/__fixtures__ desde Medusa
 ```
 
 - HTML estático para home, `/productos/`, `/categorias/<handle>/` y `/producto/<handle>/`. El precio y el stock se escriben en el build y una **server island** invisible (`LiveSync`) los corrige (fase 6).
 - Imágenes de producto optimizadas en build con `<Picture>` (AVIF/WebP, 1:1) desde el bucket (`IMAGE_BASE_URL`). El primer build tarda unos 30 min con 1000 productos × 4 fotos; después son unos 20 s ([fase6.md](./docs/fases/fase6.md)).
+- **Carrito** (fase 4): cookie `cart_id` httpOnly, Astro Actions que funcionan sin JS (POST → 303 a la página de origen), contador en server island, `/carrito/` on-demand con 0 JS y un único script de mejora progresiva (fetch, toasts, flyout en escritorio) de ~1 KB gzip ([fase4.md](./docs/fases/fase4.md)).
 - shadcn-svelte con el preset `vega`; alias `$lib` definido en `tsconfig.json` y en `vite.resolve.alias`.
 - Componentes en `src/lib/components/ui`, renderizados **sin** `client:*`.
 - Inter auto-alojada con la Fonts API (`fontProviders.fontsource()`): pesos estáticos 400/500/600; solo se precarga el 400.
@@ -663,7 +665,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | ✅     |
 | 3 Storefront base (Astro)              | [fase3.md](./docs/fases/fase3.md)                                                                | ✅     |
 | 6 Ficheros R2 + imágenes               | [fase6.md](./docs/fases/fase6.md)                                                                | ✅     |
-| 4 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 4 Carrito                              | [fase4.md](./docs/fases/fase4.md)                                                                | ✅     |
+| 5, 7 … 13                              | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 
@@ -797,6 +800,7 @@ STOREFRONT_DATA=medusa               # fixtures en CI (sin backend)
 # ASTRO_KEY=                         # opcional: clave fija de server islands (rolling deploys/CDN)
 IMAGE_BASE_URL=http://localhost:8333/medusa   # origen de las imágenes (prod: https://img.elrincondehiro.com)
 # STOREFRONT_MAX_PRODUCTS=100        # opcional: limitar el catálogo del build
+COOKIE_SECURE=true                   # cookie del carrito con Secure; false solo en local por http
 PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...   # fase 5
 PUBLIC_MEILISEARCH_HOST=http://localhost:7700
 PUBLIC_MEILISEARCH_SEARCH_KEY=...    # search-only key, NUNCA la master

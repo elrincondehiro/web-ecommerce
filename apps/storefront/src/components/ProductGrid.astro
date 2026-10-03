@@ -9,12 +9,19 @@ interface Props {
   priorityCount?: number | undefined;
 }
 const { products, headingLevel, priorityCount = 0 } = Astro.props;
+// Vuelta tras "Añadir" sin JS: la propia página del listado (ruta conocida en el build).
+const back = Astro.url.pathname;
 ---
 
 <ul class="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
   {products.map((product, i) => (
-    <li>
-      <ProductCard product={product} headingLevel={headingLevel} priority={i < priorityCount} />
+    <li class="flex">
+      <ProductCard
+        product={product}
+        headingLevel={headingLevel}
+        priority={i < priorityCount}
+        back={back}
+      />
     </li>
   ))}
 </ul>

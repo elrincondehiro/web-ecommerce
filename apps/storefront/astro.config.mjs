@@ -30,6 +30,9 @@ export default defineConfig({
   // Sin prefetch de Astro: inyecta /_astro/page.*.js en todas las páginas y el presupuesto
   // es 0 bundles JS en home/listado/ficha. Se sustituirá por Speculation Rules (fase 13).
   prefetch: false,
+  // Sin sesiones de Astro: el carrito va en una cookie httpOnly propia (fase 4). Excluye el
+  // runtime de sesiones del bundle de servidor (astro-docs: configuration-reference#session).
+  session: false,
   fonts: [
     {
       provider: fontProviders.fontsource(),
@@ -72,6 +75,12 @@ export default defineConfig({
         access: "secret",
         optional: true,
       }),
+      // Atributo Secure de la cookie del carrito. false SOLO para probar por http en local.
+      COOKIE_SECURE: envField.boolean({
+        context: "server",
+        access: "public",
+        default: true,
+      }),
       // "fixtures" → datos de build desde src/lib/__fixtures__ (CI sin Medusa)
       STOREFRONT_DATA: envField.enum({
         context: "server",
@@ -92,6 +101,13 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      // El script del carrito (CartClient.astro, ~1 KB gzip) va como bundle en /_astro/ (caché
+      // inmutable, se descarga una vez para todo el sitio) en vez de inline en cada HTML (Astro
+      // inlinea scripts < 4 KB). Resto: comportamiento por defecto (undefined). Fase 4.
+      assetsInlineLimit: (/** @type {string} */ file) =>
+        file.includes("CartClient") ? false : undefined,
+    },
     resolve: {
       alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) },
     },

@@ -5,6 +5,8 @@
 import { Badge } from "$lib/components/ui/badge";
 import { getProductPricing, type StoreProduct } from "$lib/catalog";
 import { formatPrice } from "$lib/format";
+import { buttonVariants } from "$lib/components/ui/button";
+import AddToCart from "./AddToCart.astro";
 import ProductImage from "./ProductImage.astro";
 
 interface Props {
@@ -13,16 +15,20 @@ interface Props {
   headingLevel?: 2 | 3 | undefined;
   /** Primeras tarjetas visibles (LCP en listados): carga inmediata. */
   priority?: boolean | undefined;
+  /** Ruta de vuelta tras añadir sin JS (la página del listado). */
+  back: string;
 }
-const { product, headingLevel = 2, priority = false } = Astro.props;
+const { product, headingLevel = 2, priority = false, back } = Astro.props;
 const Heading = headingLevel === 3 ? "h3" : "h2";
 const href = `/producto/${product.handle}/`;
 const pricing = getProductPricing(product);
 const image = product.thumbnail ?? product.images?.[0]?.url ?? null;
+// Añadir desde el listado solo con UNA variante; con varias → ficha para elegir (fase 4).
+const single = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
 ---
 
 <article
-  class="group relative flex flex-col gap-3"
+  class="group relative flex w-full flex-col gap-3"
   data-pid={product.id}
   data-stock={pricing.inStock ? "in" : "out"}
 >
@@ -58,4 +64,27 @@ const image = product.thumbnail ?? product.images?.[0]?.url ?? null;
       )}
     </p>
   </div>
+  {/* Por encima del enlace "estirado" (after:inset-0) para que sea clicable. */}
+  {pricing.fromAmount != null && (
+    <div class="relative z-10 mt-auto">
+      {single ? (
+        <AddToCart
+          variantId={single.id}
+          back={back}
+          productId={product.id}
+          productTitle={product.title}
+          size="sm"
+        />
+      ) : (
+        <a
+          href={href}
+          class={buttonVariants({ size: "sm", variant: "outline" })}
+          aria-label={`Elegir opciones de ${product.title}`}
+          data-if-stock="in"
+        >
+          Elegir opciones
+        </a>
+      )}
+    </div>
+  )}
 </article>

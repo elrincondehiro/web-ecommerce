@@ -1,0 +1,162 @@
+---
+// Contenido del carrito (fase 4), compartido por /carrito/ (variant "page") y el flyout
+// (variant "flyout", partial /carrito/flyout/). HTML de servidor, sin scripts.
+// - page: cantidades editables y "Quitar" con formularios (actions, sin JS) + totales.
+// - flyout: lista compacta de solo lectura + total + "Ver carrito".
+// Miniaturas: <Image> en runtime (/_image, origen permitido en image.remotePatterns).
+import { Image } from "astro:assets";
+import { buttonVariants } from "$lib/components/ui/button";
+import { CART_PATH, MAX_QUANTITY, actionUrl, itemCount } from "$lib/cart";
+import { formatPrice } from "$lib/format";
+import type { StoreCart } from "$lib/medusa";
+
+interface Props {
+  cart: StoreCart | null;
+  variant?: "page" | "flyout";
+}
+const { cart, variant = "page" } = Astro.props;
+const items = [...(cart?.items ?? [])].sort((a, b) =>
+  (a.product_title ?? "").localeCompare(b.product_title ?? ""),
+);
+const currency = cart?.currency_code ?? "eur";
+const count = itemCount(cart);
+const isPage = variant === "page";
+const thumb = isPage ? 80 : 56;
+---
+
+{items.length === 0 ? (
+  <div class="flex flex-col items-start gap-4 py-6">
+    <p class="text-muted-foreground">Tu carrito está vacío.</p>
+    <a href="/productos/" class={buttonVariants({ variant: "outline" })}>
+      Ver productos
+    </a>
+  </div>
+) : (
+  <div class="flex flex-col gap-6">
+    <ul class="divide-y border-y">
+      {items.map((item) => {
+        const href = item.product_handle ? `/producto/${item.product_handle}/` : undefined;
+        const qtyId = `qty-${item.id}`;
+        return (
+          <li class="flex gap-4 py-4">
+            {item.thumbnail ? (
+              <Image
+                src={item.thumbnail}
+                alt=""
+                width={thumb}
+                height={thumb}
+                fit="cover"
+                format="webp"
+                loading="lazy"
+                decoding="async"
+                class="shrink-0 rounded-md bg-muted object-cover"
+                style={`width:${thumb}px;height:${thumb}px`}
+              />
+            ) : (
+              <span
+                class="shrink-0 rounded-md bg-muted"
+                style={`width:${thumb}px;height:${thumb}px`}
+              />
+            )}
+            <div class="flex min-w-0 flex-1 flex-col gap-1">
+              <p class="font-medium">
+                {href ? (
+                  <a href={href} class="hover:underline">
+                    {item.product_title}
+                  </a>
+                ) : (
+                  item.product_title
+                )}
+              </p>
+              {item.variant_title && item.variant_title !== "Única" && (
+                <p class="text-sm text-muted-foreground">{item.variant_title}</p>
+              )}
+              <p class="text-sm text-muted-foreground tabular-nums">
+                {isPage ? "" : `${item.quantity} × `}
+                {formatPrice(item.unit_price ?? 0, currency)}
+              </p>
+              {isPage && (
+                <div class="mt-2 flex flex-wrap items-end gap-2">
+                  <form
+                    method="post"
+                    action={actionUrl("cart.update")}
+                    class="flex items-end gap-2"
+                  >
+                    <input type="hidden" name="back" value={CART_PATH} />
+                    <input type="hidden" name="line_id" value={item.id} />
+                    <div class="flex flex-col gap-1">
+                      <label for={qtyId} class="text-xs text-muted-foreground">
+                        Cantidad
+                      </label>
+                      <input
+                        id={qtyId}
+                        name="quantity"
+                        type="number"
+                        inputmode="numeric"
+                        min="0"
+                        max={MAX_QUANTITY}
+                        value={item.quantity}
+                        required
+                        class="h-8 w-16 rounded-md border bg-background px-2 text-sm tabular-nums"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      class={buttonVariants({ size: "sm", variant: "outline" })}
+                    >
+                      Actualizar
+                    </button>
+                  </form>
+                  <form method="post" action={actionUrl("cart.remove")}>
+                    <input type="hidden" name="back" value={CART_PATH} />
+                    <input type="hidden" name="line_id" value={item.id} />
+                    <button
+                      type="submit"
+                      class={buttonVariants({ size: "sm", variant: "ghost" })}
+                      aria-label={`Quitar ${item.product_title ?? "producto"} del carrito`}
+                    >
+                      Quitar
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+            <p class="shrink-0 font-semibold tabular-nums">
+              {formatPrice(item.total ?? 0, currency)}
+            </p>
+          </li>
+        );
+      })}
+    </ul>
+
+    <dl class="ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm tabular-nums">
+      <dt class="text-muted-foreground">Artículos</dt>
+      <dd class="text-right">{count}</dd>
+      <dt class="text-base font-semibold">Total</dt>
+      <dd class="text-right text-base font-semibold">
+        {formatPrice(cart?.item_total ?? 0, currency)}
+      </dd>
+      <dt class="text-muted-foreground">IVA incluido</dt>
+      <dd class="text-right text-muted-foreground">
+        {formatPrice(cart?.item_tax_total ?? 0, currency)}
+      </dd>
+    </dl>
+    <p class="text-right text-xs text-muted-foreground">Gastos de envío: se calculan al pagar.</p>
+
+    {isPage ? (
+      <div class="flex flex-wrap justify-end gap-2">
+        <a href="/productos/" class={buttonVariants({ variant: "outline" })}>
+          Seguir comprando
+        </a>
+        {/* Provisional hasta la fase 5 (checkout + Stripe). */}
+        <button type="button" class={buttonVariants()} disabled>
+          Ir a pagar (próximamente)
+        </button>
+      </div>
+    ) : (
+      <a href={CART_PATH} class={buttonVariants({ class: "w-full" })}>
+        Ver carrito
+      </a>
+    )}
+  </div>
+)}
