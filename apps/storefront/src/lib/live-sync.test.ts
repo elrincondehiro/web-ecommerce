@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StoreProduct } from "./catalog";
-import { liveEntries, livePriceScript, liveStockCss } from "./live-sync";
+import { LIVE_SYNC_APPLY, liveData, liveEntries } from "./live-sync";
 
 const variant = (id: string, amount: number, qty: number) => ({
   id,
@@ -29,37 +29,87 @@ describe("liveEntries", () => {
     expect(entries[0]?.price).toMatch(/^19,00\s€$/);
   });
 
-  it("descarta ids que no son seguros para un selector CSS", () => {
+  it("descarta ids que no son seguros", () => {
     const bad = [{ id: 'x"]{}', variants: [] }] as unknown as StoreProduct[];
     expect(liveEntries(bad)).toEqual([]);
   });
 });
 
-describe("liveStockCss", () => {
-  it("oculta/muestra por nivel con selectores de id", () => {
-    const css = liveStockCss(liveEntries(products));
-    expect(css).toContain(
-      ':is([data-pid="prod_A"])[data-stock] [data-if-stock="out"]{display:none}',
-    );
-    expect(css).toContain(
-      ':is([data-pid="prod_B"])[data-stock] [data-if-stock="out"]{display:revert-layer}',
-    );
-    expect(css).toContain(
-      ':is([data-pid="variant_2"],[data-pid="variant_3"])[data-vstock] [data-if-vstock="in"]{display:none}',
-    );
+describe("liveData", () => {
+  it("serializa id → [precio, rango, stock]", () => {
+    const data = JSON.parse(liveData(liveEntries(products))) as Record<string, unknown[]>;
+    expect(data["prod_A"]?.slice(1)).toEqual([1, 1]);
+    expect(data["variant_2"]?.slice(1)).toEqual([0, 0]);
+  });
+
+  it("escapa '<' y '&' (va dentro de un <template>)", () => {
+    const out = liveData([
+      { id: "prod_A", level: "product", inStock: true, price: "<b>&amp;", range: true },
+    ]);
+    expect(out).not.toMatch(/[<&]/);
+    expect(JSON.parse(out)).toEqual({ prod_A: ["<b>&amp;", 1, 1] });
   });
 });
 
-describe("livePriceScript", () => {
-  it("incluye el mapa de precios y escapa '<'", () => {
-    const js = livePriceScript([
-      { id: "prod_A", level: "product", inStock: true, price: "<b>1 €", range: true },
-    ]);
-    expect(js).toContain('"prod_A":["\\u003cb>1 €",1]');
-    expect(js).not.toContain("<b>");
+/** DOM mínimo para ejecutar LIVE_SYNC_APPLY en Node (sin jsdom). */
+function fakeDom(json: string | null) {
+  const el = (dataset: Record<string, string>, text = "") => ({
+    dataset,
+    textContent: text,
+    hidden: false,
+  });
+  const card = el({ pid: "prod_A", stock: "out" });
+  const row = el({ pid: "variant_2", vstock: "in" });
+  const price = el({ price: "prod_A" }, "18,00 €");
+  const from = el({ priceFrom: "prod_A" });
+  from.hidden = true;
+  const all: Record<string, unknown[]> = {
+    "[data-pid]": [card, row],
+    "[data-price]": [price],
+    "[data-price-from]": [from],
+  };
+  let observer: { cb: () => void; disconnected: boolean } | null = null;
+  const parent = {
+    template: json === null ? null : { content: { textContent: json } },
+    querySelector: () => parent.template,
+  };
+  const document = {
+    currentScript: { parentNode: parent },
+    querySelectorAll: (s: string) => all[s] ?? [],
+  };
+  class MutationObserver {
+    constructor(cb: (r: unknown[], o: { disconnect(): void }) => void) {
+      const self = { cb: () => {}, disconnected: false };
+      self.cb = () => cb([], { disconnect: () => (self.disconnected = true) });
+      observer = self;
+    }
+    observe() {}
+  }
+  const run = () =>
+    new Function("document", "MutationObserver", LIVE_SYNC_APPLY)(document, MutationObserver);
+  return { card, row, price, from, parent, run, observer: () => observer };
+}
+
+describe("LIVE_SYNC_APPLY", () => {
+  const json = liveData(liveEntries(products));
+
+  it("aplica stock y precio si el <template> ya está", () => {
+    const dom = fakeDom(json);
+    dom.run();
+    expect(dom.card.dataset.stock).toBe("in");
+    expect(dom.row.dataset.vstock).toBe("out");
+    expect(dom.price.textContent).toMatch(/^19,00\s€$/);
+    expect(dom.from.hidden).toBe(false);
+    expect(dom.observer()).toBeNull();
   });
 
-  it("vacío si no hay precios", () => {
-    expect(livePriceScript([])).toBe("");
+  it("espera al <template> con un MutationObserver y se desconecta", () => {
+    const dom = fakeDom(null);
+    dom.run();
+    expect(dom.card.dataset.stock).toBe("out");
+    dom.parent.template = { content: { textContent: json } };
+    dom.observer()?.cb();
+    expect(dom.card.dataset.stock).toBe("in");
+    expect(dom.observer()?.disconnected).toBe(true);
   });
 });

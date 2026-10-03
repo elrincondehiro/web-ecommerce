@@ -7,7 +7,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import BuyBox from "../../components/BuyBox.astro";
 import ProductGallery from "../../components/ProductGallery.astro";
-import LiveSync from "../../components/server/LiveSync.astro";
+import LiveSync from "../../components/LiveSync.astro";
 
 export const getStaticPaths = (async () => {
   const products = await getAllProducts();
@@ -74,5 +74,5 @@ const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 
       )}
     </div>
   </div>
-  <LiveSync server:defer productId={product.id} />
+  <LiveSync productId={product.id} />
 </BaseLayout>

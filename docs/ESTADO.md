@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 03-oct-2026 · fase 6 en curso (implementación entregada; falta el experimento A/B).
+> Última actualización: 03-oct-2026 · cierre de la fase 6.
 
 ## 1. Dónde estamos
 
@@ -13,7 +13,7 @@
 | 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)     |
 | 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)     |
 | 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)     |
-| **6 Ficheros R2 + imágenes**                | 🚧     | [fase6.md](./fases/fase6.md)     |
+| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -23,7 +23,7 @@ Roadmap completo y tiempos: README §13.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
   - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar, 0 bundles JS. Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
-    - **Precio/stock**: se escriben en el build y la island invisible `LiveSync` los corrige: stock por `<style>`, precio por `<script>` inline ([fase6.md](./fases/fase6.md)).
+    - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
     - **Imágenes**: `<Picture>` AVIF/WebP en build desde el bucket. El primer build tarda unos 30 min con 1000 productos × 4 fotos (`avif.effort: 2`); con la caché `node_modules/.astro`, unos 20 s.
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
 - **Backend**:
@@ -87,9 +87,7 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 6. Siguiente
 
-- **Fase 6 en curso** (rama `feat/fase6-ficheros`):
-  - Hecho: `file-s3`, importación por lotes, `<Picture>`, el patrón build + `LiveSync` (híbrido) y la fuente estática.
-  - **Falta el experimento**, en una rama de test aparte: corrección **A** (solo CSS) y **B** (solo script) frente al híbrido. Comparar peso de la respuesta, JS inline, accesibilidad y CSP. Después, **el usuario decide** el modo y se cierra la fase (README §13 a ✅).
+- **Fase 6 cerrada** (PR #14 + `feat/fase6-livesync-csp`). **Siguiente: fase 4 (carrito)**, pendiente de autorización.
 - **Decisión del usuario:** todo precio o stock nuevo (carrito, fase 4) sigue el patrón _build + corrección por server island_ (AGENTS §3.2).
 - Después: fase 4 (carrito) y fase 5 (checkout, que depende de la 4).
 - Pendientes de la fase 6 para más adelante:

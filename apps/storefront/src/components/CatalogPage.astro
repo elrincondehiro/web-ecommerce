@@ -4,7 +4,7 @@ import type { Page } from "astro";
 import type { StoreProduct } from "$lib/catalog";
 import ProductGrid from "./ProductGrid.astro";
 import Pagination from "./Pagination.astro";
-import LiveSync from "./server/LiveSync.astro";
+import LiveSync from "./LiveSync.astro";
 
 interface Props {
   page: Page<StoreProduct>;
@@ -22,6 +22,6 @@ const { page, categoryId } = Astro.props;
     </p>
     <ProductGrid products={page.data} priorityCount={2} />
     <Pagination page={page} />
-    <LiveSync server:defer categoryId={categoryId} offset={page.start} limit={page.size} />
+    <LiveSync categoryId={categoryId} offset={page.start} limit={page.size} />
   </>
 )}

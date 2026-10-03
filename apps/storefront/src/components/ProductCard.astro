@@ -1,7 +1,7 @@
 ---
 // Tarjeta de producto (HTML estático, 0 JS). Precio y stock vienen del BUILD y llevan marcas
-// data-* para que la server island <LiveSync> los corrija (lib/live-sync.ts):
-//   data-pid + data-stock → CSS de stock · data-price / data-price-from → script de precio.
+// data-* para que <LiveSync> los corrija (lib/live-sync.ts):
+//   data-pid + data-stock (stock) · data-price / data-price-from (precio).
 import { Badge } from "$lib/components/ui/badge";
 import { getProductPricing, type StoreProduct } from "$lib/catalog";
 import { formatPrice } from "$lib/format";

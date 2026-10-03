@@ -127,10 +127,9 @@
 }
 
 /*
- * Estado de stock del BUILD (fase 6). Fuera de @layer a propósito: debe ganar a las utilidades
- * de Tailwind (p. ej. `inline-flex` del Badge). La server island <LiveSync> inyecta reglas con
- * más especificidad (0,3,0) que corrigen el estado y usan `display: revert-layer` para volver
- * al display de las utilidades. Ver src/lib/live-sync.ts.
+ * Estado de stock (fase 6). Fuera de @layer a propósito: debe ganar a las utilidades de
+ * Tailwind (p. ej. `inline-flex` del Badge). El build fija data-stock/data-vstock y <LiveSync>
+ * los corrige cambiando el atributo; estas reglas hacen el resto. Ver src/lib/live-sync.ts.
  */
 [data-stock="in"] [data-if-stock="out"],
 [data-stock="out"] [data-if-stock="in"],

@@ -661,7 +661,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | ✅     |
 | 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | ✅     |
 | 3 Storefront base (Astro)              | [fase3.md](./docs/fases/fase3.md)                                                                | ✅     |
-| 6 Ficheros R2 + imágenes               | [fase6.md](./docs/fases/fase6.md)                                                                | 🚧     |
+| 6 Ficheros R2 + imágenes               | [fase6.md](./docs/fases/fase6.md)                                                                | ✅     |
 | 4 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

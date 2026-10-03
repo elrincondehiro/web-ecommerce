@@ -4,7 +4,7 @@ import { getAllProducts, getCategories } from "$lib/medusa";
 import { SITE_NAME } from "$lib/constants";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductGrid from "../components/ProductGrid.astro";
-import LiveSync from "../components/server/LiveSync.astro";
+import LiveSync from "../components/LiveSync.astro";
 
 const FEATURED = 8;
 const [products, categories] = await Promise.all([getAllProducts(), getCategories()]);
@@ -54,6 +54,6 @@ const featured = products.slice(0, FEATURED);
       Destacados
     </h2>
     <ProductGrid products={featured} headingLevel={3} priorityCount={2} />
-    <LiveSync server:defer offset={0} limit={FEATURED} />
+    <LiveSync offset={0} limit={FEATURED} />
   </section>
 </BaseLayout>

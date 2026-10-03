@@ -140,7 +140,7 @@ Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>
 - Componentes shadcn-svelte que no necesiten interacción se renderizan **sin** directiva `client:*` (salen como HTML puro).
 - Estado compartido entre islas: `nanostores` o eventos DOM; nada de frameworks de estado pesados.
 - Datos en build: `src/lib/medusa.ts` expone funciones tipadas (`getProducts`, `getProductByHandle`, …). Úsalas en `getStaticPaths`.
-- **Precio y stock nunca se “congelan” en HTML estático** como dato definitivo. Patrón (fase 6): se escriben en el HTML del build como fallback, marcados con `data-pid`/`data-price`/`data-stock`, y la server island invisible `LiveSync` los corrige (ver `src/lib/live-sync.ts`). Todo precio o stock nuevo sigue este patrón.
+- **Precio y stock nunca se “congelan” en HTML estático** como dato definitivo. Patrón (fase 6): se escriben en el HTML del build como fallback, marcados con `data-pid`/`data-price`/`data-stock`, y `<LiveSync>` los corrige: una server island que solo devuelve datos (`<template>` JSON) y un script estático con hash CSP que los aplica (ver `src/lib/live-sync.ts`). Todo precio o stock nuevo sigue este patrón. Nunca inyectes `<script>`/`<style>` inline desde una island: la CSP los bloquea.
 - Mutaciones (carrito, auth, newsletter) con **Astro Actions** (`src/actions`), aceptando `FormData`, validadas con `zod`, usables sin JS.
 - Sesión/carrito: cookies `httpOnly`, `Secure`, `SameSite=Lax`. Nunca `localStorage` para tokens.
 - Accesibilidad: HTML semántico, `alt` en imágenes, foco visible, contraste AA, formularios con `<label>`.

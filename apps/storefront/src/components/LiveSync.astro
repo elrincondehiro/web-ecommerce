@@ -1,0 +1,17 @@
+---
+// Corrección de precio/stock del HTML estático (fase 6, modo C): hueco de la server island
+// <LiveSyncData> + script estático LIVE_SYNC_APPLY, en el mismo padre. El script es idéntico en
+// todas las páginas; su hash se registra en la CSP cuando esté activa (security.csp, fase 11;
+// sin CSP, Astro.csp es undefined y no hace nada). Ver src/lib/live-sync.ts.
+import { createHash } from "node:crypto";
+import { LIVE_SYNC_APPLY } from "$lib/live-sync";
+import LiveSyncData from "./server/LiveSyncData.astro";
+
+type Props = import("astro/types").ComponentProps<typeof LiveSyncData>;
+
+const hash = `sha256-${createHash("sha256").update(LIVE_SYNC_APPLY).digest("base64")}` as const;
+Astro.csp?.insertScriptHash(hash);
+---
+
+<LiveSyncData server:defer {...Astro.props} />
+<script is:inline set:html={LIVE_SYNC_APPLY} />
