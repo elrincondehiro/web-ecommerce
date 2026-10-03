@@ -17,11 +17,12 @@ const PRESETS: Record<ImageVariant, { width: number; widths: number[]; sizes: st
     widths: [320, 480, 640],
     sizes: "(min-width: 1024px) 270px, (min-width: 640px) 33vw, 50vw",
   },
-  // Ficha: 1 col (móvil) · 2 cols (md, ≈ 560px)
+  // Ficha: 1 col (móvil, ancho − px-4·2) · 2 cols con gap-8 (md) · máx. 544px (max-w-6xl).
+  // 800 cubre el móvil típico (≈380px CSS × DPR 1,75–2 ≈ 665–760px) sin saltar a 960.
   detail: {
     width: 1200,
-    widths: [640, 960, 1200],
-    sizes: "(min-width: 1152px) 560px, (min-width: 768px) 50vw, 100vw",
+    widths: [640, 800, 960, 1200],
+    sizes: "(min-width: 1152px) 544px, (min-width: 768px) calc(50vw - 2rem), calc(100vw - 2rem)",
   },
   // Miniaturas de la galería
   thumb: { width: 160, widths: [80, 160], sizes: "80px" },

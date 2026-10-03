@@ -83,7 +83,7 @@ pnpm --filter backend images:import .cache/mock-images
 # Storefront
 pnpm --filter storefront build                           # 1.ª vez lenta; después solo lo nuevo
 STOREFRONT_MAX_PRODUCTS=100 pnpm --filter storefront build   # subconjunto rápido
-HOST=0.0.0.0 PORT=4321 node --env-file-if-exists=.env apps/storefront/dist/server/entry.mjs   # prueba en LAN
+pnpm --filter storefront start                           # servidor de producción en 0.0.0.0:4321 (prueba en LAN)
 ```
 
 - **Convención de nombres:** `<handle>_<XX>.jpg|jpeg`, con XX = 01–99. `_01` es la miniatura. Los nombres que no la siguen se ignoran y se informa de ellos.
@@ -167,6 +167,28 @@ Cuatro modos, todos con el mismo HTML del build. La island recibía datos altera
 - Sin JS, los cuatro modos muestran los valores del build (esperado).
 - El stock por CSS no aportaba nada: la island necesita JS para cargarse de todos modos.
 - Verificación final de C: con `security.csp: true` (build de fixtures) corrige en home, listado y ficha, con **0 violaciones de CSP** en consola; el hash se añade solo vía `Astro.csp?.insertScriptHash`. Lo de la fase 11 será activar `security.csp`.
+
+### 5.5 Post-cierre: análisis del LCP y arreglos (rama `fix/fase6-cls-cabecera-sizes`)
+
+Lighthouse móvil, mediana de 3 pasadas, 1000 productos. Se usó un proxy temporal con **brotli e `/_astro/*` inmutable** que imita a Caddy (fase 11), y el throttling **simulado** (el que da la nota) junto con el **devtools**, que emula la red de verdad.
+
+- **El LCP de ~2 s se debía sobre todo a la falta de compresión.** El servidor Node sirve el HTML del listado en 74 KB y el CSS en 28 KB; con brotli pasan a 5,2 KB y 5 KB. El TTFB en local es de ~4 ms. El único recurso bloqueante es el CSS (~100 ms), no hay JS que bloquee (TBT 0) y el renderizado tarda 30–100 ms.
+- **Fallo encontrado: CLS 0,33 con compresión.** El HTML llega antes que la fuente. Con el fallback (Arial ajustada), el menú cabe en una línea (cabecera de 89 px); con Inter, la última categoría saltaba a otra línea (113 px) y empujaba toda la página. Sin compresión no se veía porque la fuente llegaba antes del primer pintado.
+  - **Arreglo:** el menú ocupa siempre una línea, con scroll horizontal si no cabe. Altura de la cabecera: 89 px (móvil) y 61 px (escritorio), con cualquier fuente.
+- **`sizes` de la ficha:** con 412 px el navegador elegía la imagen de 960 px.
+  - **Arreglo:** `sizes` exacto (`calc(100vw - 2rem)`, `calc(50vw - 2rem)` y 544 px) y nuevo ancho de **800 px**. La imagen LCP pasa de 56,8 KB a 44,2 KB.
+  - Coste: +8000 transformaciones (6 min 44 s, una sola vez; el resto se reutiliza de la caché).
+
+| devtools 4G, con brotli | Antes: Perf · LCP · CLS | Después: Perf · LCP · CLS   |
+| ----------------------- | ----------------------- | --------------------------- |
+| Home                    | 83 · 1,44 s · 0,329     | **100** · 1,44 s · 0,001    |
+| Listado                 | 83 · 1,48 s · 0,329     | **100** · 1,46 s · 0        |
+| Categoría               | 83 · 1,46 s · 0,332     | **100** · 1,46 s · 0        |
+| Ficha                   | 83 · 1,67 s · 0,329     | **99** · **1,60 s** · 0,001 |
+
+Simulado con brotli: LCP de 1,2–1,6 s en todas las páginas, siempre con Perf 100. En la ficha baja de 1,36 a 1,21 s.
+
+Pendiente para la fase 11 o 13: inline del CSS crítico (~100 ms), cuando el carrito y el checkout hayan añadido su CSS.
 
 ## 6. Criterio de salida
 

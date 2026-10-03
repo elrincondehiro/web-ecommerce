@@ -493,6 +493,7 @@ cp apps/storefront/.env.example apps/storefront/.env   # poner MEDUSA_PUBLISHABL
 pnpm infra:up && pnpm dev:backend                      # el build y las server islands leen la Store API
 pnpm dev:storefront                                    # http://localhost:4321
 pnpm --filter storefront build && pnpm --filter storefront preview   # servidor de producción (node standalone)
+pnpm --filter storefront start                         # igual, pero en 0.0.0.0:4321 (probar desde el móvil por LAN)
 STOREFRONT_DATA=fixtures pnpm --filter storefront build              # sin backend (como en CI)
 pnpm --filter storefront check:budget                  # 0 bundles JS en home/listado/ficha
 pnpm --filter storefront fixtures:update               # regenera src/lib/__fixtures__ desde Medusa
