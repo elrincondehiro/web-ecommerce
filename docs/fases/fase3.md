@@ -1,7 +1,7 @@
 # Fase 3 — Storefront base (Astro)
 
-> **Estado:** 🚧 en curso (PR 3a listo para revisión)
-> **Rama/PR:** `feat/fase3-storefront-base` · PR 3a (scaffold + catálogo + server islands + SEO)
+> **Estado:** ✅ terminada (03-oct-2026)
+> **Rama/PR:** `feat/fase3-storefront-base` · PR #12 (squash `84293e2`); al final se entregó en un solo PR
 > **Anterior:** [Fase 2](./fase2.md) · **Siguiente:** Fase 4 (carrito)
 
 ## 1. Objetivos
@@ -13,7 +13,6 @@
 - [x] Fuente Inter auto-alojada (Fonts API) e imágenes con dimensiones fijas (placeholder local).
 - [x] Lint/format/typecheck/test del storefront, más una comprobación del presupuesto de JS en CI.
 - [x] Lighthouse móvil ≥ 95 y **0 bundles JS** en home/listado/ficha (resultados en §5).
-- [ ] PR 3b (si hace falta): ajustes tras la revisión y el diseño visual.
 
 ## 2. Qué se ha hecho
 
@@ -58,29 +57,29 @@ El fallback de la rejilla es **la misma rejilla sin precios** (la imagen tiene l
 
 ## 3. Decisiones tomadas
 
-| Decisión                                                                                       | Motivo                                                                                                                                                                     | Fuente consultada                                           |
-| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Scaffold manual (sin `create astro@latest`)                                                    | `@latest` no está fijado; solo hacen falta unos pocos ficheros                                                                                                             | astro-docs (install manual, tsconfig `strictest`)           |
-| Salida estática y adapter node standalone                                                      | Las server islands necesitan servidor; el resto es HTML estático                                                                                                           | astro-docs: on-demand rendering, server islands             |
-| Una server island por rejilla, con props mínimas                                               | URL GET corta (< 2048 B), así que se puede cachear; una sola petición por página                                                                                           | astro-docs: server islands → caching                        |
-| Fallback = la misma rejilla sin precio                                                         | CLS 0 y contenido indexable sin JS                                                                                                                                         | astro-docs: fallback slot                                   |
-| Medusa en el servidor vía `astro:env/server` (`MEDUSA_PUBLISHABLE_KEY` secret) y no `PUBLIC_*` | El navegador no habla con Medusa en esta fase; nada de claves en el cliente                                                                                                | astro-docs: `astro:env`, `envField`                         |
-| `site` desde `SITE_URL` (env/`.env`) o `https://elrincondehiro.com`                            | La config se evalúa antes de `astro:env`. Se usa `node:util.parseEnv` porque `vite` no es una dependencia directa                                                          | astro-docs: config; Node 24 `util.parseEnv`                 |
-| `prefetch: false`                                                                              | El prefetch de Astro inyecta `/_astro/page.*.js` (1,1 KB gzip) en todas las páginas y rompe el presupuesto de 0 bundles. Se sustituirá por Speculation Rules en la fase 13 | astro-docs: prefetch; medición en `dist/`                   |
-| Presupuesto: 0 bundles `/_astro/*.js` y JS inline ≤ 1 KB gzip                                  | El runtime inline de las server islands (≈ 0,6 KB gzip) lo genera Astro y no es JS "propio" (decisión 4 del plan)                                                          | medición en `dist/`                                         |
-| Precios = `calculated_amount_with_tax` en unidades mayores                                     | Medusa 2.x: 41.95 = 41,95 € (IVA incluido en la región ES)                                                                                                                 | context7 `/medusajs/medusa`; respuesta real de la Store API |
-| Stock = `manage_inventory`/`allow_backorder`/`inventory_quantity`                              | `inventory_quantity` solo se devuelve con `+variants.inventory_quantity`                                                                                                   | context7 `/medusajs/medusa`                                 |
-| JSON-LD `Product` **sin** `offers`                                                             | El precio quedaría congelado en un HTML estático (ver §7)                                                                                                                  | decisión 6 del plan                                         |
-| `CI` con `STOREFRONT_DATA=fixtures`                                                            | El job `quality` no tiene Medusa. Fixtures reales (de la API) y versionados                                                                                                | decisión 1 del plan                                         |
-| shadcn-svelte `init` con el preset `vega` (`--preset bIkeymG`)                                 | La 1.7.0 pide un preset de forma interactiva. `vega` = estilo clásico (Lucide + Inter + neutral). Se respondió a sus confirmaciones con "sí" por defecto                   | código de `shadcn-svelte@1.7.0` (`preset/encodePreset`)     |
-| Se deshace lo que `init` mete en `package.json`                                                | Añadía `^` (`tailwind-variants`, `tw-animate-css`, `@lucide/svelte ^1.50.0`) y tres paquetes no aprobados (`cn`, `shadcn-svelte`, `@fontsource-variable/inter`)            | política README §4                                          |
-| `cn()` con `clsx` + `tailwind-merge` (no el paquete `cn`)                                      | `cn@0.4.0` tiene < 24 h y no estaba aprobado; las dos deps aprobadas hacen lo mismo                                                                                        | `pnpm view cn`                                              |
-| Sin `@import "shadcn-svelte/tailwind.css"` ni `@fontsource-variable/inter`                     | Obligaría a tener el CLI como dependencia. Ese CSS solo aporta variantes `data-*` y utilidades que los componentes usados no necesitan. La fuente la sirve la Fonts API    | inspección del CSS del paquete                              |
-| Componentes: button, badge, skeleton (sin card)                                                | Se borró `card` porque no se usaba (sin código muerto)                                                                                                                     | —                                                           |
-| `@lucide/svelte` **retirado**                                                                  | Ningún componente lo usa todavía. Además, `pnpm add @lucide/svelte@1.50.0` añadió sin avisar `minimumReleaseAgeExclude` (versión < 24 h): se revirtió                      | política README §4                                          |
-| Imagen de tarjeta con `<img>` y la URL original (no `<Image>`)                                 | Fallback e isla deben pedir la misma URL; el placeholder es un SVG local. La LCP de la ficha usa `<Image>` cuando hay imagen real (fase 6)                                 | astro-docs: `astro:assets`                                  |
-| Fuente Inter variable (100–900, latin) con `preload`                                           | Una sola familia y un solo woff2; diseño definitivo más adelante                                                                                                           | astro-docs: Fonts API, `<Font preload>`                     |
-| `trailingSlash: "always"`                                                                      | URLs canónicas únicas                                                                                                                                                      | astro-docs: config                                          |
+| Decisión                                                                                       | Motivo                                                                                                                                                                                                                             | Fuente consultada                                           |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Scaffold manual (sin `create astro@latest`)                                                    | `@latest` no está fijado; solo hacen falta unos pocos ficheros                                                                                                                                                                     | astro-docs (install manual, tsconfig `strictest`)           |
+| Salida estática y adapter node standalone                                                      | Las server islands necesitan servidor; el resto es HTML estático                                                                                                                                                                   | astro-docs: on-demand rendering, server islands             |
+| Una server island por rejilla, con props mínimas                                               | URL GET corta (< 2048 B), así que se puede cachear; una sola petición por página                                                                                                                                                   | astro-docs: server islands → caching                        |
+| Fallback = la misma rejilla sin precio                                                         | CLS 0 y contenido indexable sin JS                                                                                                                                                                                                 | astro-docs: fallback slot                                   |
+| Medusa en el servidor vía `astro:env/server` (`MEDUSA_PUBLISHABLE_KEY` secret) y no `PUBLIC_*` | El navegador no habla con Medusa en esta fase; nada de claves en el cliente                                                                                                                                                        | astro-docs: `astro:env`, `envField`                         |
+| `site` desde `SITE_URL` (env/`.env`) o `https://elrincondehiro.com`                            | La config se evalúa antes de `astro:env`. Se usa `node:util.parseEnv` porque `vite` no es una dependencia directa                                                                                                                  | astro-docs: config; Node 24 `util.parseEnv`                 |
+| `prefetch: false`                                                                              | El prefetch de Astro inyecta `/_astro/page.*.js` (1,1 KB gzip) en todas las páginas y rompe el presupuesto de 0 bundles. Se mantiene 0 JS; la navegación rápida irá con Speculation Rules inline + view transitions CSS (ver §7.1) | astro-docs: prefetch; medición en `dist/`                   |
+| Presupuesto: 0 bundles `/_astro/*.js` y JS inline ≤ 1 KB gzip                                  | El runtime inline de las server islands (≈ 0,6 KB gzip) lo genera Astro y no es JS "propio" (decisión 4 del plan)                                                                                                                  | medición en `dist/`                                         |
+| Precios = `calculated_amount_with_tax` en unidades mayores                                     | Medusa 2.x: 41.95 = 41,95 € (IVA incluido en la región ES)                                                                                                                                                                         | context7 `/medusajs/medusa`; respuesta real de la Store API |
+| Stock = `manage_inventory`/`allow_backorder`/`inventory_quantity`                              | `inventory_quantity` solo se devuelve con `+variants.inventory_quantity`                                                                                                                                                           | context7 `/medusajs/medusa`                                 |
+| JSON-LD `Product` **sin** `offers`                                                             | El precio quedaría congelado en un HTML estático (ver §7)                                                                                                                                                                          | decisión 6 del plan                                         |
+| `CI` con `STOREFRONT_DATA=fixtures`                                                            | El job `quality` no tiene Medusa. Fixtures reales (de la API) y versionados                                                                                                                                                        | decisión 1 del plan                                         |
+| shadcn-svelte `init` con el preset `vega` (`--preset bIkeymG`)                                 | La 1.7.0 pide un preset de forma interactiva. `vega` = estilo clásico (Lucide + Inter + neutral). Se respondió a sus confirmaciones con "sí" por defecto                                                                           | código de `shadcn-svelte@1.7.0` (`preset/encodePreset`)     |
+| Se deshace lo que `init` mete en `package.json`                                                | Añadía `^` (`tailwind-variants`, `tw-animate-css`, `@lucide/svelte ^1.50.0`) y tres paquetes no aprobados (`cn`, `shadcn-svelte`, `@fontsource-variable/inter`)                                                                    | política README §4                                          |
+| `cn()` con `clsx` + `tailwind-merge` (no el paquete `cn`)                                      | `cn@0.4.0` tiene < 24 h y no estaba aprobado; las dos deps aprobadas hacen lo mismo                                                                                                                                                | `pnpm view cn`                                              |
+| Sin `@import "shadcn-svelte/tailwind.css"` ni `@fontsource-variable/inter`                     | Obligaría a tener el CLI como dependencia. Ese CSS solo aporta variantes `data-*` y utilidades que los componentes usados no necesitan. La fuente la sirve la Fonts API                                                            | inspección del CSS del paquete                              |
+| Componentes: button, badge, skeleton (sin card)                                                | Se borró `card` porque no se usaba (sin código muerto)                                                                                                                                                                             | —                                                           |
+| `@lucide/svelte` **retirado**                                                                  | Ningún componente lo usa todavía. Además, `pnpm add @lucide/svelte@1.50.0` añadió sin avisar `minimumReleaseAgeExclude` (versión < 24 h): se revirtió                                                                              | política README §4                                          |
+| Imagen de tarjeta con `<img>` y la URL original (no `<Image>`)                                 | Fallback e isla deben pedir la misma URL; el placeholder es un SVG local. La LCP de la ficha usa `<Image>` cuando hay imagen real (fase 6)                                                                                         | astro-docs: `astro:assets`                                  |
+| Fuente Inter variable (100–900, latin) con `preload`                                           | Una sola familia y un solo woff2; diseño definitivo más adelante                                                                                                                                                                   | astro-docs: Fonts API, `<Font preload>`                     |
+| `trailingSlash: "always"`                                                                      | URLs canónicas únicas                                                                                                                                                                                                              | astro-docs: config                                          |
 
 ## 4. Cómo usarlo
 
@@ -130,13 +129,38 @@ La primera pasada encontró `heading-order` en los listados (h3 sin h2). Se corr
 - [x] Lighthouse móvil ≥ 95 (100 en las cuatro categorías).
 - [x] 0 KB de JS propio en la ficha (0 bundles; solo el runtime inline de server islands, ≈ 0,6 KB gzip).
 - [x] CI: build con fixtures y presupuesto de JS.
-- [ ] PR revisado y fusionado; README §13 → ✅ y `docs/ESTADO.md` actualizado.
+- [x] PR #12 revisado y fusionado; README §13 → ✅ y `docs/ESTADO.md` actualizado.
 
 ## 7. Pendientes / riesgos
 
 - **Por qué `offers.price` no va en el JSON-LD.** La ficha es HTML generado en el build. Si el JSON-LD llevara `offers.price` y `availability`, esos valores quedarían escritos en el HTML hasta el siguiente build. Google lee el JSON-LD sin ejecutar la server island y mostraría en los resultados enriquecidos un precio o un stock que quizá ya no son ciertos. Además, Merchant Center penaliza que el precio estructurado no coincida con el visible. Se añadirá cuando el HTML se regenere al cambiar el catálogo (webhook de rebuild, fase 13) o si la ficha pasa a on-demand con caché.
-- Speculation Rules / prefetch: desactivado (fase 13).
+- Speculation Rules / prefetch: desactivado hasta la fase 13 (decisión en §7.1).
+- Imágenes de catálogo: decidido para la fase 6 optimizarlas en build (`<Picture>`) y que la server island devuelva solo precio/stock (ver `docs/ESTADO.md` §6).
 - Imágenes reales (R2/SeaweedFS) y `image.domains` de producción: fase 6.
 - Lighthouse CI y Playwright: fases 10 y 4 (decisión 8).
 - `ASTRO_KEY` fija para server islands cuando haya despliegues con CDN (fases 10–11).
 - El stock que se muestra viene de `inventory_quantity` de la Store API, que agrega las ubicaciones del canal de venta.
+
+### 7.1 Navegación: prefetch / view transitions (medido 03-oct-2026)
+
+Build de producción, Lighthouse 13.5.0 en móvil (3 pasadas) contra `preview` con Medusa real.
+
+| Variante                                    | JS añadido por página (gzip)                | Perf home / ficha | FCP home | LCP home / ficha |
+| ------------------------------------------- | ------------------------------------------- | ----------------- | -------- | ---------------- |
+| Actual (0 bundles)                          | 0 (solo el inline de las islands, ≈ 0,6 KB) | 100 / 100         | 0,9 s    | 1,7 / 1,5–1,7 s  |
+| `prefetch` (hover, `data-astro-prefetch`)   | +1,1 KB, 1 petición                         | 99–100 / 100      | 1,1 s    | 1,7–1,8 / 1,7 s  |
+| `prefetch` + `experimental.clientPrerender` | +1,4 KB                                     | —                 | —        | —                |
+| `<ClientRouter />` (activa `prefetchAll`)   | **+5,6 KB**                                 | 99 / 100          | 1,2 s    | 1,8 / 1,7 s      |
+| `<ClientRouter />` + `prefetch: false`      | +4,7 KB                                     | —                 | —        | —                |
+
+**Decisión del usuario.** Seguimos con 0 JS. En la fase 13 se añadirán:
+
+- **View transitions nativas entre documentos**: `@view-transition { navigation: auto; }` más `view-transition-name` en la imagen de la tarjeta y de la ficha. No añaden JS; funcionan en Chromium y Safari 18.2+, y Firefox navega sin animación.
+- **Speculation Rules inline**: `<script type="speculationrules">` con un JSON de ≈ 200 B que no se ejecuta como JS. Hacen `prerender` con `eagerness` moderado. Hay que tener en cuenta que el prerender también dispara las server islands.
+
+Descartados:
+
+- `<ClientRouter />`: pasa a modo SPA, rompe el presupuesto y cambia el ciclo de vida de los scripts.
+- `clientPrerender`: hace lo mismo que las Speculation Rules, pero inyectándolas con JS.
+
+Fuentes: astro-docs (view transitions, prefetch, `experimental.clientPrerender`). Medición sobre `dist/`.

@@ -99,7 +99,7 @@ Técnicas aplicadas:
 - **Mejora progresiva**: añadir al carrito, buscar, filtrar y login funcionan con `<form>` + **Astro Actions** sin JS; la isla Svelte solo mejora la experiencia si se hidrata.
 - **Cero JS por defecto**: presupuesto de JS por página (ver `AGENTS.md`). Home/listado/ficha: objetivo **0 KB** de JS propio en la carga inicial.
 - **Web Workers**: scripts de terceros (analítica, píxeles) movidos a un worker con **Partytown**; cálculos pesados de cliente (filtros facetados grandes) en Web Workers propios.
-- **Navegación instantánea**: `prefetch` de Astro (estrategia `hover`/`viewport`) + **Speculation Rules** para prerender de enlaces probables.
+- **Navegación instantánea sin JS**: **Speculation Rules** inline (prerender de enlaces probables) + **view transitions nativas** en CSS (`@view-transition`). El `prefetch` y el `<ClientRouter />` de Astro se descartan por el JS que añaden (medición en [fase3.md §7.1](./docs/fases/fase3.md)).
 - **Imágenes**: `astro:assets` (`<Image>`/`<Picture>`) con AVIF/WebP, `width/height` explícitos, `loading="lazy"` salvo la imagen LCP (`fetchpriority="high"`). Originales en R2.
 - **Fuentes**: Astro Fonts API, auto-alojadas, `font-display: swap`, subset y `preload` solo de la principal.
 - **CSS**: Tailwind v4 (plugin Vite, configuración CSS-first con `@theme`). CSS crítico inline cuando Astro lo decida (`build.inlineStylesheets: 'auto'`).
@@ -658,7 +658,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 0 Fundaciones                          | [fase0.md](./docs/fases/fase0.md)                                                                | ✅     |
 | 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | ✅     |
 | 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | ✅     |
-| 3 Storefront base (Astro)              | [fase3.md](./docs/fases/fase3.md)                                                                | 🚧     |
+| 3 Storefront base (Astro)              | [fase3.md](./docs/fases/fase3.md)                                                                | ✅     |
 | 4 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
@@ -724,7 +724,7 @@ gantt
 | 10  | **CD: imágenes + Docker**    | Dockerfiles multi-stage (backend, storefront), `images.yml` (`sha-xxxxxxx` en main, `x.y.z` en tag), registro Gitea/GHCR, presupuesto de JS y Lighthouse CI en `ci.yml`                                                                                                    | 3–4 d     | Merge → `:sha-*`; tag → `:1.2.3` en el registro                                                     | 0 €                                                  |
 | 11  | **Producción (Hetzner)**     | `compose.prod.yml`, Caddyfile, Cloudflare (Full strict, Origin CA, WAF, rate limit), firewall Hetzner, backups `pg_dump` → R2, `deploy.yml` opcional, `v1.0.0`                                                                                                             | 3–4 d     | Despliegue desde tag; **restauración de backup probada**                                            | VPS + dominio                                        |
 | 12  | **Monitorización (híbrida)** | Homelab: Uptime Kuma, Beszel hub, Dozzle, GlitchTip (+Postgres/Valkey), cloudflared. VPS: beszel-agent, dozzle agent. Red privada (Tailscale/WireGuard), SDK de errores en server, `/health`, heartbeats de backups, alertas Telegram/email, vigilante externo del homelab | **3–4 d** | Alerta de prueba recibida por cada fuente (caída web, CPU/disco, error de app, backup no ejecutado) | 0 € (homelab + capas gratuitas)                      |
-| 13  | **Optimización continua**    | Rebuild del storefront por webhook de catálogo, Speculation Rules, Partytown, auditorías periódicas                                                                                                                                                                        | continua  | Core Web Vitals en verde                                                                            | —                                                    |
+| 13  | **Optimización continua**    | Rebuild del storefront por webhook de catálogo, Speculation Rules + view transitions CSS, Partytown, auditorías                                                                                                                                                            | continua  | Core Web Vitals en verde                                                                            | —                                                    |
 
 **Total hasta `v1.0.0` con monitorización: ~34–52 días efectivos ≈ 8–11 semanas** a tiempo completo. La monitorización híbrida en dos máquinas añade ~2 días respecto a una solución en un solo servidor (túnel, red privada, GlitchTip con su BD, alertas y vigilante externo).
 

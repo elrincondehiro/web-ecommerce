@@ -152,7 +152,7 @@ Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>
 - Fuentes: auto-alojadas (Astro Fonts API), `font-display: swap`, máximo 2 familias, `preload` solo la principal.
 - Terceros (analítica, píxeles, chat): **siempre** vía Partytown (`type="text/partytown"`) o cargados tras interacción. Nunca bloqueantes.
 - Trabajo pesado de cliente (filtrado/ordenación grande, parsing) → **Web Worker**.
-- Navegación: `data-astro-prefetch` en enlaces clave y Speculation Rules para prerender de fichas probables. No actives `prefetchAll`.
+- Navegación: **Speculation Rules** inline (`<script type="speculationrules">`) y view transitions **nativas en CSS** (`@view-transition`). No actives `prefetch` de Astro ni `<ClientRouter />` (añaden JS a todas las páginas; ver `docs/fases/fase3.md` §7.1).
 - Nada de CSS-in-JS en runtime. Tailwind v4 + tokens en `@theme`.
 - Cabeceras de caché: assets `/_astro/*` inmutables (1 año); server islands con `s-maxage` corto + `stale-while-revalidate`; rutas por usuario `private, no-store`.
 - Sin polyfills salvo necesidad demostrada. Target: navegadores evergreen.

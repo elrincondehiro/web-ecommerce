@@ -2,17 +2,17 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 03-oct-2026 · fase 3 en curso (PR 3a).
+> Última actualización: 03-oct-2026 · cierre de la fase 3.
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado          | Doc                              |
-| ------------------------------------------- | --------------- | -------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅              | [prefase.md](./fases/prefase.md) |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅              | [fase0.md](./fases/fase0.md)     |
-| 1 CI básico + Renovate                      | ✅              | [fase1.md](./fases/fase1.md)     |
-| 2 Backend Medusa                            | ✅              | [fase2.md](./fases/fase2.md)     |
-| **3 Storefront base (Astro)**               | 🚧 **en curso** | [fase3.md](./fases/fase3.md)     |
+| Fase                                        | Estado | Doc                              |
+| ------------------------------------------- | ------ | -------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md) |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)     |
+| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)     |
+| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)     |
+| **3 Storefront base (Astro)**               | ✅     | [fase3.md](./fases/fase3.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -21,7 +21,7 @@ Roadmap completo y tiempos: README §13.
 - **Monorepo pnpm 12.8.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront` (fase 3, en revisión): Astro 7.3.5 estático + server islands de precio y stock, shadcn-svelte (preset `vega`) sin hidratar, 0 bundles JS. Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/storefront`: Astro 7.3.5 estático + server islands de precio y stock, shadcn-svelte (preset `vega`) sin hidratar, 0 bundles JS. Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
 - **Backend**:
   - Redis para caching, event bus, workflow engine y locking.
@@ -82,9 +82,18 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 6. Siguiente
 
-- **Ahora:** revisar y fusionar el PR de la fase 3 (`feat/fase3-storefront-base`). Al cerrar la fase: README §13 → ✅, `fase3.md` ✅ y actualizar este fichero.
-- **Después: fase 4 — Carrito** (README §13): cookie `cart_id` httpOnly, Astro Actions sin JS, contador en server island, Playwright con JS desactivado. REGLA Nº 1 antes de empezar.
+- **Próxima: fase 6 — Ficheros (SeaweedFS local / R2)**, elegida por el usuario antes que la 4. Va en paralelo con la 3 y la 4 (README §13). REGLA Nº 1 antes de empezar. Lo acordado:
+  - `file-s3` de Medusa contra SeaweedFS (`forcePathStyle`); R2 en producción.
+  - **Imágenes optimizadas en build** (`<Picture>` AVIF/WebP en `/_astro/*`). La server island deja de devolver la rejilla entera y devuelve **solo precio y stock**, así no hay descargas dobles. Un cambio de foto necesita rebuild (manual hasta el webhook de la fase 13).
+  - Medir peso de página, LCP, tiempo de build y tamaño de `dist/` con fotos reales.
+- **Volumen real:** más de 1000 productos con 3–4 fotos cada uno (5k–7k fotos), JPEG de réflex, misma cámara y misma proporción.
+  - Al bucket sube un "original de publicación": sRGB, sin EXIF/GPS, lado largo de ≈ 2400 px, JPEG con calidad 85–90. Las RAW no se suben.
+  - El script de preparación con sharp queda para más adelante.
+- **Carga de imágenes:** desde el Admin y también por lotes. Está por decidir si la asociación a productos se hace en el propio lote (columnas `product image N` del CSV de importación de Medusa o un script con `batchProductsWorkflow`) o desde el Admin.
+- **Riesgo a vigilar:** el tiempo de build con 5k–7k fotos (sharp genera cada tamaño y formato). Hay que medirlo en la fase 6 y valorar la caché de `astro:assets` en CI.
+- Después: fase 4 (carrito) y fase 5 (checkout, que depende de la 4).
 - Skill `shadcn-svelte` disponible en `.pi/skills/` (comandos `pnpm dlx shadcn-svelte@1.7.0`). Al añadir componentes, usar `--no-deps` y revisar `package.json` (el CLI mete `^`).
+- Navegación en la fase 13: Speculation Rules inline y view transitions CSS, sin JS ([fase3.md §7.1](./fases/fase3.md)).
 
 ## 7. Pendientes conocidos
 
