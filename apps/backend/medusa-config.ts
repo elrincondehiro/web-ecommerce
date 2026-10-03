@@ -28,6 +28,44 @@ function required(name: string): string {
 
 const REDIS_URL = required("REDIS_URL");
 
+/**
+ * Ficheros (fase 6): `file-s3` contra SeaweedFS (dev) o Cloudflare R2 (prod), mismas variables.
+ * Fuente: docs.medusajs.com (infrastructure-modules/file/s3) + código de @medusajs/file-s3 2.21.2.
+ * - Sin S3_BUCKET (CI, `medusa build`) se usa el proveedor local por defecto de Medusa.
+ * - `acl: false`: ni SeaweedFS ni R2 usan ACLs por objeto; la lectura pública es del bucket
+ *   (SeaweedFS: `s3.anonymous.set`; R2: dominio público). Los ficheros privados NO deben ir aquí.
+ */
+const S3_BUCKET = process.env.S3_BUCKET;
+const fileModule = S3_BUCKET
+  ? [
+      {
+        resolve: "@medusajs/medusa/file",
+        options: {
+          providers: [
+            {
+              resolve: "@medusajs/medusa/file-s3",
+              id: "s3",
+              options: {
+                file_url: required("S3_FILE_URL"),
+                access_key_id: required("S3_ACCESS_KEY_ID"),
+                secret_access_key: required("S3_SECRET_ACCESS_KEY"),
+                region: process.env.S3_REGION ?? "auto",
+                bucket: S3_BUCKET,
+                endpoint: required("S3_ENDPOINT"),
+                prefix: process.env.S3_PREFIX ?? "",
+                acl: false,
+                cache_control: "public, max-age=31536000, immutable",
+                additional_client_config: {
+                  forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]
+  : [];
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: required("DATABASE_URL"),
@@ -46,6 +84,7 @@ module.exports = defineConfig({
     backendUrl: process.env.MEDUSA_BACKEND_URL,
   },
   modules: [
+    ...fileModule,
     {
       resolve: "@medusajs/medusa/caching",
       options: {

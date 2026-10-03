@@ -40,8 +40,13 @@ export default defineConfig([
     files: ["**/__tests__/**", "**/*.spec.ts", "**/integration-tests/**"],
     languageOptions: { globals: { ...globals.jest } },
   },
-  // Astro: frontmatter y <script> en TS (el plugin usa @typescript-eslint/parser si existe)
+  // Astro: frontmatter y <script> en TS. El plugin busca @typescript-eslint/parser desde el cwd
+  // (raíz), donde no está con el linker aislado de pnpm → se fija explícitamente.
   astro.configs.recommended,
+  {
+    files: ["**/*.astro"],
+    languageOptions: { parserOptions: { parser: tseslint.parser } },
+  },
   // Svelte 5 (runes) con TypeScript en <script lang="ts"> y módulos .svelte.ts
   svelte.configs.recommended,
   {

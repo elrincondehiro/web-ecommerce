@@ -1,14 +1,13 @@
 ---
 import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
-import { Image } from "astro:assets";
-import { Skeleton } from "$lib/components/ui/skeleton";
 import { metaDescription } from "$lib/catalog";
 import { getAllProducts } from "$lib/medusa";
 import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
-import placeholder from "../../assets/placeholder.svg";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import ProductBuyBox from "../../components/server/ProductBuyBox.astro";
+import BuyBox from "../../components/BuyBox.astro";
+import ProductGallery from "../../components/ProductGallery.astro";
+import LiveSync from "../../components/server/LiveSync.astro";
 
 export const getStaticPaths = (async () => {
   const products = await getAllProducts();
@@ -23,7 +22,13 @@ const crumbs = [
   ...(category ? [{ name: category.name, href: `/categorias/${category.handle}/` }] : []),
   { name: product.title, href: `/producto/${product.handle}/` },
 ];
-const image = product.thumbnail ?? product.images?.[0]?.url ?? null;
+const gallery = (product.images ?? [])
+  .slice()
+  .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+  .map((img) => img.url)
+  .filter(Boolean);
+if (!gallery.length && product.thumbnail) gallery.push(product.thumbnail);
+const image = gallery[0] ?? null;
 const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
 ---
 
@@ -39,40 +44,14 @@ const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 
 >
   <Breadcrumbs items={crumbs} />
   <div class="grid gap-8 md:grid-cols-2">
-    {image ? (
-      <Image
-        src={image}
-        alt={product.title}
-        width={800}
-        height={800}
-        loading="eager"
-        fetchpriority="high"
-        class="aspect-square w-full rounded-lg bg-muted object-cover"
-      />
-    ) : (
-      <img
-        src={placeholder.src}
-        alt=""
-        width="800"
-        height="800"
-        loading="eager"
-        fetchpriority="high"
-        class="aspect-square w-full rounded-lg bg-muted object-cover"
-      />
-    )}
+    <ProductGallery images={gallery} alt={product.title} />
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
         <h1 class="text-3xl font-semibold tracking-tight">{product.title}</h1>
         {product.subtitle && <p class="text-muted-foreground">{product.subtitle}</p>}
       </div>
 
-      <ProductBuyBox server:defer productId={product.id}>
-        <div slot="fallback" class="flex flex-col gap-4" aria-busy="true">
-          <Skeleton class="h-8 w-40" />
-          <Skeleton class="h-5 w-20" />
-          <span class="sr-only">Cargando precio y disponibilidad…</span>
-        </div>
-      </ProductBuyBox>
+      <BuyBox product={product} />
 
       {options.length > 0 && (
         <dl class="grid gap-2 text-sm">
@@ -95,4 +74,5 @@ const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 
       )}
     </div>
   </div>
+  <LiveSync server:defer productId={product.id} />
 </BaseLayout>

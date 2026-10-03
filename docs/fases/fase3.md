@@ -136,6 +136,7 @@ La primera pasada encontró `heading-order` en los listados (h3 sin h2). Se corr
 - **Por qué `offers.price` no va en el JSON-LD.** La ficha es HTML generado en el build. Si el JSON-LD llevara `offers.price` y `availability`, esos valores quedarían escritos en el HTML hasta el siguiente build. Google lee el JSON-LD sin ejecutar la server island y mostraría en los resultados enriquecidos un precio o un stock que quizá ya no son ciertos. Además, Merchant Center penaliza que el precio estructurado no coincida con el visible. Se añadirá cuando el HTML se regenere al cambiar el catálogo (webhook de rebuild, fase 13) o si la ficha pasa a on-demand con caché.
 - Speculation Rules / prefetch: desactivado hasta la fase 13 (decisión en §7.1).
 - Imágenes de catálogo: decidido para la fase 6 optimizarlas en build (`<Picture>`) y que la server island devuelva solo precio/stock (ver `docs/ESTADO.md` §6).
+- **Cambio en la fase 6:** `PricedProductGrid` y `ProductBuyBox` se sustituyen por HTML estático con precio y stock del build más la island invisible `LiveSync`, que los corrige ([fase6.md](./fase6.md)). La fuente pasa de la variable a ficheros estáticos 400/500/600.
 - Imágenes reales (R2/SeaweedFS) y `image.domains` de producción: fase 6.
 - Lighthouse CI y Playwright: fases 10 y 4 (decisión 8).
 - `ASTRO_KEY` fija para server islands cuando haya despliegues con CDN (fases 10–11).

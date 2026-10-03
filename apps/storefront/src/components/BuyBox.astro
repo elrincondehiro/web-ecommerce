@@ -1,0 +1,82 @@
+---
+// Precio con IVA, disponibilidad y stock por variante (HTML estático del build).
+// <LiveSync productId> los corrige en runtime (data-pid/data-price/data-vstock, lib/live-sync.ts).
+// (Añadir al carrito llega en la fase 4.)
+import { Badge } from "$lib/components/ui/badge";
+import { getProductPricing, type StoreProduct } from "$lib/catalog";
+import { formatPrice } from "$lib/format";
+
+interface Props {
+  product: StoreProduct;
+}
+const { product } = Astro.props;
+const pricing = getProductPricing(product);
+const multi = pricing.variants.length > 1;
+const currency = pricing.currencyCode;
+---
+
+{pricing.fromAmount != null && currency ? (
+  <div
+    class="flex flex-col gap-4"
+    data-pid={product.id}
+    data-stock={pricing.inStock ? "in" : "out"}
+  >
+    <p class="text-2xl font-semibold tabular-nums">
+      <span
+        class="text-base font-normal text-muted-foreground"
+        data-price-from={product.id}
+        hidden={!pricing.hasPriceRange}
+      >
+        Desde
+      </span>
+      <span data-price={product.id}>{formatPrice(pricing.fromAmount, currency)}</span>
+      <span class="ml-1 text-sm font-normal text-muted-foreground">IVA incluido</span>
+    </p>
+    <p>
+      <Badge variant="outline" data-if-stock="in">
+        En stock
+      </Badge>
+      <Badge variant="secondary" data-if-stock="out">
+        Agotado
+      </Badge>
+    </p>
+    {multi && (
+      <table class="w-full max-w-sm text-sm tabular-nums">
+        <caption class="sr-only">Precio y disponibilidad por variante</caption>
+        <thead class="text-left text-muted-foreground">
+          <tr>
+            <th scope="col" class="py-1 font-normal">
+              Variante
+            </th>
+            <th scope="col" class="py-1 font-normal">
+              Precio
+            </th>
+            <th scope="col" class="py-1 font-normal">
+              Disponibilidad
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {pricing.variants.map((v) => (
+            <tr class="border-t" data-pid={v.id} data-vstock={v.inStock ? "in" : "out"}>
+              <th scope="row" class="py-1.5 font-medium">
+                {v.title}
+              </th>
+              <td class="py-1.5" data-price={v.id}>
+                {v.amount != null ? formatPrice(v.amount, currency) : "—"}
+              </td>
+              <td class="py-1.5">
+                <span data-if-vstock="in">Disponible</span>
+                <span class="text-muted-foreground" data-if-vstock="out">
+                  Agotado
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+) : (
+  <p class="text-muted-foreground">Precio no disponible en este momento.</p>
+)}

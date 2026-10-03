@@ -1,0 +1,51 @@
+---
+// Galería de la ficha sin JS: carrusel con scroll-snap + miniaturas que son anclas (#foto-N).
+// La primera foto es la imagen LCP (priority). Con una sola foto no hay miniaturas.
+import ProductImage from "./ProductImage.astro";
+
+interface Props {
+  images: string[];
+  alt: string;
+}
+const { images, alt } = Astro.props;
+const many = images.length > 1;
+---
+
+<div class="flex flex-col gap-3">
+  {images.length === 0 ? (
+    <ProductImage alt="" variant="detail" priority class="rounded-lg" />
+  ) : (
+    <ul
+      class="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-lg [scrollbar-width:none]"
+      aria-label={many ? `Fotos de ${alt}` : undefined}
+    >
+      {images.map((src, i) => (
+        <li id={`foto-${i + 1}`} class="w-full shrink-0 snap-center">
+          <ProductImage
+            src={src}
+            alt={many ? `${alt} — foto ${i + 1} de ${images.length}` : alt}
+            variant="detail"
+            priority={i === 0}
+          />
+        </li>
+      ))}
+    </ul>
+  )}
+  {many && (
+    <nav aria-label="Elegir foto">
+      <ul class="flex gap-2 overflow-x-auto">
+        {images.map((src, i) => (
+          <li class="w-16 shrink-0 sm:w-20">
+            <a
+              href={`#foto-${i + 1}`}
+              class="block overflow-hidden rounded-md ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`Ver foto ${i + 1}`}
+            >
+              <ProductImage src={src} alt="" variant="thumb" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )}
+</div>

@@ -1,10 +1,16 @@
 // Acceso a datos del storefront. Única puerta al backend (AGENTS.md §2).
-// - Build (páginas estáticas): catálogo SIN precios ni stock.
-// - Server islands (runtime): precios con impuestos y stock por región ES.
+// - Build (páginas estáticas): catálogo CON precio (IVA incluido, región ES) y stock del momento
+//   del build; la server island <LiveSync> los corrige en runtime (lib/live-sync.ts, fase 6).
+// - Server islands (runtime): mismos campos, solo para los productos visibles.
 // - STOREFRONT_DATA=fixtures: mismos datos desde src/lib/__fixtures__ (CI sin backend).
 import Medusa from "@medusajs/js-sdk";
 import type { HttpTypes } from "@medusajs/types";
-import { MEDUSA_BACKEND_URL, MEDUSA_PUBLISHABLE_KEY, STOREFRONT_DATA } from "astro:env/server";
+import {
+  MEDUSA_BACKEND_URL,
+  MEDUSA_PUBLISHABLE_KEY,
+  STOREFRONT_DATA,
+  STOREFRONT_MAX_PRODUCTS,
+} from "astro:env/server";
 import { productsInCategory, sliceRange, type StoreProduct } from "./catalog";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
@@ -74,30 +80,40 @@ export async function getCategories(): Promise<StoreCategory[]> {
   return all.filter((c) => !c.parent_category_id).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
 }
 
-/** Todo el catálogo (sin precios) para getStaticPaths. Paginado contra la API. */
+/** Todo el catálogo con precio y stock (build, getStaticPaths). Paginado contra la API. */
 export async function getAllProducts(
   opts: { categoryId?: string | undefined } = {},
 ): Promise<StoreProduct[]> {
-  if (useFixtures) {
-    const all = await fixtures.products();
-    return opts.categoryId ? productsInCategory(all, opts.categoryId) : all;
-  }
+  const all = await (catalogPromise ??= loadCatalog());
+  return opts.categoryId ? productsInCategory(all, opts.categoryId) : all;
+}
+
+// Memo de módulo: el catálogo se descarga UNA vez por build y lo reutilizan home, listados,
+// categorías y fichas (antes: una descarga por categoría).
+let catalogPromise: Promise<StoreProduct[]> | undefined;
+
+async function loadCatalog(): Promise<StoreProduct[]> {
+  const max = STOREFRONT_MAX_PRODUCTS ?? Infinity;
+  if (useFixtures) return (await fixtures.products()).slice(0, max);
+  const region = await getRegionES();
   const out: StoreProduct[] = [];
-  for (let offset = 0; ; offset += PAGE) {
+  for (let offset = 0; out.length < max; offset += PAGE) {
     const { products, count } = await sdk().store.product.list({
-      limit: PAGE,
+      limit: Math.min(PAGE, max - out.length),
       offset,
       order: ORDER,
-      fields: CATALOG_FIELDS,
-      ...(opts.categoryId ? { category_id: opts.categoryId } : {}),
+      region_id: region.id,
+      country_code: COUNTRY_CODE,
+      fields: PRICED_FIELDS,
     });
     out.push(...products);
-    if (out.length >= count || products.length === 0) return out;
+    if (out.length >= count || products.length === 0) break;
   }
+  return out;
 }
 
 /**
- * Productos CON precio y stock (server islands). Mismo orden que getAllProducts,
+ * Productos con precio y stock actuales (server island). Mismo orden que getAllProducts,
  * así offset/limit coinciden con la página estática.
  */
 export async function getPricedProducts(q: {

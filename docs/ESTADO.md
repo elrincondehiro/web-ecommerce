@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 03-oct-2026 · cierre de la fase 3.
+> Última actualización: 03-oct-2026 · fase 6 en curso (implementación entregada; falta el experimento A/B).
 
 ## 1. Dónde estamos
 
@@ -12,7 +12,8 @@
 | 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)     |
 | 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)     |
 | 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)     |
-| **3 Storefront base (Astro)**               | ✅     | [fase3.md](./fases/fase3.md)     |
+| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)     |
+| **6 Ficheros R2 + imágenes**                | 🚧     | [fase6.md](./fases/fase6.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -21,14 +22,17 @@ Roadmap completo y tiempos: README §13.
 - **Monorepo pnpm 12.8.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront`: Astro 7.3.5 estático + server islands de precio y stock, shadcn-svelte (preset `vega`) sin hidratar, 0 bundles JS. Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar, 0 bundles JS. Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+    - **Precio/stock**: se escriben en el build y la island invisible `LiveSync` los corrige: stock por `<style>`, precio por `<script>` inline ([fase6.md](./fases/fase6.md)).
+    - **Imágenes**: `<Picture>` AVIF/WebP en build desde el bucket. El primer build tarda unos 30 min con 1000 productos × 4 fotos (`avif.effort: 2`); con la caché `node_modules/.astro`, unos 20 s.
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
 - **Backend**:
   - Redis para caching, event bus, workflow engine y locking.
   - `MEDUSA_WORKER_MODE` shared/server/worker; `DISABLE_MEDUSA_ADMIN`.
   - Telemetría OFF: `MEDUSA_DISABLE_TELEMETRY=true` + `allowBuilds` de `@medusajs/telemetry` a false.
   - Seed **España**: EUR **IVA incluido**, IVA **21 %** por defecto; **10 %** y **4 %** vía tipo de producto `iva-reducido` / `iva-superreducido`; un solo canal "Tienda online"; envíos 4,95 / 9,95 €; publishable key (sale en el log del seed).
-  - `seed:mock`: catálogo de prueba idempotente (24 productos por defecto).
+  - `seed:mock`: catálogo de prueba idempotente (24 productos por defecto). En la BD local hay **1000 productos mock con 4 fotos** cada uno.
+  - **Ficheros**: `file-s3` contra SeaweedFS (R2 en producción), activo solo si existe `S3_BUCKET`. Fotos por lotes con `images:import <carpeta>` (`handle_XX.jpg`) y fotos mock con `images:mock` (`.cache/mock-images`, 1,5 GB, ignorado por git).
   - Importes de Medusa v2 en **unidad principal** (4.95 = 4,95 €).
 - **CI** (`.github/workflows/ci.yml`, mismo fichero en Gitea y GitHub):
   - Job **`quality`**: install `--frozen-lockfile`, lint, format:check, typecheck, test, build (storefront con fixtures) y `check:budget`. Es check obligatorio en ambas plataformas.
@@ -65,7 +69,8 @@ pnpm dev                     # todas las apps
 pnpm dev:storefront          # :4321 (necesita apps/storefront/.env y el backend en marcha)
 pnpm dev:backend             # API :9000 · Admin :9000/app (usuario admin ya creado por el usuario)
 pnpm backend:seed            # idempotente
-pnpm backend:seed:mock       # idempotente; `-- 100` para 100 productos
+pnpm backend:seed:mock       # idempotente; `backend:seed:mock 100` para 100 (pnpm 12: sin `--`)
+pnpm --filter backend images:import <carpeta> [dry-run] [replace]
 pnpm --filter backend exec medusa db:migrate
 pnpm --filter backend test:integration:http   # necesita apps/backend/.env.test
 pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build
@@ -82,16 +87,16 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 6. Siguiente
 
-- **Próxima: fase 6 — Ficheros (SeaweedFS local / R2)**, elegida por el usuario antes que la 4. Va en paralelo con la 3 y la 4 (README §13). REGLA Nº 1 antes de empezar. Lo acordado:
-  - `file-s3` de Medusa contra SeaweedFS (`forcePathStyle`); R2 en producción.
-  - **Imágenes optimizadas en build** (`<Picture>` AVIF/WebP en `/_astro/*`). La server island deja de devolver la rejilla entera y devuelve **solo precio y stock**, así no hay descargas dobles. Un cambio de foto necesita rebuild (manual hasta el webhook de la fase 13).
-  - Medir peso de página, LCP, tiempo de build y tamaño de `dist/` con fotos reales.
-- **Volumen real:** más de 1000 productos con 3–4 fotos cada uno (5k–7k fotos), JPEG de réflex, misma cámara y misma proporción.
-  - Al bucket sube un "original de publicación": sRGB, sin EXIF/GPS, lado largo de ≈ 2400 px, JPEG con calidad 85–90. Las RAW no se suben.
-  - El script de preparación con sharp queda para más adelante.
-- **Carga de imágenes:** desde el Admin y también por lotes. Está por decidir si la asociación a productos se hace en el propio lote (columnas `product image N` del CSV de importación de Medusa o un script con `batchProductsWorkflow`) o desde el Admin.
-- **Riesgo a vigilar:** el tiempo de build con 5k–7k fotos (sharp genera cada tamaño y formato). Hay que medirlo en la fase 6 y valorar la caché de `astro:assets` en CI.
+- **Fase 6 en curso** (rama `feat/fase6-ficheros`):
+  - Hecho: `file-s3`, importación por lotes, `<Picture>`, el patrón build + `LiveSync` (híbrido) y la fuente estática.
+  - **Falta el experimento**, en una rama de test aparte: corrección **A** (solo CSS) y **B** (solo script) frente al híbrido. Comparar peso de la respuesta, JS inline, accesibilidad y CSP. Después, **el usuario decide** el modo y se cierra la fase (README §13 a ✅).
+- **Decisión del usuario:** todo precio o stock nuevo (carrito, fase 4) sigue el patrón _build + corrección por server island_ (AGENTS §3.2).
 - Después: fase 4 (carrito) y fase 5 (checkout, que depende de la 4).
+- Pendientes de la fase 6 para más adelante:
+  - Persistir la caché `.astro` en CI (fase 10).
+  - Limpiar objetos huérfanos del bucket.
+  - Script de preparación de fotos reales.
+  - LCP del listado de ~2 s, que se revisa en la fase 13.
 - Skill `shadcn-svelte` disponible en `.pi/skills/` (comandos `pnpm dlx shadcn-svelte@1.7.0`). Al añadir componentes, usar `--no-deps` y revisar `package.json` (el CLI mete `^`).
 - Navegación en la fase 13: Speculation Rules inline y view transitions CSS, sin JS ([fase3.md §7.1](./fases/fase3.md)).
 

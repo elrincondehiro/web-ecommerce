@@ -476,7 +476,8 @@ cp apps/backend/.env.example apps/backend/.env            # y genera secretos: o
 cp apps/backend/.env.test.example apps/backend/.env.test  # tests de integración
 pnpm --filter backend exec medusa db:migrate
 pnpm backend:seed                                         # región ES, IVA, envíos, publishable key
-pnpm backend:seed:mock                                    # catálogo de prueba (24; o `-- 100`)
+pnpm backend:seed:mock                                    # catálogo de prueba (24; o `backend:seed:mock 100`)
+pnpm --filter backend images:import <carpeta>             # fotos handle_XX.jpg → bucket + producto (fase 6)
 pnpm --filter backend exec medusa user -e <email> -p <contraseña>   # admin (lo creas tú)
 pnpm dev:backend                                          # API :9000 · Admin :9000/app
 ```
@@ -497,10 +498,11 @@ pnpm --filter storefront check:budget                  # 0 bundles JS en home/li
 pnpm --filter storefront fixtures:update               # regenera src/lib/__fixtures__ desde Medusa
 ```
 
-- HTML estático para home, `/productos/`, `/categorias/<handle>/` y `/producto/<handle>/`. El precio y el stock llegan por **server island** (`server:defer`).
+- HTML estático para home, `/productos/`, `/categorias/<handle>/` y `/producto/<handle>/`. El precio y el stock se escriben en el build y una **server island** invisible (`LiveSync`) los corrige (fase 6).
+- Imágenes de producto optimizadas en build con `<Picture>` (AVIF/WebP, 1:1) desde el bucket (`IMAGE_BASE_URL`). El primer build tarda unos 30 min con 1000 productos × 4 fotos; después son unos 20 s ([fase6.md](./docs/fases/fase6.md)).
 - shadcn-svelte con el preset `vega`; alias `$lib` definido en `tsconfig.json` y en `vite.resolve.alias`.
 - Componentes en `src/lib/components/ui`, renderizados **sin** `client:*`.
-- Inter variable auto-alojada con la Fonts API (`fontProviders.fontsource()`).
+- Inter auto-alojada con la Fonts API (`fontProviders.fontsource()`): pesos estáticos 400/500/600; solo se precarga el 400.
 
 ### 8.5 Emails (React Email)
 
@@ -659,6 +661,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | ✅     |
 | 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | ✅     |
 | 3 Storefront base (Astro)              | [fase3.md](./docs/fases/fase3.md)                                                                | ✅     |
+| 6 Ficheros R2 + imágenes               | [fase6.md](./docs/fases/fase6.md)                                                                | 🚧     |
 | 4 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
@@ -769,7 +772,8 @@ S3_BUCKET=medusa
 S3_ACCESS_KEY_ID=seaweed
 S3_SECRET_ACCESS_KEY=seaweed12345
 S3_FORCE_PATH_STYLE=true             # necesario en SeaweedFS
-S3_FILE_URL=http://localhost:8333/medusa   # prod: https://img.tudominio.com
+S3_FILE_URL=http://localhost:8333/medusa   # prod: https://img.elrincondehiro.com
+S3_PREFIX=                           # opcional (p. ej. productos/)
 
 MEILISEARCH_HOST=http://localhost:7700
 MEILISEARCH_API_KEY=dev_master_key_change_me_32chars_min
@@ -790,6 +794,8 @@ MEDUSA_BACKEND_URL=http://localhost:9000
 MEDUSA_PUBLISHABLE_KEY=pk_...
 STOREFRONT_DATA=medusa               # fixtures en CI (sin backend)
 # ASTRO_KEY=                         # opcional: clave fija de server islands (rolling deploys/CDN)
+IMAGE_BASE_URL=http://localhost:8333/medusa   # origen de las imágenes (prod: https://img.elrincondehiro.com)
+# STOREFRONT_MAX_PRODUCTS=100        # opcional: limitar el catálogo del build
 PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...   # fase 5
 PUBLIC_MEILISEARCH_HOST=http://localhost:7700
 PUBLIC_MEILISEARCH_SEARCH_KEY=...    # search-only key, NUNCA la master

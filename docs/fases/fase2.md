@@ -77,7 +77,7 @@ cp apps/backend/.env.test.example apps/backend/.env.test
 pnpm install
 pnpm --filter backend exec medusa db:migrate
 pnpm backend:seed                               # una vez (idempotente: no hace nada si existe "España")
-pnpm backend:seed:mock                          # 24 productos; `backend:seed:mock -- 100` para 100 (idempotente)
+pnpm backend:seed:mock                          # 24 productos; `backend:seed:mock 100` para 100 (idempotente)
 pnpm --filter backend exec medusa user -e <tu-email> -p <tu-contraseña>
 pnpm dev:backend                                # http://localhost:9000 · Admin http://localhost:9000/app
 ```

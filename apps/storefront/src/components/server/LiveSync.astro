@@ -1,0 +1,37 @@
+---
+// Server island INVISIBLE (server:defer) que corrige precio y stock del HTML estático.
+// Corrección híbrida (fase 6): stock → <style> (0 JS) · precio → <script> inline mínimo.
+// Props mínimas para que la URL GET sea corta y cacheable:
+//   - listados/home: categoryId + offset + limit (mismo orden que el build)
+//   - ficha: productId
+// Sin fallback: si falla o no hay JS, se queda lo del build.
+import { liveEntries, livePriceScript, liveStockCss } from "$lib/live-sync";
+import { getPricedProduct, getPricedProducts } from "$lib/medusa";
+
+interface Props {
+  productId?: string | undefined;
+  categoryId?: string | undefined;
+  offset?: number | undefined;
+  limit?: number | undefined;
+}
+const { productId, categoryId, offset = 0, limit = 0 } = Astro.props;
+
+const products = productId
+  ? [await getPricedProduct(productId)].filter((p) => p !== null)
+  : limit > 0
+    ? await getPricedProducts({ categoryId, offset, limit })
+    : [];
+const entries = liveEntries(products);
+const css = liveStockCss(entries);
+const js = livePriceScript(entries);
+
+// Caché compartida corta + SWR (AGENTS.md §3.3); `max-age=30` → el navegador la reutiliza al
+// volver atrás/adelante sin pedirla de nuevo.
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=30, s-maxage=60, stale-while-revalidate=300",
+);
+---
+
+{css && <style is:inline set:html={css} />}
+{js && <script is:inline set:html={js} />}

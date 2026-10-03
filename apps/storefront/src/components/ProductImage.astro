@@ -1,24 +1,72 @@
 ---
-// Imagen de tarjeta. Mismo HTML en el fallback estático y en la server island, para que el
-// navegador no la descargue dos veces. Por eso usa <img> con la URL original y no <Image>:
-// <Image> genera /_astro/* en build y /_image?… en runtime (URLs distintas). Las imágenes
-// del catálogo pasarán por el CDN/R2 en la fase 6. El placeholder es un SVG local.
+// Imagen de producto optimizada en build (fase 6): <Picture> AVIF + WebP, cuadrada 1:1 con
+// recorte centrado (fit cover), srcset por anchos. Original en SeaweedFS/R2 (IMAGE_BASE_URL);
+// Astro la descarga en el build y cachea los derivados en node_modules/.astro (respeta el
+// Cache-Control inmutable del bucket). Sin imagen → placeholder SVG local.
+// Calidad: valores por defecto de sharp por formato (AVIF 50 · WebP 80), sin `quality`.
+// Fuente: astro-docs (guides/images: Picture, widths/sizes, fit/position, asset caching).
+import { Picture } from "astro:assets";
 import placeholder from "../assets/placeholder.svg";
+
+export type ImageVariant = "card" | "detail" | "thumb";
+
+const PRESETS: Record<ImageVariant, { width: number; widths: number[]; sizes: string }> = {
+  // Rejilla: 2 cols (móvil) · 3 (sm) · 4 (lg, contenedor max-w-6xl = 1152px)
+  card: {
+    width: 640,
+    widths: [320, 480, 640],
+    sizes: "(min-width: 1024px) 270px, (min-width: 640px) 33vw, 50vw",
+  },
+  // Ficha: 1 col (móvil) · 2 cols (md, ≈ 560px)
+  detail: {
+    width: 1200,
+    widths: [640, 960, 1200],
+    sizes: "(min-width: 1152px) 560px, (min-width: 768px) 50vw, 100vw",
+  },
+  // Miniaturas de la galería
+  thumb: { width: 160, widths: [80, 160], sizes: "80px" },
+};
 
 interface Props {
   src?: string | null | undefined;
   alt: string;
-  size?: number;
+  variant?: ImageVariant;
+  /** Imagen LCP: carga inmediata y alta prioridad. */
+  priority?: boolean;
+  class?: string;
 }
-const { src, alt, size = 600 } = Astro.props;
+const { src, alt, variant = "card", priority = false, class: className = "" } = Astro.props;
+const preset = PRESETS[variant];
+const classes = `aspect-square w-full bg-muted object-cover ${className}`;
+const loading = priority ? "eager" : "lazy";
 ---
 
-<img
-  src={src || placeholder.src}
-  alt={src ? alt : ""}
-  width={size}
-  height={size}
-  loading="lazy"
-  decoding="async"
-  class="aspect-square w-full rounded-md bg-muted object-cover"
-/>
+{src ? (
+  <Picture
+    src={src}
+    alt={alt}
+    width={preset.width}
+    height={preset.width}
+    widths={preset.widths}
+    sizes={preset.sizes}
+    formats={["avif", "webp"]}
+    fallbackFormat="webp"
+    fit="cover"
+    position="center"
+    loading={loading}
+    fetchpriority={priority ? "high" : "auto"}
+    decoding="async"
+    class={classes}
+  />
+) : (
+  <img
+    src={placeholder.src}
+    alt=""
+    width={preset.width}
+    height={preset.width}
+    loading={loading}
+    fetchpriority={priority ? "high" : "auto"}
+    decoding="async"
+    class={classes}
+  />
+)}

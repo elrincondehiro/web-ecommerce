@@ -140,7 +140,7 @@ Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>
 - Componentes shadcn-svelte que no necesiten interacción se renderizan **sin** directiva `client:*` (salen como HTML puro).
 - Estado compartido entre islas: `nanostores` o eventos DOM; nada de frameworks de estado pesados.
 - Datos en build: `src/lib/medusa.ts` expone funciones tipadas (`getProducts`, `getProductByHandle`, …). Úsalas en `getStaticPaths`.
-- **Precio y stock nunca se “congelan” en HTML estático** como dato definitivo: se muestran vía server island (el HTML estático puede llevar un fallback).
+- **Precio y stock nunca se “congelan” en HTML estático** como dato definitivo. Patrón (fase 6): se escriben en el HTML del build como fallback, marcados con `data-pid`/`data-price`/`data-stock`, y la server island invisible `LiveSync` los corrige (ver `src/lib/live-sync.ts`). Todo precio o stock nuevo sigue este patrón.
 - Mutaciones (carrito, auth, newsletter) con **Astro Actions** (`src/actions`), aceptando `FormData`, validadas con `zod`, usables sin JS.
 - Sesión/carrito: cookies `httpOnly`, `Secure`, `SameSite=Lax`. Nunca `localStorage` para tokens.
 - Accesibilidad: HTML semántico, `alt` en imágenes, foco visible, contraste AA, formularios con `<label>`.
@@ -149,7 +149,7 @@ Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>
 ### 3.3 Rendimiento — obligatorio
 
 - Imágenes: `astro:assets` (`<Image>`/`<Picture>`), `width`/`height` siempre, AVIF/WebP, `loading="lazy"` salvo LCP (`loading="eager"` + `fetchpriority="high"`).
-- Fuentes: auto-alojadas (Astro Fonts API), `font-display: swap`, máximo 2 familias, `preload` solo la principal.
+- Fuentes: auto-alojadas (Astro Fonts API), `font-display: swap`, máximo 2 familias, ficheros **estáticos** de los pesos usados (no la variable completa) y `preload` solo del peso del texto base.
 - Terceros (analítica, píxeles, chat): **siempre** vía Partytown (`type="text/partytown"`) o cargados tras interacción. Nunca bloqueantes.
 - Trabajo pesado de cliente (filtrado/ordenación grande, parsing) → **Web Worker**.
 - Navegación: **Speculation Rules** inline (`<script type="speculationrules">`) y view transitions **nativas en CSS** (`@view-transition`). No actives `prefetch` de Astro ni `<ClientRouter />` (añaden JS a todas las páginas; ver `docs/fases/fase3.md` §7.1).

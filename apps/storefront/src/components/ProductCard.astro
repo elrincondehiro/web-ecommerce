@@ -1,30 +1,38 @@
 ---
-// Tarjeta de producto (HTML estático, 0 JS). Sin `pricing` → hueco de precio (fallback estático);
-// con `pricing` → precio con IVA y stock (render de la server island).
+// Tarjeta de producto (HTML estático, 0 JS). Precio y stock vienen del BUILD y llevan marcas
+// data-* para que la server island <LiveSync> los corrija (lib/live-sync.ts):
+//   data-pid + data-stock → CSS de stock · data-price / data-price-from → script de precio.
 import { Badge } from "$lib/components/ui/badge";
-import type { ProductPricing, StoreProduct } from "$lib/catalog";
+import { getProductPricing, type StoreProduct } from "$lib/catalog";
 import { formatPrice } from "$lib/format";
 import ProductImage from "./ProductImage.astro";
 
 interface Props {
   product: StoreProduct;
-  pricing?: ProductPricing | undefined;
   /** Nivel del título: h2 en listados (bajo el h1), h3 en secciones de la home. */
   headingLevel?: 2 | 3 | undefined;
+  /** Primeras tarjetas visibles (LCP en listados): carga inmediata. */
+  priority?: boolean | undefined;
 }
-const { product, pricing, headingLevel = 2 } = Astro.props;
+const { product, headingLevel = 2, priority = false } = Astro.props;
 const Heading = headingLevel === 3 ? "h3" : "h2";
 const href = `/producto/${product.handle}/`;
+const pricing = getProductPricing(product);
+const image = product.thumbnail ?? product.images?.[0]?.url ?? null;
 ---
 
-<article class="group relative flex flex-col gap-3">
-  <div class="relative">
-    <ProductImage src={product.thumbnail} alt={product.title} />
-    {pricing && !pricing.inStock && (
-      <Badge variant="secondary" class="absolute top-2 left-2">
-        Agotado
-      </Badge>
-    )}
+<article
+  class="group relative flex flex-col gap-3"
+  data-pid={product.id}
+  data-stock={pricing.inStock ? "in" : "out"}
+>
+  <div class="relative overflow-hidden rounded-md">
+    <div data-dim class="transition-opacity">
+      <ProductImage src={image} alt={product.title} priority={priority} />
+    </div>
+    <Badge variant="secondary" class="absolute top-2 left-2" data-if-stock="out">
+      Agotado
+    </Badge>
   </div>
   <div class="flex flex-col gap-1">
     <Heading class="text-sm leading-snug font-medium">
@@ -33,14 +41,20 @@ const href = `/producto/${product.handle}/`;
       </a>
     </Heading>
     {product.subtitle && <p class="text-xs text-muted-foreground">{product.subtitle}</p>}
-    <p class="h-5 text-sm">
-      {pricing?.fromAmount != null && pricing.currencyCode ? (
+    <p class="h-5 text-sm tabular-nums">
+      {pricing.fromAmount != null && pricing.currencyCode && (
         <>
-          {pricing.hasPriceRange && <span class="text-muted-foreground">Desde </span>}
-          <span class="font-semibold">{formatPrice(pricing.fromAmount, pricing.currencyCode)}</span>
+          <span
+            class="text-muted-foreground"
+            data-price-from={product.id}
+            hidden={!pricing.hasPriceRange}
+          >
+            Desde
+          </span>
+          <span class="font-semibold" data-price={product.id}>
+            {formatPrice(pricing.fromAmount, pricing.currencyCode)}
+          </span>
         </>
-      ) : (
-        <span class="block h-4 w-16 rounded bg-muted" aria-hidden="true" />
       )}
     </p>
   </div>

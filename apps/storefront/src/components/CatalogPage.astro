@@ -1,10 +1,10 @@
 ---
-// Listado paginado: rejilla estática sin precios (fallback) + server island con precios/stock.
+// Listado paginado: rejilla estática con precio/stock del build + <LiveSync> que los corrige.
 import type { Page } from "astro";
 import type { StoreProduct } from "$lib/catalog";
 import ProductGrid from "./ProductGrid.astro";
 import Pagination from "./Pagination.astro";
-import PricedProductGrid from "./server/PricedProductGrid.astro";
+import LiveSync from "./server/LiveSync.astro";
 
 interface Props {
   page: Page<StoreProduct>;
@@ -20,9 +20,8 @@ const { page, categoryId } = Astro.props;
     <p class="mb-6 text-sm text-muted-foreground">
       {page.total} productos · página {page.currentPage} de {page.lastPage}
     </p>
-    <PricedProductGrid server:defer categoryId={categoryId} offset={page.start} limit={page.size}>
-      <ProductGrid slot="fallback" products={page.data} />
-    </PricedProductGrid>
+    <ProductGrid products={page.data} priorityCount={2} />
     <Pagination page={page} />
+    <LiveSync server:defer categoryId={categoryId} offset={page.start} limit={page.size} />
   </>
 )}

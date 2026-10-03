@@ -125,3 +125,19 @@
     @apply font-sans;
   }
 }
+
+/*
+ * Estado de stock del BUILD (fase 6). Fuera de @layer a propósito: debe ganar a las utilidades
+ * de Tailwind (p. ej. `inline-flex` del Badge). La server island <LiveSync> inyecta reglas con
+ * más especificidad (0,3,0) que corrigen el estado y usan `display: revert-layer` para volver
+ * al display de las utilidades. Ver src/lib/live-sync.ts.
+ */
+[data-stock="in"] [data-if-stock="out"],
+[data-stock="out"] [data-if-stock="in"],
+[data-vstock="in"] [data-if-vstock="out"],
+[data-vstock="out"] [data-if-vstock="in"] {
+  display: none;
+}
+[data-stock="out"] [data-dim] {
+  opacity: 0.6;
+}

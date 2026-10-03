@@ -2,7 +2,7 @@
  * Catálogo de PRUEBA (fase 2) — solo desarrollo.
  *
  *   pnpm --filter backend seed:mock            # 24 productos (por defecto)
- *   pnpm --filter backend seed:mock -- 100     # N productos
+ *   pnpm --filter backend seed:mock 100        # N productos
  *
  * Genera productos deterministas (sin dependencias externas ni imágenes remotas),
  * repartidos en categorías y en los tres tipos de IVA:

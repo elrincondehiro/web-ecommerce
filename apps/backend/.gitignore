@@ -3,3 +3,4 @@
 /.medusa
 /build
 medusa-db.sql
+/.cache

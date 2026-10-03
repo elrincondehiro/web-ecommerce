@@ -17,7 +17,7 @@ const current = Astro.url.pathname;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <Font cssVariable="--font-inter" preload />
+    <Font cssVariable="--font-inter" preload={[{ weight: 400 }]} />
     <Seo {...Astro.props} />
   </head>
   <body class="flex min-h-dvh flex-col antialiased">
