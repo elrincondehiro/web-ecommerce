@@ -2,18 +2,19 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 03-oct-2026 · cierre de la fase 6.
+> Última actualización: 03-oct-2026 · plan de la fase 4 aprobado (sin código todavía).
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado | Doc                              |
-| ------------------------------------------- | ------ | -------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md) |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)     |
-| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)     |
-| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)     |
-| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)     |
-| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)     |
+| Fase                                        | Estado           | Doc                              |
+| ------------------------------------------- | ---------------- | -------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅               | [prefase.md](./fases/prefase.md) |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅               | [fase0.md](./fases/fase0.md)     |
+| 1 CI básico + Renovate                      | ✅               | [fase1.md](./fases/fase1.md)     |
+| 2 Backend Medusa                            | ✅               | [fase2.md](./fases/fase2.md)     |
+| 3 Storefront base (Astro)                   | ✅               | [fase3.md](./fases/fase3.md)     |
+| 6 Ficheros R2 + imágenes                    | ✅               | [fase6.md](./fases/fase6.md)     |
+| 4 Carrito                                   | ⏳ plan aprobado | [fase4.md](./fases/fase4.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -87,16 +88,28 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 6. Siguiente
 
-- **Fase 6 cerrada** (PR #14 + `feat/fase6-livesync-csp`). **Siguiente: fase 4 (carrito)**, pendiente de autorización.
-- **Decisión del usuario:** todo precio o stock nuevo (carrito, fase 4) sigue el patrón _build + corrección por server island_ (AGENTS §3.2).
-- Después: fase 4 (carrito) y fase 5 (checkout, que depende de la 4).
-- Pendientes de la fase 6 para más adelante:
+- **Fase 4 (carrito): plan APROBADO, implementación sin empezar.** Leer [fase4.md](./fases/fase4.md) §2, que recoge todas las decisiones del usuario.
+  - Rama `feat/fase4-carrito`, creada desde `main` (`d007112`); por ahora solo contiene `fase4.md` y este fichero.
+  - Resumen:
+    - Cookie `cart_id` httpOnly con `COOKIE_SECURE` (`true` por defecto, `false` en el `.env` local).
+    - Astro Actions sin JS con POST/Redirect/GET a la página de origen.
+    - Contador del carrito en una server island.
+    - Un único bundle de carrito ≤ 2 KB gzip: `fetch`, contador con animación, **toasts globales por eventos del DOM + CSS** y **flyout `<dialog>` solo en escritorio**.
+    - "Añadir" en la ficha y en el listado (productos de 1 variante, con cantidad).
+    - `/carrito/` on-demand con 0 JS.
+    - Playwright `@playwright/test@1.63.0` (aprobado), e2e solo en local (`test:e2e`), CI en la fase 10.
+  - Primer paso de implementación: medir el cliente `astro:actions` frente a un `fetch` directo (fase4.md §2.5).
+- Después: fase 5 (checkout + Stripe).
+- **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
+- **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).
   - Limpiar objetos huérfanos del bucket.
   - Script de preparación de fotos reales.
-  - LCP del listado de ~2 s, que se revisa en la fase 13.
+  - Compresión/caché en Caddy y CSS crítico (fases 11/13).
 - Skill `shadcn-svelte` disponible en `.pi/skills/` (comandos `pnpm dlx shadcn-svelte@1.7.0`). Al añadir componentes, usar `--no-deps` y revisar `package.json` (el CLI mete `^`).
 - Navegación en la fase 13: Speculation Rules inline y view transitions CSS, sin JS ([fase3.md §7.1](./fases/fase3.md)).
+- **No borrar** `apps/storefront/node_modules/.astro` (caché de imágenes, ~2 GB) ni `apps/backend/.cache/mock-images`.
+- Matar procesos **por PID**. Un `pkill -f` con un patrón que coincida con la propia shell la mata (exit 143).
 
 ## 7. Pendientes conocidos
 
