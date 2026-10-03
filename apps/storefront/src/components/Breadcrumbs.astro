@@ -1,0 +1,27 @@
+---
+import type { Crumb } from "$lib/seo";
+
+interface Props {
+  items: Crumb[];
+}
+const { items } = Astro.props;
+---
+
+<nav aria-label="Migas de pan" class="mb-6 text-sm text-muted-foreground">
+  <ol class="flex flex-wrap gap-1">
+    {items.map((c, i) => (
+      <li class="flex gap-1">
+        {i > 0 && <span aria-hidden="true">/</span>}
+        {i === items.length - 1 ? (
+          <span aria-current="page" class="text-foreground">
+            {c.name}
+          </span>
+        ) : (
+          <a href={c.href} class="hover:underline">
+            {c.name}
+          </a>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>

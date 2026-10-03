@@ -158,7 +158,7 @@ web-ecommerce/
 
 ## 4. Versiones fijadas
 
-**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 02-oct-2026 (cierre de Renovate).
+**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 03-oct-2026 (fase 3).
 
 Política:
 
@@ -214,12 +214,15 @@ Política:
 | `astro`                                                                                                                   | **7.3.5**                                                                        | storefront                                        |
 | `@astrojs/svelte`                                                                                                         | 9.0.1                                                                            | storefront                                        |
 | `@astrojs/node`                                                                                                           | 11.1.6                                                                           | storefront                                        |
-| `@astrojs/partytown`                                                                                                      | 2.1.8                                                                            | storefront                                        |
+| `@astrojs/partytown` _(no instalado; fase 13)_                                                                            | 2.1.8                                                                            | storefront                                        |
 | `@astrojs/sitemap`                                                                                                        | 3.7.4                                                                            | storefront                                        |
 | `svelte`                                                                                                                  | **5.57.1**                                                                       | storefront                                        |
 | `tailwindcss`, `@tailwindcss/vite`                                                                                        | **4.3.3**                                                                        | storefront                                        |
 | `shadcn-svelte` (CLI)                                                                                                     | 1.7.0                                                                            | storefront (dev)                                  |
 | `bits-ui`                                                                                                                 | 2.19.3                                                                           | storefront                                        |
+| `tailwind-variants` · `tailwind-merge` · `clsx` · `tw-animate-css`                                                        | 3.3.1 · 3.7.0 · 2.1.1 · 1.4.0                                                    | storefront (utilidades de shadcn-svelte)          |
+| `sharp`                                                                                                                   | 0.35.5                                                                           | storefront (`astro:assets`)                       |
+| `@astrojs/check` · `svelte-check`                                                                                         | 0.9.10 · 4.7.6                                                                   | storefront (dev, typecheck)                       |
 | `@stripe/stripe-js`                                                                                                       | 9.17.0                                                                           | storefront                                        |
 | `meilisearch` (cliente JS)                                                                                                | 0.62.0                                                                           | storefront + backend                              |
 | `stripe` (Node)                                                                                                           | 22.6.2                                                                           | backend (si se usa fuera del provider oficial)    |
@@ -228,10 +231,12 @@ Política:
 | `@react-email/components`                                                                                                 | 1.0.12                                                                           | emails                                            |
 | `@react-email/render`                                                                                                     | 2.1.0                                                                            | emails / backend                                  |
 | `typescript`                                                                                                              | **6.0.3**                                                                        | todo el monorepo                                  |
-| `vitest`                                                                                                                  | 5.0.3                                                                            | tests                                             |
+| `vitest`                                                                                                                  | 5.0.3                                                                            | storefront (tests de `src/lib`)                   |
 | `@playwright/test`                                                                                                        | 1.63.0                                                                           | e2e                                               |
 | `eslint` 10.11.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                                                                                | `packages/config` (lint)                          |
 | `prettier`                                                                                                                | 3.9.9                                                                            | `packages/config` (formato)                       |
+| `eslint-plugin-astro` 3.2.1 · `eslint-plugin-svelte` 3.23.0                                                               | —                                                                                | `packages/config` (lint, fase 3)                  |
+| `prettier-plugin-astro` 1.1.0 · `prettier-plugin-svelte` 4.1.1 · `prettier-plugin-tailwindcss` 0.8.1                      | —                                                                                | `packages/config` (formato, fase 3)               |
 | `@types/node`                                                                                                             | 24.9.2 (PR de Renovate a 24.19.x pendiente: espera 24 h por `minimumReleaseAge`) | raíz (alineado con Node 24)                       |
 | `react` / `react-dom` (solo admin de Medusa)                                                                              | 18.3.1                                                                           | backend                                           |
 | `@types/react` / `@types/react-dom`                                                                                       | 18.3.31 / 18.3.7                                                                 | backend                                           |
@@ -266,6 +271,14 @@ Los agentes (pi) consultan documentación **actualizada** a través de servidore
 | `stripe`   | `https://mcp.stripe.com`       | Búsqueda en docs de Stripe + herramientas sobre la cuenta (requiere login)                                                           |
 
 **Medusa**: su MCP oficial (`docs.medusajs.com/mcp`) exige login con cuenta Medusa Cloud, así que **no se usa**. Alternativas: Context7 (`/medusajs/medusa`) y `https://docs.medusajs.com/llms-full.txt` (consultable con `curl`).
+
+**Skills del proyecto** (`.pi/skills/`, versionadas):
+
+| Skill           | Origen                                                     | Cubre                                                                                         |
+| --------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `shadcn-svelte` | `huntabyte/shadcn-svelte`, tag `shadcn-svelte@1.7.0` (MIT) | CLI, composición, estilos e iconos de shadcn-svelte. Comandos fijados a `shadcn-svelte@1.7.0` |
+
+No hay MCP de shadcn-svelte: el de shadcn (`shadcn mcp`) es para React. Procedencia y cómo actualizar la skill: `.pi/skills/shadcn-svelte/PROVENANCE.md`.
 
 ### 5.1 Activar los MCPs
 
@@ -472,44 +485,22 @@ La **publishable key** sale en el log del seed (para `PUBLIC_MEDUSA_PUBLISHABLE_
 
 ### 8.4 Storefront (Astro 7 + Svelte 5 + Tailwind v4 + shadcn-svelte)
 
-```bash
-cd ~/Proyectos/web-ecommerce
-pnpm create astro@latest apps/storefront -- --template minimal --no-install --no-git
-cd apps/storefront
-# package.json → "name": "storefront"
-pnpm add astro@7.3.5 @astrojs/svelte@9.0.1 @astrojs/node@11.1.6 \
-  @astrojs/partytown@2.1.8 @astrojs/sitemap@3.7.4 svelte@5.57.1 \
-  tailwindcss@4.3.3 @tailwindcss/vite@4.3.3 bits-ui@2.19.3 \
-  @medusajs/js-sdk@2.21.2 @medusajs/types@2.21.2
-pnpm add -D typescript@6.0.3
-pnpm dlx shadcn-svelte@1.7.0 init        # requiere alias $lib → ver abajo
-```
-
-- Alias `$lib` para shadcn-svelte: en `tsconfig.json` → `"paths": { "$lib/*": ["./src/lib/*"] }` y en `astro.config.mjs` → `vite.resolve.alias`.
-- `astro.config.mjs` (esqueleto orientativo; se valida contra `astro-docs` MCP en la fase 3):
-  ```js
-  import { defineConfig } from "astro/config";
-  import svelte from "@astrojs/svelte";
-  import node from "@astrojs/node";
-  import partytown from "@astrojs/partytown";
-  import sitemap from "@astrojs/sitemap";
-  import tailwindcss from "@tailwindcss/vite";
-
-  export default defineConfig({
-    site: "https://tienda.tudominio.com",
-    output: "static", // estático por defecto; on-demand solo donde se indique
-    adapter: node({ mode: "standalone" }),
-    integrations: [svelte(), partytown({ config: { forward: ["dataLayer.push"] } }), sitemap()],
-    prefetch: { prefetchAll: false, defaultStrategy: "hover" },
-    build: { inlineStylesheets: "auto" },
-    image: { domains: ["img.tudominio.com", "localhost"] },
-    vite: { plugins: [tailwindcss()] },
-  });
-  ```
+Creado en la fase 3 (scaffold manual, sin `create astro@latest`). Detalle y decisiones: [`docs/fases/fase3.md`](./docs/fases/fase3.md).
 
 ```bash
-pnpm dev:storefront              # http://localhost:4321
+cp apps/storefront/.env.example apps/storefront/.env   # poner MEDUSA_PUBLISHABLE_KEY
+pnpm infra:up && pnpm dev:backend                      # el build y las server islands leen la Store API
+pnpm dev:storefront                                    # http://localhost:4321
+pnpm --filter storefront build && pnpm --filter storefront preview   # servidor de producción (node standalone)
+STOREFRONT_DATA=fixtures pnpm --filter storefront build              # sin backend (como en CI)
+pnpm --filter storefront check:budget                  # 0 bundles JS en home/listado/ficha
+pnpm --filter storefront fixtures:update               # regenera src/lib/__fixtures__ desde Medusa
 ```
+
+- HTML estático para home, `/productos/`, `/categorias/<handle>/` y `/producto/<handle>/`. El precio y el stock llegan por **server island** (`server:defer`).
+- shadcn-svelte con el preset `vega`; alias `$lib` definido en `tsconfig.json` y en `vite.resolve.alias`.
+- Componentes en `src/lib/components/ui`, renderizados **sin** `client:*`.
+- Inter variable auto-alojada con la Fonts API (`fontProviders.fontsource()`).
 
 ### 8.5 Emails (React Email)
 
@@ -547,7 +538,7 @@ pnpm infra:stripe                                    # webhooks Stripe (perfil o
 
 ```bash
 pnpm infra:up | infra:down | infra:ps | infra:logs | infra:stripe
-pnpm dev | dev:backend            # dev:storefront y dev:emails llegarán en fases 3 y 8
+pnpm dev | dev:backend | dev:storefront   # dev:emails llegará en la fase 8
 pnpm backend:seed | backend:seed:mock
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 pnpm --filter backend exec medusa db:generate <modulo>   # migraciones de módulos propios
@@ -667,7 +658,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 0 Fundaciones                          | [fase0.md](./docs/fases/fase0.md)                                                                | ✅     |
 | 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | ✅     |
 | 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | ✅     |
-| 3 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 3 Storefront base (Astro)              | [fase3.md](./docs/fases/fase3.md)                                                                | 🚧     |
+| 4 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 
@@ -790,12 +782,15 @@ STOREFRONT_REBUILD_WEBHOOK=          # opcional: dispara rebuild del storefront
 SENTRY_DSN=                          # fase 12: DSN del proyecto en GlitchTip (vacío = desactivado)
 ```
 
-**apps/storefront/.env**
+**apps/storefront/.env** (ver `apps/storefront/.env.example`; las de Medusa son de **servidor** vía `astro:env`, no llegan al navegador)
 
 ```ini
-PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9000
-PUBLIC_MEDUSA_PUBLISHABLE_KEY=pk_...
-PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+SITE_URL=http://localhost:4321       # prod: https://elrincondehiro.com
+MEDUSA_BACKEND_URL=http://localhost:9000
+MEDUSA_PUBLISHABLE_KEY=pk_...
+STOREFRONT_DATA=medusa               # fixtures en CI (sin backend)
+# ASTRO_KEY=                         # opcional: clave fija de server islands (rolling deploys/CDN)
+PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...   # fase 5
 PUBLIC_MEILISEARCH_HOST=http://localhost:7700
 PUBLIC_MEILISEARCH_SEARCH_KEY=...    # search-only key, NUNCA la master
 ```

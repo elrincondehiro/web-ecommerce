@@ -2,17 +2,17 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 03-oct-2026 · cierre de la fase 2.
+> Última actualización: 03-oct-2026 · fase 3 en curso (PR 3a).
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado           | Doc                                                           |
-| ------------------------------------------- | ---------------- | ------------------------------------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅               | [prefase.md](./fases/prefase.md)                              |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅               | [fase0.md](./fases/fase0.md)                                  |
-| 1 CI básico + Renovate                      | ✅               | [fase1.md](./fases/fase1.md)                                  |
-| 2 Backend Medusa                            | ✅               | [fase2.md](./fases/fase2.md)                                  |
-| **3 Storefront base (Astro)**               | ⏳ **siguiente** | se crea `fase3.md` desde [PLANTILLA.md](./fases/PLANTILLA.md) |
+| Fase                                        | Estado          | Doc                              |
+| ------------------------------------------- | --------------- | -------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅              | [prefase.md](./fases/prefase.md) |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅              | [fase0.md](./fases/fase0.md)     |
+| 1 CI básico + Renovate                      | ✅              | [fase1.md](./fases/fase1.md)     |
+| 2 Backend Medusa                            | ✅              | [fase2.md](./fases/fase2.md)     |
+| **3 Storefront base (Astro)**               | 🚧 **en curso** | [fase3.md](./fases/fase3.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -21,6 +21,7 @@ Roadmap completo y tiempos: README §13.
 - **Monorepo pnpm 12.8.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
+  - `apps/storefront` (fase 3, en revisión): Astro 7.3.5 estático + server islands de precio y stock, shadcn-svelte (preset `vega`) sin hidratar, 0 bundles JS. Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
 - **Backend**:
   - Redis para caching, event bus, workflow engine y locking.
@@ -30,7 +31,7 @@ Roadmap completo y tiempos: README §13.
   - `seed:mock`: catálogo de prueba idempotente (24 productos por defecto).
   - Importes de Medusa v2 en **unidad principal** (4.95 = 4,95 €).
 - **CI** (`.github/workflows/ci.yml`, mismo fichero en Gitea y GitHub):
-  - Job **`quality`**: install `--frozen-lockfile`, lint, format:check, typecheck, test y build. Es check obligatorio en ambas plataformas.
+  - Job **`quality`**: install `--frozen-lockfile`, lint, format:check, typecheck, test, build (storefront con fixtures) y `check:budget`. Es check obligatorio en ambas plataformas.
   - Actions fijadas por **SHA + tag en comentario**.
 - **Renovate autoalojado** (`renovate.yml`, solo en Gitea, bot `renovate-bot`, secret `RENOVATE_TOKEN`):
   - Se ejecuta los lunes a las 04:00 UTC, a mano, y al marcar casillas del Dependency Dashboard.
@@ -60,7 +61,8 @@ Roadmap completo y tiempos: README §13.
 
 ```bash
 pnpm infra:up | infra:down | infra:ps | infra:logs | infra:stripe
-pnpm dev                     # todas las apps (hoy: backend)
+pnpm dev                     # todas las apps
+pnpm dev:storefront          # :4321 (necesita apps/storefront/.env y el backend en marcha)
 pnpm dev:backend             # API :9000 · Admin :9000/app (usuario admin ya creado por el usuario)
 pnpm backend:seed            # idempotente
 pnpm backend:seed:mock       # idempotente; `-- 100` para 100 productos
@@ -78,21 +80,11 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - ⚠️ El build del backend llega a unos 3,7 GB de pico: dos builds a la vez pueden agotar la memoria. El usuario lo deja así de momento.
 - Producción futura: VPS **Hetzner** (Debian 13). Monitorización híbrida (README §12); red privada **WireGuard** preferida (se decide en la fase 12).
 
-## 6. Siguiente: fase 3 — Storefront base
+## 6. Siguiente
 
-**Objetivo (README §13):** Astro **7.3.5** + Svelte **5.57.1** + Tailwind **4.3.3** + shadcn-svelte **1.7.0** / bits-ui **2.19.3**, `@astrojs/node` **11.1.6**, `@astrojs/svelte` **9.0.1**. Layout, home, listado y ficha **estáticos** desde la Store API (`@medusajs/js-sdk` **2.21.2**); precio y stock en **server island**; SEO (meta, JSON-LD, sitemap), fuentes e imágenes. Criterio: Lighthouse móvil ≥ 95 y **0 KB de JS propio** en la ficha.
-
-**Antes de empezar (REGLA Nº 1):**
-
-1. Consultar **astro-docs** (Astro 7: server islands, `output`, adapter node, actions, fonts, `astro:assets`, prefetch), **svelte** (Svelte 5 + autofixer), context7 (Tailwind v4 con `@tailwindcss/vite`, shadcn-svelte en Astro con alias `$lib`) y context7 Medusa (`@medusajs/js-sdk`, Store API, precios con `region_id`, `calculated_price`).
-2. Presentar el plan (comandos exactos, ficheros, estrategia de render por página, impacto en JS) y **esperar confirmación**.
-
-**Puntos a decidir con el usuario en el plan de la fase 3:**
-
-- Dependencias nuevas aún no aprobadas: `eslint-plugin-astro`, `eslint-plugin-svelte`, `prettier-plugin-astro`, `prettier-plugin-svelte`, `prettier-plugin-tailwindcss` (versiones en README §4.3 o consultar), `@astrojs/check` y vitest/playwright si se usan ya.
-- Cómo obtiene el storefront los datos en **build** dentro del CI: el job `quality` no tiene Medusa corriendo. Opciones: build sin datos (mock), Medusa como servicio del job o build solo en local/CD.
-- Variables `PUBLIC_MEDUSA_BACKEND_URL` y `PUBLIC_MEDUSA_PUBLISHABLE_KEY` en `apps/storefront/.env.example`.
-- Imágenes: el catálogo mock no tiene imágenes (las reales llegan con R2/SeaweedFS en la fase 6) → usar un placeholder.
+- **Ahora:** revisar y fusionar el PR de la fase 3 (`feat/fase3-storefront-base`). Al cerrar la fase: README §13 → ✅, `fase3.md` ✅ y actualizar este fichero.
+- **Después: fase 4 — Carrito** (README §13): cookie `cart_id` httpOnly, Astro Actions sin JS, contador en server island, Playwright con JS desactivado. REGLA Nº 1 antes de empezar.
+- Skill `shadcn-svelte` disponible en `.pi/skills/` (comandos `pnpm dlx shadcn-svelte@1.7.0`). Al añadir componentes, usar `--no-deps` y revisar `package.json` (el CLI mete `^`).
 
 ## 7. Pendientes conocidos
 

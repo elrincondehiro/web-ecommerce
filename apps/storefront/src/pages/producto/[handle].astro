@@ -1,0 +1,98 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import { Image } from "astro:assets";
+import { Skeleton } from "$lib/components/ui/skeleton";
+import { metaDescription } from "$lib/catalog";
+import { getAllProducts } from "$lib/medusa";
+import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
+import placeholder from "../../assets/placeholder.svg";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import ProductBuyBox from "../../components/server/ProductBuyBox.astro";
+
+export const getStaticPaths = (async () => {
+  const products = await getAllProducts();
+  return products.map((product) => ({ params: { handle: product.handle }, props: { product } }));
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+const { product } = Astro.props as Props;
+const category = product.categories?.[0];
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  ...(category ? [{ name: category.name, href: `/categorias/${category.handle}/` }] : []),
+  { name: product.title, href: `/producto/${product.handle}/` },
+];
+const image = product.thumbnail ?? product.images?.[0]?.url ?? null;
+const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
+---
+
+<BaseLayout
+  title={product.title}
+  description={metaDescription(product.description) || product.title}
+  type="product"
+  image={image ?? undefined}
+  jsonLd={[
+    breadcrumbJsonLd(crumbs, Astro.site!),
+    productJsonLd(product, Astro.site!, image ?? undefined),
+  ]}
+>
+  <Breadcrumbs items={crumbs} />
+  <div class="grid gap-8 md:grid-cols-2">
+    {image ? (
+      <Image
+        src={image}
+        alt={product.title}
+        width={800}
+        height={800}
+        loading="eager"
+        fetchpriority="high"
+        class="aspect-square w-full rounded-lg bg-muted object-cover"
+      />
+    ) : (
+      <img
+        src={placeholder.src}
+        alt=""
+        width="800"
+        height="800"
+        loading="eager"
+        fetchpriority="high"
+        class="aspect-square w-full rounded-lg bg-muted object-cover"
+      />
+    )}
+    <div class="flex flex-col gap-6">
+      <div class="flex flex-col gap-2">
+        <h1 class="text-3xl font-semibold tracking-tight">{product.title}</h1>
+        {product.subtitle && <p class="text-muted-foreground">{product.subtitle}</p>}
+      </div>
+
+      <ProductBuyBox server:defer productId={product.id}>
+        <div slot="fallback" class="flex flex-col gap-4" aria-busy="true">
+          <Skeleton class="h-8 w-40" />
+          <Skeleton class="h-5 w-20" />
+          <span class="sr-only">Cargando precio y disponibilidad…</span>
+        </div>
+      </ProductBuyBox>
+
+      {options.length > 0 && (
+        <dl class="grid gap-2 text-sm">
+          {options.map((o) => (
+            <div class="flex gap-2">
+              <dt class="text-muted-foreground">{o.title}:</dt>
+              <dd>{o.values!.map((v) => v.value).join(" · ")}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {product.description && (
+        <section aria-labelledby="descripcion">
+          <h2 id="descripcion" class="mb-2 font-semibold">
+            Descripción
+          </h2>
+          <p class="max-w-prose leading-relaxed text-muted-foreground">{product.description}</p>
+        </section>
+      )}
+    </div>
+  </div>
+</BaseLayout>

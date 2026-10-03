@@ -1,0 +1,60 @@
+---
+import { buttonVariants } from "$lib/components/ui/button";
+import { getAllProducts, getCategories } from "$lib/medusa";
+import { SITE_NAME } from "$lib/constants";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProductGrid from "../components/ProductGrid.astro";
+import PricedProductGrid from "../components/server/PricedProductGrid.astro";
+
+const FEATURED = 8;
+const [products, categories] = await Promise.all([getAllProducts(), getCategories()]);
+const featured = products.slice(0, FEATURED);
+---
+
+<BaseLayout
+  title={SITE_NAME}
+  description="Tienda online de El Rincón de Hiro: ropa, hogar, libros, accesorios y alimentación con envío en España."
+  jsonLd={[
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: Astro.site?.href,
+      inLanguage: "es-ES",
+    },
+  ]}
+>
+  <section class="mb-12 flex flex-col items-start gap-4">
+    <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">El Rincón de Hiro</h1>
+    <p class="max-w-prose text-muted-foreground">
+      Productos seleccionados con envío a toda España. Precios con IVA incluido.
+    </p>
+    <a href="/productos/" class={buttonVariants({ size: "lg" })}>
+      Ver todos los productos
+    </a>
+  </section>
+
+  <section aria-labelledby="categorias" class="mb-12">
+    <h2 id="categorias" class="mb-4 text-xl font-semibold">
+      Categorías
+    </h2>
+    <ul class="flex flex-wrap gap-2">
+      {categories.map((c) => (
+        <li>
+          <a href={`/categorias/${c.handle}/`} class={buttonVariants({ variant: "outline" })}>
+            {c.name}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section aria-labelledby="destacados">
+    <h2 id="destacados" class="mb-4 text-xl font-semibold">
+      Destacados
+    </h2>
+    <PricedProductGrid server:defer offset={0} limit={FEATURED} headingLevel={3}>
+      <ProductGrid slot="fallback" products={featured} headingLevel={3} />
+    </PricedProductGrid>
+  </section>
+</BaseLayout>

@@ -15,6 +15,7 @@
     "infra:stripe": "docker compose --env-file docker/.env -f docker/compose.dev.yml --profile stripe up -d stripe-cli",
     "dev": "pnpm -r --parallel --if-present dev",
     "dev:backend": "pnpm --filter backend dev",
+    "dev:storefront": "pnpm --filter storefront dev",
     "backend:seed": "pnpm --filter backend seed",
     "backend:seed:mock": "pnpm --filter backend seed:mock",
     "lint": "eslint .",

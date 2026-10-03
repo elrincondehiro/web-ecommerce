@@ -1,0 +1,47 @@
+---
+// Tarjeta de producto (HTML estático, 0 JS). Sin `pricing` → hueco de precio (fallback estático);
+// con `pricing` → precio con IVA y stock (render de la server island).
+import { Badge } from "$lib/components/ui/badge";
+import type { ProductPricing, StoreProduct } from "$lib/catalog";
+import { formatPrice } from "$lib/format";
+import ProductImage from "./ProductImage.astro";
+
+interface Props {
+  product: StoreProduct;
+  pricing?: ProductPricing | undefined;
+  /** Nivel del título: h2 en listados (bajo el h1), h3 en secciones de la home. */
+  headingLevel?: 2 | 3 | undefined;
+}
+const { product, pricing, headingLevel = 2 } = Astro.props;
+const Heading = headingLevel === 3 ? "h3" : "h2";
+const href = `/producto/${product.handle}/`;
+---
+
+<article class="group relative flex flex-col gap-3">
+  <div class="relative">
+    <ProductImage src={product.thumbnail} alt={product.title} />
+    {pricing && !pricing.inStock && (
+      <Badge variant="secondary" class="absolute top-2 left-2">
+        Agotado
+      </Badge>
+    )}
+  </div>
+  <div class="flex flex-col gap-1">
+    <Heading class="text-sm leading-snug font-medium">
+      <a href={href} class="after:absolute after:inset-0 group-hover:underline">
+        {product.title}
+      </a>
+    </Heading>
+    {product.subtitle && <p class="text-xs text-muted-foreground">{product.subtitle}</p>}
+    <p class="h-5 text-sm">
+      {pricing?.fromAmount != null && pricing.currencyCode ? (
+        <>
+          {pricing.hasPriceRange && <span class="text-muted-foreground">Desde </span>}
+          <span class="font-semibold">{formatPrice(pricing.fromAmount, pricing.currencyCode)}</span>
+        </>
+      ) : (
+        <span class="block h-4 w-16 rounded bg-muted" aria-hidden="true" />
+      )}
+    </p>
+  </div>
+</article>

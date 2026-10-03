@@ -1,0 +1,28 @@
+---
+// Listado paginado: rejilla estática sin precios (fallback) + server island con precios/stock.
+import type { Page } from "astro";
+import type { StoreProduct } from "$lib/catalog";
+import ProductGrid from "./ProductGrid.astro";
+import Pagination from "./Pagination.astro";
+import PricedProductGrid from "./server/PricedProductGrid.astro";
+
+interface Props {
+  page: Page<StoreProduct>;
+  categoryId?: string | undefined;
+}
+const { page, categoryId } = Astro.props;
+---
+
+{page.total === 0 ? (
+  <p class="text-muted-foreground">No hay productos todavía.</p>
+) : (
+  <>
+    <p class="mb-6 text-sm text-muted-foreground">
+      {page.total} productos · página {page.currentPage} de {page.lastPage}
+    </p>
+    <PricedProductGrid server:defer categoryId={categoryId} offset={page.start} limit={page.size}>
+      <ProductGrid slot="fallback" products={page.data} />
+    </PricedProductGrid>
+    <Pagination page={page} />
+  </>
+)}

@@ -1,0 +1,27 @@
+---
+import type { Page } from "astro";
+
+interface Props {
+  page: Page<unknown>;
+}
+const { page } = Astro.props;
+const link = "rounded-md border px-3 py-1.5 text-sm hover:bg-muted";
+---
+
+{page.lastPage > 1 && (
+  <nav aria-label="Paginación" class="mt-10 flex items-center justify-center gap-3">
+    {page.url.prev ? (
+      <a href={page.url.prev} rel="prev" class={link}>
+        Anterior
+      </a>
+    ) : null}
+    <span class="text-sm text-muted-foreground">
+      Página {page.currentPage} de {page.lastPage}
+    </span>
+    {page.url.next ? (
+      <a href={page.url.next} rel="next" class={link}>
+        Siguiente
+      </a>
+    ) : null}
+  </nav>
+)}

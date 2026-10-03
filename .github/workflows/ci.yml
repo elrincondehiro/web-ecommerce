@@ -59,3 +59,9 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          # Storefront sin backend en CI: catálogo desde src/lib/__fixtures__ (fase 3)
+          STOREFRONT_DATA: fixtures
+
+      - name: Presupuesto de JS (storefront)
+        run: pnpm --filter storefront check:budget

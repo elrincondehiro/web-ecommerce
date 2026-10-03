@@ -1,0 +1,20 @@
+---
+// Server island (server:defer): misma rejilla que el fallback estático, con precio y stock
+// actuales. Props mínimas (id de categoría + rango) para que la URL GET sea corta y cacheable.
+import { getPricedProducts } from "$lib/medusa";
+import ProductGrid from "../ProductGrid.astro";
+
+interface Props {
+  categoryId?: string | undefined;
+  offset: number;
+  limit: number;
+  headingLevel?: 2 | 3 | undefined;
+}
+const { categoryId, offset, limit, headingLevel } = Astro.props;
+const products = await getPricedProducts({ categoryId, offset, limit });
+
+// Precio/stock: caché compartida corta + SWR (AGENTS.md §3.3).
+Astro.response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+---
+
+<ProductGrid products={products} priced headingLevel={headingLevel} />

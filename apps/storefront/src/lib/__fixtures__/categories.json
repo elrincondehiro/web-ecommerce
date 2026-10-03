@@ -1,0 +1,37 @@
+[
+  {
+    "id": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+    "name": "Ropa",
+    "handle": "ropa",
+    "description": "",
+    "rank": 0
+  },
+  {
+    "id": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+    "name": "Hogar",
+    "handle": "hogar",
+    "description": "",
+    "rank": 1
+  },
+  {
+    "id": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+    "name": "Libros",
+    "handle": "libros",
+    "description": "",
+    "rank": 3
+  },
+  {
+    "id": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+    "name": "Accesorios",
+    "handle": "accesorios",
+    "description": "",
+    "rank": 4
+  },
+  {
+    "id": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+    "name": "Alimentación",
+    "handle": "alimentacion",
+    "description": "",
+    "rank": 2
+  }
+]

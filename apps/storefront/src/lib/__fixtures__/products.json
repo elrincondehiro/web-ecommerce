@@ -1,0 +1,3049 @@
+[
+  {
+    "id": "prod_01M3ZEJF082Q9SYXJKYRGWH4E3",
+    "handle": "mock-aceite-de-oliva-ligero-023",
+    "title": "Aceite de oliva Ligero 023",
+    "subtitle": "Alimentación",
+    "description": "Aceite de oliva Ligero 023: producto de prueba generado para desarrollo (Alimentación).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF61M9YXNK845T9N2BYV",
+        "title": "250 g",
+        "sku": "MOCK-ACEITE-DE-OLIVA-LIGERO-023-250-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF082Q9SYXJKYRGWH4E3",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0J4MK526ZZCCEHFHC0",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09GNWXC8TPP3A7ZHTH",
+            "option": {
+              "id": "opt_01M3ZEJF09GNWXC8TPP3A7ZHTH",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF936Q9S1XPP2RQKC2PV",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 44.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 44.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF93BM7ZVJ2DBS8GG49Y"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF93BM7ZVJ2DBS8GG49Y"
+          },
+          "calculated_amount_with_tax": 44.95,
+          "calculated_amount_without_tax": 37.14876033057851,
+          "original_amount_with_tax": 44.95,
+          "original_amount_without_tax": 37.14876033057851
+        },
+        "inventory_quantity": 50
+      },
+      {
+        "id": "variant_01M3ZEJF61WDPCRY74D2RY0ZYF",
+        "title": "500 g",
+        "sku": "MOCK-ACEITE-DE-OLIVA-LIGERO-023-500-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF082Q9SYXJKYRGWH4E3",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0JXKTH2YK85HE03PT8",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09GNWXC8TPP3A7ZHTH",
+            "option": {
+              "id": "opt_01M3ZEJF09GNWXC8TPP3A7ZHTH",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF93JNMZ716BMY0Z72NM",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 55.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 55.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF93KC83N848RNTNGYEV"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF93KC83N848RNTNGYEV"
+          },
+          "calculated_amount_with_tax": 55.95,
+          "calculated_amount_without_tax": 46.239669421487605,
+          "original_amount_with_tax": 55.95,
+          "original_amount_without_tax": 46.239669421487605
+        },
+        "inventory_quantity": 0
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "name": "Alimentación",
+        "description": "",
+        "handle": "alimentacion",
+        "mpath": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 2
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09GNWXC8TPP3A7ZHTH",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0J4MK526ZZCCEHFHC0",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09GNWXC8TPP3A7ZHTH"
+          },
+          {
+            "id": "optval_01M3ZEJF0JXKTH2YK85HE03PT8",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09GNWXC8TPP3A7ZHTH"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08DF8TVQEVM93PBSY5",
+    "handle": "mock-aceite-de-oliva-premium-003",
+    "title": "Aceite de oliva Premium 003",
+    "subtitle": "Alimentación",
+    "description": "Aceite de oliva Premium 003: producto de prueba generado para desarrollo (Alimentación).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5XTM44VVE1ZP98J8PN",
+        "title": "500 g",
+        "sku": "MOCK-ACEITE-DE-OLIVA-PREMIUM-003-500-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08DF8TVQEVM93PBSY5",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0F6E3G5K31M5MWCHKK",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09ZYVYGH8135CBM2J4",
+            "option": {
+              "id": "opt_01M3ZEJF09ZYVYGH8135CBM2J4",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8X6E5730WM9D5P30V4",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 89.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 89.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8XGFS763K25G4WP6S0"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8XGFS763K25G4WP6S0"
+          },
+          "calculated_amount_with_tax": 89.95,
+          "calculated_amount_without_tax": 74.33884297520662,
+          "original_amount_with_tax": 89.95,
+          "original_amount_without_tax": 74.33884297520662
+        },
+        "inventory_quantity": 8
+      },
+      {
+        "id": "variant_01M3ZEJF5XW359F59VBE4ZGKBK",
+        "title": "250 g",
+        "sku": "MOCK-ACEITE-DE-OLIVA-PREMIUM-003-250-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08DF8TVQEVM93PBSY5",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0F7FMBGBR2H9Y9DS71",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09ZYVYGH8135CBM2J4",
+            "option": {
+              "id": "opt_01M3ZEJF09ZYVYGH8135CBM2J4",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8X4RAJWB24PW78NCSF",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 78.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 78.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8XSQ4KJYBSHZJWC74F"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8XSQ4KJYBSHZJWC74F"
+          },
+          "calculated_amount_with_tax": 78.95,
+          "calculated_amount_without_tax": 65.24793388429752,
+          "original_amount_with_tax": 78.95,
+          "original_amount_without_tax": 65.24793388429752
+        },
+        "inventory_quantity": 9
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "name": "Alimentación",
+        "description": "",
+        "handle": "alimentacion",
+        "mpath": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 2
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09ZYVYGH8135CBM2J4",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0F7FMBGBR2H9Y9DS71",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09ZYVYGH8135CBM2J4"
+          },
+          {
+            "id": "optval_01M3ZEJF0F6E3G5K31M5MWCHKK",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09ZYVYGH8135CBM2J4"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08DSZZ46DKEMQCRSBE",
+    "handle": "mock-bufanda-natural-020",
+    "title": "Bufanda Natural 020",
+    "subtitle": "Accesorios",
+    "description": "Bufanda Natural 020: producto de prueba generado para desarrollo (Accesorios).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF60K7AZWJSH4DAJ1YBH",
+        "title": "Única",
+        "sku": "MOCK-BUFANDA-NATURAL-020-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08DSZZ46DKEMQCRSBE",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HY859WM41Q1S1D12T",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF091RV0XVBRE2EBCJCC",
+            "option": {
+              "id": "opt_01M3ZEJF091RV0XVBRE2EBCJCC",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF924X3KSJEC00C8R8M5",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 19.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 19.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF92MBTAMBNXNMP2R0X3"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF92MBTAMBNXNMP2R0X3"
+          },
+          "calculated_amount_with_tax": 19.95,
+          "calculated_amount_without_tax": 16.487603305785125,
+          "original_amount_with_tax": 19.95,
+          "original_amount_without_tax": 16.487603305785125
+        },
+        "inventory_quantity": 38
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+        "name": "Accesorios",
+        "description": "",
+        "handle": "accesorios",
+        "mpath": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 4
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF091RV0XVBRE2EBCJCC",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0HY859WM41Q1S1D12T",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF091RV0XVBRE2EBCJCC"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08131BR4GT33Q7E31J",
+    "handle": "mock-cafe-en-grano-vintage-008",
+    "title": "Café en grano Vintage 008",
+    "subtitle": "Alimentación",
+    "description": "Café en grano Vintage 008: producto de prueba generado para desarrollo (Alimentación).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5YABT2JEYXTV1792ZW",
+        "title": "500 g",
+        "sku": "MOCK-CAFE-EN-GRANO-VINTAGE-008-500-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08131BR4GT33Q7E31J",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GFCHWMN8Q2NQY1WQJ",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09DYCF73PDX40N6T0Z",
+            "option": {
+              "id": "opt_01M3ZEJF09DYCF73PDX40N6T0Z",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8ZFN6DKYWFG04W56G2",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 16.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 16.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8ZFG3X5JXEFFSNV4EN"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8ZFG3X5JXEFFSNV4EN"
+          },
+          "calculated_amount_with_tax": 16.95,
+          "calculated_amount_without_tax": 14.008264462809917,
+          "original_amount_with_tax": 16.95,
+          "original_amount_without_tax": 14.008264462809917
+        },
+        "inventory_quantity": 23
+      },
+      {
+        "id": "variant_01M3ZEJF5YNRDVP0X4RDWW741V",
+        "title": "250 g",
+        "sku": "MOCK-CAFE-EN-GRANO-VINTAGE-008-250-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08131BR4GT33Q7E31J",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0G0G4FTXJ4DWDSVY35",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09DYCF73PDX40N6T0Z",
+            "option": {
+              "id": "opt_01M3ZEJF09DYCF73PDX40N6T0Z",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8ZMTSP45H9GVT5RTRK",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 5.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 5.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8Z2S544E52G6YDSPQY"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8Z2S544E52G6YDSPQY"
+          },
+          "calculated_amount_with_tax": 5.95,
+          "calculated_amount_without_tax": 4.917355371900826,
+          "original_amount_with_tax": 5.95,
+          "original_amount_without_tax": 4.917355371900826
+        },
+        "inventory_quantity": 0
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "name": "Alimentación",
+        "description": "",
+        "handle": "alimentacion",
+        "mpath": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 2
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09DYCF73PDX40N6T0Z",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0G0G4FTXJ4DWDSVY35",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09DYCF73PDX40N6T0Z"
+          },
+          {
+            "id": "optval_01M3ZEJF0GFCHWMN8Q2NQY1WQJ",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09DYCF73PDX40N6T0Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF075R9NF6J40RHR21CK",
+    "handle": "mock-camiseta-clasico-001",
+    "title": "Camiseta Clásico 001",
+    "subtitle": "Ropa",
+    "description": "Camiseta Clásico 001: producto de prueba generado para desarrollo (Ropa).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5W42E7BMQ083ZEX11H",
+        "title": "S",
+        "sku": "MOCK-CAMISETA-CLASICO-001-S",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF075R9NF6J40RHR21CK",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0EAK3JW5FCXW5BJ2MW",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+            "option": {
+              "id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8WCJQ9K8QB90728TF8",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 4.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 4.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8WS7EMAM4PP6WHFM8K"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8WS7EMAM4PP6WHFM8K"
+          },
+          "calculated_amount_with_tax": 4.95,
+          "calculated_amount_without_tax": 4.090909090909091,
+          "original_amount_with_tax": 4.95,
+          "original_amount_without_tax": 4.090909090909091
+        },
+        "inventory_quantity": 0
+      },
+      {
+        "id": "variant_01M3ZEJF5WMPTJ533Z83HD5VEV",
+        "title": "M",
+        "sku": "MOCK-CAMISETA-CLASICO-001-M",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF075R9NF6J40RHR21CK",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0ET6B3WTXKWF5JKQWW",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+            "option": {
+              "id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8WN58K5NSDCNHKGSP3",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 15.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 15.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8W0X5Y1QWSNQRHGWCF"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8W0X5Y1QWSNQRHGWCF"
+          },
+          "calculated_amount_with_tax": 15.95,
+          "calculated_amount_without_tax": 13.181818181818182,
+          "original_amount_with_tax": 15.95,
+          "original_amount_without_tax": 13.181818181818182
+        },
+        "inventory_quantity": 6
+      },
+      {
+        "id": "variant_01M3ZEJF5XF3TG10EA0ACSH4XW",
+        "title": "L",
+        "sku": "MOCK-CAMISETA-CLASICO-001-L",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF075R9NF6J40RHR21CK",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0E43XJEQPTZ0Q1NJDA",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+            "option": {
+              "id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8XXBY668GZZZFWKJT0",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 26.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 26.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8XSHNVSD3MGRQ5X63B"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8XSHNVSD3MGRQ5X63B"
+          },
+          "calculated_amount_with_tax": 26.95,
+          "calculated_amount_without_tax": 22.272727272727273,
+          "original_amount_with_tax": 26.95,
+          "original_amount_without_tax": 22.272727272727273
+        },
+        "inventory_quantity": 0
+      },
+      {
+        "id": "variant_01M3ZEJF5XGE8KR9FSKN6B4EDQ",
+        "title": "XL",
+        "sku": "MOCK-CAMISETA-CLASICO-001-XL",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF075R9NF6J40RHR21CK",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0EEG2MT6W5DVXN3BYR",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+            "option": {
+              "id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8XDESXF4QZ1E14NTBH",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 37.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 37.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8XPA8DYV5GZ7QCY9T9"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8XPA8DYV5GZ7QCY9T9"
+          },
+          "calculated_amount_with_tax": 37.95,
+          "calculated_amount_without_tax": 31.363636363636363,
+          "original_amount_with_tax": 37.95,
+          "original_amount_without_tax": 31.363636363636363
+        },
+        "inventory_quantity": 18
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "name": "Ropa",
+        "description": "",
+        "handle": "ropa",
+        "mpath": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 0
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0E43XJEQPTZ0Q1NJDA",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP"
+          },
+          {
+            "id": "optval_01M3ZEJF0ET6B3WTXKWF5JKQWW",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP"
+          },
+          {
+            "id": "optval_01M3ZEJF0EAK3JW5FCXW5BJ2MW",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP"
+          },
+          {
+            "id": "optval_01M3ZEJF0EEG2MT6W5DVXN3BYR",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF08SSCDXS9KEQT62ZHP"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08Y32FGFYYXNX99XW7",
+    "handle": "mock-camiseta-urbano-021",
+    "title": "Camiseta Urbano 021",
+    "subtitle": "Ropa",
+    "description": "Camiseta Urbano 021: producto de prueba generado para desarrollo (Ropa).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF60BRKZQ73JRNBV3ZD5",
+        "title": "S",
+        "sku": "MOCK-CAMISETA-URBANO-021-S",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08Y32FGFYYXNX99XW7",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HFB8RVMMWW90WDFCY",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+            "option": {
+              "id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF9216H71YFVZR4F78XT",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 56.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 56.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF92FP3HRY3KX3YKTRJB"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF92FP3HRY3KX3YKTRJB"
+          },
+          "calculated_amount_with_tax": 56.95,
+          "calculated_amount_without_tax": 47.06611570247934,
+          "original_amount_with_tax": 56.95,
+          "original_amount_without_tax": 47.06611570247934
+        },
+        "inventory_quantity": 34
+      },
+      {
+        "id": "variant_01M3ZEJF60P98GBMTB496MT76X",
+        "title": "M",
+        "sku": "MOCK-CAMISETA-URBANO-021-M",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08Y32FGFYYXNX99XW7",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HSNBK8GZTDZDNTHGN",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+            "option": {
+              "id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF92ASBWCS6Y7BFDG6PK",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 67.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 67.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF923QESMS6Z0P2FM0WM"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF923QESMS6Z0P2FM0WM"
+          },
+          "calculated_amount_with_tax": 67.95,
+          "calculated_amount_without_tax": 56.15702479338843,
+          "original_amount_with_tax": 67.95,
+          "original_amount_without_tax": 56.15702479338843
+        },
+        "inventory_quantity": 45
+      },
+      {
+        "id": "variant_01M3ZEJF615QWJNXKFBKDZ087B",
+        "title": "XL",
+        "sku": "MOCK-CAMISETA-URBANO-021-XL",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08Y32FGFYYXNX99XW7",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0JN6QC4B6TM82CTJVE",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+            "option": {
+              "id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF928TEJQEZ4M1SDQ1TR",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 89.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 89.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF92N35SHJ9YFY2E8XNJ"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF92N35SHJ9YFY2E8XNJ"
+          },
+          "calculated_amount_with_tax": 89.95,
+          "calculated_amount_without_tax": 74.33884297520662,
+          "original_amount_with_tax": 89.95,
+          "original_amount_without_tax": 74.33884297520662
+        },
+        "inventory_quantity": 53
+      },
+      {
+        "id": "variant_01M3ZEJF61MY16CJEY400TAJNE",
+        "title": "L",
+        "sku": "MOCK-CAMISETA-URBANO-021-L",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08Y32FGFYYXNX99XW7",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0JZSGYTD517ZWZZZYD",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+            "option": {
+              "id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF92RFZJ8005E4H6JWEB",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 78.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 78.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF92FXQKBPCEHEF8V7AZ"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF92FXQKBPCEHEF8V7AZ"
+          },
+          "calculated_amount_with_tax": 78.95,
+          "calculated_amount_without_tax": 65.24793388429752,
+          "original_amount_with_tax": 78.95,
+          "original_amount_without_tax": 65.24793388429752
+        },
+        "inventory_quantity": 51
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "name": "Ropa",
+        "description": "",
+        "handle": "ropa",
+        "mpath": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 0
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0JZSGYTD517ZWZZZYD",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N"
+          },
+          {
+            "id": "optval_01M3ZEJF0HSNBK8GZTDZDNTHGN",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N"
+          },
+          {
+            "id": "optval_01M3ZEJF0HFB8RVMMWW90WDFCY",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N"
+          },
+          {
+            "id": "optval_01M3ZEJF0JN6QC4B6TM82CTJVE",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF09GZZ93H9N5Y4M8C9N"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08Q6JPZ6AMZ06SVP4J",
+    "handle": "mock-cartera-ligero-015",
+    "title": "Cartera Ligero 015",
+    "subtitle": "Accesorios",
+    "description": "Cartera Ligero 015: producto de prueba generado para desarrollo (Accesorios).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5ZXEPK01N2D4PT7VR8",
+        "title": "Única",
+        "sku": "MOCK-CARTERA-LIGERO-015-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08Q6JPZ6AMZ06SVP4J",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0H6T7N8GK898ZKD8AB",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09Q5JNZTTZD2A074RT",
+            "option": {
+              "id": "opt_01M3ZEJF09Q5JNZTTZD2A074RT",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF90CKNN92X0RY1324NQ",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 6.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 6.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF90Y208TSMA0C0H873A"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF90Y208TSMA0C0H873A"
+          },
+          "calculated_amount_with_tax": 6.95,
+          "calculated_amount_without_tax": 5.743801652892562,
+          "original_amount_with_tax": 6.95,
+          "original_amount_without_tax": 5.743801652892562
+        },
+        "inventory_quantity": 36
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+        "name": "Accesorios",
+        "description": "",
+        "handle": "accesorios",
+        "mpath": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 4
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09Q5JNZTTZD2A074RT",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0H6T7N8GK898ZKD8AB",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09Q5JNZTTZD2A074RT"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF0835Q3CDEQFXTX2WFN",
+    "handle": "mock-chaqueta-vintage-016",
+    "title": "Chaqueta Vintage 016",
+    "subtitle": "Ropa",
+    "description": "Chaqueta Vintage 016: producto de prueba generado para desarrollo (Ropa).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5Z6G36T06XJAK0E3WT",
+        "title": "M",
+        "sku": "MOCK-CHAQUETA-VINTAGE-016-M",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0835Q3CDEQFXTX2WFN",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HX1CJDFPAS99RY2PZ",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+            "option": {
+              "id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF91SYFWPZBCP8F017P4",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 54.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 54.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF91MD7H7VFBS9ZQXAC7"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF91MD7H7VFBS9ZQXAC7"
+          },
+          "calculated_amount_with_tax": 54.95,
+          "calculated_amount_without_tax": 45.413223140495866,
+          "original_amount_with_tax": 54.95,
+          "original_amount_without_tax": 45.413223140495866
+        },
+        "inventory_quantity": 35
+      },
+      {
+        "id": "variant_01M3ZEJF5ZSTEMK5G4D2Y0DT6E",
+        "title": "S",
+        "sku": "MOCK-CHAQUETA-VINTAGE-016-S",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0835Q3CDEQFXTX2WFN",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HQGB47R61N1C9S6CV",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+            "option": {
+              "id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF91KZN7PFZK758A9REV",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 43.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 43.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF91AH9VF2QTA5WEGX91"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF91AH9VF2QTA5WEGX91"
+          },
+          "calculated_amount_with_tax": 43.95,
+          "calculated_amount_without_tax": 36.32231404958678,
+          "original_amount_with_tax": 43.95,
+          "original_amount_without_tax": 36.32231404958678
+        },
+        "inventory_quantity": 46
+      },
+      {
+        "id": "variant_01M3ZEJF609VECDM4XHNT7EK1B",
+        "title": "L",
+        "sku": "MOCK-CHAQUETA-VINTAGE-016-L",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0835Q3CDEQFXTX2WFN",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HDFN48ZYAQT8BV2Q5",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+            "option": {
+              "id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF91MWH3GSSE00H80V6N",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 65.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 65.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF91768BBVPW5VFJBCCG"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF91768BBVPW5VFJBCCG"
+          },
+          "calculated_amount_with_tax": 65.95,
+          "calculated_amount_without_tax": 54.50413223140496,
+          "original_amount_with_tax": 65.95,
+          "original_amount_without_tax": 54.50413223140496
+        },
+        "inventory_quantity": 41
+      },
+      {
+        "id": "variant_01M3ZEJF60Y45NH7X3F202XGF1",
+        "title": "XL",
+        "sku": "MOCK-CHAQUETA-VINTAGE-016-XL",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0835Q3CDEQFXTX2WFN",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0H4PM3HVDXAWBBSVCP",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+            "option": {
+              "id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF911YSR9W6HNG0K0BJ6",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 76.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 76.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF91GKKY4K768534NG3B"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF91GKKY4K768534NG3B"
+          },
+          "calculated_amount_with_tax": 76.95,
+          "calculated_amount_without_tax": 63.59504132231405,
+          "original_amount_with_tax": 76.95,
+          "original_amount_without_tax": 63.59504132231405
+        },
+        "inventory_quantity": 44
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "name": "Ropa",
+        "description": "",
+        "handle": "ropa",
+        "mpath": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 0
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0HDFN48ZYAQT8BV2Q5",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS"
+          },
+          {
+            "id": "optval_01M3ZEJF0HX1CJDFPAS99RY2PZ",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS"
+          },
+          {
+            "id": "optval_01M3ZEJF0HQGB47R61N1C9S6CV",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS"
+          },
+          {
+            "id": "optval_01M3ZEJF0H4PM3HVDXAWBBSVCP",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF09BWXGAQFHDT9C4PCS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF089FRY3ZBJKP74HVVF",
+    "handle": "mock-cojin-ligero-007",
+    "title": "Cojín Ligero 007",
+    "subtitle": "Hogar",
+    "description": "Cojín Ligero 007: producto de prueba generado para desarrollo (Hogar).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5YVHJYQKP8T2Q71R45",
+        "title": "Única",
+        "sku": "MOCK-COJIN-LIGERO-007-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF089FRY3ZBJKP74HVVF",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0FXBYHRN92KMC46W0F",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09QB5ZCXP3J27MS3YG",
+            "option": {
+              "id": "opt_01M3ZEJF09QB5ZCXP3J27MS3YG",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8YJ299WM6VG6MK8MMF",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 54.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 54.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8YGTYW9W4N3HN2ATBF"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8YGTYW9W4N3HN2ATBF"
+          },
+          "calculated_amount_with_tax": 54.95,
+          "calculated_amount_without_tax": 45.413223140495866,
+          "original_amount_with_tax": 54.95,
+          "original_amount_without_tax": 45.413223140495866
+        },
+        "inventory_quantity": 22
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "name": "Hogar",
+        "description": "",
+        "handle": "hogar",
+        "mpath": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 1
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09QB5ZCXP3J27MS3YG",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0FXBYHRN92KMC46W0F",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09QB5ZCXP3J27MS3YG"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08JM5NHG0SA55FY49H",
+    "handle": "mock-cuaderno-premium-019",
+    "title": "Cuaderno Premium 019",
+    "subtitle": "Libros",
+    "description": "Cuaderno Premium 019: producto de prueba generado para desarrollo (Libros).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF6098ATBZWHPMZQKQBA",
+        "title": "Tapa blanda",
+        "sku": "MOCK-CUADERNO-PREMIUM-019-TAPA-BLANDA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08JM5NHG0SA55FY49H",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HT9APDGXJR9K3XG8S",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF0902H676Z7FVZ9C6Y6",
+            "option": {
+              "id": "opt_01M3ZEJF0902H676Z7FVZ9C6Y6",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF92GBFB2VG5520ZEWKD",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 68.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 68.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF91KX55AP4WVY15YCV1"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF91KX55AP4WVY15YCV1"
+          },
+          "calculated_amount_with_tax": 68.95,
+          "calculated_amount_without_tax": 56.98347107438016,
+          "original_amount_with_tax": 68.95,
+          "original_amount_without_tax": 56.98347107438016
+        },
+        "inventory_quantity": 42
+      },
+      {
+        "id": "variant_01M3ZEJF60MQX7CFC1GA0J9FHD",
+        "title": "Tapa dura",
+        "sku": "MOCK-CUADERNO-PREMIUM-019-TAPA-DURA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08JM5NHG0SA55FY49H",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HKPA6RNAZHJ4RVS31",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF0902H676Z7FVZ9C6Y6",
+            "option": {
+              "id": "opt_01M3ZEJF0902H676Z7FVZ9C6Y6",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF92DH5RYQ3ZJF4PSDF9",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 79.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 79.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF92DSGAFV59R1WTSYE6"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF92DSGAFV59R1WTSYE6"
+          },
+          "calculated_amount_with_tax": 79.95,
+          "calculated_amount_without_tax": 66.07438016528926,
+          "original_amount_with_tax": 79.95,
+          "original_amount_without_tax": 66.07438016528926
+        },
+        "inventory_quantity": 0
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "name": "Libros",
+        "description": "",
+        "handle": "libros",
+        "mpath": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 3
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF0902H676Z7FVZ9C6Y6",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0HT9APDGXJR9K3XG8S",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF0902H676Z7FVZ9C6Y6"
+          },
+          {
+            "id": "optval_01M3ZEJF0HKPA6RNAZHJ4RVS31",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF0902H676Z7FVZ9C6Y6"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08F3JPA64JBBEHRM5T",
+    "handle": "mock-gorra-esencial-010",
+    "title": "Gorra Esencial 010",
+    "subtitle": "Accesorios",
+    "description": "Gorra Esencial 010: producto de prueba generado para desarrollo (Accesorios).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5Y1KQAXBS841SBEM8Z",
+        "title": "Única",
+        "sku": "MOCK-GORRA-ESENCIAL-010-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08F3JPA64JBBEHRM5T",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GNEH2FVN53SF7TGKZ",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09VPC9S72CDBKTM0N2",
+            "option": {
+              "id": "opt_01M3ZEJF09VPC9S72CDBKTM0N2",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8ZX6EYMZSFGRJQZHDC",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 79.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 79.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8Z8G7KN77JY4CC0WYR"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8Z8G7KN77JY4CC0WYR"
+          },
+          "calculated_amount_with_tax": 79.95,
+          "calculated_amount_without_tax": 66.07438016528926,
+          "original_amount_with_tax": 79.95,
+          "original_amount_without_tax": 66.07438016528926
+        },
+        "inventory_quantity": 24
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+        "name": "Accesorios",
+        "description": "",
+        "handle": "accesorios",
+        "mpath": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 4
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09VPC9S72CDBKTM0N2",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0GNEH2FVN53SF7TGKZ",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09VPC9S72CDBKTM0N2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF081TT9YJ4WS54MJ304",
+    "handle": "mock-guia-de-viaje-clasico-009",
+    "title": "Guía de viaje Clásico 009",
+    "subtitle": "Libros",
+    "description": "Guía de viaje Clásico 009: producto de prueba generado para desarrollo (Libros).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5YPDDDCZ1SJHZMCC72",
+        "title": "Tapa blanda",
+        "sku": "MOCK-GUIA-DE-VIAJE-CLASICO-009-TAPA-BLANDA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF081TT9YJ4WS54MJ304",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GTFEJXQADWDVTHVN4",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF09RM4SR9KA2KXW9JPJ",
+            "option": {
+              "id": "opt_01M3ZEJF09RM4SR9KA2KXW9JPJ",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8ZFBKR6Y60T0J4YMQ5",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 42.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 42.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8ZKHMRYM685HW28XRS"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8ZKHMRYM685HW28XRS"
+          },
+          "calculated_amount_with_tax": 42.95,
+          "calculated_amount_without_tax": 35.49586776859504,
+          "original_amount_with_tax": 42.95,
+          "original_amount_without_tax": 35.49586776859504
+        },
+        "inventory_quantity": 20
+      },
+      {
+        "id": "variant_01M3ZEJF5YV1Z58HRDNQX6ZT26",
+        "title": "Tapa dura",
+        "sku": "MOCK-GUIA-DE-VIAJE-CLASICO-009-TAPA-DURA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF081TT9YJ4WS54MJ304",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GCPCS0GD443QTJHJG",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF09RM4SR9KA2KXW9JPJ",
+            "option": {
+              "id": "opt_01M3ZEJF09RM4SR9KA2KXW9JPJ",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8ZNNWNCTJM8BQQ78FE",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 53.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 53.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8ZBTYYP82E7Z8B33J4"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8ZBTYYP82E7Z8B33J4"
+          },
+          "calculated_amount_with_tax": 53.95,
+          "calculated_amount_without_tax": 44.586776859504134,
+          "original_amount_with_tax": 53.95,
+          "original_amount_without_tax": 44.586776859504134
+        },
+        "inventory_quantity": 21
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "name": "Libros",
+        "description": "",
+        "handle": "libros",
+        "mpath": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 3
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09RM4SR9KA2KXW9JPJ",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0GTFEJXQADWDVTHVN4",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF09RM4SR9KA2KXW9JPJ"
+          },
+          {
+            "id": "optval_01M3ZEJF0GCPCS0GD443QTJHJG",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF09RM4SR9KA2KXW9JPJ"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF0867BN2QMBYKXWZXVP",
+    "handle": "mock-libro-de-cocina-artesano-014",
+    "title": "Libro de cocina Artesano 014",
+    "subtitle": "Libros",
+    "description": "Libro de cocina Artesano 014: producto de prueba generado para desarrollo (Libros).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5Z7674AANMED7VXGHM",
+        "title": "Tapa dura",
+        "sku": "MOCK-LIBRO-DE-COCINA-ARTESANO-014-TAPA-DURA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0867BN2QMBYKXWZXVP",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HGP2F6G5988R6D07K",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF09X8YV4A9CDHR487YA",
+            "option": {
+              "id": "opt_01M3ZEJF09X8YV4A9CDHR487YA",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF90S5X5W803SKRQQST9",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 66.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 66.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF90EGBH1HGV4J93WJS9"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF90EGBH1HGV4J93WJS9"
+          },
+          "calculated_amount_with_tax": 66.95,
+          "calculated_amount_without_tax": 55.33057851239669,
+          "original_amount_with_tax": 66.95,
+          "original_amount_without_tax": 55.33057851239669
+        },
+        "inventory_quantity": 37
+      },
+      {
+        "id": "variant_01M3ZEJF5ZHBQJR5SPHCHH2WQJ",
+        "title": "Tapa blanda",
+        "sku": "MOCK-LIBRO-DE-COCINA-ARTESANO-014-TAPA-BLANDA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0867BN2QMBYKXWZXVP",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GKF8HREAYBHTVBR7E",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF09X8YV4A9CDHR487YA",
+            "option": {
+              "id": "opt_01M3ZEJF09X8YV4A9CDHR487YA",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF90JHPJ4QXNZ33PVB67",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 55.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 55.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF90JAXENVJSSN1GP9PG"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF90JAXENVJSSN1GP9PG"
+          },
+          "calculated_amount_with_tax": 55.95,
+          "calculated_amount_without_tax": 46.239669421487605,
+          "original_amount_with_tax": 55.95,
+          "original_amount_without_tax": 46.239669421487605
+        },
+        "inventory_quantity": 27
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "name": "Libros",
+        "description": "",
+        "handle": "libros",
+        "mpath": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 3
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09X8YV4A9CDHR487YA",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0GKF8HREAYBHTVBR7E",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF09X8YV4A9CDHR487YA"
+          },
+          {
+            "id": "optval_01M3ZEJF0HGP2F6G5988R6D07K",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF09X8YV4A9CDHR487YA"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08FAS1Z2NQQAH8J04K",
+    "handle": "mock-lampara-natural-012",
+    "title": "Lámpara Natural 012",
+    "subtitle": "Hogar",
+    "description": "Lámpara Natural 012: producto de prueba generado para desarrollo (Hogar).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5ZB42VXC22QVZQY56Q",
+        "title": "Única",
+        "sku": "MOCK-LAMPARA-NATURAL-012-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08FAS1Z2NQQAH8J04K",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GZN6ZYX0ZQ4PCQ73S",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF091MW6TG0TWNETQMR6",
+            "option": {
+              "id": "opt_01M3ZEJF091MW6TG0TWNETQMR6",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF90CZB0XT6C05K1XJZN",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 67.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 67.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF90AQTQX1NPFV5HJYJC"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF90AQTQX1NPFV5HJYJC"
+          },
+          "calculated_amount_with_tax": 67.95,
+          "calculated_amount_without_tax": 56.15702479338843,
+          "original_amount_with_tax": 67.95,
+          "original_amount_without_tax": 56.15702479338843
+        },
+        "inventory_quantity": 25
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "name": "Hogar",
+        "description": "",
+        "handle": "hogar",
+        "mpath": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 1
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF091MW6TG0TWNETQMR6",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0GZN6ZYX0ZQ4PCQ73S",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF091MW6TG0TWNETQMR6"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08D78MJJWQM45JHA4M",
+    "handle": "mock-manta-clasico-017",
+    "title": "Manta Clásico 017",
+    "subtitle": "Hogar",
+    "description": "Manta Clásico 017: producto de prueba generado para desarrollo (Hogar).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF60AXJ3DVE6SYJ1WYD5",
+        "title": "Única",
+        "sku": "MOCK-MANTA-CLASICO-017-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08D78MJJWQM45JHA4M",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HBA58N37MXHET51XE",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF097PJK3XP69SHPT7E4",
+            "option": {
+              "id": "opt_01M3ZEJF097PJK3XP69SHPT7E4",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF912JX50NA7Z3D2SZEV",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 80.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 80.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF9167MZJ6RPSV0WDVYV"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF9167MZJ6RPSV0WDVYV"
+          },
+          "calculated_amount_with_tax": 80.95,
+          "calculated_amount_without_tax": 66.90082644628099,
+          "original_amount_with_tax": 80.95,
+          "original_amount_without_tax": 66.90082644628099
+        },
+        "inventory_quantity": 43
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "name": "Hogar",
+        "description": "",
+        "handle": "hogar",
+        "mpath": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 1
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF097PJK3XP69SHPT7E4",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0HBA58N37MXHET51XE",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF097PJK3XP69SHPT7E4"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08KGPDGR6Q3M5QRKTD",
+    "handle": "mock-miel-urbano-013",
+    "title": "Miel Urbano 013",
+    "subtitle": "Alimentación",
+    "description": "Miel Urbano 013: producto de prueba generado para desarrollo (Alimentación).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5ZJNX76MV8VVQJ00SA",
+        "title": "500 g",
+        "sku": "MOCK-MIEL-URBANO-013-500-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08KGPDGR6Q3M5QRKTD",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0G9FZQD80VARJ3ZQ8D",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09G09Q07PKC8BTBQ7Z",
+            "option": {
+              "id": "opt_01M3ZEJF09G09Q07PKC8BTBQ7Z",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF90Y7B2NABJ2TDMWKNC",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 29.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 29.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF90P6XD36XDVW9XXGRR"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF90P6XD36XDVW9XXGRR"
+          },
+          "calculated_amount_with_tax": 29.95,
+          "calculated_amount_without_tax": 24.75206611570248,
+          "original_amount_with_tax": 29.95,
+          "original_amount_without_tax": 24.75206611570248
+        },
+        "inventory_quantity": 28
+      },
+      {
+        "id": "variant_01M3ZEJF5ZYG50AJMDG30695NH",
+        "title": "250 g",
+        "sku": "MOCK-MIEL-URBANO-013-250-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08KGPDGR6Q3M5QRKTD",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GT8R5QBQ81823RRPB",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09G09Q07PKC8BTBQ7Z",
+            "option": {
+              "id": "opt_01M3ZEJF09G09Q07PKC8BTBQ7Z",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF90ZMBKSM7T52HGZC8H",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 18.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 18.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF90PSCJDB3GTMGJSZQZ"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF90PSCJDB3GTMGJSZQZ"
+          },
+          "calculated_amount_with_tax": 18.95,
+          "calculated_amount_without_tax": 15.661157024793388,
+          "original_amount_with_tax": 18.95,
+          "original_amount_without_tax": 15.661157024793388
+        },
+        "inventory_quantity": 31
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "name": "Alimentación",
+        "description": "",
+        "handle": "alimentacion",
+        "mpath": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 2
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09G09Q07PKC8BTBQ7Z",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0GT8R5QBQ81823RRPB",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09G09Q07PKC8BTBQ7Z"
+          },
+          {
+            "id": "optval_01M3ZEJF0G9FZQD80VARJ3ZQ8D",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09G09Q07PKC8BTBQ7Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08FKTKJ5T1WDGTKQXN",
+    "handle": "mock-mochila-urbano-005",
+    "title": "Mochila Urbano 005",
+    "subtitle": "Accesorios",
+    "description": "Mochila Urbano 005: producto de prueba generado para desarrollo (Accesorios).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5X5PHBA2SKGGMX68WA",
+        "title": "Única",
+        "sku": "MOCK-MOCHILA-URBANO-005-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08FKTKJ5T1WDGTKQXN",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0FS13YG39T97RMM3Q0",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09HCSGM6W45P2RMFFA",
+            "option": {
+              "id": "opt_01M3ZEJF09HCSGM6W45P2RMFFA",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8YA2ZGCQ2X03B916Z1",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 66.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 66.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8YWKS2BCJQYED7TCKN"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8YWKS2BCJQYED7TCKN"
+          },
+          "calculated_amount_with_tax": 66.95,
+          "calculated_amount_without_tax": 55.33057851239669,
+          "original_amount_with_tax": 66.95,
+          "original_amount_without_tax": 55.33057851239669
+        },
+        "inventory_quantity": 13
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+        "name": "Accesorios",
+        "description": "",
+        "handle": "accesorios",
+        "mpath": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 4
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09HCSGM6W45P2RMFFA",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0FS13YG39T97RMM3Q0",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09HCSGM6W45P2RMFFA"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF088Y6MQSFFJR4G3Y34",
+    "handle": "mock-novela-natural-004",
+    "title": "Novela Natural 004",
+    "subtitle": "Libros",
+    "description": "Novela Natural 004: producto de prueba generado para desarrollo (Libros).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5XEP18W0ECQNN0X6E0",
+        "title": "Tapa dura",
+        "sku": "MOCK-NOVELA-NATURAL-004-TAPA-DURA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF088Y6MQSFFJR4G3Y34",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0FHN1AC2HNV4J2D2N1",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF09YRKA8PZV59NNGCRK",
+            "option": {
+              "id": "opt_01M3ZEJF09YRKA8PZV59NNGCRK",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8YVGK5FP4500FEN5G9",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 40.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 40.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8XV5KBE204Z6AE9D3V"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8XV5KBE204Z6AE9D3V"
+          },
+          "calculated_amount_with_tax": 40.95,
+          "calculated_amount_without_tax": 33.84297520661157,
+          "original_amount_with_tax": 40.95,
+          "original_amount_without_tax": 33.84297520661157
+        },
+        "inventory_quantity": 17
+      },
+      {
+        "id": "variant_01M3ZEJF5XVAK464DXHVNCZMXS",
+        "title": "Tapa blanda",
+        "sku": "MOCK-NOVELA-NATURAL-004-TAPA-BLANDA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF088Y6MQSFFJR4G3Y34",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0FK57VYJJ0DWNW99TZ",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF09YRKA8PZV59NNGCRK",
+            "option": {
+              "id": "opt_01M3ZEJF09YRKA8PZV59NNGCRK",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8XX1M1EPJFZ3W82495",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 29.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 29.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8XWA8FPBSDH4N57V12"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8XWA8FPBSDH4N57V12"
+          },
+          "calculated_amount_with_tax": 29.95,
+          "calculated_amount_without_tax": 24.75206611570248,
+          "original_amount_with_tax": 29.95,
+          "original_amount_without_tax": 24.75206611570248
+        },
+        "inventory_quantity": 11
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "name": "Libros",
+        "description": "",
+        "handle": "libros",
+        "mpath": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 3
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09YRKA8PZV59NNGCRK",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0FK57VYJJ0DWNW99TZ",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF09YRKA8PZV59NNGCRK"
+          },
+          {
+            "id": "optval_01M3ZEJF0FHN1AC2HNV4J2D2N1",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF09YRKA8PZV59NNGCRK"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08PEJ6AK6F82SCMQBV",
+    "handle": "mock-novela-vintage-024",
+    "title": "Novela Vintage 024",
+    "subtitle": "Libros",
+    "description": "Novela Vintage 024: producto de prueba generado para desarrollo (Libros).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF61E4X3QP2P1ZH6VGV7",
+        "title": "Tapa dura",
+        "sku": "MOCK-NOVELA-VINTAGE-024-TAPA-DURA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08PEJ6AK6F82SCMQBV",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0J4BAGXEXQ220HESN8",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF09TKWBEGX2JTJAC1HZ",
+            "option": {
+              "id": "opt_01M3ZEJF09TKWBEGX2JTJAC1HZ",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF93Q2ADCQH1J59KMNX0",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 6.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 6.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF93B8DHBHM30YJ5YXAS"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF93B8DHBHM30YJ5YXAS"
+          },
+          "calculated_amount_with_tax": 6.95,
+          "calculated_amount_without_tax": 5.743801652892562,
+          "original_amount_with_tax": 6.95,
+          "original_amount_without_tax": 5.743801652892562
+        },
+        "inventory_quantity": 52
+      },
+      {
+        "id": "variant_01M3ZEJF61TDSFS3ZJHAJTJ9NH",
+        "title": "Tapa blanda",
+        "sku": "MOCK-NOVELA-VINTAGE-024-TAPA-BLANDA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08PEJ6AK6F82SCMQBV",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0JCT6YSXXX5VAMWN32",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF09TKWBEGX2JTJAC1HZ",
+            "option": {
+              "id": "opt_01M3ZEJF09TKWBEGX2JTJAC1HZ",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF93A3EQGJGCT5K9DT21",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 81.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 81.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF93P5DHH1HRPS2C07W2"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF93P5DHH1HRPS2C07W2"
+          },
+          "calculated_amount_with_tax": 81.95,
+          "calculated_amount_without_tax": 67.72727272727273,
+          "original_amount_with_tax": 81.95,
+          "original_amount_without_tax": 67.72727272727273
+        },
+        "inventory_quantity": 49
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "name": "Libros",
+        "description": "",
+        "handle": "libros",
+        "mpath": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 3
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09TKWBEGX2JTJAC1HZ",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0JCT6YSXXX5VAMWN32",
+            "value": "Tapa blanda",
+            "option_id": "opt_01M3ZEJF09TKWBEGX2JTJAC1HZ"
+          },
+          {
+            "id": "optval_01M3ZEJF0J4BAGXEXQ220HESN8",
+            "value": "Tapa dura",
+            "option_id": "opt_01M3ZEJF09TKWBEGX2JTJAC1HZ"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08W9SVKHX85QH0JZ5Z",
+    "handle": "mock-pantalon-premium-011",
+    "title": "Pantalón Premium 011",
+    "subtitle": "Ropa",
+    "description": "Pantalón Premium 011: producto de prueba generado para desarrollo (Ropa).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5YEBTKSFD8VEC46MDE",
+        "title": "S",
+        "sku": "MOCK-PANTALON-PREMIUM-011-S",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08W9SVKHX85QH0JZ5Z",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GBEZ2MZ5PK4H3ZCJA",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+            "option": {
+              "id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8ZMYJ4PJWAAJGBCWNK",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 30.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 30.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8ZJKXV3EZ8RCB94W87"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8ZJKXV3EZ8RCB94W87"
+          },
+          "calculated_amount_with_tax": 30.95,
+          "calculated_amount_without_tax": 25.578512396694215,
+          "original_amount_with_tax": 30.95,
+          "original_amount_without_tax": 25.578512396694215
+        },
+        "inventory_quantity": 30
+      },
+      {
+        "id": "variant_01M3ZEJF5ZGSA82QG1BWW65SX4",
+        "title": "M",
+        "sku": "MOCK-PANTALON-PREMIUM-011-M",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08W9SVKHX85QH0JZ5Z",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GNE1CK82F133G8Y6M",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+            "option": {
+              "id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8ZPKDCCXVYJJPMKDYX",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 41.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 41.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8Z3S7ZYQM7PJBG244Y"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8Z3S7ZYQM7PJBG244Y"
+          },
+          "calculated_amount_with_tax": 41.95,
+          "calculated_amount_without_tax": 34.66942148760331,
+          "original_amount_with_tax": 41.95,
+          "original_amount_without_tax": 34.66942148760331
+        },
+        "inventory_quantity": 32
+      },
+      {
+        "id": "variant_01M3ZEJF5ZJGKZXG1FNZ1G0QHT",
+        "title": "XL",
+        "sku": "MOCK-PANTALON-PREMIUM-011-XL",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08W9SVKHX85QH0JZ5Z",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GG6GXNKT91X3DZ07G",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+            "option": {
+              "id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF90WV7GQMVVVJ89PZDS",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 63.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 63.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF90G5J2ZWCRYTPD7FVT"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF90G5J2ZWCRYTPD7FVT"
+          },
+          "calculated_amount_with_tax": 63.95,
+          "calculated_amount_without_tax": 52.85123966942149,
+          "original_amount_with_tax": 63.95,
+          "original_amount_without_tax": 52.85123966942149
+        },
+        "inventory_quantity": 0
+      },
+      {
+        "id": "variant_01M3ZEJF5ZYX1ATRTKWXV1BWQ9",
+        "title": "L",
+        "sku": "MOCK-PANTALON-PREMIUM-011-L",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08W9SVKHX85QH0JZ5Z",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0GJ3E16YRWWK20QECY",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+            "option": {
+              "id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF90XSX7218TM5215WAD",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 52.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 52.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF90A5HJQ16CQTCJRGTK"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF90A5HJQ16CQTCJRGTK"
+          },
+          "calculated_amount_with_tax": 52.95,
+          "calculated_amount_without_tax": 43.760330578512395,
+          "original_amount_with_tax": 52.95,
+          "original_amount_without_tax": 43.760330578512395
+        },
+        "inventory_quantity": 29
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "name": "Ropa",
+        "description": "",
+        "handle": "ropa",
+        "mpath": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 0
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0GJ3E16YRWWK20QECY",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1"
+          },
+          {
+            "id": "optval_01M3ZEJF0GNE1CK82F133G8Y6M",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1"
+          },
+          {
+            "id": "optval_01M3ZEJF0GBEZ2MZ5PK4H3ZCJA",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1"
+          },
+          {
+            "id": "optval_01M3ZEJF0GG6GXNKT91X3DZ07G",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF09ZKBMMN6CGVQG6HM1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF0830JSDYR1EC9325E3",
+    "handle": "mock-sudadera-artesano-006",
+    "title": "Sudadera Artesano 006",
+    "subtitle": "Ropa",
+    "description": "Sudadera Artesano 006: producto de prueba generado para desarrollo (Ropa).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5XXVMR30JSF1C6XYD5",
+        "title": "S",
+        "sku": "MOCK-SUDADERA-ARTESANO-006-S",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0830JSDYR1EC9325E3",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0FM7RY3SS5CSHC2X1W",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+            "option": {
+              "id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8YRTW0T7SKR29K0ZNK",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 17.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 17.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8YX9A7PGVQ4ED1DR2R"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8YX9A7PGVQ4ED1DR2R"
+          },
+          "calculated_amount_with_tax": 17.95,
+          "calculated_amount_without_tax": 14.834710743801653,
+          "original_amount_with_tax": 17.95,
+          "original_amount_without_tax": 14.834710743801653
+        },
+        "inventory_quantity": 7
+      },
+      {
+        "id": "variant_01M3ZEJF5YA0SJ0HHDQ57QN1M2",
+        "title": "XL",
+        "sku": "MOCK-SUDADERA-ARTESANO-006-XL",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0830JSDYR1EC9325E3",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0FSWX2T7PEP8947C8A",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+            "option": {
+              "id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8YGZA0VVGD33P112BB",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 50.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 50.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8YV1VAND6QR46G9G4G"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8YV1VAND6QR46G9G4G"
+          },
+          "calculated_amount_with_tax": 50.95,
+          "calculated_amount_without_tax": 42.107438016528924,
+          "original_amount_with_tax": 50.95,
+          "original_amount_without_tax": 42.107438016528924
+        },
+        "inventory_quantity": 10
+      },
+      {
+        "id": "variant_01M3ZEJF5YFDEVFQAT325F3SR4",
+        "title": "L",
+        "sku": "MOCK-SUDADERA-ARTESANO-006-L",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0830JSDYR1EC9325E3",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0F9CK7JSBKJRAM3DAS",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+            "option": {
+              "id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8YXW7WJH83NGB8N1PB",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 39.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 39.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8YXYAK45NAGHT61VQ6"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8YXYAK45NAGHT61VQ6"
+          },
+          "calculated_amount_with_tax": 39.95,
+          "calculated_amount_without_tax": 33.01652892561984,
+          "original_amount_with_tax": 39.95,
+          "original_amount_without_tax": 33.01652892561984
+        },
+        "inventory_quantity": 16
+      },
+      {
+        "id": "variant_01M3ZEJF5YM44R4P8E1CVH20T6",
+        "title": "M",
+        "sku": "MOCK-SUDADERA-ARTESANO-006-M",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF0830JSDYR1EC9325E3",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0FDF665TACGXNT17RX",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+            "option": {
+              "id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8YEFMRVK902855CGNC",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 28.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 28.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8YY8C0MW71RJJ4HFH6"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8YY8C0MW71RJJ4HFH6"
+          },
+          "calculated_amount_with_tax": 28.95,
+          "calculated_amount_without_tax": 23.925619834710744,
+          "original_amount_with_tax": 28.95,
+          "original_amount_without_tax": 23.925619834710744
+        },
+        "inventory_quantity": 15
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "name": "Ropa",
+        "description": "",
+        "handle": "ropa",
+        "mpath": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 0
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09DMV7JW45HGE21EPF",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0F9CK7JSBKJRAM3DAS",
+            "value": "L",
+            "option_id": "opt_01M3ZEJF09DMV7JW45HGE21EPF"
+          },
+          {
+            "id": "optval_01M3ZEJF0FDF665TACGXNT17RX",
+            "value": "M",
+            "option_id": "opt_01M3ZEJF09DMV7JW45HGE21EPF"
+          },
+          {
+            "id": "optval_01M3ZEJF0FM7RY3SS5CSHC2X1W",
+            "value": "S",
+            "option_id": "opt_01M3ZEJF09DMV7JW45HGE21EPF"
+          },
+          {
+            "id": "optval_01M3ZEJF0FSWX2T7PEP8947C8A",
+            "value": "XL",
+            "option_id": "opt_01M3ZEJF09DMV7JW45HGE21EPF"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08X92H7J450WZNFGGR",
+    "handle": "mock-taza-artesano-022",
+    "title": "Taza Artesano 022",
+    "subtitle": "Hogar",
+    "description": "Taza Artesano 022: producto de prueba generado para desarrollo (Hogar).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF61C0SBWNP69RHG74MP",
+        "title": "Única",
+        "sku": "MOCK-TAZA-ARTESANO-022-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08X92H7J450WZNFGGR",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0J6DNT7Y3BXHQXF6ME",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09WJHNCQ3H20EYEY7H",
+            "option": {
+              "id": "opt_01M3ZEJF09WJHNCQ3H20EYEY7H",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF92KYVPS1EW5EZKCEKB",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 7.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 7.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF92JCGQ8Y2C0JM9RJNT"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF92JCGQ8Y2C0JM9RJNT"
+          },
+          "calculated_amount_with_tax": 7.95,
+          "calculated_amount_without_tax": 6.570247933884297,
+          "original_amount_with_tax": 7.95,
+          "original_amount_without_tax": 6.570247933884297
+        },
+        "inventory_quantity": 48
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "name": "Hogar",
+        "description": "",
+        "handle": "hogar",
+        "mpath": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 1
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09WJHNCQ3H20EYEY7H",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0J6DNT7Y3BXHQXF6ME",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF09WJHNCQ3H20EYEY7H"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF075075WWQ8V67MRBN8",
+    "handle": "mock-taza-esencial-002",
+    "title": "Taza Esencial 002",
+    "subtitle": "Hogar",
+    "description": "Taza Esencial 002: producto de prueba generado para desarrollo (Hogar).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF5XMAYAE9BF7QXBGGP9",
+        "title": "Única",
+        "sku": "MOCK-TAZA-ESENCIAL-002-UNICA",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF075075WWQ8V67MRBN8",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0F6C9STT4M4NDGH855",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF08A4VM1YR25SFGFZXA",
+            "option": {
+              "id": "opt_01M3ZEJF08A4VM1YR25SFGFZXA",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF8X5ZRPKPHANWCDMBNE",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 41.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 41.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF8XKHSV75XGERV3S11B"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF8XKHSV75XGERV3S11B"
+          },
+          "calculated_amount_with_tax": 41.95,
+          "calculated_amount_without_tax": 34.66942148760331,
+          "original_amount_with_tax": 41.95,
+          "original_amount_without_tax": 34.66942148760331
+        },
+        "inventory_quantity": 14
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "name": "Hogar",
+        "description": "",
+        "handle": "hogar",
+        "mpath": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 1
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF08A4VM1YR25SFGFZXA",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0F6C9STT4M4NDGH855",
+            "value": "Única",
+            "option_id": "opt_01M3ZEJF08A4VM1YR25SFGFZXA"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M3ZEJF08RKC7AF9V6YW82DNS",
+    "handle": "mock-turron-esencial-018",
+    "title": "Turrón Esencial 018",
+    "subtitle": "Alimentación",
+    "description": "Turrón Esencial 018: producto de prueba generado para desarrollo (Alimentación).",
+    "variants": [
+      {
+        "id": "variant_01M3ZEJF60SGBFRF27WWXB1RVH",
+        "title": "500 g",
+        "sku": "MOCK-TURRON-ESENCIAL-018-500-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08RKC7AF9V6YW82DNS",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0HMB5K4BKR61B46EKS",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09HHBPBQKWGH4K98ZT",
+            "option": {
+              "id": "opt_01M3ZEJF09HHBPBQKWGH4K98ZT",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF91FZTQ4B2GTEZXBA2R",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 42.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 42.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF91Y1411MYRC8WE6607"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF91Y1411MYRC8WE6607"
+          },
+          "calculated_amount_with_tax": 42.95,
+          "calculated_amount_without_tax": 35.49586776859504,
+          "original_amount_with_tax": 42.95,
+          "original_amount_without_tax": 35.49586776859504
+        },
+        "inventory_quantity": 0
+      },
+      {
+        "id": "variant_01M3ZEJF60V1826Q7ZXJR39RN5",
+        "title": "250 g",
+        "sku": "MOCK-TURRON-ESENCIAL-018-250-G",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "variant_rank": 0,
+        "product_id": "prod_01M3ZEJF08RKC7AF9V6YW82DNS",
+        "options": [
+          {
+            "id": "optval_01M3ZEJF0H6B9WE841N5E175ZN",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09HHBPBQKWGH4K98ZT",
+            "option": {
+              "id": "opt_01M3ZEJF09HHBPBQKWGH4K98ZT",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M3ZEJF91VF490JQHPJ4FKABN",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 31.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 31.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M3ZEJF91KW5QDFHYWMZMSHRD"
+          },
+          "original_price": {
+            "id": "price_01M3ZEJF91KW5QDFHYWMZMSHRD"
+          },
+          "calculated_amount_with_tax": 31.95,
+          "calculated_amount_without_tax": 26.40495867768595,
+          "original_amount_with_tax": 31.95,
+          "original_amount_without_tax": 26.40495867768595
+        },
+        "inventory_quantity": 39
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "name": "Alimentación",
+        "description": "",
+        "handle": "alimentacion",
+        "mpath": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 2
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M3ZEJF09HHBPBQKWGH4K98ZT",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M3ZEJF0H6B9WE841N5E175ZN",
+            "value": "250 g",
+            "option_id": "opt_01M3ZEJF09HHBPBQKWGH4K98ZT"
+          },
+          {
+            "id": "optval_01M3ZEJF0HMB5K4BKR61B46EKS",
+            "value": "500 g",
+            "option_id": "opt_01M3ZEJF09HHBPBQKWGH4K98ZT"
+          }
+        ]
+      }
+    ]
+  }
+]

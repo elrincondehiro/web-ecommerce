@@ -1,0 +1,43 @@
+---
+import type { GetStaticPaths } from "astro";
+import { metaDescription } from "$lib/catalog";
+import { PAGE_SIZE } from "$lib/constants";
+import { getAllProducts, getCategories } from "$lib/medusa";
+import { breadcrumbJsonLd } from "$lib/seo";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
+import CatalogPage from "../../../components/CatalogPage.astro";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const categories = await getCategories();
+  const perCategory = await Promise.all(
+    categories.map(async (category) => {
+      const products = await getAllProducts({ categoryId: category.id });
+      return paginate(products, {
+        pageSize: PAGE_SIZE,
+        params: { handle: category.handle },
+        props: { category },
+      });
+    }),
+  );
+  return perCategory.flat();
+}) satisfies GetStaticPaths;
+
+const { page, category } = Astro.props;
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  { name: category.name, href: `/categorias/${category.handle}/` },
+];
+const title =
+  page.currentPage > 1 ? `${category.name} (página ${page.currentPage})` : category.name;
+---
+
+<BaseLayout
+  title={title}
+  description={metaDescription(category.description) || `${category.name} en El Rincón de Hiro.`}
+  jsonLd={[breadcrumbJsonLd(crumbs, Astro.site!)]}
+>
+  <Breadcrumbs items={crumbs} />
+  <h1 class="mb-2 text-2xl font-semibold tracking-tight">{category.name}</h1>
+  <CatalogPage page={page} categoryId={category.id} />
+</BaseLayout>
