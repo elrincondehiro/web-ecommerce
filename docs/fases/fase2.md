@@ -1,8 +1,8 @@
 # Fase 2 — Backend base (Medusa 2.21.2)
 
-> **Estado:** 🚧 implementada y verificada en local — pendiente PR / CI / revisión del usuario
-> **Rama/PR:** `feat/fase2-backend-base` → PR en Gitea
-> **Anterior:** [Fase 1](./fase1.md) · **Siguiente:** Fase 3 — Storefront base
+> **Estado:** ✅ completada (03-oct-2026) · PR #10 (`c6bbd3a`) en `main` de Gitea y GitHub
+> **Rama/PR:** `feat/fase2-backend-base` → PR #10 (squash) · cierre: `docs/fase2-cierre`
+> **Anterior:** [Fase 1](./fase1.md) · **Siguiente:** Fase 3 — Storefront base (`fase3.md`, se crea al iniciarla)
 
 ## 1. Objetivos
 
@@ -76,8 +76,8 @@ cp apps/backend/.env.example apps/backend/.env
 cp apps/backend/.env.test.example apps/backend/.env.test
 pnpm install
 pnpm --filter backend exec medusa db:migrate
-pnpm --filter backend seed                      # una vez (idempotente: no hace nada si existe "España")
-pnpm --filter backend seed:mock                 # 24 productos; `seed:mock -- 100` para 100 (idempotente)
+pnpm backend:seed                               # una vez (idempotente: no hace nada si existe "España")
+pnpm backend:seed:mock                          # 24 productos; `backend:seed:mock -- 100` para 100 (idempotente)
 pnpm --filter backend exec medusa user -e <tu-email> -p <tu-contraseña>
 pnpm dev:backend                                # http://localhost:9000 · Admin http://localhost:9000/app
 ```
@@ -128,11 +128,16 @@ pnpm --filter backend test:integration:http      # health.spec.ts (BD temporal e
 - [x] IVA 21/10/4 % aplicado e **incluido** en el PVP (ficha y carrito).
 - [x] Server y worker arrancan con la build de producción y se reparten las funciones.
 - [x] Lint, format, typecheck, test (unit 2/2, integración 1/1) y build en verde en local y en simulación del job de CI (`node:24.21.0-trixie`).
-- [ ] `quality` verde en el PR (Gitea y GitHub).
+- [x] `quality` verde en el PR #10 (Gitea y GitHub). Admin revisado por el usuario.
 
 ## 7. Pendientes / riesgos
 
-- **RAM del CI**: el `pnpm build` del backend (admin con Vite) llega a **~3,7 GB** en un contenedor sin límite y **termina bien con un límite de 3 GB** (el sistema recorta la caché). Con `capacity: 2` en un LXC de 4 GB + 1 GB swap, dos builds a la vez **pueden quedarse sin memoria**. Opciones: `capacity: 1`, subir el LXC a 6–8 GB, o (fase 10) build del admin en un job aparte.
+- **RAM del CI** (decisión del usuario: se deja `capacity: 2` y LXC 4 GB de momento; vigilar fallos OOM): el `pnpm build` del backend (admin con Vite) llega a **~3,7 GB** en un contenedor sin límite y **termina bien con un límite de 3 GB** (el sistema recorta la caché). Con `capacity: 2` en un LXC de 4 GB + 1 GB swap, dos builds a la vez **pueden quedarse sin memoria**. Opciones: `capacity: 1`, subir el LXC a 6–8 GB, o (fase 10) build del admin en un job aparte.
 - Peer `typescript <6` de `cva` (admin de Medusa): solo un aviso.
 - Clasificación real de productos en IVA reducido/superreducido: confirmar con la gestoría.
 - Los tests de integración (`test:integration:http`) **no** están en el CI todavía: necesitan Postgres/Redis como servicios del job (posible en Gitea Actions con `services:`). Propuesta para la fase 10 o un PR propio.
+
+## 8. Cierre
+
+- Scripts añadidos en la raíz (rama de cierre): `pnpm dev` (todas las apps en paralelo), `pnpm dev:backend`, `pnpm backend:seed`, `pnpm backend:seed:mock`. En la fase 2 la documentación citaba `pnpm dev:backend` pero el script no existía.
+- Incidencia: quedaron procesos `medusa develop/start` de las pruebas del agente ejecutándose en segundo plano (el usuario vio el backend "arrancado"). Parados en el cierre. Para comprobar: `ss -ltnp | grep 9000`.

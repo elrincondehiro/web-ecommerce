@@ -18,9 +18,9 @@ E-commerce **autoalojado**, pensado para ir a **máxima velocidad**: todo lo pos
 | Registro de imágenes         | Registro de contenedores de Gitea y/o **GHCR**                                                                                |
 | Tooling                      | **pnpm** (nunca npm/yarn) · **fnm** (nunca nvm) · Docker + Docker Compose                                                     |
 
-> Las directrices para agentes de IA están en [`AGENTS.md`](./AGENTS.md). Léelas antes de tocar código.
+> Las directrices para agentes de IA están en [`AGENTS.md`](./AGENTS.md). Léelas antes de tocar código. Resumen del estado actual: [`docs/ESTADO.md`](./docs/ESTADO.md).
 >
-> **Estado:** [prefase](./docs/fases/prefase.md) ✅ completada · [fase 0](./docs/fases/fase0.md) ✅ · [fase 1](./docs/fases/fase1.md) ✅ · [fase 2](./docs/fases/fase2.md) 🚧 en curso. Detalle de cada fase en [`docs/fases/`](./docs/fases/).
+> **Estado:** [prefase](./docs/fases/prefase.md) ✅ completada · [fase 0](./docs/fases/fase0.md) ✅ · [fase 1](./docs/fases/fase1.md) ✅ · [fase 2](./docs/fases/fase2.md) ✅ · fase 3 ⏳ siguiente. Detalle de cada fase en [`docs/fases/`](./docs/fases/).
 >
 > ⛔ **Regla nº 1 para agentes**: antes de empezar cualquier parte nueva (fase, storefront, backend, módulo, infraestructura…) se consulta la documentación — primero el **MCP específico**, si no **context7** —, se presenta un plan y **se espera confirmación del usuario**. Ante cualquier duda, no se ejecuta nada. Detalle en [`AGENTS.md`](./AGENTS.md#-regla-nº-1--consultar-documentación-y-confirmar-antes-de-empezar).
 
@@ -462,8 +462,8 @@ pnpm infra:up
 cp apps/backend/.env.example apps/backend/.env            # y genera secretos: openssl rand -hex 32
 cp apps/backend/.env.test.example apps/backend/.env.test  # tests de integración
 pnpm --filter backend exec medusa db:migrate
-pnpm --filter backend seed                                # región ES, IVA, envíos, publishable key
-pnpm --filter backend seed:mock                           # catálogo de prueba (24; o `-- 100`)
+pnpm backend:seed                                         # región ES, IVA, envíos, publishable key
+pnpm backend:seed:mock                                    # catálogo de prueba (24; o `-- 100`)
 pnpm --filter backend exec medusa user -e <email> -p <contraseña>   # admin (lo creas tú)
 pnpm dev:backend                                          # API :9000 · Admin :9000/app
 ```
@@ -547,7 +547,8 @@ pnpm infra:stripe                                    # webhooks Stripe (perfil o
 
 ```bash
 pnpm infra:up | infra:down | infra:ps | infra:logs | infra:stripe
-pnpm dev | dev:backend | dev:storefront | dev:emails
+pnpm dev | dev:backend            # dev:storefront y dev:emails llegarán en fases 3 y 8
+pnpm backend:seed | backend:seed:mock
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 pnpm --filter backend exec medusa db:generate <modulo>   # migraciones de módulos propios
 pnpm --filter backend exec medusa db:migrate
@@ -665,7 +666,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | Prefase (SSH, repos, MCPs, decisiones) | [prefase.md](./docs/fases/prefase.md)                                                            | ✅     |
 | 0 Fundaciones                          | [fase0.md](./docs/fases/fase0.md)                                                                | ✅     |
 | 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | ✅     |
-| 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | 🚧     |
+| 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | ✅     |
 | 3 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

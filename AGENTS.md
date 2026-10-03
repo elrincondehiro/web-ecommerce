@@ -4,7 +4,7 @@ Este fichero es de **lectura obligatoria** para cualquier agente de IA (y person
 
 Contexto del proyecto, arquitectura, **versiones de referencia (README §4)** y roadmap: [`README.md`](./README.md).
 
-> **Estado de las fases:** ver [`docs/fases/`](./docs/fases/) (empieza por [`prefase.md`](./docs/fases/prefase.md)). No inicies ninguna fase sin autorización explícita del usuario.
+> **Sesión nueva → lee primero [`docs/ESTADO.md`](./docs/ESTADO.md)** (estado actual, cómo se trabaja y siguiente fase). Detalle por fase en [`docs/fases/`](./docs/fases/). No inicies ninguna fase sin autorización explícita del usuario.
 
 ---
 
@@ -274,6 +274,7 @@ git push -u origin feat/carrito-server-island    # origin empuja a Gitea y GitHu
   - Backend: tests de integración de Medusa (`medusa-test-utils`) para workflows y rutas propias.
   - Storefront: Vitest para `lib/`, Playwright para flujos críticos (incluido **con JS desactivado** para carrito/búsqueda).
 - No dejes código muerto, `TODO` sin issue asociado, ni `console.log`.
+- No dejes procesos en segundo plano (servidores de desarrollo, `medusa develop/start`) al terminar. Para matarlos usa patrones que no coincidan con tu propia shell (`pgrep -f "[m]edusa"`).
 
 ---
 
@@ -294,7 +295,7 @@ git push -u origin feat/carrito-server-island    # origin empuja a Gitea y GitHu
 2. **Consulta la documentación** según la REGLA Nº 1: primero el MCP específico, si no `context7`.
 3. **Planifica** en pocas líneas: qué ficheros, qué comandos, qué estrategia de render (§3.1), el impacto en JS de cliente y qué fuentes consultaste.
 4. **Espera confirmación** del usuario antes de ejecutar. Si surge una duda a mitad de trabajo, **para** y vuelve a preguntar.
-5. **Documento de fase**: al iniciar una fase crea `docs/fases/faseN.md` desde [`PLANTILLA.md`](./docs/fases/PLANTILLA.md); al terminarla, rellénalo (qué se hizo, decisiones con su fuente, **comandos para testear**, criterio de salida), actualiza la tabla de estado en README §13 y **sincroniza README §4 con las versiones reales de los ficheros**. Los detalles van ahí, **no** en el README.
+5. **Documento de fase y ESTADO.md**: al iniciar una fase crea `docs/fases/faseN.md` desde [`PLANTILLA.md`](./docs/fases/PLANTILLA.md); al terminarla, rellénalo (qué se hizo, decisiones con su fuente, **comandos para testear**, criterio de salida), actualiza la tabla de estado en README §13, **sincroniza README §4 con las versiones reales de los ficheros** y **actualiza `docs/ESTADO.md`**. Los detalles van ahí, **no** en el README.
 6. **Cambios pequeños y verificables.** No refactorices lo que no te han pedido.
 7. **Verifica**: levanta infra (`pnpm infra:up`), ejecuta lint/typecheck/test/build, y cuando toque UI, comprueba el JS enviado (`dist/` o DevTools).
 8. **Documenta**: actualiza `README.md`/`.env.example`/este fichero si cambias comandos, variables o convenciones.
