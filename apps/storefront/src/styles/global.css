@@ -260,3 +260,11 @@
     transition: none;
   }
 }
+
+/*
+ * Checkout (fase 5): la dirección de facturación solo se muestra si se desmarca
+ * "misma dirección". Sin JS (CSS :has); el servidor ignora el bloque si está marcada.
+ */
+.checkout-address:has(#misma-direccion:checked) .checkout-billing {
+  display: none;
+}

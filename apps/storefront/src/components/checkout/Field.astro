@@ -1,0 +1,44 @@
+---
+// Campo de formulario del checkout (fase 5): <label> + <input> + error del servidor (sin JS).
+// El error se asocia con aria-describedby y aria-invalid (accesibilidad, AGENTS §3.2).
+import type { HTMLAttributes } from "astro/types";
+
+type Props = Omit<HTMLAttributes<"input">, "name" | "id"> & {
+  name: string;
+  label: string;
+  error?: string | undefined;
+  hint?: string | undefined;
+  /** Muestra "(opcional)". Por defecto, si no es `required`. */
+  optional?: boolean | undefined;
+  class?: string | undefined;
+};
+const { name, label, error, hint, optional, class: className, ...attrs } = Astro.props;
+const isOptional = optional ?? !attrs.required;
+const id = `f-${name}`;
+const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ");
+---
+
+<div class:list={["flex flex-col gap-1", className]}>
+  <label for={id} class="text-sm font-medium">
+    {label}
+    {isOptional && <span class="font-normal text-muted-foreground"> (opcional)</span>}
+  </label>
+  <input
+    id={id}
+    name={name}
+    aria-invalid={error ? "true" : undefined}
+    aria-describedby={describedBy || undefined}
+    class="h-10 rounded-md border bg-background px-3 text-base aria-invalid:border-destructive sm:text-sm"
+    {...attrs}
+  />
+  {hint && (
+    <p id={`${id}-hint`} class="text-xs text-muted-foreground">
+      {hint}
+    </p>
+  )}
+  {error && (
+    <p id={`${id}-error`} class="text-sm text-destructive">
+      {error}
+    </p>
+  )}
+</div>

@@ -1,0 +1,31 @@
+---
+// Página legal PROVISIONAL (fase 5, P8): texto de relleno hasta tener el definitivo (plantilla
+// revisada o texto de la gestoría). noindex y fuera del sitemap (astro.config.mjs) mientras tanto.
+// Estática, 0 JS.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+const LOREM =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut " +
+  "labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco " +
+  "laboris nisi ut aliquip ex ea commodo consequat.";
+---
+
+<BaseLayout title={title} description={description} noindex>
+  <article class="flex max-w-3xl flex-col gap-4">
+    <h1 class="text-3xl font-semibold tracking-tight">{title}</h1>
+    <p
+      role="note"
+      class="rounded-md border border-destructive/40 px-4 py-3 text-sm text-destructive"
+    >
+      Texto provisional. Esta página se completará con el texto legal definitivo.
+    </p>
+    <slot />
+    <p class="text-muted-foreground">{LOREM}</p>
+    <p class="text-muted-foreground">{LOREM}</p>
+  </article>
+</BaseLayout>

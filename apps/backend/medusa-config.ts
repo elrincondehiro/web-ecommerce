@@ -66,6 +66,39 @@ const fileModule = S3_BUCKET
     ]
   : [];
 
+/**
+ * Pagos (fase 5): proveedor oficial Stripe (`@medusajs/medusa/payment-stripe`, provider id
+ * `pp_stripe_stripe`, webhook en `/hooks/payment/stripe_stripe`).
+ * Fuente: context7 /medusajs/medusa (commerce-modules/payment/payment-provider/stripe) + tipos de
+ * @medusajs/payment-stripe 2.21.2 (`StripeOptions`).
+ * - Sin STRIPE_API_KEY (CI, `medusa build`) no se registra: Medusa arranca sin Stripe.
+ * - `capture: false`: solo se AUTORIZA al pagar; la captura se hace desde el Admin (fase 5, P1).
+ * - `automaticPaymentMethods`: los métodos los decide el Dashboard de Stripe.
+ * - `webhookSecret` obligatorio en producción (verificación de firma de los webhooks).
+ */
+const STRIPE_API_KEY = process.env.STRIPE_API_KEY;
+const paymentModule = STRIPE_API_KEY
+  ? [
+      {
+        resolve: "@medusajs/medusa/payment",
+        options: {
+          providers: [
+            {
+              resolve: "@medusajs/medusa/payment-stripe",
+              id: "stripe",
+              options: {
+                apiKey: STRIPE_API_KEY,
+                webhookSecret: required("STRIPE_WEBHOOK_SECRET"),
+                capture: false,
+                automaticPaymentMethods: true,
+              },
+            },
+          ],
+        },
+      },
+    ]
+  : [];
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: required("DATABASE_URL"),
@@ -85,6 +118,7 @@ module.exports = defineConfig({
   },
   modules: [
     ...fileModule,
+    ...paymentModule,
     {
       resolve: "@medusajs/medusa/caching",
       options: {

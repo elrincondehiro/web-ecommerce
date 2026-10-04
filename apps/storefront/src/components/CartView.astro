@@ -141,17 +141,18 @@ const thumb = isPage ? 80 : 56;
         {formatPrice(cart?.item_tax_total ?? 0, currency)}
       </dd>
     </dl>
-    <p class="text-right text-xs text-muted-foreground">Gastos de envío: se calculan al pagar.</p>
+    <p class="text-right text-xs text-muted-foreground">
+      Gastos de envío: se eligen al finalizar la compra.
+    </p>
 
     {isPage ? (
       <div class="flex flex-wrap justify-end gap-2">
         <a href="/productos/" class={buttonVariants({ variant: "outline" })}>
           Seguir comprando
         </a>
-        {/* Provisional hasta la fase 5 (checkout + Stripe). */}
-        <button type="button" class={buttonVariants()} disabled>
-          Ir a pagar (próximamente)
-        </button>
+        <a href="/checkout/" class={buttonVariants()}>
+          Ir a pagar
+        </a>
       </div>
     ) : (
       <a href={CART_PATH} class={buttonVariants({ class: "w-full" })}>

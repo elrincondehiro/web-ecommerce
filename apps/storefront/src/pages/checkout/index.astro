@@ -1,0 +1,285 @@
+---
+// Checkout (fase 5): on-demand, por usuario, noindex. UNA página con tres pasos (P3):
+//   1. #datos  — email, teléfono, dirección de envío (+ facturación)  → action checkout.address
+//   2. #envio  — método de envío (opciones de Medusa con su precio)    → action checkout.shipping
+//   3. #pago   — Payment Element de Stripe (único JS de la página)
+// Pasos 1 y 2 sin JS: <form method="post"> + PRG (middleware → 303 a /checkout/#<paso>). Los
+// errores por campo vuelven en la cookie flash (1 min), que aquí se lee y se borra.
+// Ver docs/fases/fase5.md §2.
+import { PUBLIC_STRIPE_PUBLISHABLE_KEY } from "astro:env/server";
+import { buttonVariants } from "$lib/components/ui/button";
+import { currentCart } from "$lib/cart-server";
+import { itemCount } from "$lib/cart";
+import {
+  CHECKOUT_NOTICES,
+  FLASH_COOKIE,
+  addressDone,
+  checkoutActionUrl,
+  decodeFlash,
+  shippingDone,
+  stripeSession,
+} from "$lib/checkout";
+import { formatPrice } from "$lib/format";
+import {
+  CHECKOUT_FIELDS,
+  listShippingOptions,
+  type StoreCart,
+  type StoreShippingOption,
+} from "$lib/medusa";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AddressFields from "../../components/checkout/AddressFields.astro";
+import Field from "../../components/checkout/Field.astro";
+import OrderSummary from "../../components/checkout/OrderSummary.astro";
+import StripePayment from "../../components/checkout/StripePayment.astro";
+
+export const prerender = false;
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+
+const cart: StoreCart | null = await currentCart(Astro.cookies, CHECKOUT_FIELDS);
+if (!cart || itemCount(cart) === 0) return Astro.redirect("/carrito/", 303);
+
+const flash = decodeFlash(Astro.cookies.get(FLASH_COOKIE)?.value);
+if (Astro.cookies.has(FLASH_COOKIE)) Astro.cookies.delete(FLASH_COOKIE, { path: "/checkout/" });
+const errors = flash.errors ?? {};
+
+// Valores del formulario: los del flash (tras un error) o los guardados en el carrito.
+const ship = cart.shipping_address;
+const bill = cart.billing_address;
+const sameBilling =
+  !bill ||
+  !ship ||
+  (["first_name", "last_name", "address_1", "address_2", "postal_code", "city"] as const).every(
+    (k) => (bill[k] ?? "") === (ship[k] ?? ""),
+  );
+const values: Record<string, string> = flash.values ?? {
+  email: cart.email ?? "",
+  phone: ship?.phone ?? "",
+  first_name: ship?.first_name ?? "",
+  last_name: ship?.last_name ?? "",
+  address_1: ship?.address_1 ?? "",
+  address_2: ship?.address_2 ?? "",
+  postal_code: ship?.postal_code ?? "",
+  city: ship?.city ?? "",
+  same_billing: sameBilling ? "on" : "",
+  billing_first_name: sameBilling ? "" : (bill?.first_name ?? ""),
+  billing_last_name: sameBilling ? "" : (bill?.last_name ?? ""),
+  billing_address_1: sameBilling ? "" : (bill?.address_1 ?? ""),
+  billing_address_2: sameBilling ? "" : (bill?.address_2 ?? ""),
+  billing_postal_code: sameBilling ? "" : (bill?.postal_code ?? ""),
+  billing_city: sameBilling ? "" : (bill?.city ?? ""),
+};
+// Tras un POST sin JS la casilla desmarcada no se envía: values.same_billing === "".
+const sameBillingChecked = values.same_billing === "on";
+
+const step1 = addressDone(cart);
+const step2 = step1 && shippingDone(cart);
+let options: StoreShippingOption[] = [];
+if (step1) {
+  try {
+    options = await listShippingOptions(cart.id);
+  } catch (err) {
+    // Sin datos personales: solo el mensaje de la Store API.
+    Astro.logger.error(`checkout opciones de envío: ${err instanceof Error ? err.message : err}`);
+  }
+}
+const selectedOption = cart.shipping_methods?.[0]?.shipping_option_id ?? "";
+const session = step2 ? stripeSession(cart) : { state: "none" as const };
+const currency = cart.currency_code ?? "eur";
+---
+
+<BaseLayout
+  title="Finalizar compra"
+  description="Datos de envío y pago de tu pedido en El Rincón de Hiro."
+  noindex
+  cartCount={itemCount(cart)}
+  cartClient={false}
+>
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Finalizar compra</h1>
+
+  {flash.code && (
+    <p
+      role="alert"
+      class="mb-6 rounded-md border border-destructive/40 px-4 py-3 text-sm text-destructive"
+    >
+      {CHECKOUT_NOTICES[flash.code]}
+    </p>
+  )}
+
+  <div class="grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
+    <ol class="flex flex-col gap-8">
+      {/* ── 1. Datos y dirección ─────────────────────────────────────────────── */}
+      <li id="datos" class="scroll-mt-4">
+        <section aria-labelledby="datos-titulo" class="rounded-lg border p-4 sm:p-6">
+          <h2 id="datos-titulo" class="mb-4 text-xl font-semibold">
+            1. Datos y dirección de envío
+          </h2>
+          <form
+            method="post"
+            action={checkoutActionUrl("checkout.address")}
+            class="checkout-address flex flex-col gap-4"
+            novalidate={false}
+          >
+            <div class="grid gap-4 sm:grid-cols-2">
+              <Field
+                name="email"
+                type="email"
+                label="Email"
+                autocomplete="email"
+                required
+                maxlength={254}
+                hint="Te enviaremos la confirmación del pedido."
+                value={values.email}
+                error={errors.email}
+              />
+              <Field
+                name="phone"
+                type="tel"
+                label="Teléfono"
+                autocomplete="shipping tel"
+                required
+                maxlength={20}
+                hint="Para la empresa de transporte."
+                value={values.phone}
+                error={errors.phone}
+              />
+            </div>
+            <AddressFields prefix="" values={values} errors={errors} />
+
+            <label class="flex items-center gap-2 text-sm">
+              <input
+                id="misma-direccion"
+                type="checkbox"
+                name="same_billing"
+                checked={sameBillingChecked}
+                class="size-4"
+              />
+              La dirección de facturación es la misma
+            </label>
+            {/* Visible sin JS cuando se desmarca la casilla (CSS :has en global.css). */}
+            <fieldset class="checkout-billing flex flex-col gap-4">
+              <legend class="mb-2 font-medium">Dirección de facturación</legend>
+              <AddressFields prefix="billing_" values={values} errors={errors} />
+            </fieldset>
+
+            <button type="submit" class:list={[buttonVariants(), "self-start"]}>
+              {step1 ? "Guardar y continuar" : "Continuar"}
+            </button>
+          </form>
+        </section>
+      </li>
+
+      {/* ── 2. Envío ─────────────────────────────────────────────────────────── */}
+      <li id="envio" class="scroll-mt-4">
+        <section
+          aria-labelledby="envio-titulo"
+          class:list={["rounded-lg border p-4 sm:p-6", !step1 && "opacity-60"]}
+        >
+          <h2 id="envio-titulo" class="mb-4 text-xl font-semibold">
+            2. Envío
+          </h2>
+          {!step1 ? (
+            <p class="text-sm text-muted-foreground">Completa antes tus datos y dirección.</p>
+          ) : options.length === 0 ? (
+            <p class="text-sm text-destructive">
+              No hay métodos de envío disponibles para esta dirección.
+            </p>
+          ) : (
+            <form
+              method="post"
+              action={checkoutActionUrl("checkout.shipping")}
+              class="flex flex-col gap-4"
+            >
+              <fieldset class="flex flex-col gap-2">
+                <legend class="sr-only">Método de envío</legend>
+                {options.map((o, i) => (
+                  <label class="flex cursor-pointer items-center justify-between gap-4 rounded-md border p-3 has-checked:border-primary has-checked:bg-muted">
+                    <span class="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="option_id"
+                        value={o.id}
+                        required
+                        disabled={o.insufficient_inventory}
+                        checked={selectedOption ? selectedOption === o.id : i === 0}
+                        class="size-4"
+                      />
+                      {o.name}
+                    </span>
+                    <span class="tabular-nums">
+                      {formatPrice(o.calculated_price?.calculated_amount ?? o.amount, currency)}
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+              <button type="submit" class:list={[buttonVariants(), "self-start"]}>
+                {step2 ? "Cambiar envío" : "Continuar al pago"}
+              </button>
+            </form>
+          )}
+        </section>
+      </li>
+
+      {/* ── 3. Pago ──────────────────────────────────────────────────────────── */}
+      <li id="pago" class="scroll-mt-4">
+        <section
+          aria-labelledby="pago-titulo"
+          class:list={["rounded-lg border p-4 sm:p-6", !step2 && "opacity-60"]}
+        >
+          <h2 id="pago-titulo" class="mb-4 text-xl font-semibold">
+            3. Pago
+          </h2>
+          {!step2 ? (
+            <p class="text-sm text-muted-foreground">Elige antes el método de envío.</p>
+          ) : !PUBLIC_STRIPE_PUBLISHABLE_KEY ? (
+            <p class="text-sm text-destructive">El pago no está disponible en este momento.</p>
+          ) : session.state === "pending" ? (
+            <div class="flex flex-col gap-4">
+              <StripePayment
+                publishableKey={PUBLIC_STRIPE_PUBLISHABLE_KEY}
+                clientSecret={session.clientSecret}
+                total={cart.total ?? 0}
+                currency={currency}
+              />
+              <p class="text-xs text-muted-foreground">
+                Al pulsar «Pagar y realizar pedido» aceptas las
+                <a href="/condiciones/" class="underline underline-offset-4">
+                  condiciones de compra
+                </a>
+                y confirmas que has leído la
+                <a href="/privacidad/" class="underline underline-offset-4">
+                  política de privacidad
+                </a>
+                . El cargo se hace en tu tarjeta cuando preparamos el envío.
+              </p>
+            </div>
+          ) : session.state === "authorized" ? (
+            <a href="/checkout/completar/" class={buttonVariants()}>
+              Pago autorizado: finalizar el pedido
+            </a>
+          ) : (
+            <form
+              method="post"
+              action={checkoutActionUrl("checkout.payment")}
+              class="flex flex-col gap-3"
+            >
+              <p class="text-sm text-muted-foreground">
+                El total ha cambiado o el formulario de pago ha caducado.
+              </p>
+              <button type="submit" class:list={[buttonVariants(), "self-start"]}>
+                Preparar el pago
+              </button>
+            </form>
+          )}
+        </section>
+      </li>
+    </ol>
+
+    <aside class="lg:sticky lg:top-4">
+      <OrderSummary cart={cart} />
+      <a href="/carrito/" class="mt-3 inline-block text-sm underline underline-offset-4">
+        Modificar el carrito
+      </a>
+    </aside>
+  </div>
+</BaseLayout>

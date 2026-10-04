@@ -7,6 +7,7 @@
  *   - Región fiscal ES con IVA general 21 % y tipos reducidos 10 % y 4 % aplicados
  *     por tipo de producto (product_type "iva-reducido" / "iva-superreducido").
  *   - Almacén, envío estándar/exprés y publishable API key.
+ *   - Pago: Stripe (`pp_stripe_stripe`) si existe STRIPE_API_KEY; si no, el manual (fase 5).
  *
  * NO crea productos: para eso está `pnpm --filter backend seed:mock`.
  *
@@ -117,7 +118,11 @@ export default async function seedStore({ container }: ExecArgs) {
           countries: [COUNTRY],
           automatic_taxes: true,
           is_tax_inclusive: true,
-          payment_providers: ["pp_system_default"],
+          // Fase 5 (P5): solo Stripe si está configurado; sin clave (CI/tests) el manual,
+          // para que la región sea válida. Para BD existentes: `pnpm --filter backend stripe:region`.
+          payment_providers: [
+            process.env.STRIPE_API_KEY ? "pp_stripe_stripe" : "pp_system_default",
+          ],
         },
       ],
     },

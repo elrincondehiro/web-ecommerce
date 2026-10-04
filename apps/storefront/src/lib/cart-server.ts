@@ -5,11 +5,14 @@ import { CART_COOKIE, isValidId } from "./cart";
 import { CART_FULL_FIELDS, retrieveCart, type StoreCart } from "./medusa";
 
 /** Carrito actual con todos los campos, o null si no hay, no existe o ya está completado. */
-export async function currentCart(cookies: AstroCookies): Promise<StoreCart | null> {
+export async function currentCart(
+  cookies: AstroCookies,
+  fields = CART_FULL_FIELDS,
+): Promise<StoreCart | null> {
   const id = cookies.get(CART_COOKIE)?.value;
   if (!isValidId(id)) return null;
   try {
-    const cart = await retrieveCart(id, CART_FULL_FIELDS);
+    const cart = await retrieveCart(id, fields);
     return cart.completed_at ? null : cart;
   } catch {
     return null;

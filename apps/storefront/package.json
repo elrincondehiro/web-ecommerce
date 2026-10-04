@@ -25,6 +25,7 @@
     "@astrojs/svelte": "9.0.1",
     "@medusajs/js-sdk": "2.21.2",
     "@medusajs/types": "2.21.2",
+    "@stripe/stripe-js": "9.17.0",
     "@tailwindcss/vite": "4.3.3",
     "astro": "7.3.5",
     "bits-ui": "2.19.3",

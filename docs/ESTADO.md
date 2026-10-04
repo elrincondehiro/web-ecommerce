@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 04-oct-2026 · fase 4 (carrito) cerrada (PR #18); plan de la fase 5 aprobado.
+> Última actualización: 04-oct-2026 · fase 5 (checkout + Stripe) implementada en `feat/fase5-checkout`, pendiente de PR.
 
 ## 1. Dónde estamos
 
@@ -92,9 +92,12 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 ## 6. Siguiente
 
 - **Fase 4 (carrito): cerrada** (PR #18, `ce526aa`). Detalle, medidas y pendientes en [fase4.md](./fases/fase4.md) §5–8.
-- **Siguiente: fase 5 (checkout + Stripe): plan APROBADO**, sin código. Leer [fase5.md](./fases/fase5.md) §2 (decisiones P1–P10 en §2.9).
-  - Resumen: Stripe solo **autoriza** (captura desde el Admin), solo **Península + Baleares**, una página `/checkout/` (datos y envío sin JS), `@stripe/stripe-js@9.17.0`, sin `pp_system_default`, teléfono obligatorio, cookie `last_order` 1 h, páginas legales provisionales, sin descuentos.
-  - Antes de empezar, el usuario pone las claves de test (fase5.md §2.11): `sk_test_` en `apps/backend/.env` y `docker/.env`, `pk_test_` en `apps/storefront/.env`. El agente **no** las pide ni las lee.
+- **Fase 5 (checkout + Stripe): implementada** en `feat/fase5-checkout`, pendiente de PR y merge. Resultados en [fase5.md](./fases/fase5.md) §5.1 y pendientes en §7.
+  - Stripe solo **autoriza**; la captura se hace desde el Admin. La región España tiene solo `pp_stripe_stripe` (`pnpm --filter backend stripe:region`, idempotente).
+  - El checkout es una sola página `/checkout/`. Los pasos de datos y envío funcionan sin JS (PRG + cookie `checkout_flash`). El pago usa un `<script>` con `@stripe/stripe-js/pure` (1,9 KB gzip).
+  - Tras pagar: `/checkout/completar/` → `/pedido/<id>/`. El detalle solo se ve con la cookie `last_order`.
+  - Para probarlo hacen falta las claves de test en los `.env`, `pnpm infra:stripe` (webhooks) y el backend en marcha.
+- **Siguiente: fase 7 (búsqueda)**, después del merge de la fase 5.
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).
@@ -111,4 +114,3 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - Tests de integración del backend fuera del CI (necesitan Postgres/Redis como `services:`); propuesta para la fase 10.
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.
-- Login del MCP de Stripe (cuenta **test**) cuando llegue la fase 5.

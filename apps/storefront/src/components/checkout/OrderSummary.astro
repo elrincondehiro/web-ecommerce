@@ -1,0 +1,46 @@
+---
+// Resumen del pedido en el checkout (fase 5): líneas, envío y total con IVA. HTML de servidor.
+import { formatPrice } from "$lib/format";
+import type { StoreCart } from "$lib/medusa";
+
+interface Props {
+  cart: StoreCart;
+}
+const { cart } = Astro.props;
+const currency = cart.currency_code ?? "eur";
+const items = [...(cart.items ?? [])].sort((a, b) =>
+  (a.product_title ?? "").localeCompare(b.product_title ?? ""),
+);
+const hasShipping = (cart.shipping_methods?.length ?? 0) > 0;
+---
+
+<section aria-labelledby="resumen-titulo" class="rounded-lg border p-4">
+  <h2 id="resumen-titulo" class="mb-3 text-lg font-semibold">
+    Resumen
+  </h2>
+  <ul class="divide-y text-sm">
+    {items.map((item) => (
+      <li class="flex justify-between gap-4 py-2">
+        <span class="min-w-0">
+          <span class="tabular-nums">{item.quantity} ×</span> {item.product_title}
+          {item.variant_title && item.variant_title !== "Única" && (
+            <span class="text-muted-foreground"> · {item.variant_title}</span>
+          )}
+        </span>
+        <span class="shrink-0 tabular-nums">{formatPrice(item.total ?? 0, currency)}</span>
+      </li>
+    ))}
+  </ul>
+  <dl class="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t pt-3 text-sm tabular-nums">
+    <dt class="text-muted-foreground">Productos</dt>
+    <dd class="text-right">{formatPrice(cart.item_total ?? 0, currency)}</dd>
+    <dt class="text-muted-foreground">Envío</dt>
+    <dd class="text-right">
+      {hasShipping ? formatPrice(cart.shipping_total ?? 0, currency) : "—"}
+    </dd>
+    <dt class="text-base font-semibold">Total</dt>
+    <dd class="text-right text-base font-semibold">{formatPrice(cart.total ?? 0, currency)}</dd>
+    <dt class="text-muted-foreground">IVA incluido</dt>
+    <dd class="text-right text-muted-foreground">{formatPrice(cart.tax_total ?? 0, currency)}</dd>
+  </dl>
+</section>

@@ -205,6 +205,85 @@ export async function deleteLineItem(cartId: string, lineId: string): Promise<St
   return parent ?? null;
 }
 
+// ── Checkout (runtime: /checkout/, /checkout/completar/, /pedido/). Fase 5. ───────────────────
+// Flujo de la Store API (context7 /medusajs/medusa, storefront-development/checkout):
+// email + direcciones → shipping method → payment session (Stripe) → complete.
+
+export type StoreOrder = HttpTypes.StoreOrder;
+export type StoreShippingOption = HttpTypes.StoreCartShippingOption;
+export type CheckoutAddressInput = HttpTypes.StoreAddAddress;
+
+/** Campos del carrito en /checkout/ (resumen, pasos completados y sesión de pago). */
+export const CHECKOUT_FIELDS =
+  `${CART_FULL_FIELDS},email,total,subtotal,tax_total,shipping_total,shipping_subtotal,` +
+  "*shipping_address,*billing_address,shipping_methods.id,shipping_methods.name," +
+  "shipping_methods.amount,shipping_methods.shipping_option_id,payment_collection.id," +
+  "payment_collection.payment_sessions.id,payment_collection.payment_sessions.status," +
+  "payment_collection.payment_sessions.amount,payment_collection.payment_sessions.provider_id," +
+  "payment_collection.payment_sessions.data";
+
+export async function updateCartContact(
+  cartId: string,
+  body: {
+    email: string;
+    shipping_address: CheckoutAddressInput;
+    billing_address: CheckoutAddressInput;
+  },
+): Promise<StoreCart> {
+  const { cart } = await cartSdk().store.cart.update(cartId, body, { fields: "id" });
+  return cart;
+}
+
+export async function listShippingOptions(cartId: string): Promise<StoreShippingOption[]> {
+  const { shipping_options } = await cartSdk().store.fulfillment.listCartOptions({
+    cart_id: cartId,
+  });
+  return shipping_options;
+}
+
+export async function setShippingMethod(cartId: string, optionId: string): Promise<StoreCart> {
+  const { cart } = await cartSdk().store.cart.addShippingMethod(
+    cartId,
+    { option_id: optionId },
+    { fields: "id" },
+  );
+  return cart;
+}
+
+/** Crea (o reutiliza la colección de) la sesión de pago de Stripe. Devuelve el client_secret. */
+export async function initiateStripeSession(
+  cart: StoreCart,
+  providerId: string,
+): Promise<string | null> {
+  const { payment_collection } = await cartSdk().store.payment.initiatePaymentSession(cart, {
+    provider_id: providerId,
+  });
+  const session = payment_collection.payment_sessions?.find((s) => s.provider_id === providerId);
+  const secret = session?.data?.client_secret;
+  return typeof secret === "string" ? secret : null;
+}
+
+export type CompleteResult =
+  { type: "order"; order: StoreOrder } | { type: "cart"; error: { message: string } };
+
+/** Completa el carrito. Idempotente en Medusa (lock + order_cart): si ya hay pedido, lo devuelve. */
+export async function completeCart(cartId: string): Promise<CompleteResult> {
+  const res = await cartSdk().store.cart.complete(cartId, { fields: "id" });
+  return res.type === "order"
+    ? { type: "order", order: res.order }
+    : { type: "cart", error: { message: res.error?.message ?? "" } };
+}
+
+export const ORDER_FIELDS =
+  "id,display_id,email,created_at,currency_code,total,subtotal,tax_total,shipping_total," +
+  "item_total,payment_status,*shipping_address,shipping_methods.name,shipping_methods.amount," +
+  "items.id,items.quantity,items.product_title,items.variant_title,items.unit_price,items.total";
+
+export async function retrieveOrder(id: string): Promise<StoreOrder> {
+  const { order } = await cartSdk().store.order.retrieve(id, { fields: ORDER_FIELDS });
+  return order;
+}
+
 /** Un producto con precio y stock por id (server island de la ficha). */
 export async function getPricedProduct(id: string): Promise<StoreProduct | null> {
   if (useFixtures) return (await fixtures.products()).find((p) => p.id === id) ?? null;

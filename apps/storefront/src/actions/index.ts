@@ -28,6 +28,7 @@ import {
   updateLineItem,
   type StoreCart,
 } from "$lib/medusa";
+import { checkout } from "./checkout";
 
 const id = z.string().regex(ID_PATTERN);
 const quantity = z.number().int().min(1).max(MAX_QUANTITY);
@@ -55,6 +56,7 @@ function titleOf(cart: StoreCart, variantId: string): string | null {
 }
 
 export const server = {
+  checkout,
   cart: {
     add: defineAction({
       accept: "form",

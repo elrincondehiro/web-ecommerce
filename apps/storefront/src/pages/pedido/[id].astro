@@ -1,0 +1,110 @@
+---
+// Confirmación del pedido (fase 5): on-demand, noindex, 0 JS. La Store API devuelve pedidos por
+// id SIN autenticar (GET /store/orders/:id, Medusa 2.21.2), así que los datos solo se muestran
+// si la cookie last_order (httpOnly, 1 h, P7) coincide con el id: una URL compartida no expone
+// la dirección. Sin cookie: "Pedido recibido" genérico. Historial completo: cuenta (fase 9).
+import { buttonVariants } from "$lib/components/ui/button";
+import { isValidId } from "$lib/cart";
+import { LAST_ORDER_COOKIE, canViewOrder } from "$lib/checkout";
+import { formatPrice } from "$lib/format";
+import { retrieveOrder, type StoreOrder } from "$lib/medusa";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export const prerender = false;
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+
+const { id } = Astro.params;
+if (!isValidId(id)) return new Response(null, { status: 404 });
+
+let order: StoreOrder | null = null;
+if (canViewOrder(Astro.cookies.get(LAST_ORDER_COOKIE)?.value, id)) {
+  try {
+    order = await retrieveOrder(id);
+  } catch (err) {
+    Astro.logger.error(`pedido: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+const currency = order?.currency_code ?? "eur";
+const addr = order?.shipping_address;
+---
+
+<BaseLayout
+  title="Pedido recibido"
+  description="Confirmación de tu pedido en El Rincón de Hiro."
+  noindex
+  cartCount={0}
+  cartClient={false}
+>
+  <h1 class="mb-2 text-3xl font-semibold tracking-tight">¡Gracias por tu pedido!</h1>
+  {order ? (
+    <div class="flex max-w-2xl flex-col gap-6">
+      <p class="text-muted-foreground">
+        Pedido <strong class="text-foreground">#{order.display_id}</strong>. Te enviaremos la
+        confirmación a <strong class="text-foreground">{order.email}</strong>. El cargo en tu
+        tarjeta se hace cuando preparamos el envío.
+      </p>
+
+      <section aria-labelledby="pedido-lineas" class="rounded-lg border p-4">
+        <h2 id="pedido-lineas" class="mb-3 text-lg font-semibold">
+          Productos
+        </h2>
+        <ul class="divide-y text-sm">
+          {(order.items ?? []).map((item) => (
+            <li class="flex justify-between gap-4 py-2">
+              <span>
+                <span class="tabular-nums">{item.quantity} ×</span> {item.product_title}
+                {item.variant_title && item.variant_title !== "Única" && (
+                  <span class="text-muted-foreground"> · {item.variant_title}</span>
+                )}
+              </span>
+              <span class="tabular-nums">{formatPrice(item.total ?? 0, currency)}</span>
+            </li>
+          ))}
+        </ul>
+        <dl class="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t pt-3 text-sm tabular-nums">
+          <dt class="text-muted-foreground">
+            Envío{order.shipping_methods?.[0]?.name ? ` (${order.shipping_methods[0].name})` : ""}
+          </dt>
+          <dd class="text-right">{formatPrice(order.shipping_total ?? 0, currency)}</dd>
+          <dt class="text-base font-semibold">Total</dt>
+          <dd class="text-right text-base font-semibold">
+            {formatPrice(order.total ?? 0, currency)}
+          </dd>
+          <dt class="text-muted-foreground">IVA incluido</dt>
+          <dd class="text-right text-muted-foreground">
+            {formatPrice(order.tax_total ?? 0, currency)}
+          </dd>
+        </dl>
+      </section>
+
+      {addr && (
+        <section aria-labelledby="pedido-envio" class="rounded-lg border p-4 text-sm">
+          <h2 id="pedido-envio" class="mb-2 text-lg font-semibold">
+            Dirección de envío
+          </h2>
+          <address class="not-italic">
+            {addr.first_name} {addr.last_name}
+            <br />
+            {addr.address_1}
+            {addr.address_2 && (
+              <>
+                <br />
+                {addr.address_2}
+              </>
+            )}
+            <br />
+            {addr.postal_code} {addr.city} ({addr.province})
+          </address>
+        </section>
+      )}
+    </div>
+  ) : (
+    <p class="max-w-2xl text-muted-foreground">
+      Hemos recibido tu pedido. Encontrarás todos los detalles en el email de confirmación.
+    </p>
+  )}
+  <a href="/productos/" class:list={[buttonVariants({ variant: "outline" }), "mt-8"]}>
+    Seguir comprando
+  </a>
+</BaseLayout>

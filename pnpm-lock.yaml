@@ -251,6 +251,9 @@ importers:
       '@medusajs/types':
         specifier: 2.21.2
         version: 2.21.2(ioredis@5.11.1(supports-color@8.1.1))(vite@8.3.2(@types/node@24.9.2)(esbuild@0.28.2)(jiti@1.21.7)(yaml@2.9.1))
+      '@stripe/stripe-js':
+        specifier: 9.17.0
+        version: 9.17.0
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(vite@8.3.2(@types/node@24.9.2)(esbuild@0.28.2)(jiti@1.21.7)(yaml@2.9.1))
@@ -3712,6 +3715,10 @@ packages:
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
+
+  '@stripe/stripe-js@9.17.0':
+    resolution: {integrity: sha512-uidL4OJum5kivsOAQnVfQmYLJ2zdgirtmT0zWgskASZ4TPXxpXQ0MNrzW4NsXB90uEqmPHpSEtciLFbF1QQvNA==}
+    engines: {node: '>=12.16'}
 
   '@sveltejs/acorn-typescript@1.0.13':
     resolution: {integrity: sha512-wgKggnhZVL9Bfx1OaKKTrYY9BFRk6C8UAkQNUcIv1+llzYrIqy+RZm5HPKzn0NpEBvTVhTqB4kQyllZywsRBRQ==}
@@ -12762,6 +12769,8 @@ snapshots:
       text-hex: 1.0.0
 
   '@standard-schema/utils@0.3.0': {}
+
+  '@stripe/stripe-js@9.17.0': {}
 
   '@sveltejs/acorn-typescript@1.0.13(acorn@8.18.0)':
     dependencies:

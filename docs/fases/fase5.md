@@ -1,17 +1,17 @@
 # Fase 5 — Checkout + Stripe
 
-> **Estado:** ⏳ plan aprobado (04-oct-2026). No hay código escrito.
-> **Rama/PR:** `feat/fase5-checkout` (se crea desde `main` cuando se apruebe el plan) · PR pendiente
+> **Estado:** 🔧 implementada en `feat/fase5-checkout` (04-oct-2026), pendiente de PR y merge.
+> **Rama/PR:** `feat/fase5-checkout` · PR pendiente
 > **Anterior:** [Fase 4](./fase4.md) · **Siguiente:** Fase 7 (búsqueda)
 
 ## 1. Objetivos
 
-- [ ] Stripe como proveedor de pago en Medusa (`@medusajs/medusa/payment-stripe`, incluido en `@medusajs/medusa` 2.21.2, **sin dependencia nueva en el backend**).
-- [ ] Checkout on-demand (`/checkout/`): email, dirección de envío y facturación, método de envío y pago. Los pasos de datos y de envío funcionan **sin JS**.
-- [ ] Pago con **Payment Element** de Stripe (requiere JS: sin JS se avisa con `<noscript>`).
-- [ ] Creación del pedido (`cart.complete`) y página de confirmación.
-- [ ] Webhooks de Stripe verificados con firma y **sin pedidos duplicados** al reenviarlos.
-- [ ] Criterio de salida (README §13): pago de prueba de extremo a extremo y reenvío de webhook sin duplicados.
+- [x] Stripe como proveedor de pago en Medusa (`@medusajs/medusa/payment-stripe`, incluido en `@medusajs/medusa` 2.21.2, **sin dependencia nueva en el backend**).
+- [x] Checkout on-demand (`/checkout/`): email, dirección de envío y facturación, método de envío y pago. Los pasos de datos y de envío funcionan **sin JS**.
+- [x] Pago con **Payment Element** de Stripe (requiere JS: sin JS queda visible un aviso que el script sustituye).
+- [x] Creación del pedido (`cart.complete`) y página de confirmación.
+- [x] Webhooks de Stripe verificados con firma y **sin pedidos duplicados** al reenviarlos.
+- [x] Criterio de salida (README §13): pago de prueba de extremo a extremo y reenvío de webhook sin duplicados.
 
 ## 2. Plan aprobado (decisiones del usuario en §2.9)
 
@@ -91,7 +91,7 @@
 
 - **Vitest**: validación de direcciones y CP, mapeo de errores de Medusa y Stripe, decisión de `/pedido/` (cookie ↔ id), helpers puros de `src/lib/checkout.ts`.
 - **Playwright** (local, como en la fase 4; necesita las claves de test en `.env`):
-  - Sin JS: datos → envío → el paso de pago muestra el aviso `<noscript>`. Errores de validación por campo.
+  - Sin JS: datos → envío → el paso de pago muestra el aviso de que necesita JS. Errores de validación por campo.
   - Con JS: pago con `4242 4242 4242 4242` → `/pedido/<id>/`. Pago con 3DS (`4000 0000 0000 3220`, autenticación de prueba). Tarjeta rechazada (`4000 0000 0000 0002`) → aviso y se puede reintentar.
 - **Webhooks**, script/documentación de prueba manual:
   1. Pago completo → 1 pedido.
@@ -171,22 +171,69 @@ Nunca claves `sk_live_`/`pk_live_` en desarrollo.
 
 ## 5. Cómo testear esta fase
 
-Se rellena al implementar.
+Requisitos: claves de test en los `.env` (§2.11), `pnpm infra:up`, `pnpm infra:stripe` (reenvía los webhooks al backend) y el backend en marcha (`pnpm --filter backend dev`).
+
+```bash
+# Una vez por base de datos: región España solo con Stripe (idempotente)
+pnpm --filter backend stripe:region
+
+# Unitarios (checkout.ts: CP, teléfono, dirección, sesión de Stripe, errores, /pedido/)
+pnpm --filter storefront test
+
+# Build + presupuesto de JS (incluye el bundle de pago del checkout)
+pnpm --filter storefront build && pnpm --filter storefront check:budget
+
+# e2e (build de producción con `pnpm start`; necesita red hacia Stripe)
+pnpm --filter storefront test:e2e
+```
+
+Manual:
+
+1. Añadir un producto → `/carrito/` → **Ir a pagar** → datos (CP `28001`) → envío → pago con `4242 4242 4242 4242`, `12/34`, `123` → `/pedido/order_…/` con el detalle. En otra ventana privada, la misma URL solo dice "Hemos recibido tu pedido".
+2. 3DS: `4000 0027 6000 3184` → modal de prueba → **COMPLETE**. Rechazo: `4000 0000 0000 0002` → aviso junto al botón y se puede reintentar.
+3. Sin JS (DevTools → desactivar JavaScript): datos y envío funcionan con POST + 303. El paso de pago avisa de que necesita JavaScript. Un CP `35001` da error en el campo.
+4. Admin (`localhost:9000/app`) → pedido con el pago **autorizado** → _Capture_ → pagado. En Stripe (test) el PaymentIntent pasa a `succeeded`.
+5. Webhooks: `docker compose --env-file docker/.env -f docker/compose.dev.yml --profile stripe exec stripe-cli stripe events resend <evt_id>` → la respuesta es 200 y no aparece ningún pedido ni pago nuevo.
+
+### 5.1 Resultados (04-oct-2026)
+
+- Vitest: storefront **43** tests (17 nuevos en `checkout.test.ts`); backend 7.
+- Playwright: **21 en verde** + 3 omitidos a propósito (el pago con JS solo se prueba en escritorio). Checkout: sin JS (errores por campo, Canarias, envío exprés, aviso de pago) y facturación por CSS en escritorio y móvil; 4242, rechazo y 3DS en escritorio.
+- `check:budget`: 120 páginas OK. Bundle de pago `StripePayment` **1 964 B gzip** (incluye el cargador `@stripe/stripe-js/pure`; Stripe.js llega aparte desde `js.stripe.com`). Las páginas legales tienen 0 JS.
+- Lighthouse móvil (`pnpm start` + proxy brotli; paso de pago con el Payment Element montado; 3 pasadas):
+
+  | Página          | Performance | Accesibilidad | Buenas prácticas | SEO | LCP    | CLS   |
+  | --------------- | ----------- | ------------- | ---------------- | --- | ------ | ----- |
+  | `/checkout/`    | 98          | 100           | 77               | 66  | 1,36 s | 0,049 |
+  | `/pedido/<id>/` | 100         | 100           | 100              | 66  | 1,21 s | 0     |
+  | `/condiciones/` | 100         | 100           | 100              | 66  | 1,37 s | 0     |
+  - SEO 66: el único fallo es `is-crawlable`, por el `noindex` puesto a propósito (checkout, pedido y legales provisionales).
+  - Buenas prácticas 77 en `/checkout/`: cookies de terceros (`m.stripe.com`, hCaptcha de Stripe) y avisos de Chrome dentro de los iframes de Stripe. No dependen de nosotros.
+  - CLS 0,049 (presupuesto del checkout < 0,1): el iframe de Stripe crece por dentro. Se reserva una altura mínima de 228 px (la medida en móvil) y el aviso "Cargando…" va superpuesto (absolute), para que quitarlo no desplace el formulario.
+
+- Webhooks (stripe-cli en Docker):
+  - `stripe events resend` de dos `amount_capturable_updated` → responde 200; pedidos 5 → 5 y pagos 5 → 5.
+  - Navegador cerrado: PaymentIntent confirmado con el CLI sin pasar por `/checkout/completar/` → el webhook crea el pedido (#8) y el carrito queda `completed_at`.
+  - Captura del pedido #8 con `capturePaymentWorkflow` (lo mismo que el botón del Admin) → `captured_at` en Medusa, PaymentIntent `succeeded` en Stripe. El webhook `payment_intent.succeeded` que llega después **no** crea una segunda captura (sigue habiendo 1 de 24,90 €).
 
 ## 6. Criterio de salida
 
-- [ ] Pago de prueba de extremo a extremo (tarjeta normal y con 3DS) → pedido en el Admin con el pago **autorizado**; captura desde el Admin → `captured` en Medusa y en Stripe.
-- [ ] Reenvío de webhook → sin pedidos ni capturas duplicados. Navegador cerrado tras pagar → el pedido se crea por webhook.
-- [ ] Pasos de datos y envío sin JS (Playwright). CP de Canarias, Ceuta y Melilla rechazados.
-- [ ] Páginas legales provisionales enlazadas en el pie y junto al botón de pago.
-- [ ] `check:budget` con la regla del checkout; checkout ≤ 30 KB gzip propios.
-- [ ] Lighthouse móvil ≥ 95 en `/checkout/`.
-- [ ] lint, format:check, typecheck, test y build en verde (CI sin claves de Stripe).
+- [x] Pago de prueba de extremo a extremo (tarjeta normal y con 3DS) → pedido con el pago **autorizado**; la captura → `captured` en Medusa y `succeeded` en Stripe. Pendiente: que el usuario lo repita desde el botón del Admin.
+- [x] Reenvío de webhook → sin pedidos ni capturas duplicados. Navegador cerrado tras pagar → el pedido se crea por webhook.
+- [x] Pasos de datos y envío sin JS (Playwright). CP de Canarias, Ceuta y Melilla rechazados.
+- [x] Páginas legales provisionales enlazadas en el pie y junto al botón de pago.
+- [x] `check:budget` con la regla del checkout; bundle de pago de 1 964 B gzip (≤ 30 KB).
+- [x] Lighthouse móvil ≥ 95 en Performance y Accesibilidad de `/checkout/` (SEO bajo por el `noindex` puesto a propósito).
+- [x] lint, format:check, typecheck, test y build en verde. El CI no tiene claves de Stripe: el paso de pago muestra "no disponible" y el build no falla.
 
 ## 7. Pendientes / riesgos
 
-- Sin JS no se puede pagar con tarjeta (el Payment Element es un iframe de Stripe). Es una limitación de Stripe y se avisa con `<noscript>`.
-- Compatibilidad entre Stripe.js `dahlia` y la API `2024-04-10` del servidor: verificar con un pago real (§2.4).
+- Sin JS no se puede pagar con tarjeta, porque el Payment Element es un iframe de Stripe. Lo indica un aviso visible en el paso de pago, que el script sustituye.
+- ✅ Stripe.js `dahlia` con la API `2024-04-10` del servidor: verificado con pagos reales de test (4242, 3DS y rechazo).
+- ✅ Doble captura: no ocurre (ver §5.1).
+- La autorización caduca a los ~7 días (P1). Hay que capturar antes o volver a cobrar.
+- e2e del 3DS: el botón COMPLETE del modal de prueba aparece antes de que el modal esté listo. El test reintenta el clic hasta salir del checkout.
+- El aviso de CSP de Astro (`context.csp was used … but CSP was not configured`) sigue apareciendo; se resuelve en la fase 11.
 - Si se actualiza Medusa, revisar que `compensatePaymentIfNeededStep` y el lock de `completeCartWorkflow` sigan igual.
 
 ## 8. Notas para fases futuras

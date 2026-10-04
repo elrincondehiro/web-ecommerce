@@ -21,12 +21,18 @@ const IMAGE_BASE_URL = new URL(
   process.env.IMAGE_BASE_URL ?? dotenv.IMAGE_BASE_URL ?? "http://localhost:8333/medusa",
 );
 
+const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal/"];
+
 export default defineConfig({
   site: SITE_URL || "https://elrincondehiro.com",
   // Estático por defecto; las server islands y rutas on-demand las sirve el adapter.
   adapter: node({ mode: "standalone" }),
   trailingSlash: "always",
-  integrations: [svelte(), sitemap()],
+  // Sitemap sin páginas legales provisionales (noindex hasta tener el texto definitivo, fase 5).
+  integrations: [
+    svelte(),
+    sitemap({ filter: (page) => !LEGAL_PATHS.some((p) => page.endsWith(p)) }),
+  ],
   // Sin prefetch de Astro: inyecta /_astro/page.*.js en todas las páginas y el presupuesto
   // es 0 bundles JS en home/listado/ficha. Se sustituirá por Speculation Rules (fase 13).
   prefetch: false,
@@ -80,6 +86,14 @@ export default defineConfig({
         context: "server",
         access: "public",
         default: true,
+      }),
+      // Clave PUBLICABLE de Stripe (pk_test_… / pk_live_…) para el Payment Element (fase 5). Es
+      // pública por diseño: se escribe en un data- del paso de pago. Sin ella, el pago se desactiva.
+      PUBLIC_STRIPE_PUBLISHABLE_KEY: envField.string({
+        context: "server",
+        access: "public",
+        optional: true,
+        startsWith: "pk_",
       }),
       // "fixtures" → datos de build desde src/lib/__fixtures__ (CI sin Medusa)
       STOREFRONT_DATA: envField.enum({

@@ -16,7 +16,8 @@
     "test:integration:modules": "TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
     "seed:mock": "medusa exec ./src/scripts/seed-mock.ts",
     "images:mock": "medusa exec ./src/scripts/mock-images.ts",
-    "images:import": "medusa exec ./src/scripts/import-images.ts"
+    "images:import": "medusa exec ./src/scripts/import-images.ts",
+    "stripe:region": "medusa exec ./src/scripts/stripe-region.ts"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "2.21.2",

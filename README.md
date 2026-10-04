@@ -495,7 +495,7 @@ pnpm dev:storefront                                    # http://localhost:4321
 pnpm --filter storefront build && pnpm --filter storefront preview   # servidor de producción (node standalone)
 pnpm --filter storefront start                         # igual, pero en 0.0.0.0:4321 (probar desde el móvil por LAN)
 STOREFRONT_DATA=fixtures pnpm --filter storefront build              # sin backend (como en CI)
-pnpm --filter storefront check:budget                  # home/listado/ficha: solo el bundle del carrito (≤ 2 KB gzip)
+pnpm --filter storefront check:budget                  # home/listado/ficha: solo el bundle del carrito (≤ 2 KB gzip); checkout: bundle de pago ≤ 30 KB
 pnpm --filter storefront test:e2e                      # Playwright (fase 4): infra + backend + build; con y sin JS
 pnpm --filter storefront fixtures:update               # regenera src/lib/__fixtures__ desde Medusa
 ```
@@ -503,6 +503,7 @@ pnpm --filter storefront fixtures:update               # regenera src/lib/__fixt
 - HTML estático para home, `/productos/`, `/categorias/<handle>/` y `/producto/<handle>/`. El precio y el stock se escriben en el build y una **server island** invisible (`LiveSync`) los corrige (fase 6).
 - Imágenes de producto optimizadas en build con `<Picture>` (AVIF/WebP, 1:1) desde el bucket (`IMAGE_BASE_URL`). El primer build tarda unos 30 min con 1000 productos × 4 fotos; después son unos 20 s ([fase6.md](./docs/fases/fase6.md)).
 - **Carrito** (fase 4): cookie `cart_id` httpOnly, Astro Actions que funcionan sin JS (POST → 303 a la página de origen), contador en server island, `/carrito/` on-demand con 0 JS y un único script de mejora progresiva (fetch, toasts, flyout en escritorio) de ~1 KB gzip ([fase4.md](./docs/fases/fase4.md)).
+- **Checkout** (fase 5): `/checkout/` on-demand en una página (datos → envío → pago). Datos y envío funcionan sin JS. El pago usa el Payment Element de Stripe (script de ~2 KB gzip + Stripe.js), solo autoriza y la captura se hace desde el Admin. Confirmación en `/pedido/<id>/` ([fase5.md](./docs/fases/fase5.md)).
 - shadcn-svelte con el preset `vega`; alias `$lib` definido en `tsconfig.json` y en `vite.resolve.alias`.
 - Componentes en `src/lib/components/ui`, renderizados **sin** `client:*`.
 - Inter auto-alojada con la Fonts API (`fontProviders.fontsource()`): pesos estáticos 400/500/600; solo se precarga el 400.
@@ -666,7 +667,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 3 Storefront base (Astro)              | [fase3.md](./docs/fases/fase3.md)                                                                | ✅     |
 | 6 Ficheros R2 + imágenes               | [fase6.md](./docs/fases/fase6.md)                                                                | ✅     |
 | 4 Carrito                              | [fase4.md](./docs/fases/fase4.md)                                                                | ✅     |
-| 5, 7 … 13                              | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 5 Checkout + Stripe                    | [fase5.md](./docs/fases/fase5.md)                                                                | 🔧     |
+| 7 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 

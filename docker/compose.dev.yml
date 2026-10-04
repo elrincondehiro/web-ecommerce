@@ -93,11 +93,18 @@ services:
       - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
 
   # Reenvío de webhooks de Stripe al backend local. Solo con: pnpm infra:stripe
+  # Eventos: los 4 que procesa el proveedor Stripe de Medusa (fase 5, docs Medusa payment-stripe).
+  # El whsec_ para STRIPE_WEBHOOK_SECRET (apps/backend/.env):
+  #   docker compose --env-file docker/.env -f docker/compose.dev.yml run --rm stripe-cli listen --print-secret
   stripe-cli:
     image: stripe/stripe-cli:v1.53.0
     profiles: ["stripe"]
     command:
-      ["listen", "--forward-to", "http://host.docker.internal:9000/hooks/payment/stripe_stripe"]
+      - listen
+      - --events
+      - payment_intent.amount_capturable_updated,payment_intent.succeeded,payment_intent.payment_failed,payment_intent.partially_funded
+      - --forward-to
+      - http://host.docker.internal:9000/hooks/payment/stripe_stripe
     environment:
       STRIPE_API_KEY: ${STRIPE_API_KEY}
     extra_hosts:

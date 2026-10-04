@@ -1,0 +1,88 @@
+---
+// Campos de una dirección española del checkout (fase 5). prefix "" = envío, "billing_" =
+// facturación (solo se valida si se desmarca "misma dirección"). Atributos autocomplete según
+// HTML (section-*, shipping/billing) para que el navegador rellene bien cada bloque.
+import Field from "./Field.astro";
+import { SHIPPING_CP_PATTERN } from "$lib/checkout";
+
+interface Props {
+  prefix: "" | "billing_";
+  values: Record<string, string>;
+  errors: Record<string, string>;
+}
+const { prefix, values, errors } = Astro.props;
+const isShipping = prefix === "";
+const ac = isShipping ? "shipping" : "billing";
+// En facturación los `required` HTML se omiten: el bloque está oculto (CSS) mientras la casilla
+// "misma dirección" esté marcada, y un required oculto bloquearía el envío. Valida el servidor.
+const req = isShipping;
+const v = (k: string) => values[`${prefix}${k}`] ?? "";
+const e = (k: string) => errors[`${prefix}${k}`];
+---
+
+<div class="grid gap-4 sm:grid-cols-2">
+  <Field
+    name={`${prefix}first_name`}
+    label="Nombre"
+    autocomplete={`${ac} given-name`}
+    required={req}
+    optional={false}
+    maxlength={80}
+    value={v("first_name")}
+    error={e("first_name")}
+  />
+  <Field
+    name={`${prefix}last_name`}
+    label="Apellidos"
+    autocomplete={`${ac} family-name`}
+    required={req}
+    optional={false}
+    maxlength={80}
+    value={v("last_name")}
+    error={e("last_name")}
+  />
+  <Field
+    name={`${prefix}address_1`}
+    label="Dirección"
+    autocomplete={`${ac} address-line1`}
+    required={req}
+    optional={false}
+    maxlength={120}
+    value={v("address_1")}
+    error={e("address_1")}
+    class="sm:col-span-2"
+  />
+  <Field
+    name={`${prefix}address_2`}
+    label="Piso, puerta, escalera…"
+    autocomplete={`${ac} address-line2`}
+    maxlength={120}
+    value={v("address_2")}
+    error={e("address_2")}
+    class="sm:col-span-2"
+  />
+  <Field
+    name={`${prefix}postal_code`}
+    label="Código postal"
+    autocomplete={`${ac} postal-code`}
+    inputmode="numeric"
+    required={req}
+    optional={false}
+    maxlength={5}
+    pattern={isShipping ? SHIPPING_CP_PATTERN : "[0-9]{5}"}
+    title={isShipping ? "5 dígitos. Solo Península y Baleares." : "5 dígitos."}
+    hint={isShipping ? "Enviamos a la Península y Baleares." : undefined}
+    value={v("postal_code")}
+    error={e("postal_code")}
+  />
+  <Field
+    name={`${prefix}city`}
+    label="Población"
+    autocomplete={`${ac} address-level2`}
+    required={req}
+    optional={false}
+    maxlength={80}
+    value={v("city")}
+    error={e("city")}
+  />
+</div>

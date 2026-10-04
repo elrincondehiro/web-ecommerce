@@ -1,0 +1,107 @@
+---
+// Paso de pago (fase 5): Payment Element de Stripe. Es el ÚNICO JS del checkout.
+// - Script de Astro (no isla Svelte: el Payment Element es un iframe de Stripe; AGENTS §3.1).
+// - Stripe.js se carga desde js.stripe.com con `@stripe/stripe-js/pure` (versión fijada por el
+//   paquete, release train "dahlia"; Stripe exige cargarlo de su dominio, no auto-alojarlo).
+// - confirmPayment con `redirect: "if_required"`: tarjetas sin 3DS no salen de la página; 3DS y
+//   métodos con redirección vuelven a `return_url`. En ambos casos se acaba en
+//   /checkout/completar/ (GET), que completa el carrito en Medusa (idempotente).
+// - Sin JS: queda visible el aviso de que el pago necesita JavaScript (#pago-estado).
+// Fuentes: tipos de @stripe/stripe-js 9.17.0 (confirmPayment, elements), context7 /medusajs/medusa
+// (storefront-development/checkout/payment/stripe).
+import { buttonVariants } from "$lib/components/ui/button";
+import { COMPLETE_PATH } from "$lib/checkout";
+import { formatPrice } from "$lib/format";
+
+interface Props {
+  publishableKey: string;
+  clientSecret: string;
+  total: number;
+  currency: string;
+}
+const { publishableKey, clientSecret, total, currency } = Astro.props;
+const returnUrl = new URL(COMPLETE_PATH, Astro.url).href;
+---
+
+<form
+  id="pago-form"
+  data-pk={publishableKey}
+  data-secret={clientSecret}
+  data-return={returnUrl}
+  class="flex flex-col gap-4"
+>
+  {/* Altura reservada para el iframe del Payment Element (evita CLS al montarlo). El aviso va
+      superpuesto (absolute) para que quitarlo no desplace el iframe. Sin JS se queda el aviso;
+      con JS el script lo cambia por "Cargando…" y lo quita cuando el iframe está listo. */}
+  <div class="relative min-h-57">
+    <p
+      id="pago-estado"
+      class="absolute inset-x-0 top-0 rounded-md border border-destructive/40 px-4 py-3 text-sm text-destructive"
+    >
+      Para pagar con tarjeta necesitas activar JavaScript: el formulario de pago lo proporciona
+      Stripe, nuestro procesador de pagos.
+    </p>
+    <div id="pago-element"></div>
+  </div>
+  <p id="pago-mensaje" role="alert" class="text-sm text-destructive empty:hidden"></p>
+  <button id="pago-boton" type="submit" class={buttonVariants({ size: "lg" })} disabled>
+    Pagar y realizar pedido · {formatPrice(total, currency)}
+  </button>
+</form>
+
+<script>
+  import { loadStripe } from "@stripe/stripe-js/pure";
+
+  const form = document.querySelector<HTMLFormElement>("#pago-form");
+  const button = document.querySelector<HTMLButtonElement>("#pago-boton");
+  const message = document.querySelector<HTMLElement>("#pago-mensaje");
+  const ERROR = "No se ha podido cargar el pago. Recarga la página o inténtalo más tarde.";
+
+  async function init(f: HTMLFormElement, btn: HTMLButtonElement, msg: HTMLElement) {
+    const { pk, secret, return: returnUrl } = f.dataset;
+    if (!pk || !secret || !returnUrl) return;
+    const status = f.querySelector<HTMLElement>("#pago-estado");
+    if (status) {
+      status.className = "absolute inset-x-0 top-0 text-sm text-muted-foreground";
+      status.textContent = "Cargando el formulario de pago…";
+    }
+    const stripe = await loadStripe(pk, { locale: "es" });
+    if (!stripe) throw new Error("Stripe.js no disponible");
+    const elements = stripe.elements({
+      clientSecret: secret,
+      appearance: { theme: "stripe", variables: { borderRadius: "6px" } },
+    });
+    const payment = elements.create("payment", { layout: "tabs" });
+    payment.on("ready", () => {
+      status?.remove();
+      btn.disabled = false;
+    });
+    payment.mount("#pago-element");
+
+    f.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (btn.disabled) return;
+      btn.disabled = true; // evita el doble envío
+      msg.textContent = "";
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: returnUrl },
+        redirect: "if_required",
+      });
+      if (error) {
+        // Errores de tarjeta/validación: Stripe da el mensaje localizado. Se puede reintentar.
+        msg.textContent = error.message ?? ERROR;
+        btn.disabled = false;
+        return;
+      }
+      // Autorizado sin redirección (p. ej. tarjeta sin 3DS): completar el pedido en el servidor.
+      window.location.assign(returnUrl);
+    });
+  }
+
+  if (form && button && message) {
+    init(form, button, message).catch(() => {
+      message.textContent = ERROR;
+    });
+  }
+</script>

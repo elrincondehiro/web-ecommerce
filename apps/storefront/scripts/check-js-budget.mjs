@@ -2,6 +2,9 @@
 // Home, listados y fichas: 0 bundles /_astro/*.js salvo UN bundle de carrito (CartClient,
 // ≤ 2 KB gzip, fase 4) sin imports a otros chunks. Se permite el script inline de las server
 // islands (lo genera Astro) y el aplicador de LiveSync, ≤ 1 KB gzip en total.
+// Páginas legales (fase 5): mismas reglas. Checkout (fase 5, on-demand: no hay HTML en dist): el
+// bundle de pago (StripePayment, incluye el cargador de Stripe.js) ≤ 30 KB gzip propios con sus
+// imports (AGENTS §3.4); Stripe.js se descarga aparte de js.stripe.com.
 import { readFile, readdir } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,7 +12,17 @@ import { gzipSync } from "node:zlib";
 
 const ROOT = fileURLToPath(new URL("../dist/client/", import.meta.url));
 /** Rutas con presupuesto 0 KB (prefijos relativos a dist/client). */
-const ZERO_JS = [/^index\.html$/, /^productos\//, /^categorias\//, /^producto\//, /^404\.html$/];
+const ZERO_JS = [
+  /^index\.html$/,
+  /^productos\//,
+  /^categorias\//,
+  /^producto\//,
+  /^404\.html$/,
+  /^(condiciones|privacidad|cookies|aviso-legal)\//,
+];
+/** Bundle de pago del checkout (fase 5) y su presupuesto (gzip, con imports). */
+const PAYMENT_BUNDLE = /^StripePayment\.[^/]*\.js$/;
+const PAYMENT_GZIP_MAX = 30 * 1024;
 /** Máximo de JS inline (gzip) por página: solo el runtime de server islands. */
 const INLINE_GZIP_MAX = 1024;
 /** Único bundle permitido en esas páginas: mejora progresiva del carrito (fase 4). */
@@ -72,6 +85,33 @@ for await (const file of htmlFiles(ROOT)) {
     failures.push(`${rel}: JS inline ${inlineGzip} B gzip > ${INLINE_GZIP_MAX} B`);
 }
 
+// Checkout: el bundle de pago y todo lo que importe (chunks de /_astro/).
+const ASSETS = join(CLIENT, "_astro");
+const assets = await readdir(ASSETS).catch(() => []);
+const payment = assets.filter((f) => PAYMENT_BUNDLE.test(f));
+let paymentInfo = "sin bundle de pago";
+if (payment.length !== 1) {
+  failures.push(`checkout: se esperaba 1 bundle de pago y hay ${payment.length}`);
+} else {
+  /** @type {Set<string>} */
+  const seen = new Set();
+  /** @param {string} file */
+  const walk = async (file) => {
+    if (seen.has(file)) return 0;
+    seen.add(file);
+    const code = await readFile(join(ASSETS, file), "utf8");
+    let size = gzipSync(code).length;
+    for (const m of code.matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)["']\.\/([^"']+\.js)["']/g)) {
+      size += await walk(m[1] ?? "");
+    }
+    return size;
+  };
+  const gz = await walk(payment[0] ?? "");
+  paymentInfo = `pago ${[...seen].join(" + ")} ${gz} B gzip`;
+  if (gz > PAYMENT_GZIP_MAX)
+    failures.push(`checkout: bundle de pago ${gz} B gzip > ${PAYMENT_GZIP_MAX} B`);
+}
+
 if (checked === 0) {
   process.stderr.write("check-js-budget: no hay HTML en dist/client (¿falta `pnpm build`?)\n");
   process.exit(1);
@@ -84,5 +124,5 @@ if (failures.length) {
 }
 const cartInfo = [...bundleSizes].map(([src, gz]) => `${basename(src)} ${gz} B gzip`).join(", ");
 process.stdout.write(
-  `check-js-budget: OK (${checked} páginas; único bundle permitido: ${cartInfo || "ninguno"})\n`,
+  `check-js-budget: OK (${checked} páginas; único bundle permitido: ${cartInfo || "ninguno"}; ${paymentInfo})\n`,
 );
