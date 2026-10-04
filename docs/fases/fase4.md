@@ -1,8 +1,8 @@
 # Fase 4 — Carrito
 
-> **Estado:** ✅ completada (04-oct-2026), pendiente de PR/merge por el usuario.
-> **Rama/PR:** `feat/fase4-carrito` (desde `main` `3308c70`) · PR pendiente
-> **Anterior:** [Fase 6](./fase6.md) · **Siguiente:** Fase 5 (checkout + Stripe)
+> **Estado:** ✅ completada (04-oct-2026)
+> **Rama/PR:** `feat/fase4-carrito` · PR #18 (squash `ce526aa` en `main`)
+> **Anterior:** [Fase 6](./fase6.md) · **Siguiente:** [Fase 5](./fase5.md) (checkout + Stripe)
 
 ## 1. Objetivos
 

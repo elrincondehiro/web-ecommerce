@@ -2,19 +2,20 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 04-oct-2026 · fase 4 (carrito) implementada en `feat/fase4-carrito`, pendiente de PR/merge.
+> Última actualización: 04-oct-2026 · fase 4 (carrito) cerrada (PR #18); plan de la fase 5 aprobado.
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado            | Doc                              |
-| ------------------------------------------- | ----------------- | -------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅                | [prefase.md](./fases/prefase.md) |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅                | [fase0.md](./fases/fase0.md)     |
-| 1 CI básico + Renovate                      | ✅                | [fase1.md](./fases/fase1.md)     |
-| 2 Backend Medusa                            | ✅                | [fase2.md](./fases/fase2.md)     |
-| 3 Storefront base (Astro)                   | ✅                | [fase3.md](./fases/fase3.md)     |
-| 6 Ficheros R2 + imágenes                    | ✅                | [fase6.md](./fases/fase6.md)     |
-| 4 Carrito                                   | ✅ (PR pendiente) | [fase4.md](./fases/fase4.md)     |
+| Fase                                        | Estado           | Doc                              |
+| ------------------------------------------- | ---------------- | -------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅               | [prefase.md](./fases/prefase.md) |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅               | [fase0.md](./fases/fase0.md)     |
+| 1 CI básico + Renovate                      | ✅               | [fase1.md](./fases/fase1.md)     |
+| 2 Backend Medusa                            | ✅               | [fase2.md](./fases/fase2.md)     |
+| 3 Storefront base (Astro)                   | ✅               | [fase3.md](./fases/fase3.md)     |
+| 6 Ficheros R2 + imágenes                    | ✅               | [fase6.md](./fases/fase6.md)     |
+| 4 Carrito                                   | ✅               | [fase4.md](./fases/fase4.md)     |
+| 5 Checkout + Stripe                         | ⏳ plan aprobado | [fase5.md](./fases/fase5.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -90,8 +91,10 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 6. Siguiente
 
-- **Fase 4 (carrito): implementada** en `feat/fase4-carrito` (2 commits sobre `main` `3308c70`: pnpm 12.8.2 + carrito). **El usuario abre el PR y hace el merge.** Detalle, medidas y pendientes en [fase4.md](./fases/fase4.md) §5–8.
-- **Siguiente: fase 5 (checkout + Stripe).** Habilitar "Ir a pagar" en `CartView.astro`. Login del MCP de Stripe (cuenta test).
+- **Fase 4 (carrito): cerrada** (PR #18, `ce526aa`). Detalle, medidas y pendientes en [fase4.md](./fases/fase4.md) §5–8.
+- **Siguiente: fase 5 (checkout + Stripe): plan APROBADO**, sin código. Leer [fase5.md](./fases/fase5.md) §2 (decisiones P1–P10 en §2.9).
+  - Resumen: Stripe solo **autoriza** (captura desde el Admin), solo **Península + Baleares**, una página `/checkout/` (datos y envío sin JS), `@stripe/stripe-js@9.17.0`, sin `pp_system_default`, teléfono obligatorio, cookie `last_order` 1 h, páginas legales provisionales, sin descuentos.
+  - Antes de empezar, el usuario pone las claves de test (fase5.md §2.11): `sk_test_` en `apps/backend/.env` y `docker/.env`, `pk_test_` en `apps/storefront/.env`. El agente **no** las pide ni las lee.
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).
