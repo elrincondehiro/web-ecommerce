@@ -1,7 +1,7 @@
 # Fase 5 — Checkout + Stripe
 
-> **Estado:** 🔧 implementada en `feat/fase5-checkout` (04-oct-2026), pendiente de PR y merge.
-> **Rama/PR:** `feat/fase5-checkout` · PR pendiente
+> **Estado:** ✅ completada (04-oct-2026)
+> **Rama/PR:** `feat/fase5-checkout` · PR #20 (squash `72dd7e4` en `main`)
 > **Anterior:** [Fase 4](./fase4.md) · **Siguiente:** Fase 7 (búsqueda)
 
 ## 1. Objetivos
@@ -218,7 +218,7 @@ Manual:
 
 ## 6. Criterio de salida
 
-- [x] Pago de prueba de extremo a extremo (tarjeta normal y con 3DS) → pedido con el pago **autorizado**; la captura → `captured` en Medusa y `succeeded` en Stripe. Pendiente: que el usuario lo repita desde el botón del Admin.
+- [x] Pago de prueba de extremo a extremo (tarjeta normal y con 3DS) → pedido con el pago **autorizado**; la captura → `captured` en Medusa y `succeeded` en Stripe. Probado con `capturePaymentWorkflow`; queda recomendado repetirlo desde el botón del Admin.
 - [x] Reenvío de webhook → sin pedidos ni capturas duplicados. Navegador cerrado tras pagar → el pedido se crea por webhook.
 - [x] Pasos de datos y envío sin JS (Playwright). CP de Canarias, Ceuta y Melilla rechazados.
 - [x] Páginas legales provisionales enlazadas en el pie y junto al botón de pago.
@@ -245,4 +245,5 @@ Manual:
 
 - **Fase 8 (emails)**: confirmación de pedido con el subscriber `order.placed`.
 - **Fase 9 (cuenta)**: historial de pedidos y direcciones guardadas.
+- **Fase 10 (CI)**: el `quality` falló en el typecheck del backend (`stripe-region.ts`: `Parameter 'p' implicitly has an 'any' type`). En local pasaba porque `tsc` incluye `.medusa/types` (generado por `medusa develop`/`medusa build`, ignorado por git). En CI no existe, porque `typecheck` va antes que `build`. Se parcheó con un tipo explícito (commit `2f12b98`). En la fase 10: generar los tipos en CI antes del `typecheck` para que funcione como en local sin cambiar código, **deshacer ese parche** y verificar que el CI sigue en verde.
 - **Fase 11**: directivas CSP de Stripe (§2.6), webhook de producción en el Dashboard de Stripe hacia `api.dominio/hooks/payment/stripe_stripe` con los 4 eventos, y rate limiting del checkout.

@@ -2,20 +2,20 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 04-oct-2026 · fase 5 (checkout + Stripe) implementada en `feat/fase5-checkout`, pendiente de PR.
+> Última actualización: 04-oct-2026 · fase 5 (checkout + Stripe) cerrada (PR #20).
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado           | Doc                              |
-| ------------------------------------------- | ---------------- | -------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅               | [prefase.md](./fases/prefase.md) |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅               | [fase0.md](./fases/fase0.md)     |
-| 1 CI básico + Renovate                      | ✅               | [fase1.md](./fases/fase1.md)     |
-| 2 Backend Medusa                            | ✅               | [fase2.md](./fases/fase2.md)     |
-| 3 Storefront base (Astro)                   | ✅               | [fase3.md](./fases/fase3.md)     |
-| 6 Ficheros R2 + imágenes                    | ✅               | [fase6.md](./fases/fase6.md)     |
-| 4 Carrito                                   | ✅               | [fase4.md](./fases/fase4.md)     |
-| 5 Checkout + Stripe                         | ⏳ plan aprobado | [fase5.md](./fases/fase5.md)     |
+| Fase                                        | Estado | Doc                              |
+| ------------------------------------------- | ------ | -------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md) |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)     |
+| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)     |
+| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)     |
+| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)     |
+| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)     |
+| 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)     |
+| 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -24,9 +24,10 @@ Roadmap completo y tiempos: README §13.
 - **Monorepo pnpm 12.8.2**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS (`CartClient`, ~1 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
     - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand con 0 JS. e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
+    - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Stripe solo autoriza; la captura se hace desde el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
     - **Imágenes**: `<Picture>` AVIF/WebP en build desde el bucket. El primer build tarda unos 30 min con 1000 productos × 4 fotos (`avif.effort: 2`); con la caché `node_modules/.astro`, unos 20 s.
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
 - **Backend**:
@@ -92,12 +93,12 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 ## 6. Siguiente
 
 - **Fase 4 (carrito): cerrada** (PR #18, `ce526aa`). Detalle, medidas y pendientes en [fase4.md](./fases/fase4.md) §5–8.
-- **Fase 5 (checkout + Stripe): implementada** en `feat/fase5-checkout`, pendiente de PR y merge. Resultados en [fase5.md](./fases/fase5.md) §5.1 y pendientes en §7.
+- **Fase 5 (checkout + Stripe): cerrada** (PR #20, `72dd7e4`). Resultados en [fase5.md](./fases/fase5.md) §5.1 y pendientes en §7.
   - Stripe solo **autoriza**; la captura se hace desde el Admin. La región España tiene solo `pp_stripe_stripe` (`pnpm --filter backend stripe:region`, idempotente).
   - El checkout es una sola página `/checkout/`. Los pasos de datos y envío funcionan sin JS (PRG + cookie `checkout_flash`). El pago usa un `<script>` con `@stripe/stripe-js/pure` (1,9 KB gzip).
   - Tras pagar: `/checkout/completar/` → `/pedido/<id>/`. El detalle solo se ve con la cookie `last_order`.
   - Para probarlo hacen falta las claves de test en los `.env`, `pnpm infra:stripe` (webhooks) y el backend en marcha.
-- **Siguiente: fase 7 (búsqueda)**, después del merge de la fase 5.
+- **Siguiente: pendiente de decidir** con el usuario (análisis y propuesta en la respuesta del 04-oct-2026). No iniciar ninguna fase sin autorización.
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).
@@ -111,6 +112,7 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 7. Pendientes conocidos
 
+- **Fase 10 — typecheck del backend en CI igual que en local**: en local `tsc` usa los tipos generados en `apps/backend/.medusa/types` (ignorado por git; lo crean `medusa develop` y `medusa build`). En CI `typecheck` va antes que `build` y esos tipos no existen, así que `query.graph` devuelve `any` y fallan los parámetros implícitos. Solución prevista: generar los tipos en CI antes del `typecheck` (p. ej. ejecutar antes el build del backend; `medusa build` los genera con `skipDbConnection`, sin BD), **sin tocar código**. Después, **deshacer el parche del commit `2f12b98`** (tipo explícito `linked` en `apps/backend/src/scripts/stripe-region.ts`) y comprobar que el CI sigue en verde con los tipos generados ([fase5.md](./fases/fase5.md) §8).
 - Tests de integración del backend fuera del CI (necesitan Postgres/Redis como `services:`); propuesta para la fase 10.
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.
