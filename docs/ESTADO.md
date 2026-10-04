@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 04-oct-2026 · fase 5 (checkout + Stripe) cerrada (PR #20).
+> Última actualización: 04-oct-2026 · fase 5 cerrada (PR #20); plan de la fase 7 en revisión.
 
 ## 1. Dónde estamos
 
@@ -98,7 +98,9 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - El checkout es una sola página `/checkout/`. Los pasos de datos y envío funcionan sin JS (PRG + cookie `checkout_flash`). El pago usa un `<script>` con `@stripe/stripe-js/pure` (1,9 KB gzip).
   - Tras pagar: `/checkout/completar/` → `/pedido/<id>/`. El detalle solo se ve con la cookie `last_order`.
   - Para probarlo hacen falta las claves de test en los `.env`, `pnpm infra:stripe` (webhooks) y el backend en marcha.
-- **Siguiente: pendiente de decidir** con el usuario (análisis y propuesta en la respuesta del 04-oct-2026). No iniciar ninguna fase sin autorización.
+- **Siguiente: fase 7 (búsqueda + filtros)**, con el plan en [fase7.md](./fases/fase7.md) **pendiente de aprobación**. Se divide en 7-1 (`/buscar/` SSR, 0 JS) y 7-2 (sugerencias y autoaplicar filtros).
+  - ⚠️ Medusa 2.21.1+ trae un **Search Module** propio (proveedor PostgreSQL por defecto, `POST /store/search`). La decisión **D1** sobre el motor (PostgreSQL nativo, plugin Meilisearch de la comunidad o proveedor propio) se toma tras el spike del §2.0.
+  - No iniciar la implementación sin autorización.
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).
