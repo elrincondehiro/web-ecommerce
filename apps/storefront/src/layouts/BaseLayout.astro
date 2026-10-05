@@ -7,6 +7,7 @@ import CartNotice from "../components/CartNotice.astro";
 import CartCount from "../components/server/CartCount.astro";
 import { CART_PATH } from "$lib/cart";
 import { getCategories } from "$lib/medusa";
+import { SEARCH_PATH } from "$lib/search";
 import "../styles/global.css";
 
 type Props = Parameters<typeof Seo>[0] & {
@@ -19,6 +20,8 @@ type Props = Parameters<typeof Seo>[0] & {
 const { cartCount, cartClient = true, ...seo } = Astro.props;
 const categories = await getCategories();
 const current = Astro.url.pathname;
+// Solo /buscar/ (on-demand) tiene query: en páginas estáticas el campo sale vacío.
+const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : "";
 ---
 
 <!doctype html>
@@ -30,6 +33,7 @@ const current = Astro.url.pathname;
     <link rel="sitemap" href="/sitemap-index.xml" />
     <Font cssVariable="--font-inter" preload={[{ weight: 400 }]} />
     <Seo {...seo} />
+    <slot name="head" />
   </head>
   <body class="flex min-h-dvh flex-col antialiased">
     <a
@@ -77,6 +81,49 @@ const current = Astro.url.pathname;
             })}
           </ul>
         </nav>
+        {/* Búsqueda (fase 7-1, D5): GET a /buscar/, 0 JS; erratas toleradas por el motor.
+            Móvil: fila propia a todo el ancho (como el menú); escritorio: antes del carrito. */}
+        <form
+          method="get"
+          action={SEARCH_PATH}
+          role="search"
+          class="order-last flex w-full items-center gap-2 sm:order-none sm:w-56 lg:w-64"
+        >
+          <label for="buscar-q" class="sr-only">
+            Buscar productos
+          </label>
+          <input
+            id="buscar-q"
+            type="search"
+            name="q"
+            value={q}
+            placeholder="Buscar productos"
+            enterkeyhint="search"
+            autocomplete="off"
+            maxlength={100}
+            class="h-9 w-full min-w-0 rounded-md border bg-background px-3 text-sm"
+          />
+          <button
+            type="submit"
+            class="h-9 shrink-0 rounded-md border px-2 hover:bg-muted"
+            aria-label="Buscar"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+          </button>
+        </form>
         {/* Icono del carrito: enlace a /carrito/ (sin JS y en móvil); en escritorio el script
             del carrito abre el flyout. Contador: server island en páginas estáticas. */}
         <a

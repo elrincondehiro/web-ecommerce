@@ -50,12 +50,12 @@ Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referenci
 | Pieza       | Versión                                               | Notas                                                                                                                  |
 | ----------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Node        | **24.21.0** (`.node-version`)                         | gestionado con fnm                                                                                                     |
-| pnpm        | **12.8.2** (`packageManager`)                         | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
+| pnpm        | **12.9.1** (`packageManager`)                         | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
 | Medusa      | **2.21.2**                                            | `@medusajs/*` todos en la **misma** versión                                                                            |
 | Astro       | **7.3.5**                                             | `@astrojs/node` 11.1.6 standalone, `@astrojs/svelte` 9.0.1                                                             |
 | Svelte      | **5.57.1** (runes)                                    | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
 | Tailwind    | **4.3.3**                                             | plugin `@tailwindcss/vite`, config CSS-first (`@theme` en `global.css`); **no** `tailwind.config.js`                   |
-| UI          | shadcn-svelte 1.7.0 + bits-ui 2.19.3                  | componentes copiados en `src/lib/components/ui`                                                                        |
+| UI          | shadcn-svelte 1.7.0 + bits-ui 2.19.5                  | componentes copiados en `src/lib/components/ui`                                                                        |
 | TypeScript  | **6.0.3**                                             | TS 7 no soportado aún por Astro/Medusa                                                                                 |
 | PostgreSQL  | `postgres:17.11-alpine`                               |                                                                                                                        |
 | Redis       | `redis:8.10.2-alpine`                                 |                                                                                                                        |
@@ -111,7 +111,7 @@ docker/            compose.dev.yml, compose.prod.yml, Caddyfile
 ```
 
 - No mezcles responsabilidades: la lógica de negocio va en el **backend** (workflows de Medusa), no en el storefront.
-- El storefront solo habla con el backend mediante `@medusajs/js-sdk` (envuelto en `src/lib/medusa.ts`) o con Meilisearch mediante la search-only key.
+- El storefront solo habla con el backend mediante `@medusajs/js-sdk` (envuelto en `src/lib/medusa.ts`). La búsqueda también va por el backend (`POST /store/search`); el storefront nunca habla con Meilisearch.
 
 ---
 
@@ -167,7 +167,9 @@ Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>
 
 Lighthouse móvil: Performance ≥ 95, Accesibilidad ≥ 95, SEO 100 (salvo páginas `noindex` como `/carrito/`). Si un cambio empeora estas cifras, el PR debe explicar por qué.
 
-Excepción aprobada en la fase 4: home, listados y fichas cargan **un único bundle de carrito** (`CartClient`, ≤ 2 KB gzip, sin imports; fetch + contador + toasts + flyout). Va como fichero en `/_astro/` (caché inmutable) y no inline. `check:budget` lo comprueba; cualquier otro bundle sigue prohibido. El JS inline (runtime de server islands + LiveSync) sigue en ≤ 1 KB gzip.
+Excepción aprobada en la fase 4: home, listados y fichas cargan **un único bundle de carrito** (`CartClient`, ≤ 2 KB gzip, sin imports; fetch + contador + toasts + flyout). Va como fichero en `/_astro/` (caché inmutable) y no inline. `check:budget` lo comprueba; cualquier otro bundle sigue prohibido. El JS inline (runtime de server islands + LiveSync) va en ≤ 1,2 KB gzip (subido en la fase 7-1: las props cifradas de las islands cambian de longitud en cada build).
+
+Excepción aprobada en la fase 7-1: `/buscar/` carga, además de `CartClient`, **un bundle de búsqueda** (`SearchLive`, ≤ 1 KB gzip, sin imports, en `/_astro/`) que aplica los filtros en el sitio (modelo híbrido: sin JS los filtros son enlaces y cada clic navega). `check:budget` mide el bundle y el e2e de `/buscar/` comprueba que la página no carga otros.
 
 ---
 
@@ -182,7 +184,7 @@ Excepción aprobada en la fase 4: home, listados y fichas cargan **un único bun
 - **Server vs worker**: nada de trabajo pesado en el request. Emails, indexado de Meilisearch, generación de imágenes, rebuild del storefront → subscribers/jobs (se ejecutan en el worker).
 - **Stripe**: proveedor oficial `payment-stripe`. Webhooks verificados con `STRIPE_WEBHOOK_SECRET`. El manejo debe ser **idempotente**. Importes siempre en la unidad que espere Medusa para la versión instalada; no conviertas a mano sin verificarlo.
 - **Ficheros**: `file-s3` apuntando a SeaweedFS (local, `forcePathStyle`) o R2 (prod). No guardes ficheros en disco local del contenedor.
-- **Meilisearch**: master key solo en backend. El backend crea una key de **solo búsqueda** para el storefront. Define `searchableAttributes`, `filterableAttributes`, `sortableAttributes` explícitamente.
+- **Búsqueda**: Search Module de Medusa con el proveedor Meilisearch (`@rokmohar/medusa-plugin-meilisearch`). Los índices se declaran en `src/search/*` con `defineSearchIndex` (campos con `searchable`/`filterable`/`sortable`/`facetable` explícitos) y se exponen solo los permitidos en `configureStoreSearch` (`src/api/middlewares.ts`). La key de Meilisearch solo está en el backend. Nada de subscribers ni de llamadas directas a Meilisearch para indexar: lo hace el módulo. Tras cambiar una definición: `medusa db:migrate` (nunca `--execute-all-search` sin revisar antes qué índices borra).
 - **Emails**: proveedor de notificaciones propio (`src/modules/resend-notification`) que importa plantillas de `emails` (workspace) y las renderiza con `@react-email/render`. En desarrollo, se permite enviar a Mailpit (SMTP :1025) o usar el modo test de Resend.
 - Logs con el logger de Medusa (`container.resolve("logger")`), nunca `console.log` en código final.
 

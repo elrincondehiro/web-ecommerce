@@ -8,10 +8,13 @@ import type { HttpTypes } from "@medusajs/types";
 import {
   MEDUSA_BACKEND_URL,
   MEDUSA_PUBLISHABLE_KEY,
+  SEARCH_CARD_CACHE_TTL,
   STOREFRONT_DATA,
   STOREFRONT_MAX_PRODUCTS,
 } from "astro:env/server";
+import { CardCache } from "./card-cache";
 import { productsInCategory, sliceRange, type StoreProduct } from "./catalog";
+import type { RawSearchResult, SearchQueryBody } from "./search";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
 export type StoreCart = HttpTypes.StoreCart;
@@ -24,7 +27,7 @@ export interface StoreRegionRef {
 const COUNTRY_CODE = "es";
 const ORDER = "title";
 const CATALOG_FIELDS =
-  "id,handle,title,subtitle,description,thumbnail,*images,*categories,*options,*options.values";
+  "id,handle,title,subtitle,description,thumbnail,*images,*categories,*options,*options.values,*tags";
 const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity`;
 const CATEGORY_FIELDS = "id,name,handle,description,rank,parent_category_id";
 const PAGE = 100;
@@ -296,4 +299,56 @@ export async function getPricedProduct(id: string): Promise<StoreProduct | null>
     fields: PRICED_FIELDS,
   });
   return products[0] ?? null;
+}
+
+// ── Búsqueda (runtime: /buscar/). Fase 7-1. ────────────────────────────────────────────────
+// POST /store/search (Search Module + Meilisearch en el backend; el storefront nunca habla con
+// Meilisearch). El js-sdk 2.21.2 no tiene método propio → `client.fetch`. Precio y stock NO
+// salen del índice: se piden frescos para los ids de la página (≤ 24), como en las islands.
+
+/** Lanza la búsqueda (varias consultas en una petición, ver lib/search.ts). */
+export async function searchProducts(queries: SearchQueryBody[]): Promise<RawSearchResult[]> {
+  if (useFixtures) throw new Error("La búsqueda no está disponible con STOREFRONT_DATA=fixtures.");
+  const { results } = await sdk().client.fetch<{ results: RawSearchResult[] }>("/store/search", {
+    method: "POST",
+    body: { queries },
+  });
+  return results;
+}
+
+/**
+ * Solo lo que pinta <ProductCard> (medido en dev: ~117 ms con PRICED_FIELDS → ~75 ms; lo caro
+ * es `inventory_quantity`, que se mantiene: stock fresco).
+ */
+const CARD_FIELDS =
+  "id,handle,title,subtitle,thumbnail,variants.id,variants.title,variants.manage_inventory," +
+  "variants.allow_backorder,*variants.calculated_price,+variants.inventory_quantity";
+
+async function fetchCards(ids: string[]): Promise<StoreProduct[]> {
+  const region = await getRegionES();
+  const { products } = await sdk().store.product.list({
+    id: ids,
+    limit: ids.length,
+    region_id: region.id,
+    country_code: COUNTRY_CODE,
+    fields: CARD_FIELDS,
+  });
+  return products;
+}
+
+// 2000 tarjetas ≈ 2–4 MB de memoria (medido por tamaño de JSON; ver fase7.md §2.3.1).
+const cardCache =
+  SEARCH_CARD_CACHE_TTL > 0
+    ? new CardCache<StoreProduct>({ ttlMs: SEARCH_CARD_CACHE_TTL * 1000, maxEntries: 2000 })
+    : undefined;
+
+/**
+ * Productos con precio y stock por id, en el MISMO orden que `ids` (relevancia). Con
+ * SEARCH_CARD_CACHE_TTL > 0, los recientes salen de la caché en memoria (lib/card-cache.ts).
+ */
+export async function getPricedProductsByIds(ids: string[]): Promise<StoreProduct[]> {
+  if (!ids.length) return [];
+  if (cardCache) return (await cardCache.getMany(ids, fetchCards, (p) => p.id)).values;
+  const byId = new Map((await fetchCards(ids)).map((p) => [p.id, p]));
+  return ids.map((id) => byId.get(id)).filter((p): p is StoreProduct => Boolean(p));
 }

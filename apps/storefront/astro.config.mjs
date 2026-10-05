@@ -7,6 +7,7 @@ import svelte from "@astrojs/svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, envField, fontProviders } from "astro/config";
 import { existsSync, readFileSync } from "node:fs";
+import { mkdir, readdir, rename, rmdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 
@@ -23,6 +24,38 @@ const IMAGE_BASE_URL = new URL(
 
 const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal/"];
 
+/**
+ * Manifiesto de miniaturas de /buscar/ (fase 7-1, D6) FUERA de lo público. El endpoint
+ * prerenderizado `src/pages/buscar/tarjetas.json.ts` lo escribe en dist/client (lo que se sirve);
+ * al terminar el build se mueve a dist/server, que solo lee el servidor (lib/card-images.ts).
+ * Fuente: astro-docs (integrations-reference: astro:config:done `config.build.server`,
+ * astro:build:done `dir` = salida del cliente; comprobado en astro 7.3.5 integrations/hooks.js).
+ * @returns {import("astro").AstroIntegration}
+ */
+function privateCardImages() {
+  /** @type {URL | undefined} */
+  let serverDir;
+  return {
+    name: "private-card-images",
+    hooks: {
+      "astro:config:done": ({ config }) => {
+        serverDir = config.build.server;
+      },
+      "astro:build:done": async ({ dir, logger }) => {
+        const from = new URL("buscar/tarjetas.json", dir);
+        if (!serverDir || !existsSync(from)) return;
+        const to = new URL("card-images.json", serverDir);
+        await mkdir(serverDir, { recursive: true });
+        await rename(from, to);
+        // dist/client/buscar/ queda vacía (/buscar/ es on-demand): fuera, para no servirla
+        const folder = new URL("buscar/", dir);
+        if (!(await readdir(folder)).length) await rmdir(folder);
+        logger.info(`tarjetas.json → ${fileURLToPath(to)} (no público)`);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   site: SITE_URL || "https://elrincondehiro.com",
   // Estático por defecto; las server islands y rutas on-demand las sirve el adapter.
@@ -31,7 +64,10 @@ export default defineConfig({
   // Sitemap sin páginas legales provisionales (noindex hasta tener el texto definitivo, fase 5).
   integrations: [
     svelte(),
-    sitemap({ filter: (page) => !LEGAL_PATHS.some((p) => page.endsWith(p)) }),
+    sitemap({
+      filter: (page) => !LEGAL_PATHS.some((p) => page.endsWith(p)) && !page.includes("/buscar/"),
+    }),
+    privateCardImages(),
   ],
   // Sin prefetch de Astro: inyecta /_astro/page.*.js en todas las páginas y el presupuesto
   // es 0 bundles JS en home/listado/ficha. Se sustituirá por Speculation Rules (fase 13).
@@ -104,6 +140,24 @@ export default defineConfig({
       }),
       // Limita el catálogo del build a los N primeros productos (por título). Para medir builds
       // con un subconjunto o previsualizar rápido. Sin definir → catálogo completo.
+      // Cabecera Server-Timing (tiempos de búsqueda/tarjetas/render) en /buscar/ y su fragmento.
+      // Apagada por defecto (limpieza en producción); se activa en runtime para medir. `secret`
+      // no por ser secreta sino para leerla en RUNTIME (las `public` de servidor se fijan en el
+      // build).
+      SERVER_TIMING: envField.boolean({
+        context: "server",
+        access: "secret",
+        default: false,
+      }),
+      // Caché en memoria de tarjetas de /buscar/ (precio/stock por id; lib/card-cache.ts). En
+      // segundos; 0 = desactivada (siempre fresco). Fase 7-1, punto 3b: a prueba.
+      SEARCH_CARD_CACHE_TTL: envField.number({
+        context: "server",
+        access: "secret",
+        int: true,
+        min: 0,
+        default: 30,
+      }),
       STOREFRONT_MAX_PRODUCTS: envField.number({
         context: "server",
         access: "public",
@@ -116,11 +170,12 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     build: {
-      // El script del carrito (CartClient.astro, ~1 KB gzip) va como bundle en /_astro/ (caché
-      // inmutable, se descarga una vez para todo el sitio) en vez de inline en cada HTML (Astro
-      // inlinea scripts < 4 KB). Resto: comportamiento por defecto (undefined). Fase 4.
+      // El script del carrito (CartClient.astro, ~1 KB gzip, fase 4) y el de /buscar/
+      // (SearchLive.astro, ≤ 1 KB gzip, fase 7-1) van como bundle en /_astro/ (caché inmutable,
+      // se descargan una vez) en vez de inline en cada HTML (Astro inlinea scripts < 4 KB).
+      // Resto: comportamiento por defecto (undefined).
       assetsInlineLimit: (/** @type {string} */ file) =>
-        file.includes("CartClient") ? false : undefined,
+        file.includes("CartClient") || file.includes("SearchLive") ? false : undefined,
     },
     resolve: {
       alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) },

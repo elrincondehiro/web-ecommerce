@@ -18,6 +18,7 @@
     "dev:storefront": "pnpm --filter storefront dev",
     "backend:seed": "pnpm --filter backend seed",
     "backend:seed:mock": "pnpm --filter backend seed:mock",
+    "backend:seed:mock:v2": "pnpm --filter backend seed:mock:v2",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

@@ -7,26 +7,13 @@
 // Fuente: astro-docs (guides/images: Picture, widths/sizes, fit/position, asset caching).
 import { Picture } from "astro:assets";
 import placeholder from "../assets/placeholder.svg";
-
-export type ImageVariant = "card" | "detail" | "thumb";
-
-const PRESETS: Record<ImageVariant, { width: number; widths: number[]; sizes: string }> = {
-  // Rejilla: 2 cols (móvil) · 3 (sm) · 4 (lg, contenedor max-w-6xl = 1152px)
-  card: {
-    width: 640,
-    widths: [320, 480, 640],
-    sizes: "(min-width: 1024px) 270px, (min-width: 640px) 33vw, 50vw",
-  },
-  // Ficha: 1 col (móvil, ancho − px-4·2) · 2 cols con gap-8 (md) · máx. 544px (max-w-6xl).
-  // 800 cubre el móvil típico (≈380px CSS × DPR 1,75–2 ≈ 665–760px) sin saltar a 960.
-  detail: {
-    width: 1200,
-    widths: [640, 800, 960, 1200],
-    sizes: "(min-width: 1152px) 544px, (min-width: 768px) calc(50vw - 2rem), calc(100vw - 2rem)",
-  },
-  // Miniaturas de la galería
-  thumb: { width: 160, widths: [80, 160], sizes: "80px" },
-};
+import {
+  IMAGE_FALLBACK_FORMAT,
+  IMAGE_FORMATS,
+  IMAGE_PRESETS,
+  type CardImage,
+  type ImageVariant,
+} from "$lib/images";
 
 interface Props {
   src?: string | null | undefined;
@@ -35,14 +22,44 @@ interface Props {
   /** Imagen LCP: carga inmediata y alta prioridad. */
   priority?: boolean;
   class?: string;
+  /**
+   * Páginas on-demand (/buscar/, D6): miniatura ya generada en el build, o `null` si no la hay
+   * (producto posterior al build) → placeholder. Nunca <Picture> (sharp en runtime).
+   */
+  prebuilt?: CardImage | null | undefined;
 }
-const { src, alt, variant = "card", priority = false, class: className = "" } = Astro.props;
-const preset = PRESETS[variant];
+const {
+  src,
+  alt,
+  variant = "card",
+  priority = false,
+  class: className = "",
+  prebuilt,
+} = Astro.props;
+const preset = IMAGE_PRESETS[variant];
 const classes = `aspect-square w-full bg-muted object-cover ${className}`;
 const loading = priority ? "eager" : "lazy";
 ---
 
-{src ? (
+{prebuilt ? (
+  <picture>
+    {prebuilt.sources.map((s) => (
+      <source srcset={s.srcset} type={s.type} sizes={preset.sizes} />
+    ))}
+    <img
+      src={prebuilt.src}
+      srcset={prebuilt.srcset}
+      sizes={preset.sizes}
+      alt={alt}
+      width={preset.width}
+      height={preset.width}
+      loading={loading}
+      fetchpriority={priority ? "high" : "auto"}
+      decoding="async"
+      class={classes}
+    />
+  </picture>
+) : src && prebuilt === undefined ? (
   <Picture
     src={src}
     alt={alt}
@@ -50,8 +67,8 @@ const loading = priority ? "eager" : "lazy";
     height={preset.width}
     widths={preset.widths}
     sizes={preset.sizes}
-    formats={["avif", "webp"]}
-    fallbackFormat="webp"
+    formats={[...IMAGE_FORMATS]}
+    fallbackFormat={IMAGE_FALLBACK_FORMAT}
     fit="cover"
     position="center"
     loading={loading}

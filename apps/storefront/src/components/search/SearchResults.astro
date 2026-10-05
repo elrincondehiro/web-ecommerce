@@ -1,0 +1,84 @@
+---
+// Resultados de búsqueda (fase 7-1): cabecera (total + orden + botón de filtros en móvil),
+// chips, rejilla y paginación. Mismo ProductCard que el catálogo; precio y stock frescos
+// (lib/search-server.ts), así que no hace falta <LiveSync>. Filtros como enlaces-casilla
+// (modelo híbrido, fase7.md §2.3.3). Lo pintan /buscar/ y su fragmento /buscar/parcial/.
+import ProductGrid from "../ProductGrid.astro";
+import ActiveFilters from "./ActiveFilters.astro";
+import FilterButton from "./FilterButton.astro";
+import FilterPanel from "./FilterPanel.astro";
+import SearchPagination from "./SearchPagination.astro";
+import SortForm from "./SortForm.astro";
+import type { SearchPage } from "$lib/search-server";
+import {
+  activeFilters,
+  clearFiltersUrl,
+  hasFilters,
+  searchUrl,
+  selectedCount,
+  SEARCH_PATH as path,
+  type SearchParams,
+} from "$lib/search";
+
+interface Props {
+  page: SearchPage;
+  params: SearchParams;
+}
+const { page, params } = Astro.props;
+const chips = activeFilters(params, { categoria: (h) => page.categories.get(h) ?? h, path });
+const clearHref = clearFiltersUrl(params, path);
+const back = searchUrl(params, path);
+const filtersEmpty = !page.facets.groups.length && !page.facets.price && !page.facets.stockFilter;
+---
+
+<div class="lg:grid lg:grid-cols-[15rem_1fr] lg:gap-8">
+  {/* UN solo panel: popover en móvil, columna lateral fija en ≥ 1024 px (CSS). */}
+  <FilterPanel
+    facets={page.facets}
+    params={params}
+    action={path}
+    linkMode
+    sidebar
+    button={false}
+    id="filtros"
+  />
+  <div class="min-w-0 scroll-mt-4" data-results id="resultados">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-muted-foreground" role="status">
+        {page.total === 1 ? "1 producto" : `${page.total} productos`}
+        {params.q && <> para «{params.q}»</>}
+      </p>
+      <div class="flex min-w-0 flex-wrap items-center gap-3">
+        {!filtersEmpty && (
+          <FilterButton target="filtros" selected={selectedCount(params)} class="lg:hidden" />
+        )}
+        <SortForm params={params} path={path} />
+      </div>
+    </div>
+    <ActiveFilters filters={chips} clearHref={clearHref} />
+
+    {page.products.length === 0 ? (
+      <div class="rounded-md border px-4 py-10 text-center">
+        <p class="font-medium">No hay productos que coincidan.</p>
+        <p class="mt-2 text-sm text-muted-foreground">
+          {hasFilters(params) ? (
+            <>
+              Prueba a{" "}
+              <a href={clearHref} class="underline underline-offset-4">
+                quitar filtros
+              </a>{" "}
+              o a buscar otra palabra.
+            </>
+          ) : (
+            "Prueba con otra palabra o revisa cómo está escrita."
+          )}
+        </p>
+      </div>
+    ) : (
+      <>
+        <ProductGrid products={page.products} priorityCount={2} images={page.images} back={back} />
+        <SearchPagination params={params} total={page.total} path={path} />
+      </>
+    )}
+  </div>
+</div>

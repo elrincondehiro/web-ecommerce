@@ -2,24 +2,32 @@
 // Listado paginado: rejilla estática con precio/stock del build + <LiveSync> que los corrige.
 import type { Page } from "astro";
 import type { StoreProduct } from "$lib/catalog";
+import type { ListingFacets } from "$lib/facets";
 import ProductGrid from "./ProductGrid.astro";
 import Pagination from "./Pagination.astro";
 import LiveSync from "./LiveSync.astro";
+import ListingFilters from "./search/ListingFilters.astro";
 
 interface Props {
   page: Page<StoreProduct>;
   categoryId?: string | undefined;
+  /** Facetas del build para el botón "Filtrar" (fase 7-1). */
+  facets?: ListingFacets | undefined;
+  categoryHandle?: string | undefined;
 }
-const { page, categoryId } = Astro.props;
+const { page, categoryId, facets, categoryHandle } = Astro.props;
 ---
 
 {page.total === 0 ? (
   <p class="text-muted-foreground">No hay productos todavía.</p>
 ) : (
   <>
-    <p class="mb-6 text-sm text-muted-foreground">
-      {page.total} productos · página {page.currentPage} de {page.lastPage}
-    </p>
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-muted-foreground">
+        {page.total} productos · página {page.currentPage} de {page.lastPage}
+      </p>
+      {facets && <ListingFilters facets={facets} categoria={categoryHandle} />}
+    </div>
     <ProductGrid products={page.data} priorityCount={2} />
     <Pagination page={page} />
     <LiveSync categoryId={categoryId} offset={page.start} limit={page.size} />

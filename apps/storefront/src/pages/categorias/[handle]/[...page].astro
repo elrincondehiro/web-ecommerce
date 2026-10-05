@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from "astro";
 import { metaDescription } from "$lib/catalog";
+import { buildListingFacets } from "$lib/facets";
 import { PAGE_SIZE } from "$lib/constants";
 import { getAllProducts, getCategories } from "$lib/medusa";
 import { breadcrumbJsonLd } from "$lib/seo";
@@ -13,17 +14,19 @@ export const getStaticPaths = (async ({ paginate }) => {
   const perCategory = await Promise.all(
     categories.map(async (category) => {
       const products = await getAllProducts({ categoryId: category.id });
+      // Facetas de TODA la categoría (no de la página): filtrar busca en los N productos.
+      const facets = buildListingFacets(products);
       return paginate(products, {
         pageSize: PAGE_SIZE,
         params: { handle: category.handle },
-        props: { category },
+        props: { category, facets },
       });
     }),
   );
   return perCategory.flat();
 }) satisfies GetStaticPaths;
 
-const { page, category } = Astro.props;
+const { page, category, facets } = Astro.props;
 const crumbs = [
   { name: "Inicio", href: "/" },
   { name: category.name, href: `/categorias/${category.handle}/` },
@@ -39,5 +42,10 @@ const title =
 >
   <Breadcrumbs items={crumbs} />
   <h1 class="mb-2 text-2xl font-semibold tracking-tight">{category.name}</h1>
-  <CatalogPage page={page} categoryId={category.id} />
+  <CatalogPage
+    page={page}
+    categoryId={category.id}
+    facets={facets}
+    categoryHandle={category.handle}
+  />
 </BaseLayout>

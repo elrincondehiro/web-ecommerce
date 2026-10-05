@@ -1,0 +1,33 @@
+---
+// Orden de resultados (GET, sin JS): <select> + botón. Conserva texto y filtros (hidden).
+// Sin texto no hay relevancia: la opción por defecto ordena por nombre (lib/search.ts orderFor).
+import { buttonVariants } from "$lib/components/ui/button";
+import { SORTS, SORT_LABELS, paramEntries, type SearchParams } from "$lib/search";
+
+interface Props {
+  params: SearchParams;
+  path: string;
+}
+const { params, path } = Astro.props;
+const hidden = paramEntries({ ...params, pagina: 1 }, ["orden"]);
+---
+
+<form method="get" action={path} class="flex min-w-0 items-center gap-2 text-sm">
+  {hidden.map(([name, value]) => (
+    <input type="hidden" name={name} value={value} />
+  ))}
+  <label for="orden" class="sr-only sm:not-sr-only sm:text-muted-foreground">
+    {" "}
+    Ordenar por{" "}
+  </label>
+  <select id="orden" name="orden" class="h-8 min-w-0 rounded-md border bg-background px-2">
+    {SORTS.map((s) => (
+      <option value={s} selected={s === params.orden}>
+        {s === "relevancia" && !params.q ? "Nombre (A–Z)" : SORT_LABELS[s]}
+      </option>
+    ))}
+  </select>
+  <button type="submit" class={buttonVariants({ variant: "outline", size: "sm" })} data-sort-submit>
+    Ordenar
+  </button>
+</form>

@@ -80,7 +80,7 @@ Puntos clave:
 - Medusa usa los módulos Redis oficiales: **event bus**, **workflow engine**, **locking** y **caché**.
 - **Stripe**: proveedor de pagos oficial de Medusa (`@medusajs/medusa/payment-stripe`). Los webhooks van directos a `api.dominio/hooks/payment/stripe_stripe`.
 - **R2**: proveedor de ficheros S3 de Medusa (`@medusajs/medusa/file-s3`) apuntando al endpoint de R2. Las imágenes se sirven por un dominio público propio de R2 (`img.dominio`) con caché de Cloudflare.
-- **Meilisearch**: módulo/plugin de Medusa que indexa productos mediante subscribers (`product.created/updated/deleted`). El storefront consulta Meilisearch con una **search-only key** (nunca la master key).
+- **Meilisearch** (fase 7): motor del **Search Module** de Medusa (≥ 2.21.1) mediante el proveedor de `@rokmohar/medusa-plugin-meilisearch`. Medusa crea, llena y mantiene el índice `product` (`src/search/product.ts`) con sus eventos. El storefront busca con `POST /store/search` del backend (publishable key); **ninguna clave de Meilisearch sale del backend**. Detalle y spike PostgreSQL frente a Meilisearch en [fase7.md](./docs/fases/fase7.md).
 - **Ficheros en local**: SeaweedFS expone una API S3 en `:8333`; el mismo provider `file-s3` sirve para local (SeaweedFS) y producción (R2) cambiando solo variables de entorno.
 - **Emails**: plantillas en `packages/emails` (React Email), renderizadas en un **Notification Module Provider** propio de Medusa que envía por Resend. En local se previsualizan con `email dev`.
 - **Storefront**: Astro genera HTML estático para catálogo, fichas, CMS y legal; un servidor Node (adapter `@astrojs/node`, modo standalone) atiende únicamente las **server islands** y las rutas dinámicas (carrito, checkout, cuenta).
@@ -96,7 +96,7 @@ Orden de preferencia **obligatorio** para cualquier pieza de UI:
 
 Técnicas aplicadas:
 
-- **Mejora progresiva**: añadir al carrito, buscar, filtrar y login funcionan con `<form>` + **Astro Actions** sin JS; la isla Svelte solo mejora la experiencia si se hidrata.
+- **Mejora progresiva**: añadir al carrito, buscar, filtrar y login funcionan con `<form>` + **Astro Actions** (o enlaces GET) sin JS; el JS solo mejora la experiencia. Ejemplo: en `/buscar/` los filtros son enlaces que navegan y, con JS, un script de < 1 KB los aplica en el sitio (fase 7, [fase7.md](./docs/fases/fase7.md) §2.3.3).
 - **Cero JS por defecto**: presupuesto de JS por página (ver `AGENTS.md`). Home/listado/ficha: objetivo **0 KB** de JS propio en la carga inicial.
 - **Web Workers**: scripts de terceros (analítica, píxeles) movidos a un worker con **Partytown**; cálculos pesados de cliente (filtros facetados grandes) en Web Workers propios.
 - **Navegación instantánea sin JS**: **Speculation Rules** inline (prerender de enlaces probables) + **view transitions nativas** en CSS (`@view-transition`). El `prefetch` y el `<ClientRouter />` de Astro se descartan por el JS que añaden (medición en [fase3.md §7.1](./docs/fases/fase3.md)).
@@ -116,7 +116,7 @@ web-ecommerce/
 │   ├── backend/                 # Medusa v2 (API + Admin + worker)
 │   │   ├── src/
 │   │   │   ├── api/             # rutas custom (store/admin/hooks)
-│   │   │   ├── modules/         # módulos propios (resend-notification, meilisearch…)
+│   │   │   ├── modules/         # módulos propios (resend-notification…)
 │   │   │   ├── subscribers/     # eventos → emails, indexado, rebuild storefront
 │   │   │   ├── workflows/
 │   │   │   ├── jobs/
@@ -158,7 +158,7 @@ web-ecommerce/
 
 ## 4. Versiones fijadas
 
-**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 04-oct-2026 (fase 5).
+**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 05-oct-2026 (fase 7, ramas `feat/fase7-1-busqueda` y `feat/fase7-2-sugerencias`, con el PR #23 de Renovate integrado).
 
 Política:
 
@@ -172,7 +172,7 @@ Política:
 | Herramienta                       | Versión                                 | Dónde se fija                                                                                                                                    |
 | --------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Node.js (LTS "Krypton")           | **24.21.0**                             | `.node-version` (fnm) y `engines`                                                                                                                |
-| pnpm                              | **12.8.2**                              | `packageManager` en `package.json` raíz                                                                                                          |
+| pnpm                              | **12.9.1**                              | `packageManager` en `package.json` raíz                                                                                                          |
 | fnm                               | 1.39.0                                  | host                                                                                                                                             |
 | Docker Engine                     | 29.8.1                                  | host / VPS                                                                                                                                       |
 | Docker Compose                    | 5.5.1                                   | host / VPS                                                                                                                                       |
@@ -190,9 +190,9 @@ Política:
 | Meilisearch             | `getmeili/meilisearch:v1.54.3`    | dev + prod                                                        |
 | Caddy                   | `caddy:2.11.4-alpine`             | prod                                                              |
 | SeaweedFS (S3 local)    | `chrislusf/seaweedfs:4.48`        | solo dev (en prod → Cloudflare R2)                                |
-| Mailpit                 | `axllent/mailpit:v1.31.3`         | solo dev                                                          |
+| Mailpit                 | `axllent/mailpit:v1.31.4`         | solo dev                                                          |
 | Stripe CLI              | `stripe/stripe-cli:v1.53.0`       | solo dev (webhooks)                                               |
-| Renovate                | `renovate/renovate:44.132.2`      | CI (Gitea Actions, workflow `renovate.yml`)                       |
+| Renovate                | `renovate/renovate:44.133.0`      | CI (Gitea Actions, workflow `renovate.yml`)                       |
 | Uptime Kuma             | `louislam/uptime-kuma:2.5.5`      | monitorización · homelab                                          |
 | Beszel hub              | `henrygd/beszel:0.20.0`           | monitorización · homelab                                          |
 | Beszel agent            | `henrygd/beszel-agent:0.20.0`     | monitorización · VPS Hetzner (y homelab)                          |
@@ -219,12 +219,12 @@ Política:
 | `svelte`                                                                                                                  | **5.57.1**                    | storefront                                                                                                                         |
 | `tailwindcss`, `@tailwindcss/vite`                                                                                        | **4.3.3**                     | storefront                                                                                                                         |
 | `shadcn-svelte` (CLI)                                                                                                     | 1.7.0                         | storefront (dev)                                                                                                                   |
-| `bits-ui`                                                                                                                 | 2.19.3                        | storefront                                                                                                                         |
+| `bits-ui`                                                                                                                 | 2.19.5                        | storefront                                                                                                                         |
 | `tailwind-variants` · `tailwind-merge` · `clsx` · `tw-animate-css`                                                        | 3.3.1 · 3.7.0 · 2.1.1 · 1.4.0 | storefront (utilidades de shadcn-svelte)                                                                                           |
 | `sharp`                                                                                                                   | 0.35.5                        | storefront (`astro:assets`)                                                                                                        |
 | `@astrojs/check` · `svelte-check`                                                                                         | 0.9.10 · 4.7.6                | storefront (dev, typecheck)                                                                                                        |
 | `@stripe/stripe-js`                                                                                                       | 9.17.0                        | storefront                                                                                                                         |
-| `meilisearch` (cliente JS) _(no instalado; fase 7)_                                                                       | 0.62.0                        | storefront + backend                                                                                                               |
+| `@rokmohar/medusa-plugin-meilisearch`                                                                                     | 2.3.1                         | backend: proveedor Meilisearch del Search Module (fase 7; trae `meilisearch` 0.62.0)                                               |
 | `stripe` (Node) _(no instalado)_                                                                                          | 22.6.2                        | backend: solo si se usa fuera del provider. El provider `@medusajs/payment-stripe` 2.21.2 trae su propio `stripe` 15.12.0 (fase 5) |
 | `resend` _(no instalado; fase 8)_                                                                                         | 6.31.0                        | backend                                                                                                                            |
 | `react-email` (CLI preview) _(no instalado; fase 8)_                                                                      | 6.11.0                        | emails (dev)                                                                                                                       |
@@ -233,11 +233,11 @@ Política:
 | `typescript`                                                                                                              | **6.0.3**                     | todo el monorepo                                                                                                                   |
 | `vitest`                                                                                                                  | 5.0.3                         | storefront (tests de `src/lib`)                                                                                                    |
 | `@playwright/test`                                                                                                        | 1.63.0                        | storefront (e2e, solo local; CI en la fase 10)                                                                                     |
-| `eslint` 10.11.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                             | `packages/config` (lint)                                                                                                           |
+| `eslint` 10.12.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                             | `packages/config` (lint)                                                                                                           |
 | `prettier`                                                                                                                | 3.9.9                         | `packages/config` (formato)                                                                                                        |
 | `eslint-plugin-astro` 3.2.1 · `eslint-plugin-svelte` 3.23.0                                                               | —                             | `packages/config` (lint, fase 3)                                                                                                   |
 | `prettier-plugin-astro` 1.1.0 · `prettier-plugin-svelte` 4.1.1 · `prettier-plugin-tailwindcss` 0.8.1                      | —                             | `packages/config` (formato, fase 3)                                                                                                |
-| `@types/node`                                                                                                             | 24.9.2                        | raíz (alineado con Node 24)                                                                                                        |
+| `@types/node`                                                                                                             | 24.19.1                       | raíz (alineado con Node 24)                                                                                                        |
 | `react` / `react-dom` (solo admin de Medusa)                                                                              | 18.3.1                        | backend                                                                                                                            |
 | `@types/react` / `@types/react-dom`                                                                                       | 18.3.31 / 18.3.7              | backend                                                                                                                            |
 | `@swc/core` / `@swc/jest`                                                                                                 | 1.16.13 / 0.2.39              | backend                                                                                                                            |
@@ -329,7 +329,7 @@ Reglas: la cuenta **live** de Stripe **nunca** se conecta al MCP; las claves liv
   eval "$(fnm env --use-on-cd --version-file-strategy=recursive)"
   ```
 - **Node 24.21.0** (vía fnm, ver `.node-version`).
-- **pnpm 12.8.2** (el proyecto fija la versión en `packageManager`).
+- **pnpm 12.9.1** (el proyecto fija la versión en `packageManager`).
 - **Docker** + **Docker Compose v2**.
 - **Stripe CLI**: no se instala; se usa como contenedor.
 - Cuentas: Stripe (modo test para desarrollo; live solo en producción), Resend, Cloudflare (R2 + DNS).
@@ -440,7 +440,7 @@ Implementados en la **fase 0** — ver [`docs/fases/fase0.md`](./docs/fases/fase
 
 | Fichero                                   | Contenido                                                                                                                                                                                                              |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `package.json`                            | `packageManager: pnpm@12.8.2`, `engines` (Node 24.21.0 / pnpm 12.8.2), scripts `infra:*`, `lint`, `format`, `typecheck`, `test`, `build`                                                                               |
+| `package.json`                            | `packageManager: pnpm@12.9.1`, `engines` (Node 24.21.0 / pnpm 12.9.1), scripts `infra:*`, `lint`, `format`, `typecheck`, `test`, `build`                                                                               |
 | `pnpm-workspace.yaml`                     | workspaces, `saveExact`, `engineStrict`, `publicHoistPattern` (requisito Medusa), `allowBuilds`                                                                                                                        |
 | `.npmrc`                                  | `public-hoist-pattern[]` exigido por la **doc oficial de Medusa**. pnpm ≥ 11 solo lee auth/registry de `.npmrc`, por eso los mismos patrones están también en `pnpm-workspace.yaml` (**mantener ambos sincronizados**) |
 | `.node-version`                           | `24.21.0` (fnm)                                                                                                                                                                                                        |
@@ -668,7 +668,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 6 Ficheros R2 + imágenes               | [fase6.md](./docs/fases/fase6.md)                                                                | ✅     |
 | 4 Carrito                              | [fase4.md](./docs/fases/fase4.md)                                                                | ✅     |
 | 5 Checkout + Stripe                    | [fase5.md](./docs/fases/fase5.md)                                                                | ✅     |
-| 7 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 7 Búsqueda y filtros (7-1 ✅ · 7-2 ⏳) | [fase7.md](./docs/fases/fase7.md)                                                                | 🚧     |
+| 8 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 
@@ -727,7 +728,7 @@ gantt
 | 4   | **Carrito**                  | Cookie `cart_id` httpOnly, Astro Actions sin JS (añadir/actualizar/quitar), contador en server island, mejora progresiva                                                                                                                                                   | 3–4 d     | Playwright **con JS desactivado**                                                                   | 0 €                                                  |
 | 5   | **Checkout + Stripe**        | Checkout on-demand, direcciones, envío, Payment Element (`<script>` de Astro, sin isla), webhooks idempotentes, creación de pedido                                                                                                                                         | 4–6 d     | Pago test extremo a extremo; reenvío de webhook sin duplicados                                      | 0 € (test)                                           |
 | 6   | **Ficheros R2**              | `file-s3` con SeaweedFS (local) / R2 (prod), dominio público de imágenes, `astro:assets` AVIF/WebP                                                                                                                                                                         | 1–2 d     | Subida desde Admin visible en tienda optimizada                                                     | R2: 10 GB gratis, luego $0.015/GB-mes, egress gratis |
-| 7   | **Búsqueda**                 | Indexado Meilisearch vía subscribers, search-only key, `/buscar` SSR sin JS + autocompletado `client:idle`                                                                                                                                                                 | 3–4 d     | < 50 ms; funciona sin JS                                                                            | 0 €                                                  |
+| 7   | **Búsqueda**                 | Search Module de Medusa + proveedor Meilisearch, `POST /store/search`, `/buscar` SSR sin JS + sugerencias con JS bajo demanda                                                                                                                                              | 3–4 d     | < 50 ms; funciona sin JS                                                                            | 0 €                                                  |
 | 8   | **Emails**                   | `packages/emails` (React Email), provider Resend, pedido / envío / reset password, texto plano                                                                                                                                                                             | 2–3 d     | Preview + envío test (Mailpit/Resend)                                                               | Resend Free (100/día, 3.000/mes) → Pro ≈ $20/mes     |
 | 9   | **Cuenta de cliente**        | Registro, login, pedidos, direcciones (on-demand, cookies httpOnly)                                                                                                                                                                                                        | 3–4 d     | e2e de registro/login/pedidos                                                                       | 0 €                                                  |
 | 10  | **CD: imágenes + Docker**    | Dockerfiles multi-stage (backend, storefront), `images.yml` (`sha-xxxxxxx` en main, `x.y.z` en tag), registro Gitea/GHCR, presupuesto de JS y Lighthouse CI en `ci.yml`                                                                                                    | 3–4 d     | Merge → `:sha-*`; tag → `:1.2.3` en el registro                                                     | 0 €                                                  |
@@ -781,8 +782,9 @@ S3_FORCE_PATH_STYLE=true             # necesario en SeaweedFS
 S3_FILE_URL=http://localhost:8333/medusa   # prod: https://img.elrincondehiro.com
 S3_PREFIX=                           # opcional (p. ej. productos/)
 
-MEILISEARCH_HOST=http://localhost:7700
-MEILISEARCH_API_KEY=dev_master_key_change_me_32chars_min
+MEILISEARCH_HOST=http://127.0.0.1:7700
+MEILISEARCH_API_KEY=dev_master_key_change_me_32chars_min   # prod: key propia del backend, no la master
+SEARCH_STOCK_SYNC_CRON="*/5 * * * *"   # reindexa in_stock por lotes (fase 7, D8)
 
 RESEND_API_KEY=re_...
 RESEND_FROM="Tienda <no-reply@tudominio.com>"
@@ -804,8 +806,7 @@ IMAGE_BASE_URL=http://localhost:8333/medusa   # origen de las imágenes (prod: h
 # STOREFRONT_MAX_PRODUCTS=100        # opcional: limitar el catálogo del build
 COOKIE_SECURE=true                   # cookie del carrito con Secure; false solo en local por http
 PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...   # fase 5
-PUBLIC_MEILISEARCH_HOST=http://localhost:7700
-PUBLIC_MEILISEARCH_SEARCH_KEY=...    # search-only key, NUNCA la master
+# Búsqueda (fase 7): vía POST /store/search del backend; sin claves de Meilisearch en el storefront
 ```
 
 **docker/.env (VPS)**

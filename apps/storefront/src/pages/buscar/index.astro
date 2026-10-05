@@ -1,0 +1,77 @@
+---
+// /buscar/ (fase 7-1): on-demand. La URL es el estado (GET): ?q, filtros, orden, página.
+// - Búsqueda con erratas toleradas por el motor (Meilisearch vía POST /store/search).
+// - Facetas disyuntivas con recuentos en vivo; precio y stock frescos (sin LiveSync).
+// - Miniaturas del build (tarjetas.json, D6): sin sharp en runtime.
+// - Caché compartida corta (no hay datos personales: el contador del carrito es otra island).
+// - Filtros como enlaces (modelo 1, 0 JS); con JS, SearchLive los aplica en el sitio con el
+//   fragmento /buscar/parcial/ (modelo híbrido "M3 sobre M1", fase7.md §2.3.3).
+// - noindex (follow por defecto): las categorías siguen siendo las páginas indexables.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import SearchResults from "../../components/search/SearchResults.astro";
+import SearchLive from "../../components/search/SearchLive.astro";
+import { loadSearchPage, type SearchPage } from "$lib/search-server";
+import { SEARCH_PATH, parseSearchParams, searchUrl, toSearchString } from "$lib/search";
+import { Timings } from "$lib/server-timing";
+import { SERVER_TIMING } from "astro:env/server";
+
+export const prerender = false;
+
+const params = parseSearchParams(Astro.url.searchParams);
+// URL no canónica (orden, duplicados, valores inválidos) → 301 a la canónica: menos variantes
+// en la caché de Cloudflare (fase7.md §7).
+const canonical = toSearchString(params);
+if (canonical !== Astro.url.searchParams.toString()) {
+  return Astro.redirect(searchUrl(params), 301);
+}
+
+const timings = SERVER_TIMING ? new Timings() : undefined;
+let page: SearchPage | null = null;
+try {
+  page = await loadSearchPage(params, timings);
+  Astro.response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+} catch {
+  Astro.response.status = 503;
+  Astro.response.headers.set("Cache-Control", "no-store");
+  Astro.response.headers.set("Retry-After", "30");
+}
+if (timings) Astro.response.headers.set("Server-Timing", timings.header());
+
+const title = params.q ? `Buscar «${params.q}»` : "Buscar";
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  { name: "Buscar", href: SEARCH_PATH },
+];
+---
+
+<BaseLayout
+  title={title}
+  description="Busca en el catálogo de El Rincón de Hiro."
+  path={searchUrl({ ...params, pagina: 1 })}
+  noindex
+>
+  <Breadcrumbs items={crumbs} />
+  <h1 class="mb-6 text-2xl font-semibold tracking-tight">
+    {params.q ? <>Resultados para «{params.q}»</> : "Todos los productos"}
+  </h1>
+  {page ? (
+    <>
+      <div data-search-root data-path={SEARCH_PATH} data-partial="/buscar/parcial/?">
+        <SearchResults page={page} params={params} />
+      </div>
+      <SearchLive />
+    </>
+  ) : (
+    <div class="rounded-md border px-4 py-10 text-center" role="alert">
+      <p class="font-medium">La búsqueda no está disponible ahora mismo.</p>
+      <p class="mt-2 text-sm text-muted-foreground">
+        Inténtalo de nuevo en unos segundos o navega por las{" "}
+        <a href="/productos/" class="underline underline-offset-4">
+          categorías
+        </a>
+        .
+      </p>
+    </div>
+  )}
+</BaseLayout>

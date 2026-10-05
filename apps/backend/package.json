@@ -15,6 +15,7 @@
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
     "test:integration:modules": "TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
     "seed:mock": "medusa exec ./src/scripts/seed-mock.ts",
+    "seed:mock:v2": "medusa exec ./src/scripts/seed-mock-v2.ts",
     "images:mock": "medusa exec ./src/scripts/mock-images.ts",
     "images:import": "medusa exec ./src/scripts/import-images.ts",
     "stripe:region": "medusa exec ./src/scripts/stripe-region.ts"
@@ -23,7 +24,8 @@
     "@medusajs/admin-sdk": "2.21.2",
     "@medusajs/cli": "2.21.2",
     "@medusajs/framework": "2.21.2",
-    "@medusajs/medusa": "2.21.2"
+    "@medusajs/medusa": "2.21.2",
+    "@rokmohar/medusa-plugin-meilisearch": "2.3.1"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.21.2",

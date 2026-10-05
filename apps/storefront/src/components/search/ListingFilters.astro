@@ -1,0 +1,17 @@
+---
+// Botón "Filtrar" de los listados ESTÁTICOS (fase 7-1, D4): facetas calculadas en el build
+// para ESA categoría (o el catálogo entero en /productos/), sin recuentos (se quedarían viejos).
+// "Aplicar" → GET a /buscar/ con la categoría fija, donde ya hay recuentos en vivo.
+import FilterPanel from "./FilterPanel.astro";
+import type { ListingFacets } from "$lib/facets";
+import { SEARCH_PATH, emptyParams } from "$lib/search";
+
+interface Props {
+  facets: ListingFacets;
+  categoria?: string | undefined;
+}
+const { facets, categoria } = Astro.props;
+const params = { ...emptyParams(), categoria: categoria ? [categoria] : [] };
+---
+
+<FilterPanel facets={facets} params={params} action={SEARCH_PATH} fixed={{ categoria }} />

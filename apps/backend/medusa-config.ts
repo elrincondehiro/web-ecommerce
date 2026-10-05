@@ -99,6 +99,40 @@ const paymentModule = STRIPE_API_KEY
     ]
   : [];
 
+/**
+ * Búsqueda (fase 7-1, decisión D1 = A): Search Module con Meilisearch como único proveedor,
+ * vía el proveedor de `@rokmohar/medusa-plugin-meilisearch` (sin registrar el plugin completo).
+ * Fuente: docs.medusajs.com/llms-full.txt (Search Module, Search Module Providers) + README
+ * del plugin 2.3.1. Índices en `src/search/*`; se llenan solo en modo shared/worker.
+ * - La master key de Meilisearch solo la ve el backend; el storefront usa `POST /store/search`.
+ * - Sin MEILISEARCH_HOST (tests de integración, `medusa build` en CI) no se registra y Medusa
+ *   usa su proveedor PostgreSQL por defecto: Jest no puede cargar `meilisearch` (solo ESM).
+ *   El índice no fija `provider`, así que usa el proveedor por defecto que haya.
+ */
+// En producción es obligatoria: nunca caer en silencio al proveedor PostgreSQL.
+const MEILISEARCH_HOST = isProduction ? required("MEILISEARCH_HOST") : process.env.MEILISEARCH_HOST;
+const searchModule = MEILISEARCH_HOST
+  ? [
+      {
+        resolve: "@medusajs/medusa/search",
+        options: {
+          providers: [
+            {
+              resolve: "@rokmohar/medusa-plugin-meilisearch/providers/meilisearch",
+              id: "meilisearch",
+              options: {
+                config: {
+                  host: MEILISEARCH_HOST,
+                  apiKey: required("MEILISEARCH_API_KEY"),
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]
+  : [];
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: required("DATABASE_URL"),
@@ -119,6 +153,7 @@ module.exports = defineConfig({
   modules: [
     ...fileModule,
     ...paymentModule,
+    ...searchModule,
     {
       resolve: "@medusajs/medusa/caching",
       options: {

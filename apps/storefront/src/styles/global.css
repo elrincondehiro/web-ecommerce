@@ -250,13 +250,144 @@
   }
 }
 
+/*
+ * Panel de filtros (fase 7-1): `popover` nativo, sin JS. Lateral en escritorio (como el flyout
+ * del carrito) y hoja inferior en móvil. Entrada/salida con @starting-style + allow-discrete.
+ */
+.filter-panel {
+  position: fixed;
+  /* Anclado por arriba (15dvh) y con altura en dvh: el botón "Aplicar" queda visible aunque la
+     barra del navegador móvil reduzca el área visible (con bottom: 0 caía debajo). */
+  inset: 15dvh 0 auto 0;
+  margin: 0;
+  width: 100vw;
+  max-width: 100vw;
+  height: 85dvh;
+  max-height: 85dvh;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 0;
+  background: var(--background);
+  color: var(--foreground);
+  translate: 0 100%;
+  transition:
+    translate 250ms ease,
+    overlay 250ms allow-discrete,
+    display 250ms allow-discrete;
+}
+.filter-panel:popover-open {
+  display: flex;
+  flex-direction: column;
+  translate: 0 0;
+  @starting-style {
+    translate: 0 100%;
+  }
+}
+@media (min-width: 768px) {
+  .filter-panel {
+    inset: 0 0 0 auto;
+    width: min(24rem, 100vw);
+    height: 100dvh;
+    max-height: 100dvh;
+    border-top: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+    translate: 100% 0;
+  }
+  .filter-panel:popover-open {
+    @starting-style {
+      translate: 100% 0;
+    }
+  }
+}
+.filter-panel::backdrop {
+  background: oklch(0 0 0 / 0.4);
+  opacity: 0;
+  transition:
+    opacity 250ms ease,
+    overlay 250ms allow-discrete,
+    display 250ms allow-discrete;
+}
+.filter-panel:popover-open::backdrop {
+  opacity: 1;
+  @starting-style {
+    opacity: 0;
+  }
+}
+/*
+ * Barra lateral (fase 7-1, punto 3d): el MISMO popover se muestra fijo en ≥ 1024 px. El estilo
+ * del navegador oculta `[popover]` con display:none mientras no está abierto (MDN); aquí se
+ * sobrescribe. Fuera de la capa superior: sin backdrop, Escape no lo cierra, foco normal.
+ * Si se abre en móvil y se ensancha la ventana, `:popover-open` sigue en la capa superior: se
+ * neutraliza también para que no tape la página.
+ */
+@media (min-width: 1024px) {
+  .filter-panel--sidebar,
+  .filter-panel--sidebar:popover-open {
+    position: static;
+    display: block;
+    inset: auto;
+    width: auto;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    translate: none;
+    transition: none;
+  }
+  .filter-panel--sidebar::backdrop {
+    display: none;
+  }
+  .filter-panel--sidebar .filter-panel__head {
+    padding: 0 0 0.75rem;
+  }
+  .filter-panel--sidebar .filter-panel__body,
+  .filter-panel--sidebar .filter-panel__foot {
+    padding-inline: 0;
+    overflow: visible;
+  }
+}
+/* Anclas #f-<grupo> y #resultados: que no queden pegadas al borde. */
+.filter-group,
+#f-disponible {
+  scroll-margin-top: 1rem;
+}
+
+.filter-group > summary {
+  list-style-position: outside;
+}
+/* Casilla dibujada para los enlaces-casilla (filtros de /buscar/ sin JS). */
+.link-box {
+  display: inline-grid;
+  place-content: center;
+}
+[aria-checked="true"] > .link-box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+[aria-checked="true"] > .link-box::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.3rem;
+  border: solid var(--primary-foreground);
+  border-width: 0 0 2px 2px;
+  rotate: -45deg;
+  translate: 0 -1px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bump {
     animation: none;
   }
   .toast,
   .flyout,
-  .flyout::backdrop {
+  .flyout::backdrop,
+  .filter-panel,
+  .filter-panel::backdrop {
     transition: none;
   }
 }

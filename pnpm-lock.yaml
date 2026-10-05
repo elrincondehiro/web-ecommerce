@@ -196,6 +196,9 @@ importers:
       '@medusajs/medusa':
         specifier: 2.21.2
         version: 2.21.2(88f06cc6a2e3a58114762a92b4d43049)
+      '@rokmohar/medusa-plugin-meilisearch':
+        specifier: 2.3.1
+        version: 2.3.1(@medusajs/admin-sdk@2.21.2)(@medusajs/framework@2.21.2(@medusajs/cli@2.21.2(@types/node@24.19.1)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.19.1)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@7.3.6(@types/node@24.19.1)(jiti@1.21.7)(lightningcss@1.33.0)(yaml@2.9.1))(zod@4.6.5))(@medusajs/medusa@2.21.2)(@medusajs/ui@4.2.6(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@6.0.3))(@tanstack/react-query@5.64.2(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@medusajs/test-utils':
         specifier: 2.21.2
@@ -3372,6 +3375,18 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
 
+  '@rokmohar/medusa-plugin-meilisearch@2.3.1':
+    resolution: {integrity: sha512-JKPn0OWfBTb09V/zg7IWRxc8qMDUcqMUUcfLY0awp4TVd0/Q9F4fsh8XvJfuN0A4KojQ+oJ6BHhkKCRwdfXQvQ==}
+    engines: {node: '>=22.12'}
+    peerDependencies:
+      '@medusajs/admin-sdk': ~2.21.1
+      '@medusajs/framework': ~2.21.1
+      '@medusajs/medusa': ~2.21.1
+      '@medusajs/ui': ^4.2.6
+      '@tanstack/react-query': 5.64.2
+      react: ^18.3.1
+      react-dom: ^18.3.1
+
   '@rolldown/binding-android-arm-eabi@1.2.12':
     resolution: {integrity: sha512-dB/a1214qKfHMXCpgqR4OZT+jS4kTyEXbQGJPqzobt5EwH5rX080pxE37alt3RzvR1bf1Yz/yGqRfrYAxuPw0A==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -6464,6 +6479,10 @@ packages:
   media-typer@0.3.0:
     resolution: {integrity: sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==}
     engines: {node: '>= 0.6'}
+
+  meilisearch@0.62.0:
+    resolution: {integrity: sha512-/ETDW7mmWI2NcSmtJdTPhbjsIbs3VcuapszX5X6JhdHB0XbszPOhqd3EB2bEylL0HK7dgwh/4Z3MdyuycWVf5A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
 
   merge-descriptors@1.0.3:
     resolution: {integrity: sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==}
@@ -12511,6 +12530,17 @@ snapshots:
     dependencies:
       react: 18.3.1
 
+  '@rokmohar/medusa-plugin-meilisearch@2.3.1(@medusajs/admin-sdk@2.21.2)(@medusajs/framework@2.21.2(@medusajs/cli@2.21.2(@types/node@24.19.1)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.19.1)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@7.3.6(@types/node@24.19.1)(jiti@1.21.7)(lightningcss@1.33.0)(yaml@2.9.1))(zod@4.6.5))(@medusajs/medusa@2.21.2)(@medusajs/ui@4.2.6(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@6.0.3))(@tanstack/react-query@5.64.2(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@medusajs/admin-sdk': 2.21.2
+      '@medusajs/framework': 2.21.2(@medusajs/cli@2.21.2(@types/node@24.19.1)(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1))(@types/node@24.19.1)(debug@4.4.3(supports-color@8.1.1))(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(vite@7.3.6(@types/node@24.19.1)(jiti@1.21.7)(lightningcss@1.33.0)(yaml@2.9.1))(zod@4.6.5)
+      '@medusajs/medusa': 2.21.2(88f06cc6a2e3a58114762a92b4d43049)
+      '@medusajs/ui': 4.2.6(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@6.0.3)
+      '@tanstack/react-query': 5.64.2(react@18.3.1)
+      meilisearch: 0.62.0
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   '@rolldown/binding-android-arm-eabi@1.2.12':
     optional: true
 
@@ -15841,6 +15871,8 @@ snapshots:
   meant@1.0.3: {}
 
   media-typer@0.3.0: {}
+
+  meilisearch@0.62.0: {}
 
   merge-descriptors@1.0.3: {}
 

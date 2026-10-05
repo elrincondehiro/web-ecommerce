@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 04-oct-2026 · fase 5 cerrada (PR #20); plan de la fase 7 en revisión.
+> Última actualización: 05-oct-2026 · fase 7-1 cerrada en local (`feat/fase7-1-busqueda`, sin push: Gitea no accesible); siguiente, plan de 7-2.
 
 ## 1. Dónde estamos
 
@@ -16,15 +16,17 @@
 | 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)     |
 | 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)     |
 | 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)     |
+| 7-1 Búsqueda + filtros (sin push/PR aún)    | ✅     | [fase7.md](./fases/fase7.md)     |
+| 7-2 Sugerencias                             | ⏳     | [fase7.md](./fases/fase7.md)     |
 
 Roadmap completo y tiempos: README §13.
 
 ## 2. Qué hay construido
 
-- **Monorepo pnpm 12.8.2**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
+- **Monorepo pnpm 12.9.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), otro en `/buscar/` (`SearchLive`, ~0,8 KB gzip) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
     - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand con 0 JS. e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
     - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Stripe solo autoriza; la captura se hace desde el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
@@ -36,6 +38,8 @@ Roadmap completo y tiempos: README §13.
   - Telemetría OFF: `MEDUSA_DISABLE_TELEMETRY=true` + `allowBuilds` de `@medusajs/telemetry` a false.
   - Seed **España**: EUR **IVA incluido**, IVA **21 %** por defecto; **10 %** y **4 %** vía tipo de producto `iva-reducido` / `iva-superreducido`; un solo canal "Tienda online"; envíos 4,95 / 9,95 €; publishable key (sale en el log del seed).
   - `seed:mock`: catálogo de prueba idempotente (24 productos por defecto). En la BD local hay **1000 productos mock con 4 fotos** cada uno.
+  - `seed:mock:v2` (fase 7, idempotente): 6 etiquetas repartidas por todos los `mock-*` y 100 productos `mock-v2-*` con las opciones **globales** Talla y Color (con 4 fotos cada uno). No toca variantes, handles ni imágenes de los existentes.
+  - **Búsqueda** (fase 7): Search Module con el proveedor Meilisearch (`@rokmohar/medusa-plugin-meilisearch`), índice `product` en `src/search/product.ts` y `POST /store/search` permitido en `src/api/middlewares.ts`. Sin `MEILISEARCH_HOST` (tests, CI) se usa el proveedor PostgreSQL de Medusa.
   - **Ficheros**: `file-s3` contra SeaweedFS (R2 en producción), activo solo si existe `S3_BUCKET`. Fotos por lotes con `images:import <carpeta>` (`handle_XX.jpg`) y fotos mock con `images:mock` (`.cache/mock-images`, 1,5 GB, ignorado por git).
   - Importes de Medusa v2 en **unidad principal** (4.95 = 4,95 €).
 - **CI** (`.github/workflows/ci.yml`, mismo fichero en Gitea y GitHub):
@@ -74,6 +78,7 @@ pnpm dev:storefront          # :4321 (necesita apps/storefront/.env y el backend
 pnpm dev:backend             # API :9000 · Admin :9000/app (usuario admin ya creado por el usuario)
 pnpm backend:seed            # idempotente
 pnpm backend:seed:mock       # idempotente; `backend:seed:mock 100` para 100 (pnpm 12: sin `--`)
+pnpm backend:seed:mock:v2    # idempotente: etiquetas + 100 productos mock-v2 (Talla/Color)
 pnpm --filter backend images:import <carpeta> [dry-run] [replace]
 pnpm --filter backend exec medusa db:migrate
 pnpm --filter backend test:integration:http   # necesita apps/backend/.env.test
@@ -98,9 +103,19 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - El checkout es una sola página `/checkout/`. Los pasos de datos y envío funcionan sin JS (PRG + cookie `checkout_flash`). El pago usa un `<script>` con `@stripe/stripe-js/pure` (1,9 KB gzip).
   - Tras pagar: `/checkout/completar/` → `/pedido/<id>/`. El detalle solo se ve con la cookie `last_order`.
   - Para probarlo hacen falta las claves de test en los `.env`, `pnpm infra:stripe` (webhooks) y el backend en marcha.
-- **Siguiente: fase 7 (búsqueda + filtros)**, con el plan en [fase7.md](./fases/fase7.md) **pendiente de aprobación**. Se divide en 7-1 (`/buscar/` SSR, 0 JS) y 7-2 (sugerencias y autoaplicar filtros).
-  - ⚠️ Medusa 2.21.1+ trae un **Search Module** propio (proveedor PostgreSQL por defecto, `POST /store/search`). La decisión **D1** sobre el motor (PostgreSQL nativo, plugin Meilisearch de la comunidad o proveedor propio) se toma tras el spike del §2.0.
-  - No iniciar la implementación sin autorización.
+- **Fase 7-1 (búsqueda + filtros): cerrada en local** en `feat/fase7-1-busqueda` ([fase7.md](./fases/fase7.md), criterio de salida §6 cumplido). Rebasada sobre `main` con el PR #23 de Renovate (pnpm 12.9.1, eslint 10.12.0, bits-ui 2.19.5, @types/node 24.19.1, mailpit v1.31.4, renovate 44.133.0): lockfile regenerado, verificación completa en verde y README §4 sincronizado. **Falta push + PR** (lo hace el usuario; squash merge).
+  - Resumen:
+    - **D1 = A**: Meilisearch como proveedor del Search Module (§2.0.1–2.0.2); solo el proveedor del plugin, sin su página de Admin;
+    - backend: índice `product` con `in_stock`, job de stock (D8) y tests de integración;
+    - storefront: `/buscar/` on-demand, barra de búsqueda en la cabecera, panel "Filtrar" en categorías y `/productos/` (lleva a `/buscar/?categoria=`);
+    - **D10**: filtros en modelo **híbrido** (enlaces sin JS; con JS, `SearchLive` ≤ 1 KB y el fragmento `/buscar/parcial/`; §2.3.3). View transitions **desactivadas** en todo el sitio por ahora;
+    - **D9**: caché de tarjetas **solo en Astro** (`SEARCH_CARD_CACHE_TTL`, 30 s); `MEDUSA_FF_CACHING` apagado. `Server-Timing` opcional con `SERVER_TIMING=true`;
+    - el manifiesto de miniaturas no es público (`dist/server/card-images.json`); un solo panel de filtros (popover en móvil, barra lateral en escritorio);
+    - presupuesto: JS inline ≤ 1,2 KB gzip (antes 1 KB); excepción `SearchLive` ≤ 1 KB (AGENTS §3.4);
+    - las demos de filtros (`/demo/filtros/*`, `DEMO_FILTERS`) se usaron para decidir D10 y **ya están borradas**.
+  - El storefront **no** debe enviar `search_options.typo_tolerance`: Meilisearch lo rechaza.
+  - ⚠️ **Riesgo de CPU (D8 = L)**: `in_stock` **no** se reindexa con cada cambio de stock ni de reservas (costaría CPU en cada pedido, en un VPS compartido). El job `search-stock-sync` (cada 5 min, `SEARCH_STOCK_SYNC_CRON`) agrupa los cambios y reindexa solo esos productos. No añadir eventos de inventario al índice ([fase7.md](./fases/fase7.md) §2.1 y §2.1.1).
+- **Siguiente: plan de la fase 7-2** (sugerencias mientras se escribe, fase7.md §2.7). Requiere plan + confirmación (REGLA Nº 1).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).
@@ -115,6 +130,7 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 ## 7. Pendientes conocidos
 
 - **Fase 10 — typecheck del backend en CI igual que en local**: en local `tsc` usa los tipos generados en `apps/backend/.medusa/types` (ignorado por git; lo crean `medusa develop` y `medusa build`). En CI `typecheck` va antes que `build` y esos tipos no existen, así que `query.graph` devuelve `any` y fallan los parámetros implícitos. Solución prevista: generar los tipos en CI antes del `typecheck` (p. ej. ejecutar antes el build del backend; `medusa build` los genera con `skipDbConnection`, sin BD), **sin tocar código**. Después, **deshacer el parche del commit `2f12b98`** (tipo explícito `linked` en `apps/backend/src/scripts/stripe-region.ts`) y comprobar que el CI sigue en verde con los tipos generados ([fase5.md](./fases/fase5.md) §8).
+- **Fase 10 — Meilisearch en producción**: crear una key propia del backend (no la master) con permisos solo de índices, documentos, ajustes, tareas y búsqueda; `MEILISEARCH_HOST`/`MEILISEARCH_API_KEY` también en el `backend-worker`, que es el que llena el índice. Para cargas masivas, reindexar a mano: los eventos van a ~2,5/s en dev ([fase7.md](./fases/fase7.md) §2.0.2).
 - Tests de integración del backend fuera del CI (necesitan Postgres/Redis como `services:`); propuesta para la fase 10.
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.

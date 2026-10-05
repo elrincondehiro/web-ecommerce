@@ -1,0 +1,31 @@
+---
+// Paginación de /buscar/ con `?pagina=N` (GET, sin JS).
+import { lastPage, searchUrl, type SearchParams } from "$lib/search";
+
+interface Props {
+  params: SearchParams;
+  total: number;
+  path: string;
+}
+const { params, total, path } = Astro.props;
+const last = lastPage(total);
+const link = "rounded-md border px-3 py-1.5 text-sm hover:bg-muted";
+---
+
+{last > 1 && (
+  <nav aria-label="Paginación" class="mt-10 flex items-center justify-center gap-3">
+    {params.pagina > 1 && (
+      <a href={searchUrl({ ...params, pagina: params.pagina - 1 }, path)} rel="prev" class={link}>
+        Anterior
+      </a>
+    )}
+    <span class="text-sm text-muted-foreground">
+      Página {params.pagina} de {last}
+    </span>
+    {params.pagina < last && (
+      <a href={searchUrl({ ...params, pagina: params.pagina + 1 }, path)} rel="next" class={link}>
+        Siguiente
+      </a>
+    )}
+  </nav>
+)}

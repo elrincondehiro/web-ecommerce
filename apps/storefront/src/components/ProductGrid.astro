@@ -1,5 +1,6 @@
 ---
 import type { StoreProduct } from "$lib/catalog";
+import type { CardImage } from "$lib/images";
 import ProductCard from "./ProductCard.astro";
 
 interface Props {
@@ -7,10 +8,18 @@ interface Props {
   headingLevel?: 2 | 3 | undefined;
   /** Nº de tarjetas iniciales con imagen prioritaria (LCP). */
   priorityCount?: number | undefined;
+  /** Páginas on-demand: miniaturas del build por id de producto (ver ProductImage). */
+  images?: Map<string, CardImage> | undefined;
+  /** Vuelta tras "Añadir" sin JS. Por defecto, la ruta del listado (conocida en el build). */
+  back?: string | undefined;
 }
-const { products, headingLevel, priorityCount = 0 } = Astro.props;
-// Vuelta tras "Añadir" sin JS: la propia página del listado (ruta conocida en el build).
-const back = Astro.url.pathname;
+const {
+  products,
+  headingLevel,
+  priorityCount = 0,
+  images,
+  back = Astro.url.pathname,
+} = Astro.props;
 ---
 
 <ul class="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
@@ -21,6 +30,7 @@ const back = Astro.url.pathname;
         headingLevel={headingLevel}
         priority={i < priorityCount}
         back={back}
+        prebuilt={images ? (images.get(product.id) ?? null) : undefined}
       />
     </li>
   ))}

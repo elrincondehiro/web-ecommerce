@@ -1,0 +1,32 @@
+---
+// Botón "Filtrar (n)" que abre el panel de filtros (popover nativo, 0 JS). Va aparte del panel
+// para poder colocarlo en la barra de resultados mientras el panel ocupa la columna lateral.
+import { buttonVariants } from "$lib/components/ui/button";
+
+interface Props {
+  target: string;
+  selected: number;
+  class?: string | undefined;
+}
+const { target, selected, class: className } = Astro.props;
+---
+
+<button
+  type="button"
+  popovertarget={target}
+  class:list={[buttonVariants({ variant: "outline", size: "sm" }), className]}
+>
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  >
+    <path d="M3 6h18M7 12h10M10 18h4" />
+  </svg>
+  Filtrar{selected > 0 && ` (${selected})`}
+</button>

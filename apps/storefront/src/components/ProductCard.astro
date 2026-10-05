@@ -5,6 +5,7 @@
 import { Badge } from "$lib/components/ui/badge";
 import { getProductPricing, type StoreProduct } from "$lib/catalog";
 import { formatPrice } from "$lib/format";
+import type { CardImage } from "$lib/images";
 import { buttonVariants } from "$lib/components/ui/button";
 import AddToCart from "./AddToCart.astro";
 import ProductImage from "./ProductImage.astro";
@@ -17,8 +18,10 @@ interface Props {
   priority?: boolean | undefined;
   /** Ruta de vuelta tras añadir sin JS (la página del listado). */
   back: string;
+  /** Páginas on-demand: miniatura del build (o null → placeholder). Ver ProductImage. */
+  prebuilt?: CardImage | null | undefined;
 }
-const { product, headingLevel = 2, priority = false, back } = Astro.props;
+const { product, headingLevel = 2, priority = false, back, prebuilt } = Astro.props;
 const Heading = headingLevel === 3 ? "h3" : "h2";
 const href = `/producto/${product.handle}/`;
 const pricing = getProductPricing(product);
@@ -34,7 +37,7 @@ const single = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
 >
   <div class="relative overflow-hidden rounded-md">
     <div data-dim class="transition-opacity">
-      <ProductImage src={image} alt={product.title} priority={priority} />
+      <ProductImage src={image} alt={product.title} priority={priority} prebuilt={prebuilt} />
     </div>
     <Badge variant="secondary" class="absolute top-2 left-2" data-if-stock="out">
       Agotado

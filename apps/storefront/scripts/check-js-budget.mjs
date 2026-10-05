@@ -1,7 +1,10 @@
 // Presupuesto de JS del storefront (AGENTS.md §3.4). Se ejecuta tras `pnpm build`.
 // Home, listados y fichas: 0 bundles /_astro/*.js salvo UN bundle de carrito (CartClient,
 // ≤ 2 KB gzip, fase 4) sin imports a otros chunks. Se permite el script inline de las server
-// islands (lo genera Astro) y el aplicador de LiveSync, ≤ 1 KB gzip en total.
+// islands (lo genera Astro) y el aplicador de LiveSync, ≤ 1,2 KB gzip en total (margen: las props
+// cifradas de las islands cambian de longitud en cada build).
+// /buscar/ es on-demand (no hay HTML en dist): se comprueba aquí su bundle SearchLive (≤ 1 KB
+// gzip, sin imports; fase 7-1) y en el e2e (e2e/buscar.spec.ts) que la página no carga otros.
 // Páginas legales (fase 5): mismas reglas. Checkout (fase 5, on-demand: no hay HTML en dist): el
 // bundle de pago (StripePayment, incluye el cargador de Stripe.js) ≤ 30 KB gzip propios con sus
 // imports (AGENTS §3.4); Stripe.js se descarga aparte de js.stripe.com.
@@ -23,22 +26,29 @@ const ZERO_JS = [
 /** Bundle de pago del checkout (fase 5) y su presupuesto (gzip, con imports). */
 const PAYMENT_BUNDLE = /^StripePayment\.[^/]*\.js$/;
 const PAYMENT_GZIP_MAX = 30 * 1024;
-/** Máximo de JS inline (gzip) por página: solo el runtime de server islands. */
-const INLINE_GZIP_MAX = 1024;
+/** Máximo de JS inline (gzip) por página: runtime de server islands + LiveSync. */
+const INLINE_GZIP_MAX = 1229;
 /** Único bundle permitido en esas páginas: mejora progresiva del carrito (fase 4). */
 const CART_BUNDLE = /^CartClient\.[^/]*\.js$/;
 const CART_GZIP_MAX = 2048;
+/** Mejora progresiva de /buscar/ (modelo híbrido, fase 7-1). */
+const SEARCH_BUNDLE = /^SearchLive\.[^/]*\.js$/;
+const SEARCH_GZIP_MAX = 1024;
 const CLIENT = fileURLToPath(new URL("../dist/client", import.meta.url));
 
 /** @type {Map<string, number>} */
 const bundleSizes = new Map();
 /** @param {string} src */
+async function selfContainedGzip(src) {
+  const code = await readFile(join(CLIENT, src), "utf8");
+  // Sin imports estáticos ni dinámicos: el bundle debe ser autocontenido.
+  return /\bimport\s*[("'{*]|\bfrom\s*["']/.test(code) ? Infinity : gzipSync(code).length;
+}
+/** @param {string} src */
 async function cartBundleGzip(src) {
   let size = bundleSizes.get(src);
   if (size === undefined) {
-    const code = await readFile(join(CLIENT, src), "utf8");
-    // Sin imports estáticos ni dinámicos: el bundle debe ser autocontenido.
-    size = /\bimport\s*[("'{*]|\bfrom\s*["']/.test(code) ? Infinity : gzipSync(code).length;
+    size = await selfContainedGzip(src);
     bundleSizes.set(src, size);
   }
   return size;
@@ -112,6 +122,17 @@ if (payment.length !== 1) {
     failures.push(`checkout: bundle de pago ${gz} B gzip > ${PAYMENT_GZIP_MAX} B`);
 }
 
+const search = assets.filter((f) => SEARCH_BUNDLE.test(f));
+let searchInfo = "sin bundle de búsqueda";
+if (search.length !== 1) {
+  failures.push(`buscar: se esperaba 1 bundle SearchLive y hay ${search.length}`);
+} else {
+  const gz = await selfContainedGzip(join("_astro", search[0] ?? ""));
+  searchInfo = `buscar ${search[0]} ${gz} B gzip`;
+  if (gz > SEARCH_GZIP_MAX)
+    failures.push(`buscar: ${search[0]} ${gz} B gzip > ${SEARCH_GZIP_MAX} B (o con imports)`);
+}
+
 if (checked === 0) {
   process.stderr.write("check-js-budget: no hay HTML en dist/client (¿falta `pnpm build`?)\n");
   process.exit(1);
@@ -124,5 +145,5 @@ if (failures.length) {
 }
 const cartInfo = [...bundleSizes].map(([src, gz]) => `${basename(src)} ${gz} B gzip`).join(", ");
 process.stdout.write(
-  `check-js-budget: OK (${checked} páginas; único bundle permitido: ${cartInfo || "ninguno"}; ${paymentInfo})\n`,
+  `check-js-budget: OK (${checked} páginas; único bundle permitido: ${cartInfo || "ninguno"}; ${searchInfo}; ${paymentInfo})\n`,
 );

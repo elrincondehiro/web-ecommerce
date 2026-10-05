@@ -1,17 +1,22 @@
 ---
 import type { GetStaticPaths } from "astro";
 import { PAGE_SIZE } from "$lib/constants";
-import { getAllProducts } from "$lib/medusa";
+import { buildListingFacets } from "$lib/facets";
+import { getAllProducts, getCategories } from "$lib/medusa";
 import { breadcrumbJsonLd } from "$lib/seo";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CatalogPage from "../../components/CatalogPage.astro";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  return paginate(await getAllProducts(), { pageSize: PAGE_SIZE });
+  const [products, categories] = await Promise.all([getAllProducts(), getCategories()]);
+  const facets = buildListingFacets(products, {
+    categories: new Map(categories.map((c) => [c.handle, c.name])),
+  });
+  return paginate(products, { pageSize: PAGE_SIZE, props: { facets } });
 }) satisfies GetStaticPaths;
 
-const { page } = Astro.props;
+const { page, facets } = Astro.props;
 const crumbs = [
   { name: "Inicio", href: "/" },
   { name: "Productos", href: "/productos/" },
@@ -26,5 +31,5 @@ const title = page.currentPage > 1 ? `Productos (página ${page.currentPage})` :
 >
   <Breadcrumbs items={crumbs} />
   <h1 class="mb-2 text-2xl font-semibold tracking-tight">Productos</h1>
-  <CatalogPage page={page} />
+  <CatalogPage page={page} facets={facets} />
 </BaseLayout>

@@ -1,0 +1,42 @@
+---
+// Chips de filtros aplicados (fase 7-1): cada chip es un ENLACE que quita ese filtro, y
+// "Quitar todo" vuelve a la búsqueda sin filtros. Deshacer sin "atrás" y sin JS.
+import type { ActiveFilter } from "$lib/search";
+
+interface Props {
+  filters: ActiveFilter[];
+  clearHref: string;
+}
+const { filters, clearHref } = Astro.props;
+---
+
+{filters.length > 0 && (
+  <div class="mb-4 flex flex-wrap items-center gap-2" aria-label="Filtros aplicados" role="group">
+    {filters.map((f) => (
+      <a
+        href={f.href}
+        class="inline-flex items-center gap-1 rounded-full border bg-muted px-3 py-1 text-xs hover:bg-background"
+        aria-label={`Quitar filtro ${f.label}`}
+      >
+        {f.label}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          width="12"
+          height="12"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        >
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </a>
+    ))}
+    {filters.length > 1 && (
+      <a href={clearHref} class="text-xs underline underline-offset-4 hover:no-underline">
+        Quitar todo
+      </a>
+    )}
+  </div>
+)}
