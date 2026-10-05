@@ -1,7 +1,7 @@
 # Fase 7 — Búsqueda y filtros
 
-> **Estado:** ✅ 7-1 completada · ✅ 7-2 completada (05-oct-2026; push/PR pendientes: Gitea no accesible)
-> **Rama/PR:** `docs/fase7-plan` (este plan) · implementación: `feat/fase7-1-busqueda`, `feat/fase7-2-sugerencias` (sobre la de 7-1)
+> **Estado:** ✅ completada (05-oct-2026): 7-1 y 7-2
+> **Rama/PR:** `docs/fase7-plan` (plan, PR #22) · `feat/fase7-1-busqueda` (PR #24, squash `5868c83`) · `feat/fase7-2-sugerencias` (PR #25, squash `c604a84`)
 > **Anterior:** [Fase 5](./fase5.md) · **Siguiente:** por decidir (propuesta: Marca → 8 Emails)
 
 La fase se divide en dos subfases **independientes**. 7-2 solo añade JS encima de lo que entrega 7-1, que funciona completa sin JS.
@@ -480,4 +480,3 @@ Manual (7-2): escribir `cami` en la cabecera (también en `/carrito/`) → lista
 - **Las opciones combinadas** ("Rojo" + "M") se cumplen por producto, no por la misma variante (§2.3.1).
 - **Sugerencias (7-2)**: el fragmento se inserta con `innerHTML` (mismo origen, sin `<script>`; la CSP de la fase 11 no necesita hash). Cada pulsación con ≥ 2 letras puede ser una petición al origen si la CDN falla: `rate limiting` en la fase 11 y caché de Astro (§2.7.2).
 - Las erratas solo se toleran desde 5 letras (configuración por defecto de Meilisearch): `bufn` no sugiere nada. Si molesta, se ajusta `typoTolerance.minWordSizeForTypos` del índice en el backend (no desde el storefront).
-- Ramas rebasadas sobre `main` (PR #23 de Renovate; lockfile regenerado con pnpm 12.9.1). Pendiente: push y PR de 7-1 y después de 7-2.

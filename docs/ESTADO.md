@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 05-oct-2026 · fases 7-1 y 7-2 cerradas en local (`feat/fase7-1-busqueda`, `feat/fase7-2-sugerencias`, rebasadas sobre `main`; falta push + PR).
+> Última actualización: 05-oct-2026 · fase 7 cerrada (PR #24 y #25); siguiente, por decidir (propuesta: Marca + UX/UI → 8 Emails).
 
 ## 1. Dónde estamos
 
@@ -16,8 +16,8 @@
 | 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)     |
 | 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)     |
 | 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)     |
-| 7-1 Búsqueda + filtros (sin push/PR aún)    | ✅     | [fase7.md](./fases/fase7.md)     |
-| 7-2 Sugerencias (sin push/PR aún)           | ✅     | [fase7.md](./fases/fase7.md)     |
+| 7-1 Búsqueda + filtros                      | ✅     | [fase7.md](./fases/fase7.md)     |
+| 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -103,7 +103,7 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - El checkout es una sola página `/checkout/`. Los pasos de datos y envío funcionan sin JS (PRG + cookie `checkout_flash`). El pago usa un `<script>` con `@stripe/stripe-js/pure` (1,9 KB gzip).
   - Tras pagar: `/checkout/completar/` → `/pedido/<id>/`. El detalle solo se ve con la cookie `last_order`.
   - Para probarlo hacen falta las claves de test en los `.env`, `pnpm infra:stripe` (webhooks) y el backend en marcha.
-- **Fase 7-1 (búsqueda + filtros): cerrada en local** en `feat/fase7-1-busqueda` ([fase7.md](./fases/fase7.md), criterio de salida §6 cumplido). Rebasada sobre `main` con el PR #23 de Renovate (pnpm 12.9.1, eslint 10.12.0, bits-ui 2.19.5, @types/node 24.19.1, mailpit v1.31.4, renovate 44.133.0): lockfile regenerado, verificación completa en verde y README §4 sincronizado. **Falta push + PR** (lo hace el usuario; squash merge).
+- **Fase 7-1 (búsqueda + filtros): cerrada** (PR #24, `5868c83`; [fase7.md](./fases/fase7.md), criterio de salida §6 cumplido). Incluye el PR #23 de Renovate (pnpm 12.9.1, eslint 10.12.0, bits-ui 2.19.5…) y README §4 sincronizado.
   - Resumen:
     - **D1 = A**: Meilisearch como proveedor del Search Module (§2.0.1–2.0.2); solo el proveedor del plugin, sin su página de Admin;
     - backend: índice `product` con `in_stock`, job de stock (D8) y tests de integración;
@@ -115,10 +115,11 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
     - las demos de filtros (`/demo/filtros/*`, `DEMO_FILTERS`) se usaron para decidir D10 y **ya están borradas**.
   - El storefront **no** debe enviar `search_options.typo_tolerance`: Meilisearch lo rechaza.
   - ⚠️ **Riesgo de CPU (D8 = L)**: `in_stock` **no** se reindexa con cada cambio de stock ni de reservas (costaría CPU en cada pedido, en un VPS compartido). El job `search-stock-sync` (cada 5 min, `SEARCH_STOCK_SYNC_CRON`) agrupa los cambios y reindexa solo esos productos. No añadir eventos de inventario al índice ([fase7.md](./fases/fase7.md) §2.1 y §2.1.1).
-- **Fase 7-2 (sugerencias): cerrada en local** en `feat/fase7-2-sugerencias`, encima de la rama de 7-1 ([fase7.md](./fases/fase7.md) §2.7, D11):
+- **Fase 7-2 (sugerencias): cerrada** (PR #25, `c604a84`; [fase7.md](./fases/fase7.md) §2.7, D11):
   - `SiteClient` (862 B gzip, ≤ 1,5 KB): JS común de **todas** las páginas (vía `BaseLayout`); hoy, el combobox de sugerencias de la cabecera. Sin `import()` dinámico (Vite añade ~750 B de helper);
   - `/buscar/sugerencias/`: fragmento con ≤ 6 títulos, ≤ 2 categorías y "Ver todos"; caché 60 s en navegador/CDN y en Astro (`SEARCH_SUGGEST_CACHE_TTL`); política con Cloudflare en §2.7.2.
-- **Siguiente**: subir 7-1 y 7-2 cuando vuelva Gitea; después, decidir la siguiente fase (propuesta: Marca → 8 Emails).
+- **Siguiente**: por decidir con el usuario. Propuesta: **Marca + UX/UI** (identidad, cabecera/menú, footer, home con hero y bloques de contenido) → 8 Emails → 9 Cuenta. Requiere plan + confirmación (REGLA Nº 1).
+- **Aviso de fuentes en el navegador**: "preloaded with link preload was not used within a few seconds" para el `.woff2` del peso 400 (`/_astro/fonts/`; formato de mensaje de Firefox). En Chromium la precarga se usa bien (comprobado con Playwright). Revisarlo al tocar la tipografía (Marca).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).

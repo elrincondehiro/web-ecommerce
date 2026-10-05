@@ -668,7 +668,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 6 Ficheros R2 + imágenes               | [fase6.md](./docs/fases/fase6.md)                                                                | ✅     |
 | 4 Carrito                              | [fase4.md](./docs/fases/fase4.md)                                                                | ✅     |
 | 5 Checkout + Stripe                    | [fase5.md](./docs/fases/fase5.md)                                                                | ✅     |
-| 7 Búsqueda y filtros (7-1 ✅ · 7-2 ✅) | [fase7.md](./docs/fases/fase7.md)                                                                | 🚧     |
+| 7 Búsqueda y filtros                   | [fase7.md](./docs/fases/fase7.md)                                                                | ✅     |
 | 8 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
