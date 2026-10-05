@@ -28,7 +28,7 @@
     "@stripe/stripe-js": "9.17.0",
     "@tailwindcss/vite": "4.3.3",
     "astro": "7.3.5",
-    "bits-ui": "2.19.3",
+    "bits-ui": "2.19.5",
     "clsx": "2.1.1",
     "sharp": "0.35.5",
     "svelte": "5.57.1",
@@ -40,7 +40,7 @@
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@playwright/test": "1.63.0",
-    "@types/node": "24.9.2",
+    "@types/node": "24.19.1",
     "svelte-check": "4.7.6",
     "typescript": "6.0.3",
     "vitest": "5.0.3"

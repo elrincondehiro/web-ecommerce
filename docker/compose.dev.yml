@@ -86,7 +86,7 @@ services:
 
   # Captura de emails en local (SMTP :1025, UI :8025)
   mailpit:
-    image: axllent/mailpit:v1.31.3
+    image: axllent/mailpit:v1.31.4
     restart: unless-stopped
     ports:
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
