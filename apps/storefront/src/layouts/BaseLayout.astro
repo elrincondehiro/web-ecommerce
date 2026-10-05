@@ -2,6 +2,7 @@
 import { Font } from "astro:assets";
 import Seo from "../components/Seo.astro";
 import CartClient from "../components/CartClient.astro";
+import SiteClient from "../components/SiteClient.astro";
 import CartCountBadge from "../components/CartCountBadge.astro";
 import CartNotice from "../components/CartNotice.astro";
 import CartCount from "../components/server/CartCount.astro";
@@ -81,13 +82,14 @@ const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : ""
             })}
           </ul>
         </nav>
-        {/* Búsqueda (fase 7-1, D5): GET a /buscar/, 0 JS; erratas toleradas por el motor.
-            Móvil: fila propia a todo el ancho (como el menú); escritorio: antes del carrito. */}
+        {/* Búsqueda (fase 7-1, D5): GET a /buscar/, sin JS; erratas toleradas por el motor.
+            Móvil: fila propia a todo el ancho (como el menú); escritorio: antes del carrito.
+            Con JS, SiteClient.astro muestra sugerencias en #buscar-sug (fase 7-2). */}
         <form
           method="get"
           action={SEARCH_PATH}
           role="search"
-          class="order-last flex w-full items-center gap-2 sm:order-none sm:w-56 lg:w-64"
+          class="relative order-last flex w-full items-center gap-2 sm:order-none sm:w-56 lg:w-64"
         >
           <label for="buscar-q" class="sr-only">
             Buscar productos
@@ -123,6 +125,7 @@ const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : ""
               <path d="m20 20-3.5-3.5" />
             </svg>
           </button>
+          <div id="buscar-sug" role="listbox" aria-label="Sugerencias" class="suggest" hidden></div>
         </form>
         {/* Icono del carrito: enlace a /carrito/ (sin JS y en móvil); en escritorio el script
             del carrito abre el flyout. Contador: server island en páginas estáticas. */}
@@ -193,5 +196,6 @@ const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : ""
       </div>
     </footer>
     {cartClient && <CartClient />}
+    <SiteClient />
   </body>
 </html>

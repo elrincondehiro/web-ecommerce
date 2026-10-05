@@ -1,6 +1,9 @@
 // Presupuesto de JS del storefront (AGENTS.md §3.4). Se ejecuta tras `pnpm build`.
-// Home, listados y fichas: 0 bundles /_astro/*.js salvo UN bundle de carrito (CartClient,
-// ≤ 2 KB gzip, fase 4) sin imports a otros chunks. Se permite el script inline de las server
+// Home, listados y fichas: 0 bundles /_astro/*.js salvo, sin imports a otros chunks:
+//   - UN bundle de carrito (CartClient, ≤ 2 KB gzip, fase 4);
+//   - UN bundle común de la web (SiteClient, ≤ 1,5 KB gzip, fase 7-2: sugerencias), OBLIGATORIO
+//     (va en BaseLayout; también en carrito/checkout/pedido, comprobado en e2e/sugerencias).
+// Se permite el script inline de las server
 // islands (lo genera Astro) y el aplicador de LiveSync, ≤ 1,2 KB gzip en total (margen: las props
 // cifradas de las islands cambian de longitud en cada build).
 // /buscar/ es on-demand (no hay HTML en dist): se comprueba aquí su bundle SearchLive (≤ 1 KB
@@ -28,9 +31,11 @@ const PAYMENT_BUNDLE = /^StripePayment\.[^/]*\.js$/;
 const PAYMENT_GZIP_MAX = 30 * 1024;
 /** Máximo de JS inline (gzip) por página: runtime de server islands + LiveSync. */
 const INLINE_GZIP_MAX = 1229;
-/** Único bundle permitido en esas páginas: mejora progresiva del carrito (fase 4). */
-const CART_BUNDLE = /^CartClient\.[^/]*\.js$/;
-const CART_GZIP_MAX = 2048;
+/** Bundles permitidos en esas páginas (máx. uno de cada; `required`: en todas). */
+const PAGE_BUNDLES = [
+  { name: "carrito", re: /^CartClient\.[^/]*\.js$/, max: 2048, required: false },
+  { name: "común", re: /^SiteClient\.[^/]*\.js$/, max: 1536, required: true },
+];
 /** Mejora progresiva de /buscar/ (modelo híbrido, fase 7-1). */
 const SEARCH_BUNDLE = /^SearchLive\.[^/]*\.js$/;
 const SEARCH_GZIP_MAX = 1024;
@@ -45,7 +50,7 @@ async function selfContainedGzip(src) {
   return /\bimport\s*[("'{*]|\bfrom\s*["']/.test(code) ? Infinity : gzipSync(code).length;
 }
 /** @param {string} src */
-async function cartBundleGzip(src) {
+async function bundleGzip(src) {
   let size = bundleSizes.get(src);
   if (size === undefined) {
     size = await selfContainedGzip(src);
@@ -80,16 +85,17 @@ for await (const file of htmlFiles(ROOT)) {
     .map((m) => m[2] ?? "")
     .join("\n");
   const inlineGzip = inline ? gzipSync(inline).length : 0;
-  const others = bundles.filter((b) => !CART_BUNDLE.test(basename(b)));
-  const cart = bundles.filter((b) => CART_BUNDLE.test(basename(b)));
+  const others = bundles.filter((b) => !PAGE_BUNDLES.some(({ re }) => re.test(basename(b))));
   if (others.length) failures.push(`${rel}: bundles JS no permitidos ${others.join(", ")}`);
-  if (cart.length > 1) failures.push(`${rel}: más de un bundle de carrito ${cart.join(", ")}`);
-  for (const src of new Set(cart)) {
-    const gz = await cartBundleGzip(src);
-    if (gz > CART_GZIP_MAX)
-      failures.push(
-        `${rel}: bundle de carrito ${src} ${gz} B gzip > ${CART_GZIP_MAX} B (o con imports)`,
-      );
+  for (const { name, re, max, required } of PAGE_BUNDLES) {
+    const found = [...new Set(bundles.filter((b) => re.test(basename(b))))];
+    if (found.length > 1) failures.push(`${rel}: más de un bundle ${name} ${found.join(", ")}`);
+    if (required && !found.length) failures.push(`${rel}: falta el bundle ${name}`);
+    for (const src of found) {
+      const gz = await bundleGzip(src);
+      if (gz > max)
+        failures.push(`${rel}: bundle ${name} ${src} ${gz} B gzip > ${max} B (o con imports)`);
+    }
   }
   if (inlineGzip > INLINE_GZIP_MAX)
     failures.push(`${rel}: JS inline ${inlineGzip} B gzip > ${INLINE_GZIP_MAX} B`);
@@ -145,5 +151,5 @@ if (failures.length) {
 }
 const cartInfo = [...bundleSizes].map(([src, gz]) => `${basename(src)} ${gz} B gzip`).join(", ");
 process.stdout.write(
-  `check-js-budget: OK (${checked} páginas; único bundle permitido: ${cartInfo || "ninguno"}; ${searchInfo}; ${paymentInfo})\n`,
+  `check-js-budget: OK (${checked} páginas; bundles: ${cartInfo || "ninguno"}; ${searchInfo}; ${paymentInfo})\n`,
 );

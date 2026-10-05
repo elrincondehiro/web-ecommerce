@@ -150,13 +150,22 @@ export default defineConfig({
         default: false,
       }),
       // Caché en memoria de tarjetas de /buscar/ (precio/stock por id; lib/card-cache.ts). En
-      // segundos; 0 = desactivada (siempre fresco). Fase 7-1, punto 3b: a prueba.
+      // segundos; 0 = desactivada (siempre fresco). Fase 7-1, D9.
       SEARCH_CARD_CACHE_TTL: envField.number({
         context: "server",
         access: "secret",
         int: true,
         min: 0,
         default: 30,
+      }),
+      // Caché en memoria de /buscar/sugerencias/ (HTML por texto, 500 entradas). En segundos;
+      // 0 = desactivada. Se suma a la de Cloudflare (fase 11, fase7.md §2.7). Fase 7-2.
+      SEARCH_SUGGEST_CACHE_TTL: envField.number({
+        context: "server",
+        access: "secret",
+        int: true,
+        min: 0,
+        default: 60,
       }),
       STOREFRONT_MAX_PRODUCTS: envField.number({
         context: "server",
@@ -170,12 +179,12 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     build: {
-      // El script del carrito (CartClient.astro, ~1 KB gzip, fase 4) y el de /buscar/
-      // (SearchLive.astro, ≤ 1 KB gzip, fase 7-1) van como bundle en /_astro/ (caché inmutable,
-      // se descargan una vez) en vez de inline en cada HTML (Astro inlinea scripts < 4 KB).
-      // Resto: comportamiento por defecto (undefined).
+      // Scripts propios que van como bundle en /_astro/ (caché inmutable, se descargan una vez)
+      // en vez de inline en cada HTML (Astro inlinea scripts < 4 KB): carrito (CartClient,
+      // fase 4), /buscar/ (SearchLive, fase 7-1) y JS común de la web (SiteClient: sugerencias,
+      // fase 7-2). Resto: comportamiento por defecto (undefined).
       assetsInlineLimit: (/** @type {string} */ file) =>
-        file.includes("CartClient") || file.includes("SearchLive") ? false : undefined,
+        /CartClient|SearchLive|SiteClient/.test(file) ? false : undefined,
     },
     resolve: {
       alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) },

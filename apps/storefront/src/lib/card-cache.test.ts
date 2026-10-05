@@ -65,3 +65,14 @@ describe("CardCache", () => {
     expect(cache.size).toBe(0);
   });
 });
+
+describe("CardCache get/set (sugerencias)", () => {
+  it("devuelve el valor hasta que caduca", () => {
+    let t = 0;
+    const cache = new CardCache<string>({ ttlMs: 1000, maxEntries: 10, now: () => t });
+    cache.set("bufn", "<a>");
+    expect(cache.get("bufn")).toBe("<a>");
+    t = 1000;
+    expect(cache.get("bufn")).toBeUndefined();
+  });
+});

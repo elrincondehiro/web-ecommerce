@@ -399,3 +399,45 @@
 .checkout-address:has(#misma-direccion:checked) .checkout-billing {
   display: none;
 }
+
+/* Sugerencias de la barra de búsqueda (fase 7-2, SiteClient.astro). Bajo el campo, a todo el
+   ancho del formulario; opción marcada con ↑/↓ = aria-selected (también al pasar el ratón). */
+.suggest {
+  position: absolute;
+  inset: calc(100% + 0.25rem) 0 auto;
+  z-index: 40;
+  max-height: min(24rem, 70dvh);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.25rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 8px 24px oklch(0 0 0 / 0.12);
+}
+@media (min-width: 640px) {
+  /* Campo estrecho (14–16rem): la lista puede ser más ancha, alineada a la derecha. */
+  .suggest {
+    left: auto;
+    width: max(100%, 22rem);
+  }
+}
+.suggest[hidden] {
+  display: none;
+}
+.suggest-option {
+  display: block;
+  border-radius: calc(var(--radius-md) - 2px);
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.suggest-option:hover,
+.suggest-option[aria-selected="true"] {
+  background: var(--muted);
+}
+.suggest-all {
+  border-top: 1px solid var(--border);
+  margin-top: 0.25rem;
+  font-weight: 500;
+}

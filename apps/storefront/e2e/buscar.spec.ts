@@ -128,7 +128,7 @@ test("tarjetas.json no es público; un solo panel de filtros; fragmento", async 
   expect(r.headers()["location"]).toBe("/buscar/parcial/?q=jersei&opcion=Talla%3AM");
 });
 
-test("URL no canónica → 301 a la canónica; JS: carrito + SearchLive ≤ 1 KB", async ({ page }) => {
+test("URL no canónica → 301; JS: carrito + común + SearchLive ≤ 1 KB", async ({ page }) => {
   const res = await page.request.get("/buscar/?opcion=Talla:M&q=jersei&categoria=ropa", {
     maxRedirects: 0,
   });
@@ -137,7 +137,8 @@ test("URL no canónica → 301 a la canónica; JS: carrito + SearchLive ≤ 1 KB
 
   const html = await (await page.request.get("/buscar/?q=jersei")).text();
   const scripts = [...html.matchAll(/<script[^>]*src="([^"]+)"/g)].map((m) => m[1]);
-  expect(scripts).toHaveLength(2);
+  expect(scripts).toHaveLength(3);
+  expect(scripts.some((s) => /\/_astro\/SiteClient\.[^/]+\.js$/.test(s!))).toBe(true);
   expect(scripts.some((s) => /\/_astro\/CartClient\.[^/]+\.js$/.test(s!))).toBe(true);
   const live = scripts.find((s) => /\/_astro\/SearchLive\.[^/]+\.js$/.test(s!));
   expect(live).toBeTruthy();

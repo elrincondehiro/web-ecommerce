@@ -1,0 +1,106 @@
+---
+// JS común de TODA la web (fase 7-2): UN bundle en /_astro/ (≤ 1,5 KB gzip, check:budget,
+// excepción de AGENTS §3.4), cargado por BaseLayout en todas las páginas (también carrito,
+// checkout y pedido: la cabecera se comporta igual en todas). Sin imports: un import()
+// dinámico añade ~750 B del helper de precarga de Vite (medido, fase7.md §2.7).
+// Hoy: sugerencias en la barra de búsqueda de la cabecera (patrón combobox de la APG, "list
+// autocomplete" sin selección automática):
+//   - desde 2 caracteres, 200 ms tras dejar de escribir, pide /buscar/sugerencias/?q= (HTML);
+//     caché por texto en memoria de la página; AbortController cancela la anterior;
+//   - ↑/↓ recorren las opciones (aria-activedescendant), Enter abre la marcada (si no hay
+//     ninguna, envía el formulario), Escape cierra; al perder el foco se cierra;
+//   - el recuento se anuncia en [data-suggest-live].
+// Sin JS no hay sugerencias: el formulario GET a /buscar/ funciona igual. Los atributos ARIA
+// del combobox los pone este script (sin JS el campo es un <input type="search"> normal).
+// Fuente: APG (w3c/wai-aria-practices, combobox-autocomplete-list), astro-docs (scripts).
+---
+
+<p class="sr-only" aria-live="polite" data-suggest-live></p>
+
+<script>
+  const input = document.getElementById("buscar-q") as HTMLInputElement | null;
+  const list = document.getElementById("buscar-sug");
+  const live = document.querySelector("[data-suggest-live]");
+  if (input && list && live) {
+    const cache = new Map<string, string>();
+    let ctl: AbortController | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let active = -1;
+
+    input.role = "combobox";
+    input.ariaAutoComplete = "list";
+    input.ariaExpanded = "false";
+    input.setAttribute("aria-controls", list.id);
+
+    // Igual que normalizeSuggestQuery (lib/suggest.ts): misma URL canónica → sin 301.
+    // eslint-disable-next-line no-control-regex -- se quitan caracteres de control a propósito
+    const CONTROL = /[\u0000-\u001f\u007f]/g;
+    const norm = (v: string) =>
+      v.replace(CONTROL, "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 50).trim();
+    const opts = () => [...list.querySelectorAll<HTMLAnchorElement>("[role=option]")];
+
+    const select = (i: number) => {
+      const o = opts();
+      active = i;
+      o.forEach((a, j) => (a.ariaSelected = String(j === i)));
+      if (o[i]) {
+        input.setAttribute("aria-activedescendant", o[i].id);
+        o[i].scrollIntoView({ block: "nearest" });
+      } else input.removeAttribute("aria-activedescendant");
+    };
+    const open = (show: boolean) => {
+      list.hidden = !show;
+      input.ariaExpanded = String(show);
+      select(-1);
+    };
+    const render = (html: string) => {
+      list.innerHTML = html;
+      live.textContent = list.querySelector("[data-suggest-status]")?.textContent?.trim() ?? "";
+      open(opts().length > 0);
+    };
+
+    const update = async () => {
+      const q = norm(input.value);
+      ctl?.abort();
+      if (q.length < 2) return open(false);
+      const hit = cache.get(q);
+      if (hit !== undefined) return render(hit);
+      ctl = new AbortController();
+      try {
+        const res = await fetch("/buscar/sugerencias/?" + new URLSearchParams({ q }), {
+          signal: ctl.signal,
+        });
+        if (!res.ok) return;
+        const html = await res.text();
+        cache.set(q, html);
+        if (norm(input.value) === q && document.activeElement === input) render(html);
+      } catch {
+        // Cancelada o sin red: sin sugerencias; el formulario sigue funcionando.
+      }
+    };
+
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(update, 200);
+    });
+    input.addEventListener("focus", update);
+    input.addEventListener("blur", () => open(false));
+    // Que pulsar una opción no quite el foco al campo (el blur cerraría la lista antes del clic).
+    list.addEventListener("mousedown", (e) => e.preventDefault());
+    input.addEventListener("keydown", (e) => {
+      const o = opts();
+      const n = o.length;
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && n) {
+        e.preventDefault();
+        if (list.hidden) open(true);
+        select(e.key === "ArrowDown" ? (active + 1) % n : active < 1 ? n - 1 : active - 1);
+      } else if (e.key === "Enter" && o[active] && !list.hidden) {
+        e.preventDefault();
+        location.href = o[active]!.href;
+      } else if (e.key === "Escape" && !list.hidden) {
+        e.preventDefault();
+        open(false);
+      }
+    });
+  }
+</script>

@@ -1,7 +1,7 @@
 # Fase 7 — Búsqueda y filtros
 
-> **Estado:** ✅ 7-1 completada (05-oct-2026, pendiente de push/PR: Gitea no accesible) · ⏳ 7-2 en planificación
-> **Rama/PR:** `docs/fase7-plan` (este plan) · implementación: `feat/fase7-1-busqueda`, `feat/fase7-2-autocompletado`
+> **Estado:** ✅ 7-1 completada · ✅ 7-2 completada (05-oct-2026; push/PR pendientes: Gitea no accesible)
+> **Rama/PR:** `docs/fase7-plan` (este plan) · implementación: `feat/fase7-1-busqueda`, `feat/fase7-2-sugerencias` (sobre la de 7-1)
 > **Anterior:** [Fase 5](./fase5.md) · **Siguiente:** por decidir (propuesta: Marca → 8 Emails)
 
 La fase se divide en dos subfases **independientes**. 7-2 solo añade JS encima de lo que entrega 7-1, que funciona completa sin JS.
@@ -9,7 +9,7 @@ La fase se divide en dos subfases **independientes**. 7-2 solo añade JS encima 
 | Subfase | Contenido                                                                                                                                                                     | JS en cliente                                                           |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | **7-1** | Índice de productos, `/buscar/` on-demand con búsqueda tolerante a erratas, filtros, orden y paginación (modo A), barra de búsqueda en la cabecera, experimento de navegación | 0 KB sin JS; con JS, `SearchLive` (811 B gzip, solo en `/buscar/`, D10) |
-| **7-2** | Sugerencias mientras se escribe y aplicar los filtros al marcar una casilla, sin pulsar Enter                                                                                 | script de Astro de **~1–3 KB gzip (estimado)**, cargado bajo demanda    |
+| **7-2** | Sugerencias mientras se escribe en la barra de la cabecera (productos y categorías)                                                                                           | `SiteClient` (862 B gzip, en todas las páginas, §2.7)                   |
 
 ## 0. Hallazgo que cambia el planteamiento (leer primero)
 
@@ -66,9 +66,10 @@ En los tres casos el storefront es **idéntico**: habla con `POST /store/search`
 
 ### 7-2 (JS mínimo, mejora progresiva)
 
-- [ ] Sugerencias mientras se escribe (combobox ARIA) a partir de 2 caracteres, con _debounce_; Enter sigue llevando a `/buscar/`.
-- [ ] Aplicar los filtros al cambiar una casilla (`form.requestSubmit()`). Sin JS sigue estando el botón "Aplicar".
-- [ ] El JS inicial del catálogo **no aumenta**: el script de sugerencias se carga con `import()` dinámico la primera vez que el campo recibe el foco.
+- [x] Sugerencias mientras se escribe (combobox ARIA) a partir de 2 caracteres, con _debounce_; Enter sin opción marcada sigue llevando a `/buscar/`.
+- [x] Productos (solo título) y hasta 2 categorías; "Ver todos los resultados".
+- [x] ~~Aplicar los filtros al cambiar una casilla~~: lo resuelve `SearchLive` en 7-1 (D10).
+- [x] ~~Cargar el script con `import()` al primer foco~~: medido, cuesta más que cargarlo entero (§2.7.1). Va como bundle propio en todas las páginas (D11).
 
 ## 2. Plan
 
@@ -343,32 +344,74 @@ Se mantienen **estáticas** (rendimiento y SEO, sin cambios) y añaden un bloque
   - Se **mantiene** si mejora y no empeora CLS ni accesibilidad.
   - Si no compensa, se retira y se queda para la fase 13.
 
-### 2.7 Subfase 7-2
+### 2.7 Subfase 7-2 (hecha)
 
-- `src/scripts/search-suggest.ts`:
-  - al primer `focus` del campo de la cabecera, `import()` del módulo;
-  - `fetch("/buscar/sugerencias.json?q=")` con un _debounce_ de 150 ms y `AbortController`;
-  - pinta una lista ARIA _combobox/listbox_ con flechas, Enter y Escape.
-- Endpoint Astro on-demand `/buscar/sugerencias.json` → `/store/search` con `fields: [title, handle, thumbnail]` y `take: 6`, cacheado 60 s.
-- ~~Auto-aplicar filtros~~: ya no hace falta, lo resuelve `SearchLive` en 7-1 (D10).
-- Presupuesto: JS inicial sin cambios (solo el cargador, menos de 0,3 KB estimados). Lo que se carga bajo demanda, ≤ 3 KB gzip.
-- e2e con JS: sugerencias y teclado. Sin JS: todo lo de 7-1 sigue funcionando.
+> Plan original (sustituido): cargador de ~0,3 KB con `import()` al primer foco, endpoint JSON con miniatura y ≤ 3 KB bajo demanda. Se cambió tras medir (§2.7.1) y por decisión del usuario: la barra debe comportarse **igual en todas las páginas** (también carrito, checkout y pedido, que no llevan `CartClient`).
+
+- **`SiteClient.astro`** (D11): JS común de la web, cargado por `BaseLayout` en **todas** las páginas como bundle en `/_astro/` (caché inmutable; `assetsInlineLimit`). Sin imports. Hoy solo hace las sugerencias; futuras funciones comunes (p. ej. cuenta, fase 9) irán aquí. **862 B gzip** (límite 1,5 KB, `check:budget`).
+  - Patrón combobox de la APG ("list autocomplete", sin selección automática). Los atributos `role="combobox"`, `aria-expanded`, `aria-controls` y `aria-autocomplete` los pone el script: sin JS el campo es un `searchbox` normal.
+  - Desde 2 caracteres, 200 ms después de dejar de escribir; caché por texto en la página y `AbortController`. Mismo normalizado que el servidor (minúsculas, espacios, ≤ 50), así que no hay 301.
+  - ↑/↓ (`aria-activedescendant`), Enter abre la opción marcada (sin opción, envía el formulario), Escape y perder el foco cierran. El recuento se anuncia en una región `aria-live`.
+- **`/buscar/sugerencias/`** (`partial = true`): fragmento HTML con ≤ 6 productos (solo título → ficha), ≤ 2 categorías (`«q» en Ropa` → `/buscar/?q=…&categoria=…`) y "Ver todos". Sin precio ni stock. Una consulta a `POST /store/search` (`lib/suggest.ts`): `fields: id,title,handle`, `take: 6` y la faceta `category_handles`. Los nombres salen de `getCategories()`.
+  - URL no canónica → 301. `Cache-Control: public, max-age=60, s-maxage=60, stale-while-revalidate=300`, `X-Robots-Tag: noindex`, 503 si el backend falla (el script no muestra nada).
+  - Caché en memoria por texto (`lib/suggest-server.ts`, `SEARCH_SUGGEST_CACHE_TTL`, 60 s, 500 entradas; reutiliza `CardCache`).
+- Búsqueda por **prefijo** solo en la última palabra (Meilisearch) y erratas desde 5 letras: `bufan` → bufandas, `jersei` → jerséis; `bufn` no sugiere nada (con 4 letras solo hay prefijo).
+
+#### 2.7.1 Mediciones
+
+Dónde cargar el script (build real, gzip, igual en home/categoría/ficha; esbozo de tamaño realista):
+
+| Variante                                      | Inline             | Ficheros                    | Total por página |
+| --------------------------------------------- | ------------------ | --------------------------- | ---------------- |
+| Sin sugerencias (7-1)                         | 949–1003 B         | `CartClient` 995            | ~1,95 KB         |
+| A · inline                                    | **1656–1707 B** ❌ | 995                         | ~2,65 KB         |
+| B1 · bundle propio + `import()` al foco       | igual              | 995 + **877** + 753 al foco | 1,87 + 0,75 KB   |
+| **B2 · bundle propio, sin imports (elegida)** | igual              | 995 + 786                   | 1,78 KB          |
+| C1 · dentro de `CartClient`                   | igual              | 1584                        | 1,58 KB          |
+| C2 · dentro de `CartClient` + `import()`      | igual              | 1723 + 753 al foco          | 1,72 + 0,75 KB   |
+
+- Cualquier `import()` dinámico añade **~750 B** del helper de precarga de Vite (`__vitePreload`). Vite 8.3.2 lo inserta siempre en builds de cliente salvo en modo librería y workers; `build.modulePreload: false` no lo quita (código instalado: `getInsertPreload`). Cargar bajo demanda un módulo de < 1 KB no compensa.
+- C no da sugerencias en carrito/checkout/pedido (no llevan `CartClient`): descartada por coherencia. B2 cuesta ~200 B y una petición más (una vez: caché inmutable).
+
+Categorías en la misma consulta (20 prefijos × 3, 3 rondas, backend `develop`): p50 7,1–7,7 ms → 7,1–7,5 ms; CPU de Medusa 5,2–5,8 → 4,8–5,2 ms/petición (con 2 picos de 11–12 ms); +100 B por respuesta. **Sin coste apreciable**.
+
+Endpoint completo (Astro `start` + Medusa `develop`, local):
+
+| Caso                         | p50     | CPU Astro   | CPU Medusa   |
+| ---------------------------- | ------- | ----------- | ------------ |
+| Texto nuevo (fallo de caché) | 2–12 ms | 2–5 ms/pet. | 3–11 ms/pet. |
+| Texto repetido (caché Astro) | 1,8 ms  | 1–2 ms/pet. | 0            |
+
+#### 2.7.2 Caché con Cloudflare (fase 11)
+
+Política conjunta; cada capa cubre algo distinto:
+
+| Capa                 | Qué cubre                                                                                          | TTL                                       |
+| -------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Navegador            | el mismo usuario borra y vuelve a escribir (más la `Map` de `SiteClient`)                          | `max-age=60`                              |
+| Cloudflare           | textos que escriben muchos usuarios ("ca", "cam"…)                                                 | `s-maxage=60, stale-while-revalidate=300` |
+| Astro (500 entradas) | lo que llega al origen: fallos de Cloudflare, cada nodo de la CDN por separado, peticiones sin CDN | `SEARCH_SUGGEST_CACHE_TTL` (60 s)         |
+
+- Con Cloudflare, la de Astro recibirá mucho menos tráfico, pero cuesta casi nada (< 1 MB, 0 CPU en reposo) y protege al VPS ante purgas o _bypass_. En la fase 11 se mide el porcentaje de aciertos de Cloudflare; si es muy alto, `SEARCH_SUGGEST_CACHE_TTL=0` la apaga sin tocar código.
+- Desfase máximo: ~60 s (Astro) + 60 s (CDN). En sugerencias (solo títulos) es irrelevante. Lo mismo aplica a `/buscar/` (D9).
+- Fase 11: limitar la frecuencia (_rate limiting_) de `/buscar/sugerencias/` junto con `/buscar/`.
 
 ## 3. Decisiones
 
-| #   | Decisión                                                                                                                                                                               | Motivo                                                                                                                                                        | Fuente consultada                                                               |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| D1  | Motor: **A, Meilisearch** como proveedor del Search Module, tras el spike C vs A (§2.0.1–2.0.2)                                                                                        | Medusa 2.21 ya trae un Search Module; Meilisearch gana en latencia y relevancia                                                                               | docs Medusa Search Module, código instalado                                     |
-| D2  | **No hace falta el árbol definitivo de opciones** ahora. Las opciones se indexan de forma genérica como `"Título:valor"` y las facetas se generan a partir de lo que devuelve el motor | Los datos reales se pueden cargar después sin tocar código. Basta con decidir **qué títulos son filtrables** y en qué orden se muestran (una lista en config) | guía _Index Option Values as a Facet_                                           |
-| D2b | En producción, usar **opciones globales** (`is_exclusive: false`) para Talla, Color, Tamaño…                                                                                           | Así "Rojo" es el mismo valor en todos los productos y la faceta suma bien. Con opciones exclusivas por producto se fragmentan ("rojo" frente a "Rojo")        | tipos de `@medusajs/types` 2.21.2 (`is_exclusive`, `@since 2.16.0`)             |
-| D3  | Facetas: categoría, etiquetas, opciones, precio, disponibilidad. **Tipo de producto no**                                                                                               | El tipo se usa para el IVA                                                                                                                                    | —                                                                               |
-| D4  | Categorías estáticas + formulario que lleva a `/buscar/?categoria=`                                                                                                                    | Mantiene el HTML estático y el SEO                                                                                                                            | AGENTS §3.1                                                                     |
-| D5  | Barra de búsqueda con erratas en **7-1** (formulario GET en la cabecera, 0 JS); las sugerencias en 7-2                                                                                 | La tolerancia a erratas la da el motor en el servidor; no necesita JS                                                                                         | —                                                                               |
-| D6  | Imágenes en `/buscar/`: reutilizar las miniaturas del build (`card-images.json`, no público)                                                                                           | Evita sharp en cada petición                                                                                                                                  | astro-docs (Image Service: los servicios locales usan un endpoint en on-demand) |
-| D7  | Experimento VT medido en demos (§2.3.2): **VT desactivadas** por ahora; Speculation Rules a la fase 13                                                                                 | Petición del usuario; el efecto apenas se notaba y retrasa "listo" ~250 ms                                                                                    | astro-docs (view transitions, prefetch/clientPrerender)                         |
-| D8  | Mantener `in_stock` al día: **L, por lotes cada 5 min** con un scheduled job (§2.1.1); descartados por evento, nocturno y solo al cruzar 0                                             | CPU de un VPS compartido; el filtro tolera minutos de retraso                                                                                                 | llms-full.txt (Scheduled Jobs, Reindexing), tipos `SearchReindexInput` 2.21.2   |
-| D9  | Caché: **solo la de Astro** (tarjetas por id, TTL 30 s); `MEDUSA_FF_CACHING` apagado                                                                                                   | Menos CPU por petición en tráfico mixto (43 frente a 92 ms) y acierta en búsquedas distintas; la de Medusa falla en búsquedas nuevas y está `[WIP]`           | banco §2.3.1; código instalado de `@medusajs/framework` (feature flags)         |
-| D10 | Filtros: **híbrido "M3 sobre M1"** (enlaces sin JS; en el sitio con `SearchLive`, ≤ 1 KB); view transitions desactivadas por ahora                                                     | Medición de las 4 demos (§2.3.2); el usuario prefiere no recargar y mantener 0 JS como base                                                                   | astro-docs (page partials, script processing)                                   |
+| #   | Decisión                                                                                                                                                                               | Motivo                                                                                                                                                        | Fuente consultada                                                                 |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| D1  | Motor: **A, Meilisearch** como proveedor del Search Module, tras el spike C vs A (§2.0.1–2.0.2)                                                                                        | Medusa 2.21 ya trae un Search Module; Meilisearch gana en latencia y relevancia                                                                               | docs Medusa Search Module, código instalado                                       |
+| D2  | **No hace falta el árbol definitivo de opciones** ahora. Las opciones se indexan de forma genérica como `"Título:valor"` y las facetas se generan a partir de lo que devuelve el motor | Los datos reales se pueden cargar después sin tocar código. Basta con decidir **qué títulos son filtrables** y en qué orden se muestran (una lista en config) | guía _Index Option Values as a Facet_                                             |
+| D2b | En producción, usar **opciones globales** (`is_exclusive: false`) para Talla, Color, Tamaño…                                                                                           | Así "Rojo" es el mismo valor en todos los productos y la faceta suma bien. Con opciones exclusivas por producto se fragmentan ("rojo" frente a "Rojo")        | tipos de `@medusajs/types` 2.21.2 (`is_exclusive`, `@since 2.16.0`)               |
+| D3  | Facetas: categoría, etiquetas, opciones, precio, disponibilidad. **Tipo de producto no**                                                                                               | El tipo se usa para el IVA                                                                                                                                    | —                                                                                 |
+| D4  | Categorías estáticas + formulario que lleva a `/buscar/?categoria=`                                                                                                                    | Mantiene el HTML estático y el SEO                                                                                                                            | AGENTS §3.1                                                                       |
+| D5  | Barra de búsqueda con erratas en **7-1** (formulario GET en la cabecera, 0 JS); las sugerencias en 7-2                                                                                 | La tolerancia a erratas la da el motor en el servidor; no necesita JS                                                                                         | —                                                                                 |
+| D6  | Imágenes en `/buscar/`: reutilizar las miniaturas del build (`card-images.json`, no público)                                                                                           | Evita sharp en cada petición                                                                                                                                  | astro-docs (Image Service: los servicios locales usan un endpoint en on-demand)   |
+| D7  | Experimento VT medido en demos (§2.3.2): **VT desactivadas** por ahora; Speculation Rules a la fase 13                                                                                 | Petición del usuario; el efecto apenas se notaba y retrasa "listo" ~250 ms                                                                                    | astro-docs (view transitions, prefetch/clientPrerender)                           |
+| D8  | Mantener `in_stock` al día: **L, por lotes cada 5 min** con un scheduled job (§2.1.1); descartados por evento, nocturno y solo al cruzar 0                                             | CPU de un VPS compartido; el filtro tolera minutos de retraso                                                                                                 | llms-full.txt (Scheduled Jobs, Reindexing), tipos `SearchReindexInput` 2.21.2     |
+| D9  | Caché: **solo la de Astro** (tarjetas por id, TTL 30 s); `MEDUSA_FF_CACHING` apagado                                                                                                   | Menos CPU por petición en tráfico mixto (43 frente a 92 ms) y acierta en búsquedas distintas; la de Medusa falla en búsquedas nuevas y está `[WIP]`           | banco §2.3.1; código instalado de `@medusajs/framework` (feature flags)           |
+| D11 | Sugerencias: **bundle propio `SiteClient`** (≤ 1,5 KB, en todas las páginas, sin `import()`), solo títulos + ≤ 2 categorías; caché en Astro 60 s + Cloudflare (§2.7.2)                 | Medición de 6 variantes (§2.7.1); el usuario quiere la barra igual en todas las páginas y un sitio para el JS común futuro                                    | código instalado de Vite 8.3.2, astro-docs (scripts, page partials), APG combobox |
+| D10 | Filtros: **híbrido "M3 sobre M1"** (enlaces sin JS; en el sitio con `SearchLive`, ≤ 1 KB); view transitions desactivadas por ahora                                                     | Medición de las 4 demos (§2.3.2); el usuario prefiere no recargar y mantener 0 JS como base                                                                   | astro-docs (page partials, script processing)                                     |
 
 ## 4. Cómo usarlo
 
@@ -381,23 +424,27 @@ pnpm --filter backend exec medusa db:migrate   # tras cambiar src/search/*.ts
 - `/buscar/?q=…` (también desde la barra de la cabecera). La URL es el estado: `categoria`, `etiqueta`, `opcion=Talla:M`, `precio_min`, `precio_max`, `disponible=1`, `orden`, `pagina`. Las no canónicas responden 301.
 - Variables del storefront (runtime, `apps/storefront/.env.example`):
   - `SEARCH_CARD_CACHE_TTL` (s, por defecto 30; 0 = sin caché de tarjetas, D9);
+  - `SEARCH_SUGGEST_CACHE_TTL` (s, por defecto 60; 0 = sin caché de sugerencias, D11);
   - `SERVER_TIMING=true` → cabecera `Server-Timing` (`search`, `categories`, `cards`, `data`) en `/buscar/` y `/buscar/parcial/`.
 - Backend: `SEARCH_STOCK_SYNC_CRON` (por defecto cada 5 min, D8). Sin `MEILISEARCH_HOST` (tests/CI) se usa el proveedor PostgreSQL.
 
 ## 5. Cómo testear
 
 ```bash
-pnpm lint && pnpm format:check && pnpm typecheck && pnpm test   # 70 unit del storefront
+pnpm lint && pnpm format:check && pnpm typecheck && pnpm test   # 78 unit del storefront
 pnpm --filter backend test:integration:http                    # índice, búsqueda y job de stock
 pnpm --filter storefront build && pnpm --filter storefront check:budget
-# → OK; CartClient ~992 B, SearchLive ~811 B (≤ 1 KB), inline ≤ 1,2 KB
+# → OK; CartClient ~992 B, SiteClient ~862 B (≤ 1,5 KB), SearchLive ~811 B (≤ 1 KB), inline ≤ 1,2 KB
 cd apps/storefront && pnpm start &                              # :4321, con backend en marcha
-pnpm --filter storefront test:e2e                               # 51 en verde (escritorio + móvil)
+pnpm --filter storefront test:e2e                               # todo en verde (escritorio + móvil)
 curl -sI 'localhost:4321/buscar/?q=bufnda' | head -1           # 200; la página muestra "Bufanda…"
 curl -sI 'localhost:4321/buscar/tarjetas.json' | head -1        # 404 (manifiesto no público)
+curl -s 'localhost:4321/buscar/sugerencias/?q=bufan'            # fragmento: bufandas, «bufan» en Accesorios, Ver todos
 ```
 
 Manual: en `/buscar/?categoria=ropa`, con JS desactivado cada casilla navega y abre en su grupo; con JS, se aplica sin recargar, con foco y scroll, y "atrás" deshace el filtro.
+
+Manual (7-2): escribir `cami` en la cabecera (también en `/carrito/`) → lista con camisetas, «cami» en Ropa y "Ver todos"; ↓/↑ marcan, Enter abre, Escape cierra; con lector de pantalla se anuncia el recuento. Sin JS: no hay lista y Enter busca.
 
 ## 6. Criterio de salida
 
@@ -410,7 +457,11 @@ Manual: en `/buscar/?categoria=ropa`, con JS desactivado cada casilla navega y a
   - [x] < 50 ms en la búsqueda del backend (Meilisearch: 5–11 ms p50 local);
   - [x] e2e en verde (51);
   - [x] experimento medido y decidido (D7, D10).
-- **7-2**: sugerencias accesibles con el teclado; el JS inicial del catálogo no cambia y lo cargado bajo demanda pesa ≤ 3 KB gzip; e2e en verde.
+- **7-2** ✅:
+  - [x] sugerencias accesibles con el teclado (combobox APG, e2e);
+  - [x] JS: `SiteClient` 862 B gzip en todas las páginas (excepción aprobada, D11; el criterio original "sin cambios en el JS inicial" se sustituyó tras medir, §2.7.1);
+  - [x] categorías sin coste apreciable (§2.7.1); sin JS todo funciona igual;
+  - [x] e2e en verde (`e2e/sugerencias.spec.ts`).
 
 ## 7. Pendientes / riesgos
 
@@ -427,4 +478,6 @@ Manual: en `/buscar/?categoria=ropa`, con JS desactivado cada casilla navega y a
 - **Productos creados después del último build** salen en `/buscar/` con la imagen genérica hasta el siguiente build (D6).
 - **Datos mock**: la opción "Formato" la comparten 200 productos, así que la regla de "≥ 2 productos" no la oculta y sale en los filtros de las categorías. Es un problema de los datos mock, no del código.
 - **Las opciones combinadas** ("Rojo" + "M") se cumplen por producto, no por la misma variante (§2.3.1).
-- Rama rebasada sobre `main` (PR #23 de Renovate; lockfile regenerado con pnpm 12.9.1). Pendiente: push y PR.
+- **Sugerencias (7-2)**: el fragmento se inserta con `innerHTML` (mismo origen, sin `<script>`; la CSP de la fase 11 no necesita hash). Cada pulsación con ≥ 2 letras puede ser una petición al origen si la CDN falla: `rate limiting` en la fase 11 y caché de Astro (§2.7.2).
+- Las erratas solo se toleran desde 5 letras (configuración por defecto de Meilisearch): `bufn` no sugiere nada. Si molesta, se ajusta `typoTolerance.minWordSizeForTypos` del índice en el backend (no desde el storefront).
+- Ramas rebasadas sobre `main` (PR #23 de Renovate; lockfile regenerado con pnpm 12.9.1). Pendiente: push y PR de 7-1 y después de 7-2.

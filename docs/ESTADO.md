@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 05-oct-2026 · fase 7-1 cerrada en local (`feat/fase7-1-busqueda`, sin push: Gitea no accesible); siguiente, plan de 7-2.
+> Última actualización: 05-oct-2026 · fases 7-1 y 7-2 cerradas en local (`feat/fase7-1-busqueda`, `feat/fase7-2-sugerencias`, rebasadas sobre `main`; falta push + PR).
 
 ## 1. Dónde estamos
 
@@ -17,7 +17,7 @@
 | 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)     |
 | 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)     |
 | 7-1 Búsqueda + filtros (sin push/PR aún)    | ✅     | [fase7.md](./fases/fase7.md)     |
-| 7-2 Sugerencias                             | ⏳     | [fase7.md](./fases/fase7.md)     |
+| 7-2 Sugerencias (sin push/PR aún)           | ✅     | [fase7.md](./fases/fase7.md)     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -115,7 +115,10 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
     - las demos de filtros (`/demo/filtros/*`, `DEMO_FILTERS`) se usaron para decidir D10 y **ya están borradas**.
   - El storefront **no** debe enviar `search_options.typo_tolerance`: Meilisearch lo rechaza.
   - ⚠️ **Riesgo de CPU (D8 = L)**: `in_stock` **no** se reindexa con cada cambio de stock ni de reservas (costaría CPU en cada pedido, en un VPS compartido). El job `search-stock-sync` (cada 5 min, `SEARCH_STOCK_SYNC_CRON`) agrupa los cambios y reindexa solo esos productos. No añadir eventos de inventario al índice ([fase7.md](./fases/fase7.md) §2.1 y §2.1.1).
-- **Siguiente: plan de la fase 7-2** (sugerencias mientras se escribe, fase7.md §2.7). Requiere plan + confirmación (REGLA Nº 1).
+- **Fase 7-2 (sugerencias): cerrada en local** en `feat/fase7-2-sugerencias`, encima de la rama de 7-1 ([fase7.md](./fases/fase7.md) §2.7, D11):
+  - `SiteClient` (862 B gzip, ≤ 1,5 KB): JS común de **todas** las páginas (vía `BaseLayout`); hoy, el combobox de sugerencias de la cabecera. Sin `import()` dinámico (Vite añade ~750 B de helper);
+  - `/buscar/sugerencias/`: fragmento con ≤ 6 títulos, ≤ 2 categorías y "Ver todos"; caché 60 s en navegador/CDN y en Astro (`SEARCH_SUGGEST_CACHE_TTL`); política con Cloudflare en §2.7.2.
+- **Siguiente**: subir 7-1 y 7-2 cuando vuelva Gitea; después, decidir la siguiente fase (propuesta: Marca → 8 Emails).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).

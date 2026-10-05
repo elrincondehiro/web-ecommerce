@@ -1,4 +1,5 @@
-// Caché EN MEMORIA de tarjetas (precio y stock) por id de producto (fase 7-1, punto 3b, a prueba).
+// Caché EN MEMORIA con TTL y tope de entradas (fase 7-1, D9). Uso principal: tarjetas (precio y
+// stock) por id de producto; también las sugerencias por texto (fase 7-2, get/set).
 // /buscar/ pide ≤ 24 ids por página; con caché solo se piden a Medusa los que faltan o caducaron.
 // - TTL corto (30 s por defecto): el precio/stock de /buscar/ puede ir hasta 30 s por detrás
 //   (además de los 60 s de s-maxage de la CDN). El carrito y el checkout validan siempre.
@@ -56,7 +57,13 @@ export class CardCache<T> {
     return this.map.size;
   }
 
-  private set(id: string, value: T, now: number) {
+  /** Valor vigente de una clave, o undefined. */
+  get(key: string): T | undefined {
+    const entry = this.map.get(key);
+    return entry && entry.expires > this.now() ? entry.value : undefined;
+  }
+
+  set(id: string, value: T, now = this.now()) {
     this.map.delete(id); // reinsertar = pasa al final (más reciente)
     this.map.set(id, { value, expires: now + this.ttlMs });
     while (this.map.size > this.maxEntries) {

@@ -1,0 +1,65 @@
+---
+// Sugerencias de búsqueda (fase 7-2): fragmento HTML (sin <html>) que pide el script de
+// SiteClient.astro mientras se escribe en la barra de la cabecera. Una consulta a
+// POST /store/search (lib/suggest.ts): ≤ 6 productos (solo título → ficha) y ≤ 2 categorías,
+// más "Ver todos los resultados". Sin precio ni stock. Sin JS no se usa nunca.
+// - URL canónica (?q normalizado): si no lo es → 301; así hay una sola entrada de caché.
+// - Caché: navegador y CDN 60 s (+ SWR) y en memoria del proceso (SEARCH_SUGGEST_CACHE_TTL,
+//   500 entradas, lib/suggest-server.ts); fase7.md §2.7.
+// Fuente: astro-docs (basics/astro-pages#page-partials).
+import { getSuggestions } from "$lib/suggest-server";
+import { SUGGEST_PATH, normalizeSuggestQuery, type Suggestions } from "$lib/suggest";
+
+export const prerender = false;
+export const partial = true;
+
+const q = normalizeSuggestQuery(Astro.url.searchParams.get("q"));
+const canonical = q ? new URLSearchParams({ q }).toString() : "";
+if (canonical !== Astro.url.searchParams.toString()) {
+  return Astro.redirect(canonical ? `${SUGGEST_PATH}?${canonical}` : SUGGEST_PATH, 301);
+}
+
+let s: Suggestions | undefined;
+if (q) {
+  try {
+    s = await getSuggestions(q);
+  } catch {
+    return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+}
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
+);
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+const count = s ? s.products.length + s.categories.length : 0;
+let n = 0;
+const id = () => `sug-${n++}`;
+---
+
+{s && count > 0 && (
+  <>
+    {s.products.map((p) => (
+      <a id={id()} href={p.href} role="option" aria-selected="false" class="suggest-option">
+        {p.title}
+      </a>
+    ))}
+    {s.categories.map((c) => (
+      <a id={id()} href={c.href} role="option" aria-selected="false" class="suggest-option">
+        <span class="text-muted-foreground">«{s.q}» en</span> {c.name}
+      </a>
+    ))}
+    <a
+      id={id()}
+      href={s.all}
+      role="option"
+      aria-selected="false"
+      class="suggest-option suggest-all"
+    >
+      Ver todos los resultados para «{s.q}»
+    </a>
+  </>
+)}
+<p hidden data-suggest-status>
+  {count === 0 ? "Sin sugerencias" : count === 1 ? "1 sugerencia" : `${count} sugerencias`}
+</p>
