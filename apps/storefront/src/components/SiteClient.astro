@@ -10,6 +10,9 @@
 //   - ↑/↓ recorren las opciones (aria-activedescendant), Enter abre la marcada (si no hay
 //     ninguna, envía el formulario), Escape cierra; al perder el foco se cierra;
 //   - el recuento se anuncia en [data-suggest-live].
+// También el selector de tema claro/oscuro (I-Marca): botón [data-theme-toggle], oculto sin JS.
+// Sin elección guardada la web sigue al sistema (CSS); al pulsar se fija el contrario del
+// efectivo y se guarda en localStorage ("tema"; src/lib/theme-init.ts lo aplica antes de pintar).
 // Sin JS no hay sugerencias: el formulario GET a /buscar/ funciona igual. Los atributos ARIA
 // del combobox los pone este script (sin JS el campo es un <input type="search"> normal).
 // Fuente: APG (w3c/wai-aria-practices, combobox-autocomplete-list), astro-docs (scripts).
@@ -18,6 +21,31 @@
 <p class="sr-only" aria-live="polite" data-suggest-live></p>
 
 <script>
+  const themeBtn = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  if (themeBtn) {
+    const root = document.documentElement;
+    const isDark = () =>
+      (root.dataset.theme ??
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+    const label = () =>
+      themeBtn.setAttribute(
+        "aria-label",
+        isDark() ? "Cambiar a modo claro" : "Cambiar a modo oscuro",
+      );
+    label();
+    themeBtn.hidden = false;
+    themeBtn.addEventListener("click", () => {
+      const next = isDark() ? "light" : "dark";
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem("tema", next);
+      } catch {
+        // almacenamiento bloqueado: el cambio vale solo para esta página
+      }
+      label();
+    });
+  }
+
   const input = document.getElementById("buscar-q") as HTMLInputElement | null;
   const list = document.getElementById("buscar-sug");
   const live = document.querySelector("[data-suggest-live]");

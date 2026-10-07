@@ -1,79 +1,128 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+/*
+ * Tema (I-Marca). Colores de marca: azul #19799D y rosa #F883A1 (accent). En claro el azul
+ *   de los textos y botones (--primary) es #16708F, algo más oscuro, para mantener el AA sobre el
+ *   fondo crema; #19799D queda para el logo y los iconos.
+ * Contraste AA comprobado en src/lib/theme.test.ts (lee los hex de los comentarios de abajo):
+ *   - el rosa NO sirve para texto sobre fondo claro (2,4:1): solo como FONDO con texto
+ *     oscuro (--accent-foreground); para texto rosa, --accent-text;
+ *   - en oscuro el azul se aclara (#5CBCE0) para mantener el contraste sobre fondo oscuro.
+ * Modo oscuro: sigue al sistema (prefers-color-scheme) salvo que <html data-theme="light|dark">
+ * lo fije (selector de tema, I-Marca paso 4). `dark:` de Tailwind usa la misma regla.
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Claro: en :root y en cualquier bloque [data-theme="light"] (p. ej. una sección clara dentro
+   del modo oscuro, o la comparación de /estilo/). */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --background: oklch(0.936 0.02 70); /* #F3E8DC */
+  --foreground: oklch(0.293 0.04 228.4); /* #14303C */
+  --card: oklch(1 0 0); /* #FFFFFF */
+  --popover: oklch(1 0 0); /* #FFFFFF */
+  --primary: oklch(0.51 0.092 227.2); /* #16708F */
+  --primary-foreground: oklch(1 0 0); /* #FFFFFF */
+  --secondary: oklch(0.952 0.018 223.6); /* #E3F2F8 */
+  --secondary-foreground: oklch(0.391 0.07 228.6); /* #0E4C63 */
+  --muted: oklch(0.909 0.02 70); /* #EADFD3 */
+  --muted-foreground: oklch(0.481 0.024 239.1); /* #52606A */
+  --accent: oklch(0.748 0.145 4.9); /* #F883A1 */
+  --accent-foreground: oklch(0.244 0.079 6.6); /* #3D0A1A */
+  --accent-text: oklch(0.534 0.168 8.1); /* #B8355A */
+  --destructive: oklch(0.53 0.192 28.7); /* #C2271F */
+  --destructive-foreground: oklch(1 0 0); /* #FFFFFF */
+  --success: oklch(0.47 0.111 146.9); /* #276B33 */
+  --border: oklch(0.861 0.023 67.5); /* #DCCFC2 */
+  --line: var(--foreground); /* trazo de marca: bordes y sombras sólidas */
+  --radius: 0; /* Retro 80: esquinas rectas (rounded-full se mantiene en contadores y chips) */
+}
+
+/* Alias: se recalculan en cada elemento con data-theme (si no, una sección anidada heredaría
+   el valor ya resuelto del tema de la página). */
+:root,
+[data-theme] {
+  --card-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --input: var(--line);
+  --ring: var(--primary);
+  /* Tokens de shadcn-svelte sin uso hoy (Sidebar, Chart): alias de la paleta de marca, para que
+     un componente que se añada con la CLI salga ya con los colores del tema. */
+  --chart-1: var(--primary);
+  --chart-2: var(--accent);
+  --chart-3: var(--success);
+  --chart-4: var(--accent-text);
+  --chart-5: var(--muted-foreground);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--ring);
+}
+
+/* Oscuro: mismo bloque para la elección explícita y para la preferencia del sistema (si no se
+   ha elegido "claro"). Mantener los dos IGUALES (theme.test.ts lo comprueba). */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: oklch(0.316 0.024 233.5); /* #26343C */
+  --foreground: oklch(0.973 0.004 214.3); /* #F3F7F8 */
+  --card: oklch(0.382 0.027 230); /* #34464F */
+  --popover: oklch(0.382 0.027 230); /* #34464F */
+  --primary: oklch(0.764 0.103 225.6); /* #62C0E4 */
+  --primary-foreground: oklch(0.237 0.042 228.6); /* #04222E */
+  --secondary: oklch(0.429 0.052 228.7); /* #2F5566 */
+  --secondary-foreground: oklch(0.956 0.02 220.9); /* #E3F4FA */
+  --muted: oklch(0.357 0.025 229.9); /* #2F3F47 */
+  --muted-foreground: oklch(0.81 0.02 225.8); /* #B4C4CB */
+  --accent-foreground: oklch(0.196 0.061 3.8); /* #2A0612 */
+  --accent-text: oklch(0.799 0.123 3.4); /* #FF9BB5 */
+  --destructive: oklch(0.733 0.164 26.2); /* #FF7A70 */
+  --destructive-foreground: oklch(0.2 0.06 25); /* #2A0B08 */
+  --success: oklch(0.776 0.145 147.8); /* #6FCF7F */
+  --border: oklch(0.135 0.009 224.8); /* #05090B */
+  --line: oklch(0.135 0.009 224.8); /* #05090B */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --background: oklch(0.316 0.024 233.5); /* #26343C */
+    --foreground: oklch(0.973 0.004 214.3); /* #F3F7F8 */
+    --card: oklch(0.382 0.027 230); /* #34464F */
+    --popover: oklch(0.382 0.027 230); /* #34464F */
+    --primary: oklch(0.764 0.103 225.6); /* #62C0E4 */
+    --primary-foreground: oklch(0.237 0.042 228.6); /* #04222E */
+    --secondary: oklch(0.429 0.052 228.7); /* #2F5566 */
+    --secondary-foreground: oklch(0.956 0.02 220.9); /* #E3F4FA */
+    --muted: oklch(0.357 0.025 229.9); /* #2F3F47 */
+    --muted-foreground: oklch(0.81 0.02 225.8); /* #B4C4CB */
+    --accent-foreground: oklch(0.196 0.061 3.8); /* #2A0612 */
+    --accent-text: oklch(0.799 0.123 3.4); /* #FF9BB5 */
+    --destructive: oklch(0.733 0.164 26.2); /* #FF7A70 */
+    --destructive-foreground: oklch(0.2 0.06 25); /* #2A0B08 */
+    --success: oklch(0.776 0.145 147.8); /* #6FCF7F */
+    --border: oklch(0.135 0.009 224.8); /* #05090B */
+    --line: oklch(0.135 0.009 224.8); /* #05090B */
+  }
 }
 
 @theme inline {
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-nunito-sans);
+  --font-display: var(--font-baloo);
+  --color-line: var(--line);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -87,10 +136,19 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  /* Sombras sólidas desplazadas (Retro 80) */
+  --shadow-xs: 2px 2px 0 0 var(--line);
+  --shadow-sm: 3px 3px 0 0 var(--line);
+  --shadow: 4px 4px 0 0 var(--line);
+  --shadow-md: 6px 6px 0 0 var(--line);
+  --shadow-lg: 8px 8px 0 0 var(--line);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-accent-text: var(--accent-text);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -123,6 +181,12 @@
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display font-bold;
   }
 }
 
@@ -182,7 +246,8 @@
   font-size: 0.875rem;
   background: var(--foreground);
   color: var(--background);
-  box-shadow: 0 8px 24px oklch(0 0 0 / 0.2);
+  border: 2px solid var(--line);
+  box-shadow: var(--shadow);
   transition:
     opacity 200ms ease,
     translate 200ms ease;
@@ -193,7 +258,7 @@
 }
 .toast-error {
   background: var(--destructive);
-  color: oklch(1 0 0);
+  color: var(--destructive-foreground);
 }
 .toast.out {
   opacity: 0;
@@ -265,7 +330,7 @@
   height: 85dvh;
   max-height: 85dvh;
   border: 0;
-  border-top: 1px solid var(--border);
+  border-top: 3px solid var(--line);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: 0;
   background: var(--background);
@@ -408,12 +473,12 @@
   z-index: 40;
   max-height: min(24rem, 70dvh);
   overflow-y: auto;
-  border: 1px solid var(--border);
+  border: 2px solid var(--line);
   border-radius: var(--radius-md);
   padding: 0.25rem;
   background: var(--popover);
   color: var(--popover-foreground);
-  box-shadow: 0 8px 24px oklch(0 0 0 / 0.12);
+  box-shadow: var(--shadow);
 }
 @media (min-width: 640px) {
   /* Campo estrecho (14–16rem): la lista puede ser más ancha, alineada a la derecha. */

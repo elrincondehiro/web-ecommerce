@@ -1,0 +1,11 @@
+---
+// Aplica el tema guardado antes de pintar (ver src/lib/theme-init.ts). Mismo patrón que
+// LiveSync: script estático con su hash registrado en la CSP (solo con CSP_ENABLED, astro.config.mjs).
+import { createHash } from "node:crypto";
+import { THEME_INIT } from "$lib/theme-init";
+
+const hash = `sha256-${createHash("sha256").update(THEME_INIT).digest("base64")}` as const;
+if (import.meta.env.CSP_ENABLED) Astro.csp?.insertScriptHash(hash);
+---
+
+<script is:inline set:html={THEME_INIT} />

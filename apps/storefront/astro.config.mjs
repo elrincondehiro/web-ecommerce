@@ -22,6 +22,14 @@ const IMAGE_BASE_URL = new URL(
   process.env.IMAGE_BASE_URL ?? dotenv.IMAGE_BASE_URL ?? "http://localhost:8333/medusa",
 );
 
+/**
+ * CSP por hashes de Astro (`security.csp`), prevista para la fase 11. Una sola constante activa la
+ * CSP y, vía `import.meta.env.CSP_ENABLED`, el registro de hashes de los scripts inline propios
+ * (LiveSync, ThemeInit). Sin CSP no se toca `Astro.csp`: Astro avisa en cada página del build si
+ * se usa sin CSP configurada (astro 7.3.5, core/fetch/fetch-state.js getCsp).
+ */
+const CSP_ENABLED = false;
+
 const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal/"];
 
 /**
@@ -76,14 +84,23 @@ export default defineConfig({
   // runtime de sesiones del bundle de servidor (astro-docs: configuration-reference#session).
   session: false,
   fonts: [
+    // I-Marca: titulares Baloo 2 y texto Nunito Sans (reemplazan a Inter). Ficheros estáticos de
+    // los pesos usados (no la variable completa); solo se precarga el del texto base (BaseLayout).
+    // font-display: swap (por defecto) + fallback con métricas ajustadas → CLS 0. Fase 6.
     {
       provider: fontProviders.fontsource(),
-      name: "Inter",
-      cssVariable: "--font-inter",
-      // Ficheros estáticos de los pesos usados (400/500/600, ~24 KB c/u) en vez del variable
-      // 100–900 (72 KB): solo se precarga el 400 (BaseLayout), que ya no compite con la imagen LCP.
-      // font-display: swap (por defecto) + fallback con métricas ajustadas → CLS 0. Fase 6.
-      weights: [400, 500, 600],
+      name: "Nunito Sans",
+      cssVariable: "--font-nunito-sans",
+      weights: [400, 600, 700],
+      styles: ["normal"],
+      subsets: ["latin"],
+      fallbacks: ["sans-serif"],
+    },
+    {
+      provider: fontProviders.fontsource(),
+      name: "Baloo 2",
+      cssVariable: "--font-baloo",
+      weights: [600, 700],
       styles: ["normal"],
       subsets: ["latin"],
       fallbacks: ["sans-serif"],
@@ -176,7 +193,9 @@ export default defineConfig({
       }),
     },
   },
+  ...(CSP_ENABLED ? { security: { csp: true } } : {}),
   vite: {
+    define: { "import.meta.env.CSP_ENABLED": JSON.stringify(CSP_ENABLED) },
     plugins: [tailwindcss()],
     build: {
       // Scripts propios que van como bundle en /_astro/ (caché inmutable, se descargan una vez)

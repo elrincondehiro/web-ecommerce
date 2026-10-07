@@ -11,7 +11,7 @@ import { CART_PATH, NOTICES, NOTICE_CODES, isErrorNotice } from "$lib/cart";
       id={`carrito-${code}`}
       tabindex="-1"
       class:list={[
-        "cart-notice mb-6 rounded-md border px-4 py-3 text-sm",
+        "cart-notice mb-6 rounded-md border-2 border-line px-4 py-3 text-sm",
         isErrorNotice(code) ? "border-destructive/40 text-destructive" : "bg-muted",
       ]}
     >

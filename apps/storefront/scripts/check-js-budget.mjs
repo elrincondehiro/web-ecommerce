@@ -30,7 +30,7 @@ const ZERO_JS = [
 const PAYMENT_BUNDLE = /^StripePayment\.[^/]*\.js$/;
 const PAYMENT_GZIP_MAX = 30 * 1024;
 /** Máximo de JS inline (gzip) por página: runtime de server islands + LiveSync. */
-const INLINE_GZIP_MAX = 1229;
+const INLINE_GZIP_MAX = 1434; // 1,4 KB: runtime de islands + LiveSync + script de tema (I-Marca)
 /** Bundles permitidos en esas páginas (máx. uno de cada; `required`: en todas). */
 const PAGE_BUNDLES = [
   { name: "carrito", re: /^CartClient\.[^/]*\.js$/, max: 2048, required: false },

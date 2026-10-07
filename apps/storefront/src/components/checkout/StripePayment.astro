@@ -12,6 +12,8 @@
 import { buttonVariants } from "$lib/components/ui/button";
 import { COMPLETE_PATH } from "$lib/checkout";
 import { formatPrice } from "$lib/format";
+import { STRIPE_THEME } from "$lib/stripe-theme";
+import { fontData } from "astro:assets";
 
 interface Props {
   publishableKey: string;
@@ -21,6 +23,19 @@ interface Props {
 }
 const { publishableKey, clientSecret, total, currency } = Astro.props;
 const returnUrl = new URL(COMPLETE_PATH, Astro.url).href;
+// Nunito Sans 400/600 para el iframe de Stripe: los mismos .woff2 que ya sirve la web (Fonts API),
+// con URL absoluta (SITE_URL) porque el iframe vive en js.stripe.com. Stripe solo acepta `https:`
+// o `data:` (con http://localhost avisa y usa su fuente): sin SITE_URL https no se pasan. Se usa
+// Astro.site y no Astro.url porque detrás de Caddy la petición llega por http.
+const https = Astro.site?.protocol === "https:";
+const fonts = (https ? (fontData["--font-nunito-sans"] ?? []) : [])
+  .filter((f) => f.weight === "400" || f.weight === "600")
+  .flatMap((f) => {
+    const url = f.src[0]?.url;
+    return url
+      ? [{ family: "Nunito Sans", src: `url(${new URL(url, Astro.site).href})`, weight: f.weight }]
+      : [];
+  });
 ---
 
 <form
@@ -28,6 +43,9 @@ const returnUrl = new URL(COMPLETE_PATH, Astro.url).href;
   data-pk={publishableKey}
   data-secret={clientSecret}
   data-return={returnUrl}
+  data-fonts={JSON.stringify(fonts)}
+  data-theme-light={JSON.stringify(STRIPE_THEME.light)}
+  data-theme-dark={JSON.stringify(STRIPE_THEME.dark)}
   class="flex flex-col gap-4"
 >
   {/* Altura reservada para el iframe del Payment Element (evita CLS al montarlo). El aviso va
@@ -36,7 +54,7 @@ const returnUrl = new URL(COMPLETE_PATH, Astro.url).href;
   <div class="relative min-h-57">
     <p
       id="pago-estado"
-      class="absolute inset-x-0 top-0 rounded-md border border-destructive/40 px-4 py-3 text-sm text-destructive"
+      class="absolute inset-x-0 top-0 rounded-md border-2 border-destructive px-4 py-3 text-sm text-destructive"
     >
       Para pagar con tarjeta necesitas activar JavaScript: el formulario de pago lo proporciona
       Stripe, nuestro procesador de pagos.
@@ -69,7 +87,14 @@ const returnUrl = new URL(COMPLETE_PATH, Astro.url).href;
     if (!stripe) throw new Error("Stripe.js no disponible");
     const elements = stripe.elements({
       clientSecret: secret,
-      appearance: { theme: "stripe", variables: { borderRadius: "6px" } },
+      fonts: JSON.parse(f.dataset.fonts ?? "[]"),
+      // Mismo tema que la web (data-theme o preferencia del sistema) al montar el formulario.
+      appearance: JSON.parse(
+        (document.documentElement.dataset.theme ??
+          (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark"
+          ? (f.dataset.themeDark ?? "{}")
+          : (f.dataset.themeLight ?? "{}"),
+      ),
     });
     const payment = elements.create("payment", { layout: "tabs" });
     payment.on("ready", () => {

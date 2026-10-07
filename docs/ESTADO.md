@@ -2,22 +2,24 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 05-oct-2026 · fase 7 cerrada (PR #24 y #25); siguiente, por decidir (propuesta: Marca + UX/UI → 8 Emails).
+> Última actualización: 07-oct-2026 · **I-Marca terminada** (rama `feat/i-marca`, PR pendiente de merge); **siguiente: I-Interficie** ([faseI-interficie.md](./fases/faseI-interficie.md), plan por hacer) → 8 Emails.
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado | Doc                              |
-| ------------------------------------------- | ------ | -------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md) |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)     |
-| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)     |
-| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)     |
-| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)     |
-| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)     |
-| 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)     |
-| 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)     |
-| 7-1 Búsqueda + filtros                      | ✅     | [fase7.md](./fases/fase7.md)     |
-| 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)     |
+| Fase                                        | Estado | Doc                                                |
+| ------------------------------------------- | ------ | -------------------------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md)                   |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)                       |
+| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)                       |
+| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)                       |
+| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)                       |
+| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)                       |
+| 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)                       |
+| 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)                       |
+| 7-1 Búsqueda + filtros                      | ✅     | [fase7.md](./fases/fase7.md)                       |
+| 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)                       |
+| I-Marca (identidad visual + tema)           | ✅     | [faseI-marca.md](./fases/faseI-marca.md)           |
+| I-Interficie (UX/UI)                        | ⏳     | [faseI-interficie.md](./fases/faseI-interficie.md) |
 
 Roadmap completo y tiempos: README §13.
 
@@ -79,6 +81,7 @@ pnpm dev:backend             # API :9000 · Admin :9000/app (usuario admin ya cr
 pnpm backend:seed            # idempotente
 pnpm backend:seed:mock       # idempotente; `backend:seed:mock 100` para 100 (pnpm 12: sin `--`)
 pnpm backend:seed:mock:v2    # idempotente: etiquetas + 100 productos mock-v2 (Talla/Color)
+pnpm backend:stock:mock      # idempotente: repone stock libre de los mock (los e2e de checkout lo gastan)
 pnpm --filter backend images:import <carpeta> [dry-run] [replace]
 pnpm --filter backend exec medusa db:migrate
 pnpm --filter backend test:integration:http   # necesita apps/backend/.env.test
@@ -111,15 +114,16 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
     - **D10**: filtros en modelo **híbrido** (enlaces sin JS; con JS, `SearchLive` ≤ 1 KB y el fragmento `/buscar/parcial/`; §2.3.3). View transitions **desactivadas** en todo el sitio por ahora;
     - **D9**: caché de tarjetas **solo en Astro** (`SEARCH_CARD_CACHE_TTL`, 30 s); `MEDUSA_FF_CACHING` apagado. `Server-Timing` opcional con `SERVER_TIMING=true`;
     - el manifiesto de miniaturas no es público (`dist/server/card-images.json`); un solo panel de filtros (popover en móvil, barra lateral en escritorio);
-    - presupuesto: JS inline ≤ 1,2 KB gzip (antes 1 KB); excepción `SearchLive` ≤ 1 KB (AGENTS §3.4);
+    - presupuesto: JS inline ≤ 1,2 KB gzip (antes 1 KB; 1,4 KB desde I-Marca); excepción `SearchLive` ≤ 1 KB (AGENTS §3.4);
     - las demos de filtros (`/demo/filtros/*`, `DEMO_FILTERS`) se usaron para decidir D10 y **ya están borradas**.
   - El storefront **no** debe enviar `search_options.typo_tolerance`: Meilisearch lo rechaza.
   - ⚠️ **Riesgo de CPU (D8 = L)**: `in_stock` **no** se reindexa con cada cambio de stock ni de reservas (costaría CPU en cada pedido, en un VPS compartido). El job `search-stock-sync` (cada 5 min, `SEARCH_STOCK_SYNC_CRON`) agrupa los cambios y reindexa solo esos productos. No añadir eventos de inventario al índice ([fase7.md](./fases/fase7.md) §2.1 y §2.1.1).
 - **Fase 7-2 (sugerencias): cerrada** (PR #25, `c604a84`; [fase7.md](./fases/fase7.md) §2.7, D11):
   - `SiteClient` (862 B gzip, ≤ 1,5 KB): JS común de **todas** las páginas (vía `BaseLayout`); hoy, el combobox de sugerencias de la cabecera. Sin `import()` dinámico (Vite añade ~750 B de helper);
   - `/buscar/sugerencias/`: fragmento con ≤ 6 títulos, ≤ 2 categorías y "Ver todos"; caché 60 s en navegador/CDN y en Astro (`SEARCH_SUGGEST_CACHE_TTL`); política con Cloudflare en §2.7.2.
-- **Siguiente**: por decidir con el usuario. Propuesta: **Marca + UX/UI** (identidad, cabecera/menú, footer, home con hero y bloques de contenido) → 8 Emails → 9 Cuenta. Requiere plan + confirmación (REGLA Nº 1).
-- **Aviso de fuentes en el navegador**: "preloaded with link preload was not used within a few seconds" para el `.woff2` del peso 400 (`/_astro/fonts/`; formato de mensaje de Firefox). En Chromium la precarga se usa bien (comprobado con Playwright). Revisarlo al tocar la tipografía (Marca).
+- **I-Marca (identidad visual + tema): terminada** en `feat/i-marca` ([faseI-marca.md](./fases/faseI-marca.md)): logo y favicon, paleta claro/oscuro (test AA), Baloo 2 + Nunito Sans, estilo Retro 80, selector de tema, Stripe con la marca, `CSP_ENABLED`, `backend:stock:mock`. **Al empezar la sesión siguiente**: comprobar que el PR está mergeado (`git switch main && git pull`) y borrar la rama local.
+- **Siguiente: I-Interficie** (UX/UI). Qué se busca, datos del usuario, decisiones abiertas y pasos para el plan en [faseI-interficie.md](./fases/faseI-interficie.md). **No empezar sin plan + confirmación** (REGLA Nº 1). Después: 8 Emails → 9 Cuenta; la transferencia y Bizum, tras Emails.
+- **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
   - Persistir la caché `.astro` en CI (fase 10).

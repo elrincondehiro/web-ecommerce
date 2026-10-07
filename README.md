@@ -224,6 +224,8 @@ Política:
 | `sharp`                                                                                                                   | 0.35.5                        | storefront (`astro:assets`)                                                                                                        |
 | `@astrojs/check` · `svelte-check`                                                                                         | 0.9.10 · 4.7.6                | storefront (dev, typecheck)                                                                                                        |
 | `@stripe/stripe-js`                                                                                                       | 9.17.0                        | storefront                                                                                                                         |
+| Fuentes Baloo 2 · Nunito Sans _(Fonts API, Fontsource; no es un paquete npm)_                                             | —                             | storefront: titulares / texto (I-Marca), pesos 600–700 / 400–700                                                                   |
+| Iconos Phosphor _(SVG copiados en `src/lib/icons.ts`; no es un paquete npm)_                                              | core 2.1.1                    | storefront: iconos de trazo (MIT, I-Marca)                                                                                         |
 | `@rokmohar/medusa-plugin-meilisearch`                                                                                     | 2.3.1                         | backend: proveedor Meilisearch del Search Module (fase 7; trae `meilisearch` 0.62.0)                                               |
 | `stripe` (Node) _(no instalado)_                                                                                          | 22.6.2                        | backend: solo si se usa fuera del provider. El provider `@medusajs/payment-stripe` 2.21.2 trae su propio `stripe` 15.12.0 (fase 5) |
 | `resend` _(no instalado; fase 8)_                                                                                         | 6.31.0                        | backend                                                                                                                            |
@@ -477,6 +479,7 @@ cp apps/backend/.env.test.example apps/backend/.env.test  # tests de integració
 pnpm --filter backend exec medusa db:migrate
 pnpm backend:seed                                         # región ES, IVA, envíos, publishable key
 pnpm backend:seed:mock                                    # catálogo de prueba (24; o `backend:seed:mock 100`)
+pnpm backend:stock:mock                                   # repone stock libre de los mock (los e2e de checkout lo gastan)
 pnpm --filter backend images:import <carpeta>             # fotos handle_XX.jpg → bucket + producto (fase 6)
 pnpm --filter backend exec medusa user -e <email> -p <contraseña>   # admin (lo creas tú)
 pnpm dev:backend                                          # API :9000 · Admin :9000/app
@@ -506,7 +509,7 @@ pnpm --filter storefront fixtures:update               # regenera src/lib/__fixt
 - **Checkout** (fase 5): `/checkout/` on-demand en una página (datos → envío → pago). Datos y envío funcionan sin JS. El pago usa el Payment Element de Stripe (script de ~2 KB gzip + Stripe.js), solo autoriza y la captura se hace desde el Admin. Confirmación en `/pedido/<id>/` ([fase5.md](./docs/fases/fase5.md)).
 - shadcn-svelte con el preset `vega`; alias `$lib` definido en `tsconfig.json` y en `vite.resolve.alias`.
 - Componentes en `src/lib/components/ui`, renderizados **sin** `client:*`.
-- Inter auto-alojada con la Fonts API (`fontProviders.fontsource()`): pesos estáticos 400/500/600; solo se precarga el 400.
+- Baloo 2 (titulares, 600/700) y Nunito Sans (texto, 400/600/700) auto-alojadas con la Fonts API (`fontProviders.fontsource()`): pesos estáticos; solo se precarga el 400 de Nunito Sans (I-Marca).
 
 ### 8.5 Emails (React Email)
 
@@ -669,6 +672,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 4 Carrito                              | [fase4.md](./docs/fases/fase4.md)                                                                | ✅     |
 | 5 Checkout + Stripe                    | [fase5.md](./docs/fases/fase5.md)                                                                | ✅     |
 | 7 Búsqueda y filtros                   | [fase7.md](./docs/fases/fase7.md)                                                                | ✅     |
+| I-Marca Identidad visual y tema        | [faseI-marca.md](./docs/fases/faseI-marca.md)                                                    | ✅     |
+| I-Interficie UX/UI (cabecera, home…)   | [faseI-interficie.md](./docs/fases/faseI-interficie.md) (borrador para planificar)               | ⏳     |
 | 8 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

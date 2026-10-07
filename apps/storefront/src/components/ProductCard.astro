@@ -35,7 +35,7 @@ const single = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
   data-pid={product.id}
   data-stock={pricing.inStock ? "in" : "out"}
 >
-  <div class="relative overflow-hidden rounded-md">
+  <div class="relative overflow-hidden rounded-md border-2 border-line shadow-sm transition-[translate,box-shadow] group-hover:translate-x-px group-hover:translate-y-px group-hover:shadow-xs">
     <div data-dim class="transition-opacity">
       <ProductImage src={image} alt={product.title} priority={priority} prebuilt={prebuilt} />
     </div>

@@ -167,11 +167,11 @@ Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>
 
 Lighthouse móvil: Performance ≥ 95, Accesibilidad ≥ 95, SEO 100 (salvo páginas `noindex` como `/carrito/`). Si un cambio empeora estas cifras, el PR debe explicar por qué.
 
-Excepción aprobada en la fase 4: home, listados y fichas cargan **un único bundle de carrito** (`CartClient`, ≤ 2 KB gzip, sin imports; fetch + contador + toasts + flyout). Va como fichero en `/_astro/` (caché inmutable) y no inline. `check:budget` lo comprueba; cualquier otro bundle sigue prohibido. El JS inline (runtime de server islands + LiveSync) va en ≤ 1,2 KB gzip (subido en la fase 7-1: las props cifradas de las islands cambian de longitud en cada build).
+Excepción aprobada en la fase 4: home, listados y fichas cargan **un único bundle de carrito** (`CartClient`, ≤ 2 KB gzip, sin imports; fetch + contador + toasts + flyout). Va como fichero en `/_astro/` (caché inmutable) y no inline. `check:budget` lo comprueba; cualquier otro bundle sigue prohibido. El JS inline (runtime de server islands + LiveSync + script de tema) va en ≤ 1,4 KB gzip (subido a 1,2 KB en la fase 7-1 porque las props cifradas de las islands cambian de longitud en cada build, y a 1,4 KB en I-Marca por el script que aplica el tema guardado antes de pintar, ~150 B).
 
 Excepción aprobada en la fase 7-1: `/buscar/` carga, además de `CartClient`, **un bundle de búsqueda** (`SearchLive`, ≤ 1 KB gzip, sin imports, en `/_astro/`) que aplica los filtros en el sitio (modelo híbrido: sin JS los filtros son enlaces y cada clic navega). `check:budget` mide el bundle y el e2e de `/buscar/` comprueba que la página no carga otros.
 
-Excepción aprobada en la fase 7-2: **todas** las páginas (vía `BaseLayout`, también carrito, checkout y pedido) cargan **un bundle común** (`SiteClient`, ≤ 1,5 KB gzip, sin imports, en `/_astro/`): sugerencias de la barra de búsqueda. Es el sitio para el JS que necesiten todas las páginas; no lo dividas con `import()` dinámico (Vite añade ~750 B de helper, `docs/fases/fase7.md` §2.7.1). `check:budget` exige exactamente uno en cada página estática.
+Excepción aprobada en la fase 7-2: **todas** las páginas (vía `BaseLayout`, también carrito, checkout y pedido) cargan **un bundle común** (`SiteClient`, ≤ 1,5 KB gzip, sin imports, en `/_astro/`): sugerencias de la barra de búsqueda y selector de tema claro/oscuro (I-Marca). Es el sitio para el JS que necesiten todas las páginas; no lo dividas con `import()` dinámico (Vite añade ~750 B de helper, `docs/fases/fase7.md` §2.7.1). `check:budget` exige exactamente uno en cada página estática.
 
 ---
 

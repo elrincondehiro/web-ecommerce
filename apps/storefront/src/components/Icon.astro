@@ -1,0 +1,20 @@
+---
+// Icono de trazo (Phosphor, src/lib/icons.ts). Decorativo: el botón/enlace que lo contiene lleva
+// el nombre accesible (aria-label o texto).
+import { ICONS, type IconName } from "$lib/icons";
+
+interface Props {
+  name: IconName;
+  class?: string;
+}
+const { name, class: className = "size-6" } = Astro.props;
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+  fill="currentColor"
+  aria-hidden="true"
+  class={className}
+  set:html={ICONS[name]}
+/>

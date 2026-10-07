@@ -100,7 +100,7 @@ const currency = cart.currency_code ?? "eur";
   {flash.code && (
     <p
       role="alert"
-      class="mb-6 rounded-md border border-destructive/40 px-4 py-3 text-sm text-destructive"
+      class="mb-6 rounded-md border-2 border-destructive px-4 py-3 text-sm text-destructive"
     >
       {CHECKOUT_NOTICES[flash.code]}
     </p>
@@ -193,7 +193,7 @@ const currency = cart.currency_code ?? "eur";
               <fieldset class="flex flex-col gap-2">
                 <legend class="sr-only">Método de envío</legend>
                 {options.map((o, i) => (
-                  <label class="flex cursor-pointer items-center justify-between gap-4 rounded-md border p-3 has-checked:border-primary has-checked:bg-muted">
+                  <label class="flex cursor-pointer items-center justify-between gap-4 rounded-md border-2 border-line p-3 has-checked:border-primary has-checked:bg-muted">
                     <span class="flex items-center gap-3">
                       <input
                         type="radio"

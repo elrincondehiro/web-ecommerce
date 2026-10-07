@@ -18,7 +18,8 @@
     "seed:mock:v2": "medusa exec ./src/scripts/seed-mock-v2.ts",
     "images:mock": "medusa exec ./src/scripts/mock-images.ts",
     "images:import": "medusa exec ./src/scripts/import-images.ts",
-    "stripe:region": "medusa exec ./src/scripts/stripe-region.ts"
+    "stripe:region": "medusa exec ./src/scripts/stripe-region.ts",
+    "stock:mock": "medusa exec ./src/scripts/stock-mock.ts"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "2.21.2",

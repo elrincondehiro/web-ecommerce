@@ -1,5 +1,7 @@
 ---
 import { Font } from "astro:assets";
+import Icon from "../components/Icon.astro";
+import ThemeInit from "../components/ThemeInit.astro";
 import Seo from "../components/Seo.astro";
 import CartClient from "../components/CartClient.astro";
 import SiteClient from "../components/SiteClient.astro";
@@ -30,9 +32,17 @@ const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : ""
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <ThemeInit />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F3E8DC" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#26343C" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <Font cssVariable="--font-inter" preload={[{ weight: 400 }]} />
+    <Font cssVariable="--font-nunito-sans" preload={[{ weight: 400 }]} />
+    <Font cssVariable="--font-baloo" />
     <Seo {...seo} />
     <slot name="head" />
   </head>
@@ -43,9 +53,20 @@ const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : ""
     >
       Saltar al contenido
     </a>
-    <header class="border-b">
+    <header class="z-30 border-b-2 sm:sticky sm:top-0 border-line bg-background">
       <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-4">
-        <a href="/" class="text-lg font-semibold tracking-tight">
+        <a href="/" class="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
+          {/* Fichero estático a 3× (108 px) en public/: la cabecera también está en páginas
+              on-demand, donde <Image> llamaría a sharp en runtime (D6, fase 7-1). */}
+          <img
+            src="/simbolo-header.webp"
+            alt=""
+            width="36"
+            height="44"
+            loading="eager"
+            decoding="async"
+            class="h-9 w-auto"
+          />
           El Rincón de Hiro
         </a>
         {/* Menú en UNA línea con scroll horizontal si no cabe: la altura de la cabecera no
@@ -103,63 +124,49 @@ const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : ""
             enterkeyhint="search"
             autocomplete="off"
             maxlength={100}
-            class="h-9 w-full min-w-0 rounded-md border bg-background px-3 text-sm"
+            class="h-9 w-full min-w-0 rounded-md border-2 border-line bg-background px-3 text-sm"
           />
           <button
             type="submit"
-            class="h-9 shrink-0 rounded-md border px-2 hover:bg-muted"
+            class="h-9 shrink-0 rounded-md border-2 border-line px-2 hover:bg-muted"
             aria-label="Buscar"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
-            </svg>
+            <Icon name="magnifying-glass" class="size-5" />
           </button>
           <div id="buscar-sug" role="listbox" aria-label="Sugerencias" class="suggest" hidden></div>
         </form>
         {/* Icono del carrito: enlace a /carrito/ (sin JS y en móvil); en escritorio el script
             del carrito abre el flyout. Contador: server island en páginas estáticas. */}
-        <a
-          href={CART_PATH}
-          data-cart-link
-          class="relative -mr-1 ml-auto rounded-md p-1 hover:bg-muted"
-          aria-label="Carrito"
-          aria-current={current === CART_PATH ? "page" : undefined}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            width="24"
-            height="24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
+        <div class="ml-auto flex items-center gap-1">
+          {/* Selector de tema: sin JS no hace nada, así que nace oculto y SiteClient lo muestra.
+              Sin elección guardada la web sigue al sistema (CSS). El icono es el de destino. */}
+          <button
+            type="button"
+            data-theme-toggle
+            class="rounded-md p-1.5 hover:bg-muted"
+            aria-label="Cambiar a modo oscuro"
+            hidden
           >
-            <circle cx="8" cy="21" r="1" />
-            <circle cx="19" cy="21" r="1" />
-            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-          </svg>
-          {cartCount !== undefined ? (
-            <CartCountBadge count={cartCount} />
-          ) : (
-            <CartCount server:defer>
-              <CartCountBadge slot="fallback" />
-            </CartCount>
-          )}
-        </a>
+            <Icon name="moon" class="size-6 dark:hidden" />
+            <Icon name="sun" class="hidden size-6 dark:block" />
+          </button>
+          <a
+            href={CART_PATH}
+            data-cart-link
+            class="relative rounded-md p-1.5 hover:bg-muted"
+            aria-label="Carrito"
+            aria-current={current === CART_PATH ? "page" : undefined}
+          >
+            <Icon name="shopping-cart" />
+            {cartCount !== undefined ? (
+              <CartCountBadge count={cartCount} />
+            ) : (
+              <CartCount server:defer>
+                <CartCountBadge slot="fallback" />
+              </CartCount>
+            )}
+          </a>
+        </div>
       </div>
     </header>
     <main id="contenido" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">

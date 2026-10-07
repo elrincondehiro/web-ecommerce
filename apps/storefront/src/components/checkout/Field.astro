@@ -28,7 +28,7 @@ const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolea
     name={name}
     aria-invalid={error ? "true" : undefined}
     aria-describedby={describedBy || undefined}
-    class="h-10 rounded-md border bg-background px-3 text-base aria-invalid:border-destructive sm:text-sm"
+    class="h-10 rounded-md border-2 border-line bg-background px-3 text-base aria-invalid:border-destructive sm:text-sm"
     {...attrs}
   />
   {hint && (
