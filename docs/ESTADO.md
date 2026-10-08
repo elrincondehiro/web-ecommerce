@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 07-oct-2026 · **I-Interficie implementada** en `feat/i-interficie` (pendiente del visto bueno visual del usuario y del PR; [faseI-interficie.md](./fases/faseI-interficie.md)) → **siguiente: 8 Emails**.
+> Última actualización: 08-oct-2026 · **I-Interficie cerrada** (PR #28, `db788b8`) → **siguiente: Fase D (diseño)** ([faseD-diseno.md](./fases/faseD-diseno.md), plan por hacer) → 8 Emails.
 
 ## 1. Dónde estamos
 
@@ -19,7 +19,8 @@
 | 7-1 Búsqueda + filtros                      | ✅     | [fase7.md](./fases/fase7.md)                       |
 | 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)                       |
 | I-Marca (identidad visual + tema)           | ✅     | [faseI-marca.md](./fases/faseI-marca.md)           |
-| I-Interficie (UX/UI)                        | 🔍     | [faseI-interficie.md](./fases/faseI-interficie.md) |
+| I-Interficie (UX/UI)                        | ✅     | [faseI-interficie.md](./fases/faseI-interficie.md) |
+| D Diseño (afinar colores, interfaz…)        | ⏳     | [faseD-diseno.md](./fases/faseD-diseno.md)         |
 
 Roadmap completo y tiempos: README §13.
 
@@ -123,12 +124,12 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - `SiteClient` (862 B gzip, ≤ 1,5 KB): JS común de **todas** las páginas (vía `BaseLayout`); hoy, el combobox de sugerencias de la cabecera. Sin `import()` dinámico (Vite añade ~750 B de helper);
   - `/buscar/sugerencias/`: fragmento con ≤ 6 títulos, ≤ 2 categorías y "Ver todos"; caché 60 s en navegador/CDN y en Astro (`SEARCH_SUGGEST_CACHE_TTL`); política con Cloudflare en §2.7.2.
 - **I-Marca (identidad visual + tema): cerrada** (PR #27, `82c7665`; [faseI-marca.md](./fases/faseI-marca.md)).
-- **I-Interficie (UX/UI): implementada** en `feat/i-interficie` ([faseI-interficie.md](./fases/faseI-interficie.md)); falta el **visto bueno visual** del usuario (y revisar el texto de «Sobre nosotros» y los anuncios) y el PR.
+- **I-Interficie (UX/UI): cerrada** (PR #28, `db788b8`; [faseI-interficie.md](./fases/faseI-interficie.md)).
   - Barra de anuncios CSS, cabecera con `popover` sin JS que se oculta al bajar (`SiteClient` 1203 B), pie de 4 columnas, home (hero, categorías, carrusel de la Collection `destacados`, ofertas, valores), `/ofertas/`, `/sobre-nosotros/`.
   - Contenido editorial en Content Collections (`apps/storefront/src/content/`); comercial en Medusa (Collections, Price Lists `sale`).
   - **Precio tachado + descuento** en toda la tienda (`Price.astro`, `LiveSync` con precio anterior). Backend: `GET /store/ofertas` y `seed:mock:ofertas`.
   - `/ofertas/`: la island recibe una clave de página (manifiesto `dist/server/offer-pages.json`), no los ids: JS inline fijo (~1,1 KB).
-- **Siguiente: fase 8 (Emails)**. **No empezar sin plan + confirmación** (REGLA Nº 1). Después: 9 Cuenta; la transferencia y Bizum, tras Emails.
+- **Siguiente: Fase D (diseño)**: afinar colores, componentes e interfaz con el usuario ([faseD-diseno.md](./fases/faseD-diseno.md)). **No empezar sin plan + confirmación** (REGLA Nº 1). Después: 8 Emails → 9 Cuenta; la transferencia y Bizum, tras Emails.
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:

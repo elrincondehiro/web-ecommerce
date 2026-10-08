@@ -1,8 +1,8 @@
 # Fase I-Interficie — UX/UI (cabecera, pie, home, ofertas)
 
-> **Estado:** 🔍 implementada, **pendiente del visto bueno visual del usuario** (el agente no puede ver imágenes) y del PR.
-> **Rama/PR:** `feat/i-interficie` (desde `main` = `82c7665`, I-Marca mergeada)
-> **Anterior:** [I-Marca](./faseI-marca.md) · **Siguiente:** Fase 8 (Emails)
+> **Estado:** ✅ completada (08-oct-2026; merge squash del PR #28, `db788b8`). El ajuste fino de diseño sigue en la [Fase D](./faseD-diseno.md).
+> **Rama/PR:** `feat/i-interficie` · PR #28
+> **Anterior:** [I-Marca](./faseI-marca.md) · **Siguiente:** [Fase D](./faseD-diseno.md) (diseño) → Fase 8 (Emails)
 
 ## 1. Objetivos
 
@@ -12,7 +12,7 @@
 - [x] **Home**: hero, categorías con imagen, carrusel de una Collection de Medusa, banner de ofertas y valores.
 - [x] **`/ofertas/`** con Price Lists `sale` de Medusa, y **precio tachado + descuento en toda la tienda** (tarjetas, ficha, variantes) con el patrón build + `LiveSync`.
 - [x] **`/sobre-nosotros/`** desde Markdown (borrador del agente, D6: **revisar el texto**).
-- [ ] Visto bueno visual del usuario (claro/oscuro, móvil/escritorio).
+- [x] Merge del usuario (PR #28). Los retoques visuales pasan a la [Fase D](./faseD-diseno.md).
 
 ## 2. Qué se ha hecho
 
@@ -124,7 +124,7 @@ El LCP de la home pasa a ser la imagen del hero: con la primera versión (recuad
 - [x] Lint, formato, typecheck, tests (storefront 126; backend con `ofertas`), build sin avisos, `check:budget` y e2e (75 + 3 de Stripe omitidos sin `infra:stripe`) en verde.
 - [x] 0 KB de JS propio nuevo en las páginas nuevas (`/ofertas/`, `/sobre-nosotros/` en la lista de `check:budget`).
 - [x] Lighthouse ≥ 95 en Performance y 100 en accesibilidad y SEO en las páginas medidas.
-- [ ] Visto bueno visual del usuario y revisión del texto de «Sobre nosotros» y de los anuncios.
+- [x] Merge del usuario (PR #28). Revisión del texto de «Sobre nosotros» y de los anuncios → [Fase D](./faseD-diseno.md).
 
 ## 7. Riesgos y pendientes
 
