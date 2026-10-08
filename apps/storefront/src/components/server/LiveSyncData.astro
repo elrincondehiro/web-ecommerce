@@ -3,25 +3,51 @@
 // Solo devuelve un <template data-live-sync> con JSON (inerte, compatible con CSP estricta); lo
 // aplica el script estático de <LiveSync>. Usar siempre a través de components/LiveSync.astro.
 // Props mínimas para que la URL GET sea corta y cacheable:
-//   - listados/home: categoryId + offset + limit (mismo orden que el build)
+//   - listados/home: categoryId | collectionId + offset + limit (mismo orden que el build)
+//   - /ofertas/: offersKey, clave corta de la página (I-Interficie, lib/offer-pages.ts). El
+//     servidor la resuelve a los ids del build con dist/server/offer-pages.json: por id y no por
+//     "lo que está en oferta ahora", así una oferta que termina tras el build también se corrige.
+//     No se pasan los ids: irían cifrados en la URL y en el JS inline (crecía ~35 B gzip por
+//     producto). Clave desconocida (HTML de otro build) → "{}" → se queda lo del build.
 //   - ficha: productId
 // Sin fallback: si falla o no hay JS, se queda lo del build.
 import { liveData, liveEntries } from "$lib/live-sync";
-import { getPricedProduct, getPricedProducts } from "$lib/medusa";
+import { readBuildManifest } from "$lib/build-manifest";
+import {
+  getPricedProduct,
+  getPricedProducts,
+  getPricedProductsFresh,
+  getSaleProducts,
+} from "$lib/medusa";
+import { offerPages } from "$lib/offer-pages";
 
 interface Props {
   productId?: string | undefined;
   categoryId?: string | undefined;
+  collectionId?: string | undefined;
+  /** Clave de una página de /ofertas/ (lib/offer-pages.ts). */
+  offersKey?: string | undefined;
   offset?: number | undefined;
   limit?: number | undefined;
 }
-const { productId, categoryId, offset = 0, limit = 0 } = Astro.props;
+const { productId, categoryId, collectionId, offersKey, offset = 0, limit = 0 } = Astro.props;
+
+/** Ids del build para una clave de /ofertas/. En `astro dev` no hay manifiesto: se calculan. */
+async function offerIds(key: string): Promise<string[]> {
+  if (import.meta.env.DEV)
+    return (
+      offerPages((await getSaleProducts()).map((p) => p.id)).find((p) => p.key === key)?.ids ?? []
+    );
+  return readBuildManifest<string[]>("offer-pages.json").get(key) ?? [];
+}
 
 const products = productId
   ? [await getPricedProduct(productId)].filter((p) => p !== null)
-  : limit > 0
-    ? await getPricedProducts({ categoryId, offset, limit })
-    : [];
+  : offersKey
+    ? await getPricedProductsFresh(await offerIds(offersKey))
+    : limit > 0
+      ? await getPricedProducts({ categoryId, collectionId, offset, limit })
+      : [];
 const entries = liveEntries(products);
 
 // Caché compartida corta + SWR (AGENTS.md §3.3); `max-age=30` → el navegador la reutiliza al

@@ -18,6 +18,7 @@ import type { RawSearchResult, SearchQueryBody } from "./search";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
 export type StoreCart = HttpTypes.StoreCart;
+export type StoreCollection = HttpTypes.StoreCollection;
 export interface StoreRegionRef {
   id: string;
   name: string;
@@ -27,7 +28,7 @@ export interface StoreRegionRef {
 const COUNTRY_CODE = "es";
 const ORDER = "title";
 const CATALOG_FIELDS =
-  "id,handle,title,subtitle,description,thumbnail,*images,*categories,*options,*options.values,*tags";
+  "id,handle,title,subtitle,description,thumbnail,collection_id,*images,*categories,*options,*options.values,*tags";
 const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity`;
 const CATEGORY_FIELDS = "id,name,handle,description,rank,parent_category_id";
 const PAGE = 100;
@@ -54,6 +55,9 @@ const fixtures = {
     (await import("./__fixtures__/categories.json")).default as unknown as StoreCategory[],
   products: async () =>
     (await import("./__fixtures__/products.json")).default as unknown as StoreProduct[],
+  collections: async () =>
+    (await import("./__fixtures__/collections.json")).default as unknown as StoreCollection[],
+  offers: async () => (await import("./__fixtures__/offers.json")).default as string[],
 };
 
 let regionPromise: Promise<StoreRegionRef> | undefined;
@@ -116,22 +120,65 @@ async function loadCatalog(): Promise<StoreProduct[]> {
   return out;
 }
 
+/** Collection por handle (carrusel de la home, I-Interficie). Null si no existe. */
+export async function getCollectionByHandle(handle: string): Promise<StoreCollection | null> {
+  const all = useFixtures
+    ? await fixtures.collections()
+    : (await sdk().store.collection.list({ handle, fields: "id,title,handle" })).collections;
+  return all.find((c) => c.handle === handle) ?? null;
+}
+
+/** Productos de una Collection, del catálogo del build (mismo orden: título). */
+export async function getCollectionProducts(collectionId: string): Promise<StoreProduct[]> {
+  return (await getAllProducts()).filter((p) => p.collection_id === collectionId);
+}
+
+/**
+ * Ids de productos en oferta (Price List `sale` vigente en la región), por título. Ruta propia
+ * del backend `GET /store/ofertas` (la Store API no filtra por Price List; D5 = A).
+ */
+export function getSaleProductIds(): Promise<string[]> {
+  // Memo de módulo (como el catálogo): /ofertas/, su manifiesto (ofertas/paginas.json) y la home
+  // ven la MISMA lista aunque una oferta cambie a mitad del build. Solo build y `astro dev`: en
+  // producción la island de /ofertas/ lee el manifiesto (lib/offer-pages.ts).
+  return (saleIdsPromise ??= loadSaleProductIds());
+}
+let saleIdsPromise: Promise<string[]> | undefined;
+
+async function loadSaleProductIds(): Promise<string[]> {
+  if (useFixtures) return fixtures.offers();
+  const region = await getRegionES();
+  const { product_ids } = await sdk().client.fetch<{ product_ids: string[] }>("/store/ofertas", {
+    query: { region_id: region.id },
+  });
+  return product_ids;
+}
+
+/** Productos en oferta del catálogo del build (build de /ofertas/ y del banner de la home). */
+export async function getSaleProducts(): Promise<StoreProduct[]> {
+  const [ids, all] = await Promise.all([getSaleProductIds(), getAllProducts()]);
+  const set = new Set(ids);
+  return all.filter((p) => set.has(p.id));
+}
+
 /**
  * Productos con precio y stock actuales (server island). Mismo orden que getAllProducts,
  * así offset/limit coinciden con la página estática.
  */
 export async function getPricedProducts(q: {
   categoryId?: string | undefined;
+  collectionId?: string | undefined;
   offset: number;
   limit: number;
 }): Promise<StoreProduct[]> {
   if (useFixtures) {
     const all = await fixtures.products();
-    return sliceRange(
-      q.categoryId ? productsInCategory(all, q.categoryId) : all,
-      q.offset,
-      q.limit,
-    );
+    const scoped = q.categoryId
+      ? productsInCategory(all, q.categoryId)
+      : q.collectionId
+        ? all.filter((p) => p.collection_id === q.collectionId)
+        : all;
+    return sliceRange(scoped, q.offset, q.limit);
   }
   const region = await getRegionES();
   const { products } = await sdk().store.product.list({
@@ -142,8 +189,20 @@ export async function getPricedProducts(q: {
     country_code: COUNTRY_CODE,
     fields: PRICED_FIELDS,
     ...(q.categoryId ? { category_id: q.categoryId } : {}),
+    ...(q.collectionId ? { collection_id: q.collectionId } : {}),
   });
   return products;
+}
+
+/** Productos con precio y stock actuales por id (island de /ofertas/), en el orden de `ids`. */
+export async function getPricedProductsFresh(ids: string[]): Promise<StoreProduct[]> {
+  if (!ids.length) return [];
+  if (useFixtures) {
+    const all = await fixtures.products();
+    return ids.map((id) => all.find((p) => p.id === id)).filter((p) => p !== undefined);
+  }
+  const byId = new Map((await fetchCards(ids)).map((p) => [p.id, p]));
+  return ids.map((id) => byId.get(id)).filter((p): p is StoreProduct => Boolean(p));
 }
 
 // ── Carrito (runtime: actions, /carrito/, island del contador). Fase 4. ─────────────────────

@@ -506,3 +506,283 @@
   margin-top: 0.25rem;
   font-weight: 500;
 }
+
+/*
+ * Barra de anuncios (I-Interficie, components/layout/AnnouncementBar.astro). Marquee solo CSS:
+ * la pista tiene dos copias iguales y se desplaza −50 % (una copia) en bucle. Se para con
+ * :hover / :focus-within. Con prefers-reduced-motion: sin animación, una sola copia en fila que
+ * se puede desplazar. Altura fija (h-8) → CLS 0.
+ */
+.announce {
+  overflow: hidden;
+  height: 2rem;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 0.8125rem;
+  line-height: 2rem;
+  white-space: nowrap;
+}
+.announce__track {
+  display: flex;
+  width: max-content;
+  animation: announce-scroll 40s linear infinite;
+}
+.announce--20 .announce__track {
+  animation-duration: 20s;
+}
+.announce--30 .announce__track {
+  animation-duration: 30s;
+}
+.announce--50 .announce__track {
+  animation-duration: 50s;
+}
+.announce--60 .announce__track {
+  animation-duration: 60s;
+}
+.announce--70 .announce__track {
+  animation-duration: 70s;
+}
+.announce--80 .announce__track {
+  animation-duration: 80s;
+}
+.announce--90 .announce__track {
+  animation-duration: 90s;
+}
+.announce:hover .announce__track,
+.announce:focus-within .announce__track {
+  animation-play-state: paused;
+}
+.announce__list {
+  display: flex;
+  flex-shrink: 0;
+}
+.announce__list li {
+  padding-inline: 2rem;
+}
+.announce__list li::before {
+  content: "✦";
+  margin-right: 2rem;
+  color: var(--accent);
+  speak: never;
+}
+.announce a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.announce a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+@keyframes announce-scroll {
+  to {
+    translate: -50% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .announce {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .announce__track {
+    animation: none;
+  }
+  .announce__list[aria-hidden] {
+    display: none;
+  }
+}
+
+/*
+ * Cabecera (I-Interficie, components/layout/SiteHeader.astro). Fija (sticky) en todas las
+ * anchuras. Con JS, SiteClient pone data-hide al bajar y lo quita al subir (D1): se oculta con
+ * `translate` (no cambia el layout → CLS 0). Sin JS o con movimiento reducido, siempre visible.
+ */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-bottom: 2px solid var(--line);
+  background: var(--background);
+  transition: translate 200ms ease;
+}
+.site-header[data-hide] {
+  translate: 0 -100%;
+}
+/* Enlaces del menú principal (escritorio). */
+.nav-link {
+  display: inline-flex;
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+}
+.nav-link:hover,
+.nav-link:popover-open,
+.nav-link[aria-current] {
+  background: var(--muted);
+}
+.nav-link[aria-current] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+/*
+ * Desplegable "Tienda" (popover). Con anchor positioning (Chrome 125+, Safari 26+, Firefox
+ * 147+; el invocador del popover es su ancla implícita, MDN) se coloca bajo el botón. Sin
+ * soporte, cae en un panel fijo bajo la cabecera, a la izquierda (sigue siendo usable).
+ */
+.nav-menu {
+  position: fixed;
+  inset: auto;
+  top: 4.5rem;
+  left: 1rem;
+  margin: 0;
+  min-width: 14rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.25rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow);
+  font-weight: 500;
+}
+@supports (position-area: bottom) {
+  .nav-menu {
+    top: auto;
+    left: auto;
+    position-area: bottom span-right;
+    margin-top: 0.375rem;
+  }
+}
+.nav-menu__link {
+  display: block;
+  border-radius: calc(var(--radius-md) - 2px);
+  padding: 0.5rem 0.75rem;
+}
+.nav-menu__link:hover,
+.nav-menu__link[aria-current] {
+  background: var(--muted);
+}
+/* Menú móvil: panel lateral izquierdo (popover), como el flyout del carrito pero a la izquierda. */
+.mobile-menu {
+  position: fixed;
+  inset: 0 auto 0 0;
+  margin: 0;
+  width: min(20rem, 85vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  border: 0;
+  border-right: 2px solid var(--line);
+  padding: 0;
+  background: var(--background);
+  color: var(--foreground);
+  translate: -100% 0;
+  transition:
+    translate 250ms ease,
+    overlay 250ms allow-discrete,
+    display 250ms allow-discrete;
+}
+.mobile-menu:popover-open {
+  display: flex;
+  flex-direction: column;
+  translate: 0 0;
+  @starting-style {
+    translate: -100% 0;
+  }
+}
+.mobile-menu::backdrop {
+  background: oklch(0 0 0 / 0.4);
+  opacity: 0;
+  transition:
+    opacity 250ms ease,
+    overlay 250ms allow-discrete,
+    display 250ms allow-discrete;
+}
+.mobile-menu:popover-open::backdrop {
+  opacity: 1;
+  @starting-style {
+    opacity: 0;
+  }
+}
+.mobile-menu__link {
+  display: block;
+  border-radius: var(--radius-md);
+  padding: 0.625rem 0.5rem;
+}
+.mobile-menu__link:hover,
+.mobile-menu__link[aria-current] {
+  background: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  .mobile-menu,
+  .mobile-menu::backdrop {
+    transition: none;
+  }
+}
+
+/* Precio en oferta (components/Price.astro): color de rebaja si el bloque de oferta está
+   visible. Con :has() → LiveSync solo cambia `hidden` y el color se ajusta solo. */
+.price:has([data-was-box]:not([hidden])) .price__now {
+  color: var(--accent-text);
+}
+
+/*
+ * Carrusel de la home (index.astro): scroll-snap horizontal, solo CSS. Mismo ancho de tarjeta
+ * que la rejilla (2 · 3 · 4 columnas) para reutilizar las imágenes `card` (sizes iguales).
+ */
+.carousel {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  scrollbar-width: thin;
+  padding-bottom: 0.75rem;
+}
+.carousel:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.carousel__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 1rem) / 2);
+  gap: 1rem;
+}
+@media (min-width: 40rem) {
+  .carousel__track {
+    grid-auto-columns: calc((100% - 2rem) / 3);
+  }
+}
+@media (min-width: 64rem) {
+  .carousel__track {
+    grid-auto-columns: calc((100% - 3rem) / 4);
+  }
+}
+.carousel__item {
+  scroll-snap-align: start;
+}
+
+/* Prosa de páginas de contenido en Markdown (sobre-nosotros.astro). Sin plugin de tipografía. */
+.prose-page > * + * {
+  margin-top: 1rem;
+}
+.prose-page h2 {
+  margin-top: 2.25rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.prose-page ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-page li + li {
+  margin-top: 0.5rem;
+}
+.prose-page a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-page strong {
+  font-weight: 700;
+}

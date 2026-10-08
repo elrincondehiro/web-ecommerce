@@ -5,8 +5,8 @@
 // si hay varias) y la cantidad. Los radios de variantes agotadas se ocultan con data-if-vstock.
 import { Badge } from "$lib/components/ui/badge";
 import AddToCart from "./AddToCart.astro";
-import { getProductPricing, type StoreProduct } from "$lib/catalog";
-import { formatPrice } from "$lib/format";
+import { discountPercent, getProductPricing, type StoreProduct } from "$lib/catalog";
+import Price from "./Price.astro";
 
 interface Props {
   product: StoreProduct;
@@ -26,16 +26,17 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
     data-pid={product.id}
     data-stock={pricing.inStock ? "in" : "out"}
   >
-    <p class="text-2xl font-semibold tabular-nums">
-      <span
-        class="text-base font-normal text-muted-foreground"
-        data-price-from={product.id}
-        hidden={!pricing.hasPriceRange}
-      >
-        Desde
-      </span>
-      <span data-price={product.id}>{formatPrice(pricing.fromAmount, currency)}</span>
-      <span class="ml-1 text-sm font-normal text-muted-foreground">IVA incluido</span>
+    <p class="flex flex-wrap items-baseline gap-x-2">
+      <Price
+        id={product.id}
+        amount={pricing.fromAmount}
+        currency={currency}
+        wasAmount={pricing.wasAmount}
+        discountPercent={pricing.discountPercent}
+        from={pricing.hasPriceRange}
+        size="lg"
+      />
+      <span class="text-sm text-muted-foreground">IVA incluido</span>
     </p>
     <p>
       <Badge variant="outline" data-if-stock="in">
@@ -92,8 +93,20 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
                   <th scope="row" class="py-1.5 font-medium">
                     <label for={`v-${v.id}`}>{v.title}</label>
                   </th>
-                  <td class="py-1.5" data-price={v.id}>
-                    {v.amount != null ? formatPrice(v.amount, currency) : "—"}
+                  <td class="py-1.5">
+                    {v.amount != null ? (
+                      <Price
+                        id={v.id}
+                        amount={v.amount}
+                        currency={currency}
+                        wasAmount={v.wasAmount}
+                        discountPercent={
+                          v.wasAmount !== null ? discountPercent(v.amount, v.wasAmount) : null
+                        }
+                      />
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td class="py-1.5">
                     <span data-if-vstock="in">Disponible</span>

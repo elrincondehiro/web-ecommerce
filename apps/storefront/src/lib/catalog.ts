@@ -8,6 +8,8 @@ export interface VariantAvailability {
   id: string;
   title: string;
   amount: number | null;
+  /** Precio anterior (base) si `amount` es una rebaja de una Price List `sale`; si no, null. */
+  wasAmount: number | null;
   inStock: boolean;
 }
 
@@ -17,6 +19,10 @@ export interface ProductPricing {
   currencyCode: string | null;
   /** true si las variantes tienen precios distintos ("Desde …"). */
   hasPriceRange: boolean;
+  /** Precio anterior de la variante de `fromAmount` si está rebajada (oferta); si no, null. */
+  wasAmount: number | null;
+  /** Descuento entero (%) de esa variante, o null. */
+  discountPercent: number | null;
   inStock: boolean;
   variants: VariantAvailability[];
 }
@@ -35,11 +41,31 @@ export function variantAmount(variant: StoreVariant): number | null {
   return typeof amount === "number" ? amount : null;
 }
 
+/**
+ * Precio anterior de una variante rebajada: el original con IVA, solo si el calculado viene de
+ * una Price List `sale` y es menor (Medusa 2.21: `calculated_price.calculated_price
+ * .price_list_type`; una lista `sale` nunca es el original). Omnibus: el original es el precio
+ * base, que no cambia. Fuente: context7 /medusajs/medusa (storefront "sale price").
+ */
+export function variantWasAmount(variant: StoreVariant): number | null {
+  const price = variant.calculated_price;
+  if (!price || price.calculated_price?.price_list_type !== "sale") return null;
+  const was = price.original_amount_with_tax ?? price.original_amount;
+  const now = variantAmount(variant);
+  return typeof was === "number" && now !== null && was > now ? was : null;
+}
+
+/** Descuento en % entero, redondeado hacia abajo (nunca se anuncia más de lo real). */
+export function discountPercent(now: number, was: number): number {
+  return Math.floor(((was - now) / was) * 100 + 1e-9);
+}
+
 export function getProductPricing(product: StoreProduct): ProductPricing {
   const variants = (product.variants ?? []).map((v) => ({
     id: v.id,
     title: v.title ?? "",
     amount: variantAmount(v),
+    wasAmount: variantWasAmount(v),
     inStock: isVariantInStock(v),
   }));
   const amounts = variants.map((v) => v.amount).filter((a): a is number => a !== null);
@@ -47,10 +73,16 @@ export function getProductPricing(product: StoreProduct): ProductPricing {
   const currencyCode =
     product.variants?.find((v) => v.calculated_price?.currency_code)?.calculated_price
       ?.currency_code ?? null;
+  // "Desde" + oferta: se anuncia la de la variante más barata (la del precio mostrado).
+  const cheapest = variants.find((v) => v.amount === fromAmount);
+  const wasAmount = cheapest?.wasAmount ?? null;
   return {
     fromAmount,
     currencyCode,
     hasPriceRange: new Set(amounts).size > 1,
+    wasAmount,
+    discountPercent:
+      wasAmount !== null && fromAmount !== null ? discountPercent(fromAmount, wasAmount) : null,
     inStock: variants.some((v) => v.inStock),
     variants,
   };

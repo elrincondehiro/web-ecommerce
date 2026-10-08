@@ -1,16 +1,13 @@
 ---
 import { Font } from "astro:assets";
-import Icon from "../components/Icon.astro";
 import ThemeInit from "../components/ThemeInit.astro";
 import Seo from "../components/Seo.astro";
 import CartClient from "../components/CartClient.astro";
 import SiteClient from "../components/SiteClient.astro";
-import CartCountBadge from "../components/CartCountBadge.astro";
 import CartNotice from "../components/CartNotice.astro";
-import CartCount from "../components/server/CartCount.astro";
-import { CART_PATH } from "$lib/cart";
-import { getCategories } from "$lib/medusa";
-import { SEARCH_PATH } from "$lib/search";
+import AnnouncementBar from "../components/layout/AnnouncementBar.astro";
+import SiteHeader from "../components/layout/SiteHeader.astro";
+import SiteFooter from "../components/layout/SiteFooter.astro";
 import "../styles/global.css";
 
 type Props = Parameters<typeof Seo>[0] & {
@@ -21,10 +18,6 @@ type Props = Parameters<typeof Seo>[0] & {
 };
 
 const { cartCount, cartClient = true, ...seo } = Astro.props;
-const categories = await getCategories();
-const current = Astro.url.pathname;
-// Solo /buscar/ (on-demand) tiene query: en páginas estáticas el campo sale vacío.
-const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : "";
 ---
 
 <!doctype html>
@@ -53,155 +46,13 @@ const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : ""
     >
       Saltar al contenido
     </a>
-    <header class="z-30 border-b-2 sm:sticky sm:top-0 border-line bg-background">
-      <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-4">
-        <a href="/" class="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
-          {/* Fichero estático a 3× (108 px) en public/: la cabecera también está en páginas
-              on-demand, donde <Image> llamaría a sharp en runtime (D6, fase 7-1). */}
-          <img
-            src="/simbolo-header.webp"
-            alt=""
-            width="36"
-            height="44"
-            loading="eager"
-            decoding="async"
-            class="h-9 w-auto"
-          />
-          El Rincón de Hiro
-        </a>
-        {/* Menú en UNA línea con scroll horizontal si no cabe: la altura de la cabecera no
-            depende de la fuente (con flex-wrap, Inter partía la última categoría a otra línea
-            al cargar → CLS 0,33). py-1 deja sitio al anillo de foco dentro del overflow. 
-            Móvil: logo + carrito en la 1.ª fila y menú a todo el ancho en la 2.ª (order-last). */}
-        <nav
-          aria-label="Categorías"
-          class="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1"
-        >
-          <ul class="-my-1 flex gap-x-4 overflow-x-auto py-1 text-sm whitespace-nowrap [scrollbar-width:none]">
-            <li>
-              <a
-                href="/productos/"
-                class="hover:underline"
-                aria-current={current.startsWith("/productos/") ? "page" : undefined}
-              >
-                Todo
-              </a>
-            </li>
-            {categories.map((c) => {
-              const href = `/categorias/${c.handle}/`;
-              return (
-                <li>
-                  <a
-                    href={href}
-                    class="hover:underline aria-[current=page]:font-semibold"
-                    aria-current={current.startsWith(href) ? "page" : undefined}
-                  >
-                    {c.name}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-        {/* Búsqueda (fase 7-1, D5): GET a /buscar/, sin JS; erratas toleradas por el motor.
-            Móvil: fila propia a todo el ancho (como el menú); escritorio: antes del carrito.
-            Con JS, SiteClient.astro muestra sugerencias en #buscar-sug (fase 7-2). */}
-        <form
-          method="get"
-          action={SEARCH_PATH}
-          role="search"
-          class="relative order-last flex w-full items-center gap-2 sm:order-none sm:w-56 lg:w-64"
-        >
-          <label for="buscar-q" class="sr-only">
-            Buscar productos
-          </label>
-          <input
-            id="buscar-q"
-            type="search"
-            name="q"
-            value={q}
-            placeholder="Buscar productos"
-            enterkeyhint="search"
-            autocomplete="off"
-            maxlength={100}
-            class="h-9 w-full min-w-0 rounded-md border-2 border-line bg-background px-3 text-sm"
-          />
-          <button
-            type="submit"
-            class="h-9 shrink-0 rounded-md border-2 border-line px-2 hover:bg-muted"
-            aria-label="Buscar"
-          >
-            <Icon name="magnifying-glass" class="size-5" />
-          </button>
-          <div id="buscar-sug" role="listbox" aria-label="Sugerencias" class="suggest" hidden></div>
-        </form>
-        {/* Icono del carrito: enlace a /carrito/ (sin JS y en móvil); en escritorio el script
-            del carrito abre el flyout. Contador: server island en páginas estáticas. */}
-        <div class="ml-auto flex items-center gap-1">
-          {/* Selector de tema: sin JS no hace nada, así que nace oculto y SiteClient lo muestra.
-              Sin elección guardada la web sigue al sistema (CSS). El icono es el de destino. */}
-          <button
-            type="button"
-            data-theme-toggle
-            class="rounded-md p-1.5 hover:bg-muted"
-            aria-label="Cambiar a modo oscuro"
-            hidden
-          >
-            <Icon name="moon" class="size-6 dark:hidden" />
-            <Icon name="sun" class="hidden size-6 dark:block" />
-          </button>
-          <a
-            href={CART_PATH}
-            data-cart-link
-            class="relative rounded-md p-1.5 hover:bg-muted"
-            aria-label="Carrito"
-            aria-current={current === CART_PATH ? "page" : undefined}
-          >
-            <Icon name="shopping-cart" />
-            {cartCount !== undefined ? (
-              <CartCountBadge count={cartCount} />
-            ) : (
-              <CartCount server:defer>
-                <CartCountBadge slot="fallback" />
-              </CartCount>
-            )}
-          </a>
-        </div>
-      </div>
-    </header>
+    <AnnouncementBar />
+    <SiteHeader cartCount={cartCount} />
     <main id="contenido" class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
       <CartNotice />
       <slot />
     </main>
-    <footer class="border-t text-sm text-muted-foreground">
-      <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 sm:flex-row sm:justify-between">
-        <p>© {new Date().getFullYear()} El Rincón de Hiro · Precios con IVA incluido</p>
-        <nav aria-label="Información legal">
-          <ul class="flex flex-wrap gap-x-4 gap-y-1">
-            <li>
-              <a href="/condiciones/" class="hover:underline">
-                Condiciones
-              </a>
-            </li>
-            <li>
-              <a href="/privacidad/" class="hover:underline">
-                Privacidad
-              </a>
-            </li>
-            <li>
-              <a href="/cookies/" class="hover:underline">
-                Cookies
-              </a>
-            </li>
-            <li>
-              <a href="/aviso-legal/" class="hover:underline">
-                Aviso legal
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-    </footer>
+    <SiteFooter />
     {cartClient && <CartClient />}
     <SiteClient />
   </body>

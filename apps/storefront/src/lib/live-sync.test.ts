@@ -11,9 +11,20 @@ const variant = (id: string, amount: number, qty: number) => ({
   calculated_price: { calculated_amount_with_tax: amount, currency_code: "eur" },
 });
 
+const onSale = (id: string, amount: number, was: number) => ({
+  ...variant(id, amount, 5),
+  calculated_price: {
+    calculated_amount_with_tax: amount,
+    original_amount_with_tax: was,
+    currency_code: "eur",
+    calculated_price: { price_list_type: "sale" },
+  },
+});
+
 const products = [
   { id: "prod_A", variants: [variant("variant_1", 19, 3), variant("variant_2", 25, 0)] },
   { id: "prod_B", variants: [variant("variant_3", 9.5, 0)] },
+  { id: "prod_S", variants: [onSale("variant_s", 8, 10)] },
 ] as unknown as StoreProduct[];
 
 describe("liveEntries", () => {
@@ -25,8 +36,18 @@ describe("liveEntries", () => {
       ["variant_2", "variant", false, null],
       ["prod_B", "product", false, false],
       ["variant_3", "variant", false, null],
+      ["prod_S", "product", true, false],
+      ["variant_s", "variant", true, null],
     ]);
     expect(entries[0]?.price).toMatch(/^19,00\s€$/);
+  });
+
+  it("incluye precio anterior y descuento solo si hay oferta", () => {
+    const entries = liveEntries(products);
+    const sale = entries.find((e) => e.id === "prod_S");
+    expect(sale?.was).toMatch(/^10,00\s€$/);
+    expect(sale?.off).toBe("\u221220\u202f%");
+    expect(entries.find((e) => e.id === "prod_A")?.was).toBeNull();
   });
 
   it("descarta ids que no son seguros", () => {
@@ -40,6 +61,8 @@ describe("liveData", () => {
     const data = JSON.parse(liveData(liveEntries(products))) as Record<string, unknown[]>;
     expect(data["prod_A"]?.slice(1)).toEqual([1, 1]);
     expect(data["variant_2"]?.slice(1)).toEqual([0, 0]);
+    expect(data["prod_A"]).toHaveLength(3);
+    expect(data["prod_S"]?.slice(3)).toEqual([expect.stringMatching(/^10,00/), "\u221220\u202f%"]);
   });
 
   it("escapa '<' y '&' (va dentro de un <template>)", () => {
@@ -63,10 +86,18 @@ function fakeDom(json: string | null) {
   const price = el({ price: "prod_A" }, "18,00 €");
   const from = el({ priceFrom: "prod_A" });
   from.hidden = true;
+  const wasBox = el({ wasBox: "prod_S" });
+  wasBox.hidden = true;
+  const was = el({ was: "prod_S" }, "1,00 €");
+  const off = el({ off: "prod_S" }, "−1 %");
+  const wasBoxA = el({ wasBox: "prod_A" });
   const all: Record<string, unknown[]> = {
     "[data-pid]": [card, row],
     "[data-price]": [price],
     "[data-price-from]": [from],
+    "[data-was-box]": [wasBox, wasBoxA],
+    "[data-was]": [was],
+    "[data-off]": [off],
   };
   let observer: { cb: () => void; disconnected: boolean } | null = null;
   const parent = {
@@ -87,7 +118,19 @@ function fakeDom(json: string | null) {
   }
   const run = () =>
     new Function("document", "MutationObserver", LIVE_SYNC_APPLY)(document, MutationObserver);
-  return { card, row, price, from, parent, run, observer: () => observer };
+  return {
+    card,
+    row,
+    price,
+    from,
+    wasBox,
+    wasBoxA,
+    was,
+    off,
+    parent,
+    run,
+    observer: () => observer,
+  };
 }
 
 describe("LIVE_SYNC_APPLY", () => {
@@ -101,6 +144,15 @@ describe("LIVE_SYNC_APPLY", () => {
     expect(dom.price.textContent).toMatch(/^19,00\s€$/);
     expect(dom.from.hidden).toBe(false);
     expect(dom.observer()).toBeNull();
+  });
+
+  it("muestra el precio anterior y el descuento si hay oferta; los oculta si no", () => {
+    const dom = fakeDom(json);
+    dom.run();
+    expect(dom.wasBox.hidden).toBe(false);
+    expect(dom.was.textContent).toMatch(/^10,00\s€$/);
+    expect(dom.off.textContent).toBe("\u221220\u202f%");
+    expect(dom.wasBoxA.hidden).toBe(true);
   });
 
   it("espera al <template> con un MutationObserver y se desconecta", () => {

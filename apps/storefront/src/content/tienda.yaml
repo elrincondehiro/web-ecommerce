@@ -1,0 +1,18 @@
+# Datos de la tienda (pie, contacto). I-Interficie.
+- id: tienda
+  email: tienda@elrincondehiro.com
+  telefono: "640260110"
+  direccion:
+    calle: C/ Parlament 52
+    cp: "08015"
+    ciudad: Barcelona
+  redes:
+    - red: instagram
+      nombre: Instagram
+      url: https://www.instagram.com/el_rincon_de_hiro/
+    - red: whatsapp
+      nombre: WhatsApp
+      url: https://wa.me/34640260110
+    - red: youtube
+      nombre: YouTube
+      url: https://www.youtube.com/hirobordercollie

@@ -1,0 +1,29 @@
+---
+// "Sobre nosotros" (I-Interficie, D6): Markdown en src/content/paginas/sobre-nosotros.md,
+// estático, 0 JS. Fuente: astro-docs (content collections: getEntry + render).
+import { getEntry, render } from "astro:content";
+import { breadcrumbJsonLd } from "$lib/seo";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+
+const entry = (await getEntry("paginas", "sobre-nosotros"))!;
+const { Content } = await render(entry);
+const { titulo, descripcion, entradilla } = entry.data;
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  { name: titulo, href: "/sobre-nosotros/" },
+];
+---
+
+<BaseLayout
+  title={titulo}
+  description={descripcion}
+  jsonLd={[breadcrumbJsonLd(crumbs, Astro.site!)]}
+>
+  <Breadcrumbs items={crumbs} />
+  <article class="prose-page mx-auto max-w-prose">
+    <h1 class="font-display text-4xl font-bold tracking-tight">{titulo}</h1>
+    {entradilla && <p class="text-lg text-muted-foreground">{entradilla}</p>}
+    <Content />
+  </article>
+</BaseLayout>

@@ -16,6 +16,7 @@
     "test:integration:modules": "TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
     "seed:mock": "medusa exec ./src/scripts/seed-mock.ts",
     "seed:mock:v2": "medusa exec ./src/scripts/seed-mock-v2.ts",
+    "seed:mock:ofertas": "medusa exec ./src/scripts/seed-mock-ofertas.ts",
     "images:mock": "medusa exec ./src/scripts/mock-images.ts",
     "images:import": "medusa exec ./src/scripts/import-images.ts",
     "stripe:region": "medusa exec ./src/scripts/stripe-region.ts",

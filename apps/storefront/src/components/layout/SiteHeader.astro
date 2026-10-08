@@ -1,0 +1,213 @@
+---
+// Cabecera (I-Interficie). HTML estático; los menús son `popover` nativos (sin JS, D2):
+//   - Escritorio (≥ lg): Tienda ▾ (popover anclado a su botón: categorías), Ofertas, Sobre
+//     nosotros; búsqueda; tema; carrito.
+//   - Móvil: ☰ (popover lateral con todo el menú) · logo · tema · carrito; búsqueda en la 2.ª fila.
+// `popover="auto"` se cierra al pulsar fuera y con Escape; el botón lleva `popovertarget` (el
+// navegador gestiona aria-expanded y devuelve el foco). Fuente: MDN (Popover API, anchor
+// positioning: el invocador es el ancla implícita).
+// Ocultar al bajar / mostrar al subir (D1): `data-hide` lo pone SiteClient; sin JS, la cabecera
+// es fija (sticky) y siempre visible.
+// "Mi cuenta" oculto hasta la fase 9 (D7).
+import Icon from "../Icon.astro";
+import CartCountBadge from "../CartCountBadge.astro";
+import CartCount from "../server/CartCount.astro";
+import { CART_PATH } from "$lib/cart";
+import { getCategories } from "$lib/medusa";
+import { SEARCH_PATH } from "$lib/search";
+import { OFFERS_PATH } from "$lib/constants";
+
+interface Props {
+  cartCount?: number | undefined;
+}
+const { cartCount } = Astro.props;
+const categories = await getCategories();
+const current = Astro.url.pathname;
+const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : "";
+const inShop =
+  current.startsWith("/productos/") ||
+  current.startsWith("/categorias/") ||
+  current.startsWith("/producto/");
+const shopLinks = [
+  { href: "/productos/", name: "Todos los productos" },
+  ...categories.map((c) => ({ href: `/categorias/${c.handle}/`, name: c.name ?? "" })),
+];
+const mainLinks = [
+  { href: OFFERS_PATH, name: "Ofertas" },
+  { href: "/sobre-nosotros/", name: "Sobre nosotros" },
+];
+const aria = (href: string) => (current.startsWith(href) ? "page" : undefined);
+const iconBtn = "inline-flex size-10 items-center justify-center rounded-md hover:bg-muted";
+---
+
+<header class="site-header" data-site-header>
+  <div class="mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-2 px-4 py-2 lg:flex lg:gap-x-6 lg:py-3">
+    {/* Menú móvil */}
+    <button
+      type="button"
+      popovertarget="menu-movil"
+      class:list={[iconBtn, "-ml-2 lg:hidden"]}
+      aria-label="Menú"
+    >
+      <Icon name="list" />
+    </button>
+
+    <a
+      href="/"
+      class="flex items-center gap-2 justify-self-start font-display text-lg font-bold tracking-tight lg:text-xl"
+    >
+      {/* Fichero estático a 3× en public/: la cabecera también está en páginas on-demand, donde
+          <Image> llamaría a sharp en runtime (D6, fase 7-1). */}
+      <img
+        src="/simbolo-header.webp"
+        alt=""
+        width="36"
+        height="44"
+        loading="eager"
+        decoding="async"
+        class="h-8 w-auto lg:h-9"
+      />
+      El Rincón de Hiro
+    </a>
+
+    {/* Navegación de escritorio */}
+    <nav aria-label="Principal" class="hidden lg:block">
+      <ul class="flex items-center gap-x-1 text-sm font-semibold">
+        <li>
+          <button
+            type="button"
+            popovertarget="menu-tienda"
+            class="nav-link inline-flex items-center gap-1"
+            aria-current={inShop ? "true" : undefined}
+          >
+            Tienda <Icon name="caret-down" class="size-4" />
+          </button>
+          <div id="menu-tienda" popover class="nav-menu">
+            <ul class="flex flex-col py-1">
+              {shopLinks.map((l) => (
+                <li>
+                  <a href={l.href} class="nav-menu__link" aria-current={aria(l.href)}>
+                    {l.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </li>
+        {mainLinks.map((l) => (
+          <li>
+            <a href={l.href} class="nav-link" aria-current={aria(l.href)}>
+              {l.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    {/* Búsqueda (fase 7-1, D5): GET a /buscar/, sin JS. Con JS, SiteClient.astro muestra
+        sugerencias en #buscar-sug (fase 7-2). Móvil: 2.ª fila a todo el ancho. */}
+    <form
+      method="get"
+      action={SEARCH_PATH}
+      role="search"
+      class="relative col-span-3 row-start-2 flex w-full items-center gap-2 lg:ml-auto lg:w-64 xl:w-72"
+    >
+      <label for="buscar-q" class="sr-only">
+        Buscar productos
+      </label>
+      <input
+        id="buscar-q"
+        type="search"
+        name="q"
+        value={q}
+        placeholder="Buscar productos"
+        enterkeyhint="search"
+        autocomplete="off"
+        maxlength={100}
+        class="h-9 w-full min-w-0 rounded-md border-2 border-line bg-background px-3 text-sm"
+      />
+      <button
+        type="submit"
+        class="h-9 shrink-0 rounded-md border-2 border-line px-2 hover:bg-muted"
+        aria-label="Buscar"
+      >
+        <Icon name="magnifying-glass" class="size-5" />
+      </button>
+      <div id="buscar-sug" role="listbox" aria-label="Sugerencias" class="suggest" hidden></div>
+    </form>
+
+    <div class="-mr-2 flex items-center justify-self-end">
+      {/* Selector de tema: sin JS no hace nada, así que nace oculto y SiteClient lo muestra. */}
+      <button
+        type="button"
+        data-theme-toggle
+        class={iconBtn}
+        aria-label="Cambiar a modo oscuro"
+        hidden
+      >
+        <Icon name="moon" class="size-6 dark:hidden" />
+        <Icon name="sun" class="hidden size-6 dark:block" />
+      </button>
+      {/* Carrito: enlace a /carrito/ (sin JS y en móvil); en escritorio el script del carrito
+          abre el flyout. Contador: server island en páginas estáticas. */}
+      <a
+        href={CART_PATH}
+        data-cart-link
+        class:list={[iconBtn, "relative"]}
+        aria-label="Carrito"
+        aria-current={current === CART_PATH ? "page" : undefined}
+      >
+        <Icon name="shopping-cart" />
+        {cartCount !== undefined ? (
+          <CartCountBadge count={cartCount} />
+        ) : (
+          <CartCount server:defer>
+            <CartCountBadge slot="fallback" />
+          </CartCount>
+        )}
+      </a>
+    </div>
+  </div>
+</header>
+
+{/* Menú móvil: panel lateral (popover). Fuera del <header> para que su `translate` (ocultar al
+    bajar) no lo arrastre: un popover sigue en la capa superior, pero el ancla no importa aquí. */}
+<nav id="menu-movil" popover aria-label="Menú" class="mobile-menu lg:hidden">
+  <div class="flex items-center justify-between border-b-2 border-line px-4 py-3">
+    <span class="font-display text-lg font-bold">Menú</span>
+    <button
+      type="button"
+      popovertarget="menu-movil"
+      popovertargetaction="hide"
+      class={iconBtn}
+      aria-label="Cerrar menú"
+    >
+      <Icon name="x" />
+    </button>
+  </div>
+  <div class="flex flex-col gap-6 overflow-y-auto px-4 py-4">
+    <section aria-labelledby="menu-movil-tienda">
+      <h2 id="menu-movil-tienda" class="mb-2 text-xs tracking-wide text-muted-foreground uppercase">
+        Tienda
+      </h2>
+      <ul class="flex flex-col">
+        {shopLinks.map((l) => (
+          <li>
+            <a href={l.href} class="mobile-menu__link" aria-current={aria(l.href)}>
+              {l.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+    <ul class="flex flex-col border-t-2 border-line pt-4">
+      {mainLinks.map((l) => (
+        <li>
+          <a href={l.href} class="mobile-menu__link font-semibold" aria-current={aria(l.href)}>
+            {l.name}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</nav>

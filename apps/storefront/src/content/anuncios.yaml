@@ -1,0 +1,11 @@
+# Barra de anuncios (I-Interficie). Mensajes cortos (≤ 90 caracteres), en orden.
+# `activo: false` lo oculta sin borrarlo; `enlace` (opcional) es una ruta interna.
+- id: envio
+  texto: Envío a toda la península en 24/48 h
+- id: ofertas
+  texto: Rebajas en comida y accesorios seleccionados
+  enlace: /ofertas/
+- id: consejo
+  texto: ¿Dudas con la comida de tu perro o tu gato? Escríbenos y te aconsejamos
+- id: calidad
+  texto: Solo vendemos lo que daríamos a nuestros propios animales

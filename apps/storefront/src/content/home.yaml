@@ -1,0 +1,33 @@
+# Home (I-Interficie). Textos editoriales; los productos salen de Medusa
+# (Collection `destacados.coleccion` y Price Lists de tipo sale para las ofertas).
+- id: home
+  hero:
+    antetitulo: Especialistas en perros (y gatos)
+    titulo: Lo mejor para tu perro, aunque no sea lo más caro
+    texto: Comida y accesorios que probamos y recomendamos de verdad. Si algo no es bueno para tu perro o tu gato, te lo diremos.
+    cta:
+      texto: Ver la tienda
+      enlace: /productos/
+    # Provisional: el logo hasta tener foto del hero (src/assets/hero/…)
+    imagen: ../assets/marca/logo.png
+    imagenAlt: Ilustración de Hiro, el border collie de la tienda
+  destacados:
+    titulo: Nuestros favoritos
+    coleccion: destacados
+    maximo: 12
+  ofertas:
+    titulo: Ofertas de temporada
+    texto: Precios rebajados por tiempo limitado en productos que ya conoces.
+    cta: Ver ofertas
+  valores:
+    titulo: Cómo trabajamos
+    items:
+      - icono: heart
+        titulo: Te recomendamos lo mejor, aunque perdamos la venta
+        texto: Si lo que buscas no es lo que tu perro o tu gato necesita, te lo decimos y te orientamos hacia lo que sí le conviene.
+      - icono: seal-check
+        titulo: Calidad sin atajos
+        texto: Rechazamos productos y pedidos que no llegan a nuestro estándar. Preferimos vender menos y vender bien.
+      - icono: paw-print
+        titulo: Hechos por y para perreros
+        texto: Somos un equipo pequeño que convive con perros y gatos. Probamos lo que vendemos antes de ponerlo en la tienda.

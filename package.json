@@ -20,6 +20,7 @@
     "backend:seed:mock": "pnpm --filter backend seed:mock",
     "backend:stock:mock": "pnpm --filter backend stock:mock",
     "backend:seed:mock:v2": "pnpm --filter backend seed:mock:v2",
+    "backend:seed:mock:ofertas": "pnpm --filter backend seed:mock:ofertas",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

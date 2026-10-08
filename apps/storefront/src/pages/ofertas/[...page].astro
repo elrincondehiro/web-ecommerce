@@ -1,0 +1,60 @@
+---
+// /ofertas/ (I-Interficie, D5): productos con Price List `sale` vigente al hacer el build
+// (GET /store/ofertas del backend). Estática y paginada como /productos/. <LiveSync offersKey>
+// corrige precio y stock de ESTOS productos (clave corta → ids del build, lib/offer-pages.ts):
+// si una oferta termina después del build, su tarjeta deja de mostrar el tachado; una oferta
+// NUEVA no aparece en el listado hasta el siguiente build (webhook de rebuild, fase 13).
+import type { GetStaticPaths } from "astro";
+import { PAGE_SIZE } from "$lib/constants";
+import { getSaleProducts } from "$lib/medusa";
+import { offerPageKey } from "$lib/offer-pages";
+import { breadcrumbJsonLd } from "$lib/seo";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import LiveSync from "../../components/LiveSync.astro";
+import Pagination from "../../components/Pagination.astro";
+import ProductGrid from "../../components/ProductGrid.astro";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const products = await getSaleProducts();
+  // Sin ofertas: se genera igualmente /ofertas/ (página vacía), los enlaces del menú no rompen.
+  return paginate(products, { pageSize: PAGE_SIZE });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  { name: "Ofertas", href: "/ofertas/" },
+];
+const title = page.currentPage > 1 ? `Ofertas (página ${page.currentPage})` : "Ofertas";
+---
+
+<BaseLayout
+  title={title}
+  description="Productos rebajados por tiempo limitado en El Rincón de Hiro. Precios con IVA incluido."
+  jsonLd={[breadcrumbJsonLd(crumbs, Astro.site!)]}
+>
+  <Breadcrumbs items={crumbs} />
+  <h1 class="mb-2 font-display text-3xl font-bold tracking-tight">Ofertas</h1>
+  {page.total === 0 ? (
+    <div class="flex flex-col items-start gap-4 py-8">
+      <p class="text-muted-foreground">
+        Ahora mismo no tenemos ofertas activas. Vuelve pronto: las publicamos en rebajas y fechas
+        señaladas.
+      </p>
+      <a href="/productos/" class="font-semibold underline underline-offset-4">
+        Ver todos los productos
+      </a>
+    </div>
+  ) : (
+    <>
+      <p class="mb-6 text-sm text-muted-foreground">
+        {page.total} productos rebajados · página {page.currentPage} de {page.lastPage} · Precios
+        con IVA incluido
+      </p>
+      <ProductGrid products={page.data} priorityCount={2} />
+      <Pagination page={page} />
+      <LiveSync offersKey={offerPageKey(page.data.map((p) => p.id))} />
+    </>
+  )}
+</BaseLayout>

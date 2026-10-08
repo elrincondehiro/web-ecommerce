@@ -13,6 +13,10 @@
 // También el selector de tema claro/oscuro (I-Marca): botón [data-theme-toggle], oculto sin JS.
 // Sin elección guardada la web sigue al sistema (CSS); al pulsar se fija el contrario del
 // efectivo y se guarda en localStorage ("tema"; src/lib/theme-init.ts lo aplica antes de pintar).
+// Cabecera que se oculta al bajar y reaparece al subir (I-Interficie, D1): data-hide en
+// [data-site-header] (el CSS la desplaza con translate: sin cambio de layout, CLS 0). No se
+// oculta cerca del principio, con un menú/sugerencias abiertos ni con el foco dentro; un
+// listener pasivo + requestAnimationFrame. Sin JS, siempre visible (sticky).
 // Sin JS no hay sugerencias: el formulario GET a /buscar/ funciona igual. Los atributos ARIA
 // del combobox los pone este script (sin JS el campo es un <input type="search"> normal).
 // Fuente: APG (w3c/wai-aria-practices, combobox-autocomplete-list), astro-docs (scripts).
@@ -21,6 +25,34 @@
 <p class="sr-only" aria-live="polite" data-suggest-live></p>
 
 <script>
+  const header = document.querySelector<HTMLElement>("[data-site-header]");
+  if (header) {
+    let lastY = scrollY;
+    let ticking = false;
+    addEventListener(
+      "scroll",
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          const y = scrollY;
+          const down = y > lastY;
+          if (Math.abs(y - lastY) > 8) {
+            const keep =
+              y < header.offsetHeight * 2 ||
+              header.contains(document.activeElement) ||
+              document.querySelector(":popover-open");
+            header.toggleAttribute("data-hide", down && !keep);
+            lastY = y;
+          }
+          ticking = false;
+        });
+      },
+      { passive: true },
+    );
+    header.addEventListener("focusin", () => header.removeAttribute("data-hide"));
+  }
+
   const themeBtn = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
   if (themeBtn) {
     const root = document.documentElement;

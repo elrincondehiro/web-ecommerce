@@ -1,0 +1,56 @@
+---
+// Precio con IVA y, si hay oferta (Price List `sale`, I-Interficie), precio anterior tachado y
+// descuento. HTML del build con marcas para <LiveSync> (lib/live-sync.ts):
+//   data-price / data-price-from (precio y "Desde") · data-was-box (oferta sí/no) ·
+//   data-was (anterior) · data-off ("−20 %").
+// El bloque de oferta SIEMPRE se pinta (oculto si no hay): así LiveSync puede mostrarlo si la
+// oferta empieza después del build. Accesible: "Precio anterior" y "Precio" para lectores.
+import { formatDiscount, formatPrice } from "$lib/format";
+
+interface Props {
+  /** Id del producto o de la variante (clave de LiveSync). */
+  id: string;
+  amount: number;
+  currency: string;
+  wasAmount: number | null;
+  discountPercent: number | null;
+  /** Mostrar "Desde" (solo productos con varios precios). */
+  from?: boolean | undefined;
+  /** Tamaño: tarjeta (sm) o ficha (lg). */
+  size?: "sm" | "lg";
+}
+const { id, amount, currency, wasAmount, discountPercent, from, size = "sm" } = Astro.props;
+const onSale = wasAmount !== null && discountPercent !== null;
+---
+
+<span
+  class:list={[
+    "price inline-flex flex-wrap items-baseline gap-x-1.5 tabular-nums",
+    size === "lg" ? "text-2xl" : "text-sm",
+  ]}
+>
+  {from !== undefined && (
+    <span
+      class="text-[0.75em] font-normal text-muted-foreground"
+      data-price-from={id}
+      hidden={!from}
+    >
+      Desde
+    </span>
+  )}
+  <span class="price__now font-semibold" data-price={id}>
+    {formatPrice(amount, currency)}
+  </span>
+  <span class="inline-flex items-baseline gap-x-1.5" data-was-box={id} hidden={!onSale}>
+    <span class="sr-only">Precio anterior:</span>
+    <del class="text-[0.8em] font-normal text-muted-foreground" data-was={id}>
+      {onSale ? formatPrice(wasAmount, currency) : ""}
+    </del>
+    <span
+      class="self-center rounded-full bg-accent px-1.5 text-[0.7em] leading-5 font-bold text-accent-foreground"
+      data-off={id}
+    >
+      {onSale ? formatDiscount(discountPercent) : ""}
+    </span>
+  </span>
+</span>

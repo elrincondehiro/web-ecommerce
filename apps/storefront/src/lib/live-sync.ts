@@ -5,13 +5,17 @@
 // hash para la CSP) los aplica al llegar:
 //   - stock → cambia data-stock / data-vstock; las reglas de global.css muestran/ocultan
 //     [data-if-stock] / [data-if-vstock] y atenúan [data-dim].
-//   - precio → actualiza el texto de [data-price="<id>"] y el "Desde" ([data-price-from="<id>"]).
+//   - precio → actualiza el texto de [data-price="<id>"] y el "Desde" ([data-price-from="<id>"]);
+//   - oferta (I-Interficie) → muestra/oculta [data-was-box="<id>"] (precio tachado y descuento)
+//     y actualiza [data-was="<id>"] (precio anterior) y [data-off="<id>"] ("−20 %").
 // Marcado esperado (ver ProductCard.astro / BuyBox.astro):
 //   <article data-pid="prod_…" data-stock="in|out"> … <span data-if-stock="out">Agotado</span>
 //   <tr data-pid="variant_…" data-vstock="in|out"> … <span data-if-vstock="in">Disponible</span>
 //   <span data-price-from="prod_…">Desde</span> <span data-price="prod_…">4,95 €</span>
-import { getProductPricing, type StoreProduct } from "./catalog";
-import { formatPrice } from "./format";
+//   <span data-was-box="prod_…" hidden><del data-was="prod_…">5,95 €</del>
+//     <span data-off="prod_…">−20 %</span></span>
+import { discountPercent, getProductPricing, type StoreProduct } from "./catalog";
+import { formatDiscount, formatPrice } from "./format";
 
 const SAFE_ID = /^[A-Za-z0-9_-]+$/;
 
@@ -24,6 +28,10 @@ export interface LiveEntry {
   price: string | null;
   /** Solo productos: true si hay varios precios ("Desde"). */
   range?: boolean;
+  /** Precio anterior formateado si está rebajado (oferta), o null. */
+  was?: string | null;
+  /** Descuento formateado ("−20 %"), o null. */
+  off?: string | null;
 }
 
 export function liveEntries(products: StoreProduct[]): LiveEntry[] {
@@ -33,24 +41,42 @@ export function liveEntries(products: StoreProduct[]): LiveEntry[] {
     const currency = pricing.currencyCode;
     const fmt = (amount: number | null) =>
       amount != null && currency ? formatPrice(amount, currency) : null;
+    const off = (now: number | null, was: number | null) =>
+      now !== null && was !== null ? formatDiscount(discountPercent(now, was)) : null;
     out.push({
       id: product.id,
       level: "product",
       inStock: pricing.inStock,
       price: fmt(pricing.fromAmount),
       range: pricing.hasPriceRange,
+      was: fmt(pricing.wasAmount),
+      off: off(pricing.fromAmount, pricing.wasAmount),
     });
     for (const v of pricing.variants) {
-      out.push({ id: v.id, level: "variant", inStock: v.inStock, price: fmt(v.amount) });
+      out.push({
+        id: v.id,
+        level: "variant",
+        inStock: v.inStock,
+        price: fmt(v.amount),
+        was: fmt(v.wasAmount),
+        off: off(v.amount, v.wasAmount),
+      });
     }
   }
   return out.filter((e) => SAFE_ID.test(e.id));
 }
 
-/** Datos de la island: id → [precio | null, rango 0|1, stock 0|1], seguro dentro de HTML. */
+/**
+ * Datos de la island: id → [precio | null, rango 0|1, stock 0|1, anterior?, descuento?], seguro
+ * dentro de HTML. Sin oferta, la tupla se queda en 3 (v[3] undefined = sin oferta).
+ */
 export function liveData(entries: LiveEntry[]): string {
-  const map: Record<string, [string | null, 0 | 1, 0 | 1]> = {};
-  for (const e of entries) map[e.id] = [e.price, e.range ? 1 : 0, e.inStock ? 1 : 0];
+  type Tuple = [string | null, 0 | 1, 0 | 1] | [string | null, 0 | 1, 0 | 1, string, string];
+  const map: Record<string, Tuple> = {};
+  for (const e of entries) {
+    const base: [string | null, 0 | 1, 0 | 1] = [e.price, e.range ? 1 : 0, e.inStock ? 1 : 0];
+    map[e.id] = e.was && e.off ? [...base, e.was, e.off] : base;
+  }
   return JSON.stringify(map).replace(/</g, "\\u003c").replace(/&/g, "\\u0026");
 }
 
@@ -68,5 +94,9 @@ export const LIVE_SYNC_APPLY =
   'for(const e of d.querySelectorAll("[data-price]")){const v=m[e.dataset.price];' +
   "if(v&&v[0]&&e.textContent!==v[0])e.textContent=v[0]}" +
   'for(const e of d.querySelectorAll("[data-price-from]")){const v=m[e.dataset.priceFrom];' +
-  "if(v)e.hidden=!v[1]}return 1};" +
+  "if(v)e.hidden=!v[1]}" +
+  'for(const e of d.querySelectorAll("[data-was-box]")){const v=m[e.dataset.wasBox];' +
+  "if(v)e.hidden=!v[3]}" +
+  'for(const[k,i]of[["was",3],["off",4]])for(const e of d.querySelectorAll("[data-"+k+"]")){' +
+  "const v=m[e.dataset[k]];if(v&&v[i])e.textContent=v[i]}return 1};" +
   "a()||new MutationObserver((_,o)=>a()&&o.disconnect()).observe(p,{childList:true})}";

@@ -11,3 +11,8 @@ export function formatPrice(amount: number, currencyCode: string): string {
   }
   return fmt.format(amount);
 }
+
+/** Descuento para mostrar: "−20 %" (signo menos U+2212 y espacio fino de no separación). */
+export function formatDiscount(percent: number): string {
+  return `\u2212${percent}\u202f%`;
+}

@@ -1,19 +1,47 @@
 ---
+// Home (I-Interficie). Estática (0 JS propio): hero, categorías, carrusel de destacados
+// (Collection de Medusa, scroll-snap CSS), banner de ofertas (solo si hay ofertas en el build) y
+// valores. Textos en src/content/home.yaml; productos de Medusa. Precio/stock del carrusel: build
+// + <LiveSync collectionId> (mismo orden que el build).
+import { Picture } from "astro:assets";
+import { getEntry } from "astro:content";
 import { buttonVariants } from "$lib/components/ui/button";
-import { getAllProducts, getCategories } from "$lib/medusa";
-import { SITE_NAME } from "$lib/constants";
+import {
+  getAllProducts,
+  getCategories,
+  getCollectionByHandle,
+  getCollectionProducts,
+  getSaleProductIds,
+} from "$lib/medusa";
+import { productsInCategory } from "$lib/catalog";
+import { OFFERS_PATH, SITE_NAME } from "$lib/constants";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import ProductGrid from "../components/ProductGrid.astro";
+import Icon from "../components/Icon.astro";
 import LiveSync from "../components/LiveSync.astro";
+import ProductCard from "../components/ProductCard.astro";
+import ProductImage from "../components/ProductImage.astro";
 
-const FEATURED = 8;
-const [products, categories] = await Promise.all([getAllProducts(), getCategories()]);
-const featured = products.slice(0, FEATURED);
+const home = (await getEntry("home", "home"))!.data;
+const [products, categories, collection, saleIds] = await Promise.all([
+  getAllProducts(),
+  getCategories(),
+  getCollectionByHandle(home.destacados.coleccion),
+  getSaleProductIds(),
+]);
+const featured = collection
+  ? (await getCollectionProducts(collection.id)).slice(0, home.destacados.maximo)
+  : [];
+// Categoría → imagen de su primer producto con foto (orden del catálogo).
+const categoryCards = categories.map((c) => {
+  const first = productsInCategory(products, c.id).find((p) => p.thumbnail ?? p.images?.[0]);
+  return { ...c, image: first ? (first.thumbnail ?? first.images?.[0]?.url ?? null) : null };
+});
+const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
 ---
 
 <BaseLayout
   title={SITE_NAME}
-  description="Tienda online de El Rincón de Hiro: ropa, hogar, libros, accesorios y alimentación con envío en España."
+  description="El Rincón de Hiro: tienda online especializada en perros (y gatos). Comida y accesorios seleccionados, con envío a toda la península."
   jsonLd={[
     {
       "@context": "https://schema.org",
@@ -24,36 +52,115 @@ const featured = products.slice(0, FEATURED);
     },
   ]}
 >
-  <section class="mb-12 flex flex-col items-start gap-4">
-    <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">El Rincón de Hiro</h1>
-    <p class="max-w-prose text-muted-foreground">
-      Productos seleccionados con envío a toda España. Precios con IVA incluido.
-    </p>
-    <a href="/productos/" class={buttonVariants({ size: "lg" })}>
-      Ver todos los productos
-    </a>
+  {/* Hero: imagen LCP con `priority` (eager + fetchpriority=high, astro-docs). */}
+  <section class="mb-14 grid items-center gap-8 md:grid-cols-[1.2fr_1fr]">
+    <div class="flex flex-col items-start gap-4">
+      <p class="text-sm font-bold tracking-wide text-accent-text uppercase">
+        {home.hero.antetitulo}
+      </p>
+      <h1 class="font-display text-4xl leading-tight font-bold tracking-tight text-balance sm:text-5xl">
+        {home.hero.titulo}
+      </h1>
+      <p class="max-w-prose text-lg text-muted-foreground">{home.hero.texto}</p>
+      <a href={home.hero.cta.enlace} class={buttonVariants({ size: "lg" })}>
+        {home.hero.cta.texto}
+      </a>
+    </div>
+    <div class="mx-auto w-full max-w-60 rounded-md md:max-w-sm border-2 border-line bg-[#F3E8DC] p-4 shadow-md">
+      <Picture
+        src={home.hero.imagen}
+        alt={home.hero.imagenAlt}
+        widths={[208, 416, 624]}
+        sizes="(min-width: 768px) 336px, 208px"
+        formats={["avif", "webp"]}
+        fallbackFormat="webp"
+        priority
+        class="h-auto w-full"
+      />
+    </div>
   </section>
 
-  <section aria-labelledby="categorias" class="mb-12">
-    <h2 id="categorias" class="mb-4 text-xl font-semibold">
-      Categorías
+  {categoryCards.length > 0 && (
+    <section aria-labelledby="home-categorias" class="mb-14">
+      <h2 id="home-categorias" class:list={[heading, "mb-5"]}>
+        Categorías
+      </h2>
+      <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {categoryCards.map((c) => (
+          <li>
+            <a
+              href={`/categorias/${c.handle}/`}
+              class="group flex flex-col overflow-hidden rounded-md border-2 border-line bg-card shadow-sm transition-[translate,box-shadow] hover:translate-x-px hover:translate-y-px hover:shadow-xs"
+            >
+              <ProductImage src={c.image} alt="" />
+              <span class="border-t-2 border-line px-3 py-2 font-display font-bold group-hover:underline">
+                {c.name}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {featured.length > 0 && collection && (
+    <section class="mb-14">
+      <div class="mb-5 flex items-baseline justify-between gap-4">
+        <h2 id="home-destacados" class={heading}>
+          {home.destacados.titulo}
+        </h2>
+        <a href="/productos/" class="text-sm font-semibold underline-offset-4 hover:underline">
+          Ver todo
+        </a>
+      </div>
+      {/* Carrusel solo CSS (scroll-snap): sin flechas ni JS; con teclado, la región recibe el foco
+          y se desplaza con las flechas (tabindex=0 + role=region con nombre, WAI). La región
+          es el carrusel (no la <section>, que no lleva nombre: así no hay dos regiones). */}
+      <div role="region" aria-labelledby="home-destacados" tabindex="0" class="carousel -mx-4 px-4">
+        <ul class="carousel__track">
+          {featured.map((p) => (
+            <li class="carousel__item flex">
+              <ProductCard product={p} headingLevel={3} back="/" />
+            </li>
+          ))}
+        </ul>
+      </div>
+      <LiveSync collectionId={collection.id} offset={0} limit={featured.length} />
+    </section>
+  )}
+
+  {saleIds.length > 0 && (
+    <section
+      aria-labelledby="home-ofertas"
+      class="mb-14 flex flex-col items-start gap-4 rounded-md border-2 border-line bg-accent p-6 text-accent-foreground shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-8"
+    >
+      <div class="flex items-start gap-4">
+        <Icon name="tag" class="size-10 shrink-0" />
+        <div>
+          <h2 id="home-ofertas" class="font-display text-2xl font-bold">
+            {home.ofertas.titulo}
+          </h2>
+          <p class="mt-1">{home.ofertas.texto}</p>
+        </div>
+      </div>
+      <a href={OFFERS_PATH} class={buttonVariants({ size: "lg", variant: "outline" })}>
+        {home.ofertas.cta}
+      </a>
+    </section>
+  )}
+
+  <section aria-labelledby="home-valores">
+    <h2 id="home-valores" class:list={[heading, "mb-5"]}>
+      {home.valores.titulo}
     </h2>
-    <ul class="flex flex-wrap gap-2">
-      {categories.map((c) => (
-        <li>
-          <a href={`/categorias/${c.handle}/`} class={buttonVariants({ variant: "outline" })}>
-            {c.name}
-          </a>
+    <ul class="grid gap-6 md:grid-cols-3">
+      {home.valores.items.map((v) => (
+        <li class="flex flex-col gap-2 rounded-md border-2 border-line bg-card p-5 shadow-sm">
+          <Icon name={v.icono} class="size-8 text-accent-text" />
+          <h3 class="font-display text-lg leading-snug font-bold">{v.titulo}</h3>
+          <p class="text-muted-foreground">{v.texto}</p>
         </li>
       ))}
     </ul>
-  </section>
-
-  <section aria-labelledby="destacados">
-    <h2 id="destacados" class="mb-4 text-xl font-semibold">
-      Destacados
-    </h2>
-    <ProductGrid products={featured} headingLevel={3} priorityCount={2} />
-    <LiveSync offset={0} limit={FEATURED} />
   </section>
 </BaseLayout>

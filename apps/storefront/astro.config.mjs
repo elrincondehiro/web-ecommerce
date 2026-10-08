@@ -33,32 +33,41 @@ const CSP_ENABLED = false;
 const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal/"];
 
 /**
- * Manifiesto de miniaturas de /buscar/ (fase 7-1, D6) FUERA de lo público. El endpoint
- * prerenderizado `src/pages/buscar/tarjetas.json.ts` lo escribe en dist/client (lo que se sirve);
- * al terminar el build se mueve a dist/server, que solo lee el servidor (lib/card-images.ts).
+ * Manifiestos del build FUERA de lo público. Endpoints prerenderizados los escriben en dist/client
+ * (lo que se sirve); al terminar el build se mueven a dist/server, que solo lee el servidor
+ * (lib/build-manifest.ts):
+ *   - buscar/tarjetas.json → card-images.json (miniaturas de /buscar/, fase 7-1, D6)
+ *   - ofertas/paginas.json → offer-pages.json (clave → ids de /ofertas/, I-Interficie)
  * Fuente: astro-docs (integrations-reference: astro:config:done `config.build.server`,
  * astro:build:done `dir` = salida del cliente; comprobado en astro 7.3.5 integrations/hooks.js).
  * @returns {import("astro").AstroIntegration}
  */
-function privateCardImages() {
+function privateBuildManifests() {
+  const MANIFESTS = [
+    { from: "buscar/tarjetas.json", to: "card-images.json" },
+    { from: "ofertas/paginas.json", to: "offer-pages.json" },
+  ];
   /** @type {URL | undefined} */
   let serverDir;
   return {
-    name: "private-card-images",
+    name: "private-build-manifests",
     hooks: {
       "astro:config:done": ({ config }) => {
         serverDir = config.build.server;
       },
       "astro:build:done": async ({ dir, logger }) => {
-        const from = new URL("buscar/tarjetas.json", dir);
-        if (!serverDir || !existsSync(from)) return;
-        const to = new URL("card-images.json", serverDir);
+        if (!serverDir) return;
         await mkdir(serverDir, { recursive: true });
-        await rename(from, to);
-        // dist/client/buscar/ queda vacía (/buscar/ es on-demand): fuera, para no servirla
-        const folder = new URL("buscar/", dir);
-        if (!(await readdir(folder)).length) await rmdir(folder);
-        logger.info(`tarjetas.json → ${fileURLToPath(to)} (no público)`);
+        for (const m of MANIFESTS) {
+          const from = new URL(m.from, dir);
+          if (!existsSync(from)) continue;
+          const to = new URL(m.to, serverDir);
+          await rename(from, to);
+          // Carpeta vacía (p. ej. dist/client/buscar/, /buscar/ es on-demand): fuera
+          const folder = new URL("./", from);
+          if (!(await readdir(folder)).length) await rmdir(folder);
+          logger.info(`${m.from} → ${fileURLToPath(to)} (no público)`);
+        }
       },
     },
   };
@@ -75,7 +84,7 @@ export default defineConfig({
     sitemap({
       filter: (page) => !LEGAL_PATHS.some((p) => page.endsWith(p)) && !page.includes("/buscar/"),
     }),
-    privateCardImages(),
+    privateBuildManifests(),
   ],
   // Sin prefetch de Astro: inyecta /_astro/page.*.js en todas las páginas y el presupuesto
   // es 0 bundles JS en home/listado/ficha. Se sustituirá por Speculation Rules (fase 13).

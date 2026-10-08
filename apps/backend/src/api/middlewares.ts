@@ -1,4 +1,9 @@
-import { configureStoreSearch, defineMiddlewares } from "@medusajs/framework/http";
+import {
+  configureStoreSearch,
+  defineMiddlewares,
+  validateAndTransformQuery,
+} from "@medusajs/framework/http";
+import { StoreOfertasQuery } from "./store/ofertas/route";
 
 /**
  * Fuente: docs.medusajs.com/llms-full.txt ("Store Search API Route").
@@ -11,6 +16,12 @@ export default defineMiddlewares({
     {
       matcher: "/store/search",
       middlewares: [configureStoreSearch({ allowed_indexes: { product: true } })],
+    },
+    // Productos en oferta (fase I-Interficie): `region_id` obligatorio.
+    {
+      matcher: "/store/ofertas",
+      methods: ["GET"],
+      middlewares: [validateAndTransformQuery(StoreOfertasQuery, {})],
     },
   ],
 });

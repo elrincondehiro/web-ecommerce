@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import products from "./__fixtures__/products.json";
 import {
+  discountPercent,
   getProductPricing,
   isVariantInStock,
   metaDescription,
@@ -8,6 +9,7 @@ import {
   sliceRange,
   type StoreProduct,
   type StoreVariant,
+  variantWasAmount,
 } from "./catalog";
 
 const catalog = products as unknown as StoreProduct[];
@@ -36,9 +38,10 @@ describe("isVariantInStock", () => {
 });
 
 describe("getProductPricing", () => {
+  // 001 y 002 están en la Price List de prueba (−20 %, seed-mock-ofertas): precio rebajado.
   it("precio mínimo con IVA, rango y stock por variante", () => {
     const p = getProductPricing(byHandle("mock-camiseta-clasico-001"));
-    expect(p.fromAmount).toBe(4.95);
+    expect(p.fromAmount).toBe(3.95);
     expect(p.currencyCode).toBe("eur");
     expect(p.hasPriceRange).toBe(true);
     expect(p.inStock).toBe(true);
@@ -48,7 +51,7 @@ describe("getProductPricing", () => {
   it("variante única: sin rango", () => {
     const p = getProductPricing(byHandle("mock-taza-esencial-002"));
     expect(p.hasPriceRange).toBe(false);
-    expect(p.fromAmount).toBe(41.95);
+    expect(p.fromAmount).toBe(33.55);
   });
 
   it("sin precios calculados (catálogo de build)", () => {
@@ -76,5 +79,53 @@ describe("utilidades de listado", () => {
     expect(out.length).toBeLessThanOrEqual(30);
     expect(out.endsWith("…")).toBe(true);
     expect(out).not.toMatch(/pal…$/);
+  });
+});
+
+describe("ofertas (Price List sale)", () => {
+  const sale = (amount: number, was: number, type: string | null = "sale") =>
+    variant({
+      id: `v${amount}`,
+      manage_inventory: false,
+      calculated_price: {
+        calculated_amount_with_tax: amount,
+        original_amount_with_tax: was,
+        currency_code: "eur",
+        calculated_price: { price_list_type: type },
+      },
+    } as unknown as Partial<StoreVariant>);
+
+  it("precio anterior solo con lista sale y precio menor", () => {
+    expect(variantWasAmount(sale(8, 10))).toBe(10);
+    expect(variantWasAmount(sale(10, 10))).toBeNull();
+    expect(variantWasAmount(sale(8, 10, "override"))).toBeNull();
+    expect(variantWasAmount(sale(8, 10, null))).toBeNull();
+  });
+
+  it("descuento entero redondeado hacia abajo", () => {
+    expect(discountPercent(8, 10)).toBe(20);
+    expect(discountPercent(63.15, 78.95)).toBe(20);
+    expect(discountPercent(7.95, 10)).toBe(20);
+    expect(discountPercent(7.96, 10)).toBe(20);
+    expect(discountPercent(8.01, 10)).toBe(19);
+  });
+
+  it("el producto anuncia la oferta de la variante más barata", () => {
+    const p = { id: "p", variants: [sale(12, 15), sale(8, 10)] } as unknown as StoreProduct;
+    const pricing = getProductPricing(p);
+    expect(pricing.fromAmount).toBe(8);
+    expect(pricing.wasAmount).toBe(10);
+    expect(pricing.discountPercent).toBe(20);
+  });
+
+  it("fixtures: producto en oferta (Price List sale de prueba)", () => {
+    const pricing = getProductPricing(byHandle("mock-camiseta-clasico-001"));
+    expect(pricing).toMatchObject({ fromAmount: 3.95, wasAmount: 4.95, discountPercent: 20 });
+  });
+
+  it("sin oferta: null", () => {
+    const pricing = getProductPricing(byHandle("mock-sudadera-artesano-006"));
+    expect(pricing.wasAmount).toBeNull();
+    expect(pricing.discountPercent).toBeNull();
   });
 });

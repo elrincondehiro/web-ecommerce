@@ -1,0 +1,28 @@
+---
+// Barra de anuncios (I-Interficie, D3): marquee SOLO CSS, 0 JS. Mensajes de
+// src/content/anuncios.yaml. El texto se pinta dos veces para el bucle continuo; la segunda copia
+// es `aria-hidden` e `inert` (sin foco ni lectura repetida). Se para con :hover y :focus-within;
+// con prefers-reduced-motion no se mueve: los mensajes se ven en una lista que se puede desplazar.
+// No se puede cerrar (D3): cerrarla y recordarlo necesitaría JS y movería la página (CLS).
+import { getCollection } from "astro:content";
+
+const items = (await getCollection("anuncios")).map((e) => e.data).filter((a) => a.activo);
+// Duración proporcional a la longitud (velocidad ~constante, ≈ 5 caracteres/s), en tramos de
+// 10 s (20–90 s) con clases de global.css: sin `style=` en línea (la CSP prevista lo bloquearía).
+const chars = items.reduce((n, a) => n + a.texto.length + 6, 0);
+const tramo = Math.min(90, Math.max(20, Math.round(chars / 5 / 10) * 10));
+---
+
+{items.length > 0 && (
+  <section aria-label="Anuncios" class={`announce announce--${tramo}`}>
+    <div class="announce__track">
+      {[false, true].map((copy) => (
+        <ul class="announce__list" aria-hidden={copy ? "true" : undefined} inert={copy}>
+          {items.map((a) => (
+            <li>{a.enlace ? <a href={a.enlace}>{a.texto}</a> : a.texto}</li>
+          ))}
+        </ul>
+      ))}
+    </div>
+  </section>
+)}

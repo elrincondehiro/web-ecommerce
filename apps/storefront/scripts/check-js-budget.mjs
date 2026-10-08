@@ -25,6 +25,7 @@ const ZERO_JS = [
   /^producto\//,
   /^404\.html$/,
   /^(condiciones|privacidad|cookies|aviso-legal)\//,
+  /^(ofertas|sobre-nosotros)\//, // I-Interficie
 ];
 /** Bundle de pago del checkout (fase 5) y su presupuesto (gzip, con imports). */
 const PAYMENT_BUNDLE = /^StripePayment\.[^/]*\.js$/;
