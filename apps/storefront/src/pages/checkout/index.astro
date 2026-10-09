@@ -234,10 +234,15 @@ const currency = cart.currency_code ?? "eur";
       </li>
 
       {/* ── 2. Envío ─────────────────────────────────────────────────────────── */}
+      {/* Pasos aún no disponibles: borde discontinuo y texto atenuado con --muted-foreground
+          (contraste AA). Con `opacity` el texto quedaba en 2,5–3,7:1 (auditoría pre-fase 10). */}
       <li id="envio" class="scroll-mt-4">
         <section
           aria-labelledby="envio-titulo"
-          class:list={["rounded-lg border p-4 sm:p-6", !step1 && "opacity-60"]}
+          class:list={[
+            "rounded-lg border p-4 sm:p-6",
+            !step1 && "border-dashed text-muted-foreground",
+          ]}
         >
           <h2 id="envio-titulo" class="mb-4 text-xl font-semibold">
             2. Envío
@@ -288,7 +293,10 @@ const currency = cart.currency_code ?? "eur";
       <li id="pago" class="scroll-mt-4">
         <section
           aria-labelledby="pago-titulo"
-          class:list={["rounded-lg border p-4 sm:p-6", !step2 && "opacity-60"]}
+          class:list={[
+            "rounded-lg border p-4 sm:p-6",
+            !step2 && "border-dashed text-muted-foreground",
+          ]}
         >
           <h2 id="pago-titulo" class="mb-4 text-xl font-semibold">
             3. Pago

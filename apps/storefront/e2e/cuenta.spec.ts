@@ -168,7 +168,7 @@ test.describe("cuenta sin JS", () => {
 test.describe("cuenta con JS", () => {
   test("en las páginas de cuenta el icono del carrito abre el panel", async ({ page }) => {
     await page.goto("/cuenta/entrar/");
-    await page.getByRole("link", { name: "Carrito", exact: true }).click();
+    await page.getByRole("link", { name: /^Carrito( \d+)?$/ }).click();
     await expect(page.locator("#cart-flyout")).toBeVisible();
     await expect(page).toHaveURL(/\/cuenta\/entrar\/$/);
   });

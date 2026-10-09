@@ -20,8 +20,10 @@ interface Props {
   back: string;
   /** Páginas on-demand: miniatura del build (o null → placeholder). Ver ProductImage. */
   prebuilt?: CardImage | null | undefined;
+  /** `sizes` de la imagen si la tarjeta no está en la rejilla (carrusel de la home). */
+  imageSizes?: string | undefined;
 }
-const { product, headingLevel = 2, priority = false, back, prebuilt } = Astro.props;
+const { product, headingLevel = 2, priority = false, back, prebuilt, imageSizes } = Astro.props;
 const Heading = headingLevel === 3 ? "h3" : "h2";
 const href = `/producto/${product.handle}/`;
 const pricing = getProductPricing(product);
@@ -37,7 +39,13 @@ const single = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
 >
   <div class="relative overflow-hidden rounded-md border-2 border-line shadow-sm transition-[translate,box-shadow] group-hover:translate-x-px group-hover:translate-y-px group-hover:shadow-xs">
     <div data-dim class="transition-opacity">
-      <ProductImage src={image} alt={product.title} priority={priority} prebuilt={prebuilt} />
+      <ProductImage
+        src={image}
+        alt={product.title}
+        priority={priority}
+        prebuilt={prebuilt}
+        sizes={imageSizes}
+      />
     </div>
     <Badge variant="secondary" class="absolute top-2 left-2" data-if-stock="out">
       Agotado

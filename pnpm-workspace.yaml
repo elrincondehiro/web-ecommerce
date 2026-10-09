@@ -29,3 +29,15 @@ allowBuilds:
   protobufjs: false
   # Alta de telemetría de Medusa: desactivada (decisión P6 fase 2)
   "@medusajs/telemetry": false
+
+# Parches de seguridad de dependencias transitivas (auditoría pre-fase 10, `pnpm audit --prod`).
+# Solo se fuerzan las versiones VULNERABLES (selector `pkg@rango`); el resto del árbol no cambia.
+# Quitar cada una cuando la dependencia que la trae (astro, @medusajs/*, react-email) ya la incluya.
+# Fuente: context7 /pnpm/pnpm.io (settings/dependency-resolution, overrides).
+overrides:
+  # GHSA alto: `max-stale` puede servir una respuesta cacheada de otro usuario. Lo usa astro 7.3.5
+  # (caché de imágenes remotas en el build).
+  "http-cache-semantics@<=4.2.0": "4.3.0"
+  # GHSA moderado: ReDoS con la opción `$data`. Lo traen @medusajs/cli (umzug/@rushstack) y
+  # react-email (conf). Misma major 8.
+  "ajv@>=8.0.0 <8.18.0": "8.20.0"

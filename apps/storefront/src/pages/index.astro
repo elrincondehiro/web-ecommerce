@@ -21,6 +21,7 @@ import ScrollDrag from "../components/ScrollDrag.astro";
 import LiveSync from "../components/LiveSync.astro";
 import ProductCard from "../components/ProductCard.astro";
 import ProductImage from "../components/ProductImage.astro";
+import { CAROUSEL_CARD_SIZES, CATEGORY_CARD_SIZES } from "$lib/images";
 
 const home = (await getEntry("home", "home"))!.data;
 const [products, categories, collection, saleIds] = await Promise.all([
@@ -93,7 +94,7 @@ const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
               href={`/categorias/${c.handle}/`}
               class="group flex flex-col overflow-hidden rounded-md border-2 border-line bg-card shadow-sm transition-[translate,box-shadow] hover:translate-x-px hover:translate-y-px hover:shadow-xs"
             >
-              <ProductImage src={c.image} alt="" />
+              <ProductImage src={c.image} alt="" sizes={CATEGORY_CARD_SIZES} />
               <span class="border-t-2 border-line px-3 py-2 font-display font-bold group-hover:underline">
                 {c.name}
               </span>
@@ -127,7 +128,7 @@ const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
         <ul class="carousel__track">
           {featured.map((p) => (
             <li class="carousel__item flex">
-              <ProductCard product={p} headingLevel={3} back="/" />
+              <ProductCard product={p} headingLevel={3} back="/" imageSizes={CAROUSEL_CARD_SIZES} />
             </li>
           ))}
         </ul>

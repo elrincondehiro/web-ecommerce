@@ -2,27 +2,28 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 09-oct-2026 · **Fase 9 (cuenta de cliente) en curso** en `feat/cuenta`: implementada y probada en local, pendiente de revisión y PR (§6.2).
+> Última actualización: 10-oct-2026 · **Fase 9 (cuenta) cerrada** (PR #32) y **auditoría previa a la fase 10** hecha en `fix/auditoria-pre-fase10` (§6.3) → **siguiente: fase 10 (CD + imágenes Docker)**, plan por hacer.
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado | Doc                                                |
-| ------------------------------------------- | ------ | -------------------------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md)                   |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)                       |
-| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)                       |
-| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)                       |
-| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)                       |
-| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)                       |
-| 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)                       |
-| 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)                       |
-| 7-1 Búsqueda + filtros                      | ✅     | [fase7.md](./fases/fase7.md)                       |
-| 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)                       |
-| I-Marca (identidad visual + tema)           | ✅     | [faseI-marca.md](./fases/faseI-marca.md)           |
-| I-Interficie (UX/UI)                        | ✅     | [faseI-interficie.md](./fases/faseI-interficie.md) |
-| D Diseño (afinar colores, interfaz…)        | ✅     | [faseD-diseno.md](./fases/faseD-diseno.md)         |
-| 8 Emails                                    | ✅     | [fase8.md](./fases/fase8.md)                       |
-| 9 Cuenta de cliente                         | 🚧     | [fase9.md](./fases/fase9.md)                       |
+| Fase                                        | Estado | Doc                                                        |
+| ------------------------------------------- | ------ | ---------------------------------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md)                           |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)                               |
+| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)                               |
+| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)                               |
+| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)                               |
+| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)                               |
+| 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)                               |
+| 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)                               |
+| 7-1 Búsqueda + filtros                      | ✅     | [fase7.md](./fases/fase7.md)                               |
+| 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)                               |
+| I-Marca (identidad visual + tema)           | ✅     | [faseI-marca.md](./fases/faseI-marca.md)                   |
+| I-Interficie (UX/UI)                        | ✅     | [faseI-interficie.md](./fases/faseI-interficie.md)         |
+| D Diseño (afinar colores, interfaz…)        | ✅     | [faseD-diseno.md](./fases/faseD-diseno.md)                 |
+| 8 Emails                                    | ✅     | [fase8.md](./fases/fase8.md)                               |
+| 9 Cuenta de cliente                         | ✅     | [fase9.md](./fases/fase9.md)                               |
+| Auditoría previa a la fase 10               | ✅     | [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md) |
 
 Roadmap completo y tiempos: README §13.
 
@@ -141,7 +142,8 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - Pendientes: `/productos/` 91–94 en Lighthouse local; Safari sin probar; textos, foto del hero, logo en negativo, botón de pausa.
   - Aviso conocido en el build (local y CI, no rompe nada): «Found 6 warnings while optimizing generated CSS … 'scroll-button' is not recognized». Es Lightning CSS (1.32.0, vía `@tailwindcss/node` 4.3.3), que aún no conoce `::scroll-button()`; las reglas salen intactas en `dist/`. **No hacer nada**: desaparecerá al actualizar Lightning CSS (Renovate).
 - **Fase 8 (emails): cerrada** (PR #31, `19e4cfd`) → ver §6.1.
-- **Fase 9 (cuenta): en curso** → ver §6.2. La transferencia y Bizum, después.
+- **Fase 9 (cuenta): cerrada** (PR #32, `d27945b`) → ver §6.2. La transferencia y Bizum, después.
+- **Auditoría previa a la fase 10: hecha** → ver §6.3. **Siguiente: fase 10.**
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
@@ -168,7 +170,7 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 6.2 Fase 9 — Cuenta de cliente
 
-**Estado: 🚧** (`feat/cuenta`). Detalle, flujo de Medusa verificado y pruebas en [fase9.md](./fases/fase9.md).
+**Estado: ✅** (PR #32). Detalle, flujo de Medusa verificado y pruebas en [fase9.md](./fases/fase9.md).
 
 - **Verificación de email obligatoria** (`authVerificationsPerActor.customer`) y sesión de **7 días** (`jwtExpiresIn`, también el Admin).
 - Registro solo con email + contraseña. El cliente de Medusa se crea en el **primer login tras verificar** (por eso no se pide el nombre al registrarse).
@@ -184,12 +186,25 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - **Fase de marketing** (tras producción): **programa de puntos** (0,8 % → Store Credit del `@medusajs/loyalty-plugin`) y **carrito abandonado** (tutorial oficial; comunicación comercial: consentimiento/baja).
   - **Más datos del cliente** cuando el usuario pase la lista (campos de Medusa, `metadata` o módulo propio + `defineLink`).
   - Formas de pago guardadas: descartadas por ahora. Lista de deseos: idea.
-- 5 e2e (`buscar` 103/112, `carrito` 169, `interficie` 50/128) **ya fallaban en `main`** con la BD local: revisar aparte.
+- ~~5 e2e fallaban en `main`~~: era el entorno (reinicio de `medusa develop` y stock), no el código. Resuelto en la auditoría (§6.3): suite completa 97/97.
+
+## 6.3 Auditoría previa a la fase 10
+
+**Estado: ✅** (`fix/auditoria-pre-fase10`). Detalle y medidas en [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md).
+
+- **Lighthouse móvil** (1000 productos, brotli, mediana de 3): todas las páginas con Perf ≥ 99 y A11y 100; LCP ≤ 2 s en los listados. Medir **siempre con compresión** (proxy brotli o Caddy): sin ella, los listados bajan a 91–94.
+- **Caché**: el middleware pone `private, no-store` en TODA respuesta de `/carrito/`, `/checkout/`, `/pedido/`, `/cuenta/` y `/_actions/` (también en las redirecciones; Cloudflare cachea los 303 sin cabecera 20 min). Toda ruta por usuario nueva va bajo esos prefijos o se añade a `lib/cache.ts`.
+- **Imágenes**: `sizes` con el ancho real (rejilla, carrusel y categorías) y un ancho de 240 px: de −45 % a −48 % de imágenes en los listados. Tarjetas fuera de la rejilla: pasar `imageSizes`.
+- **Overrides de seguridad** (`pnpm-workspace.yaml`): `http-cache-semantics` 4.3.0 y `ajv` 8.20.0. Quedan 8 avisos dentro de `@medusajs/*` (Renovate).
+- **e2e**: `globalSetup` espera a que el backend responda de forma estable. **No** cambiar de rama ni lanzar `medusa exec` mientras corren (el watcher de `medusa develop` se reinicia). Tres pasadas seguidas: 97/97.
 
 ## 7. Pendientes conocidos
 
 - **Fase 10 — typecheck del backend en CI igual que en local**: en local `tsc` usa los tipos generados en `apps/backend/.medusa/types` (ignorado por git; lo crean `medusa develop` y `medusa build`). En CI `typecheck` va antes que `build` y esos tipos no existen, así que `query.graph` devuelve `any` y fallan los parámetros implícitos. Solución prevista: generar los tipos en CI antes del `typecheck` (p. ej. ejecutar antes el build del backend; `medusa build` los genera con `skipDbConnection`, sin BD), **sin tocar código**. Después, **deshacer el parche del commit `2f12b98`** (tipo explícito `linked` en `apps/backend/src/scripts/stripe-region.ts`) y comprobar que el CI sigue en verde con los tipos generados ([fase5.md](./fases/fase5.md) §8).
 - **Fase 10 — Meilisearch en producción**: crear una key propia del backend (no la master) con permisos solo de índices, documentos, ajustes, tareas y búsqueda; `MEILISEARCH_HOST`/`MEILISEARCH_API_KEY` también en el `backend-worker`, que es el que llena el índice. Para cargas masivas, reindexar a mano: los eventos van a ~2,5/s en dev ([fase7.md](./fases/fase7.md) §2.0.2).
+- **Fase 10 — CI**: Lighthouse CI (método de la auditoría, §2) y `pnpm audit --prod --audit-level=high` con excepciones de `@medusajs/*`.
+- **Fase 11 — Cloudflare**: regla de caché que **respete el origen** (no «Cache Everything» por encima de `no-store`); rate limiting de entrar/registro/recuperar/checkout.
+- **Fase 11/13**: CSS crítico (~110 ms), LCP variable de la ficha (ancho de 720 px) y logos del pie/cabecera más pequeños ([auditoría](./fases/auditoria-pre-fase10.md) §6).
 - **Fase 10/11 — limpieza de carritos**: scheduled job que borre carritos de invitado sin completar con más de N días (Medusa no lo hace) ([fase9.md](./fases/fase9.md) §7).
 - Tests de integración del backend fuera del CI (necesitan Postgres/Redis como `services:`); propuesta para la fase 10.
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).

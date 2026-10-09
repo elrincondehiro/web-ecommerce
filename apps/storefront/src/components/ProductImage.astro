@@ -27,6 +27,8 @@ interface Props {
    * (producto posterior al build) → placeholder. Nunca <Picture> (sharp en runtime).
    */
   prebuilt?: CardImage | null | undefined;
+  /** `sizes` propio (p. ej. el carrusel); por defecto, el del preset. Mismos ficheros. */
+  sizes?: string | undefined;
 }
 const {
   src,
@@ -35,8 +37,10 @@ const {
   priority = false,
   class: className = "",
   prebuilt,
+  sizes: sizesProp,
 } = Astro.props;
 const preset = IMAGE_PRESETS[variant];
+const sizes = sizesProp ?? preset.sizes;
 const classes = `aspect-square w-full bg-muted object-cover ${className}`;
 const loading = priority ? "eager" : "lazy";
 ---
@@ -44,12 +48,12 @@ const loading = priority ? "eager" : "lazy";
 {prebuilt ? (
   <picture>
     {prebuilt.sources.map((s) => (
-      <source srcset={s.srcset} type={s.type} sizes={preset.sizes} />
+      <source srcset={s.srcset} type={s.type} sizes={sizes} />
     ))}
     <img
       src={prebuilt.src}
       srcset={prebuilt.srcset}
-      sizes={preset.sizes}
+      sizes={sizes}
       alt={alt}
       width={preset.width}
       height={preset.width}
@@ -66,7 +70,7 @@ const loading = priority ? "eager" : "lazy";
     width={preset.width}
     height={preset.width}
     widths={preset.widths}
-    sizes={preset.sizes}
+    sizes={sizes}
     formats={[...IMAGE_FORMATS]}
     fallbackFormat={IMAGE_FALLBACK_FORMAT}
     fit="cover"

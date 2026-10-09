@@ -130,7 +130,7 @@ test.describe("con JS", () => {
     expect(navigated).toBe(false);
 
     const flyout = page.locator("#cart-flyout");
-    const icon = page.getByRole("link", { name: "Carrito", exact: true });
+    const icon = page.getByRole("link", { name: /^Carrito( \d+)?$/ });
     if (isMobile) {
       await expect(flyout).toBeHidden();
       // Fase D (3.2): el icono abre el panel también en móvil (lateral, como en escritorio)
@@ -183,7 +183,7 @@ test.describe("con JS", () => {
         await expect(flyout).toBeHidden();
       }
     }
-    await page.getByRole("link", { name: "Carrito", exact: true }).click();
+    await page.getByRole("link", { name: /^Carrito( \d+)?$/ }).click();
     await expect(flyout.locator("li")).toHaveCount(2 + EXTRA.length);
     // 5.1: precio anterior tachado + descuento en la línea en oferta
     const sale = flyout.locator("li").filter({ hasText: "Camiseta Clásico 001" });

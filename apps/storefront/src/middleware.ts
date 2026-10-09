@@ -11,6 +11,7 @@
 // Cuenta (fase 9): `locals.customerToken` = JWT de la cookie `customer_token` si es de un cliente
 // creado y no ha caducado (sin red: la firma la comprueba Medusa). Las actions `account.*`
 // responden siempre 303 (PRG) al destino que devuelvan, con el aviso en la cookie flash.
+import type { APIContext, MiddlewareNext } from "astro";
 import { getActionContext } from "astro:actions";
 import { COOKIE_SECURE } from "astro:env/server";
 import { defineMiddleware } from "astro:middleware";
@@ -25,6 +26,7 @@ import {
   readToken,
 } from "$lib/account";
 import { CHECKOUT_PATH, FLASH_COOKIE, encodeFlash, flashCookieOptions } from "$lib/checkout";
+import { isPrivatePath } from "$lib/cache";
 import {
   isErrorNotice,
   noticeMessage,
@@ -44,6 +46,24 @@ function toResult(result: { data?: unknown; error?: { code?: string } | undefine
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  const response = await handle(context, next);
+  // Rutas por usuario (carrito, checkout, pedido, cuenta, actions): `private, no-store` en TODA
+  // respuesta, también en las redirecciones. Un 303 sin Cache-Control lo cachea Cloudflare
+  // 20 min por defecto (cache/how-to/configure-cache-status-code) y serviría la redirección de
+  // un usuario a otro. Auditoría pre-fase 10, B1.
+  if (context.isPrerendered || !isPrivatePath(context.url.pathname)) return response;
+  try {
+    response.headers.set("Cache-Control", NO_STORE);
+    return response;
+  } catch {
+    // Cabeceras inmutables (p. ej. Response.redirect): se copia la respuesta.
+    const copy = new Response(response.body, response);
+    copy.headers.set("Cache-Control", NO_STORE);
+    return copy;
+  }
+});
+
+async function handle(context: APIContext, next: MiddlewareNext): Promise<Response> {
   // Las páginas prerenderizadas no tienen cookies (Astro avisa si se leen en el build).
   if (!context.isPrerendered) {
     const token = context.cookies.get(TOKEN_COOKIE)?.value;
@@ -101,4 +121,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const response = context.redirect(redirectTarget(form?.get("back"), code), 303);
   response.headers.set("Cache-Control", NO_STORE);
   return response;
-});
+}

@@ -8,11 +8,14 @@ export const IMAGE_PRESETS: Record<
   ImageVariant,
   { width: number; widths: number[]; sizes: string }
 > = {
-  // Rejilla: 2 cols (móvil) · 3 (sm) · 4 (lg, contenedor max-w-6xl = 1152px)
+  // Rejilla: 2 cols (móvil) · 3 (sm) · 4 (lg, contenedor max-w-6xl = 1152px), con px-4 y gap-4.
+  // `sizes` = ancho REAL de la tarjeta (auditoría pre-fase 10: con "50vw" un móvil de 412px y
+  // DPR 2,6 pedía la de 480px para 178px CSS). 240 cubre los móviles de DPR ≤ 2,6 en 2 columnas.
   card: {
     width: 640,
-    widths: [320, 480, 640],
-    sizes: "(min-width: 1024px) 270px, (min-width: 640px) 33vw, 50vw",
+    widths: [240, 320, 480, 640],
+    sizes:
+      "(min-width: 1024px) min(calc(25vw - 1.75rem), 270px), (min-width: 640px) calc(33.33vw - 1.7rem), calc(50vw - 1.5rem)",
   },
   // Ficha: 1 col (móvil, ancho − px-4·2) · 2 cols con gap-8 (md) · máx. 544px (max-w-6xl).
   // 800 cubre el móvil típico (≈380px CSS × DPR 1,75–2 ≈ 665–760px) sin saltar a 960.
@@ -24,6 +27,18 @@ export const IMAGE_PRESETS: Record<
   // Miniaturas de la galería
   thumb: { width: 160, widths: [80, 160], sizes: "80px" },
 };
+
+/**
+ * `sizes` de las tarjetas del carrusel de la home (más estrechas que en la rejilla: 2,3 · 3,3 ·
+ * 4,3 por vista, global.css `.carousel__track`). Mismos ficheros que `card` (el `sizes` no
+ * cambia el hash): solo cambia qué ancho del srcset elige el navegador.
+ */
+export const CAROUSEL_CARD_SIZES =
+  "(min-width: 1024px) calc((min(100vw, 72rem) - 6rem) / 4.3), (min-width: 640px) calc((100vw - 5rem) / 3.3), calc((100vw - 4.5rem) / 2.3)";
+
+/** `sizes` de las tarjetas de categorías de la home: 2 · 3 (sm) · 5 (lg) columnas, gap-4. */
+export const CATEGORY_CARD_SIZES =
+  "(min-width: 1024px) min(calc(20vw - 1.6rem), 217px), (min-width: 640px) calc(33.33vw - 1.7rem), calc(50vw - 1.5rem)";
 
 export const IMAGE_FORMATS = ["avif", "webp"] as const;
 export const IMAGE_FALLBACK_FORMAT = "webp" as const;

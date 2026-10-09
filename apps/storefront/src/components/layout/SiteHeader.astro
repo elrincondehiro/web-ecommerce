@@ -158,16 +158,18 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
       >
         <Icon name="user" />
       </a>
-      {/* Carrito: enlace a /carrito/ (sin JS y en móvil); en escritorio el script del carrito
-          abre el flyout. Contador: server island en páginas estáticas. */}
+      {/* Carrito: enlace a /carrito/ (sin JS); con JS, el script del carrito abre el panel.
+          Contador: server island en páginas estáticas. Nombre accesible = texto oculto
+          "Carrito" + el número visible ("Carrito 3"): con `aria-label` el nombre no incluía el
+          número que se ve (WCAG 2.5.3, Lighthouse label-content-name-mismatch). */}
       <a
         href={CART_PATH}
         data-cart-link
         class:list={[iconBtn, "relative"]}
-        aria-label="Carrito"
         aria-current={current === CART_PATH ? "page" : undefined}
       >
         <Icon name="shopping-cart" />
+        <span class="sr-only">Carrito</span>
         {cartCount !== undefined ? (
           <CartCountBadge count={cartCount} />
         ) : (

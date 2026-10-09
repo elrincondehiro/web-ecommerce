@@ -1,8 +1,8 @@
 # Fase 9 — Cuenta de cliente
 
-> **Estado:** 🚧 en curso (implementada y probada en local; pendiente de revisión del usuario y PR)
-> **Rama/PR:** `feat/cuenta` · PR en Gitea (`feat/cuenta` → `main`)
-> **Anterior:** [Fase 8](./fase8.md) · **Siguiente:** Fase 10 (CD + imágenes Docker)
+> **Estado:** ✅ completada (10-oct-2026)
+> **Rama/PR:** `feat/cuenta` · PR #32 (`d27945b`)
+> **Anterior:** [Fase 8](./fase8.md) · **Siguiente:** [Auditoría previa a la fase 10](./auditoria-pre-fase10.md)
 
 ## 1. Objetivos
 
@@ -131,7 +131,7 @@ pnpm --filter storefront exec playwright test e2e/cuenta.spec.ts   # 10 (escrito
 ### 5.2 Resultados (09-oct-2026, local)
 
 - `e2e/cuenta.spec.ts`: 10/10. Con `cuenta`, `carrito`, `checkout` y `sugerencias`: 51 pasan, 3 se saltan (checkout con Stripe) y fallan los 2 de `carrito` 169, que ya fallaban en `main`.
-- La suite completa tiene 5 fallos que **también fallan en `main`** con la misma BD y build (`buscar` 103/112, `carrito` 169, `interficie` 50/128: datos mock y carrusel de destacados). No son de esta fase; revisarlos aparte.
+- La suite completa dio 5 fallos que también salían en `main`. **Corrección (auditoría pre-fase 10 §4.7):** venían del entorno (`medusa develop` reiniciándose a mitad de suite y stock agotado), no del código; con el backend estable, la suite completa da 97/97.
 - Prueba manual con curl (sin JS), contra `pnpm dev`:
   - registro, reenvío al entrar sin verificar, confirmar, bienvenida, datos, dos direcciones, cambio de predeterminada, editar y borrar una ajena (error);
   - checkout rellenado y pedido pagado (Stripe test) que aparece en «Mis pedidos», con el email «Ver mi pedido» → `/cuenta/pedidos/<id>/`; un pedido de otro cliente da 404;
@@ -144,7 +144,7 @@ pnpm --filter storefront exec playwright test e2e/cuenta.spec.ts   # 10 (escrito
 - [x] Todos los flujos funcionan sin JS y pasan los e2e.
 - [x] 0 KB de JS nuevo (`check:budget` sin cambios).
 - [x] Ningún token, contraseña ni email en logs ni en el navegador (cookies httpOnly, logs sin datos personales).
-- [ ] Revisión del usuario en el navegador y PR con `quality` en verde.
+- [x] Revisión del usuario en el navegador y PR con `quality` en verde (PR #32).
 
 ## 7. Pendientes / riesgos
 
@@ -159,4 +159,4 @@ pnpm --filter storefront exec playwright test e2e/cuenta.spec.ts   # 10 (escrito
 - Cambiar el email de la cuenta: no está (exigiría verificar el nuevo).
 - Rate limiting de entrar, registro y recuperar en Caddy/Cloudflare (AGENTS §10, fase 11).
 - `SHOP_NOTIFY_EMAIL`, las variables de email y la verificación también en el **worker** (fases 10/11).
-- Los 5 e2e que ya fallaban en `main` (§5.2).
+- ~~Los 5 e2e que fallaban en `main`~~ → resuelto (entorno), ver la auditoría pre-fase 10.
