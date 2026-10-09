@@ -29,7 +29,7 @@
     "@medusajs/medusa": "2.21.2",
     "@rokmohar/medusa-plugin-meilisearch": "2.3.1",
     "emails": "workspace:*",
-    "resend": "6.31.0"
+    "resend": "6.32.1"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.21.2",

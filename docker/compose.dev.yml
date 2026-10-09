@@ -97,7 +97,7 @@ services:
   # El whsec_ para STRIPE_WEBHOOK_SECRET (apps/backend/.env):
   #   docker compose --env-file docker/.env -f docker/compose.dev.yml run --rm stripe-cli listen --print-secret
   stripe-cli:
-    image: stripe/stripe-cli:v1.53.0
+    image: stripe/stripe-cli:v1.53.1
     profiles: ["stripe"]
     command:
       - listen
