@@ -171,7 +171,11 @@ Excepción aprobada en la fase 4: home, listados y fichas cargan **un único bun
 
 Excepción aprobada en la fase 7-1: `/buscar/` carga, además de `CartClient`, **un bundle de búsqueda** (`SearchLive`, ≤ 1 KB gzip, sin imports, en `/_astro/`) que aplica los filtros en el sitio (modelo híbrido: sin JS los filtros son enlaces y cada clic navega). `check:budget` mide el bundle y el e2e de `/buscar/` comprueba que la página no carga otros.
 
-Excepción aprobada en la fase 7-2: **todas** las páginas (vía `BaseLayout`, también carrito, checkout y pedido) cargan **un bundle común** (`SiteClient`, ≤ 1,5 KB gzip, sin imports, en `/_astro/`): sugerencias de la barra de búsqueda y selector de tema claro/oscuro (I-Marca). Es el sitio para el JS que necesiten todas las páginas; no lo dividas con `import()` dinámico (Vite añade ~750 B de helper, `docs/fases/fase7.md` §2.7.1). `check:budget` exige exactamente uno en cada página estática.
+Excepción aprobada en la fase 7-2: **todas** las páginas (vía `BaseLayout`, también carrito, checkout y pedido) cargan **un bundle común** (`SiteClient`, ≤ 1,5 KB gzip, sin imports, en `/_astro/`): sugerencias de la barra de búsqueda y selector de tema claro/oscuro (I-Marca). Es el sitio para el JS que necesiten todas las páginas; no lo dividas con `import()` dinámico (Vite añade ~750 B de helper, `docs/fases/fase7.md` §2.7.1). `check:budget` exige exactamente uno en cada página estática. En la Fase D lleva también el clic fuera de un popover (solo cierra) y los botones − / + de cantidad (1,46 KB).
+
+Excepción aprobada en la Fase D: `/carrito/` carga **un bundle propio** (`CartLive`, ≤ 1 KB gzip, sin imports, en `/_astro/`) que aplica los cambios de cantidad y «Quitar» sin recargar (sin JS, los formularios de siempre). `check:budget` lo mide y el e2e del carrito comprueba que la página solo carga `SiteClient` + `CartLive`.
+
+Excepción aprobada en la Fase D: las páginas con **carrusel** cargan **un bundle de arrastre** (`ScrollDrag`, ≤ 1 KB gzip, sin imports, en `/_astro/`) para desplazarlo con el ratón. **Recordatorio: todo carrusel nuevo (cualquier contenedor con scroll horizontal) lleva `data-drag-scroll` y su componente incluye `<ScrollDrag />`** (Astro deduplica el script), salvo que el arrastre se meta dentro del propio componente. `check:budget` exige `ScrollDrag` en toda página con `data-drag-scroll` y lo prohíbe en las demás. Hoy: carrusel de la home (`index.astro`) y galería de la ficha (`ProductGallery.astro`).
 
 ---
 

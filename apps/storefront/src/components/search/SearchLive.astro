@@ -5,7 +5,11 @@
 // enlaces internos (filtros, chips, paginación) y los formularios GET (precio, orden) dentro de
 // [data-search-root]; se pide el fragmento (data-partial + query) y se cambia en el sitio:
 //   - URL con history.pushState; atrás/adelante (popstate) vuelven a pedir el fragmento;
-//   - se conservan el scroll, el panel móvil abierto y el foco del filtro pulsado;
+//   - se conservan el scroll, el panel móvil abierto y el foco del filtro pulsado. Fase D (4.1):
+//     el panel (#filtros) NO se sustituye: se cambia su contenido y el de #resultados, así no
+//     se cierra ni vuelve a animarse (antes: innerHTML de todo + showPopover → parpadeo). Se
+//     mantiene también el scroll de su lista. Si la estructura no coincide, todo el contenedor;
+//   - "Ver resultados" (formulario del precio, 4.2) cierra el panel y aplica;
 //   - la paginación sube a #resultados; el recuento se anuncia en [data-search-announce];
 //   - si algo falla → navegación normal a la URL (lo mismo que sin JS).
 // Va como fichero en /_astro/ (astro.config.mjs assetsInlineLimit), no inline. Sin imports.
@@ -42,10 +46,22 @@
         const res = await fetch(partial + qs, { signal: ctl.signal });
         if (!res.ok) throw 0;
         url = path + new URL(res.url).search;
-        const html = await res.text();
-        const open = root.querySelector(":popover-open");
-        root.innerHTML = html;
-        if (open) root.querySelector<HTMLElement>("#" + open.id)?.showPopover();
+        const t = document.createElement("template");
+        t.innerHTML = await res.text();
+        const n = t.content;
+        const q = (r: ParentNode, s: string) => r.querySelector<HTMLElement>(s);
+        const panel = q(root, "#filtros");
+        const results = q(root, "#resultados");
+        const np = q(n, "#filtros");
+        const nr = q(n, "#resultados");
+        if (panel && results && np && nr) {
+          const list = q(panel, ".filter-panel__body");
+          const y = list?.scrollTop ?? 0;
+          panel.replaceChildren(...np.childNodes);
+          results.replaceWith(nr);
+          const nl = q(panel, ".filter-panel__body");
+          if (nl) nl.scrollTop = y;
+        } else root.replaceChildren(n);
         if (push) history.pushState(null, "", url);
         if (focus)
           [...root.querySelectorAll<HTMLElement>(`#${focus[0]} [role=checkbox]`)]
@@ -77,6 +93,7 @@
       const form = e.target as HTMLFormElement;
       if (form.method !== "get" || new URL(form.action).pathname !== path) return;
       e.preventDefault();
+      form.closest<HTMLElement>(":popover-open")?.hidePopover();
       submit(form);
     });
     // El orden se aplica al elegirlo (el botón "Ordenar" queda para sin JS).

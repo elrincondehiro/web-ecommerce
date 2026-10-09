@@ -24,6 +24,6 @@ export const STRIPE_THEME = {
       colorText: "#F3F7F8",
       colorDanger: "#FF7A70",
     },
-    rules: { ".Input": { border: "2px solid #05090B" }, ".Tab": { border: "2px solid #05090B" } },
+    rules: { ".Input": { border: "2px solid #8FA3AD" }, ".Tab": { border: "2px solid #8FA3AD" } },
   },
 } as const;

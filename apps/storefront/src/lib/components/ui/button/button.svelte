@@ -4,19 +4,21 @@
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
 
   export const buttonVariants = tv({
-    base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border-2 border-line text-sm font-bold shadow-sm focus-visible:ring-3 aria-invalid:ring-3 active:not-aria-[haspopup]:translate-x-[3px] active:not-aria-[haspopup]:translate-y-[3px] active:not-aria-[haspopup]:shadow-none [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+    base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border-2 border-line text-sm font-bold shadow-sm focus-visible:ring-3 aria-invalid:ring-3 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-xs active:not-aria-[haspopup]:translate-x-[3px] active:not-aria-[haspopup]:translate-y-[3px] active:not-aria-[haspopup]:shadow-none motion-reduce:transition-none [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        // Fase D (hover 4 elegido en la comparación del bloque 2): se hunde a medio camino (2px, sombra xs) y el color cambia
+        // de forma visible (mezcla con el texto, global.css .btn-hover-*).
+        default: "bg-primary text-primary-foreground btn-hover-primary",
         outline:
-          "bg-card hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+          "bg-card text-foreground btn-hover-outline aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-secondary text-secondary-foreground btn-hover-secondary aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
-          "border-transparent shadow-none hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground active:translate-0",
+          "border-transparent shadow-none hover:translate-0 hover:shadow-none hover:bg-secondary hover:text-secondary-foreground aria-expanded:bg-muted aria-expanded:text-foreground active:translate-0",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/40",
-        link: "border-transparent shadow-none text-primary underline-offset-4 hover:underline active:translate-0",
+          "bg-destructive text-destructive-foreground btn-hover-destructive focus-visible:ring-destructive/40",
+        link: "border-transparent shadow-none text-primary underline-offset-4 hover:translate-0 hover:shadow-none hover:underline active:translate-0",
       },
       size: {
         default:

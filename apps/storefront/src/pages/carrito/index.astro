@@ -1,11 +1,13 @@
 ---
-// Página del carrito (fase 4): on-demand, por usuario, 0 JS (ni siquiera el de server islands:
-// el contador se pinta directamente). También es el destino de los POST de los formularios
+// Página del carrito (fase 4): on-demand, por usuario. JS: SiteClient (común) y CartLive (Fase D,
+// 5.3: actualización sin recargar; sin JS, los formularios de siempre). Sin server islands: el
+// contador se pinta directamente. También es el destino de los POST de los formularios
 // (`?_action=cart.*`), que el middleware convierte en 303 (PRG). Ver docs/fases/fase4.md.
 import { currentCart } from "$lib/cart-server";
 import { itemCount } from "$lib/cart";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CartView from "../../components/CartView.astro";
+import CartLive from "../../components/CartLive.astro";
 
 export const prerender = false;
 
@@ -22,4 +24,5 @@ const cart = await currentCart(Astro.cookies);
 >
   <h1 class="mb-6 text-3xl font-semibold tracking-tight">Carrito</h1>
   <CartView cart={cart} />
+  <CartLive />
 </BaseLayout>

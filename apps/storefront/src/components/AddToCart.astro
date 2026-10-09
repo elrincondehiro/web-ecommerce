@@ -7,6 +7,7 @@
 // - El botón respeta data-stock del contenedor más cercano (data-if-stock, corregido por LiveSync).
 import { buttonVariants } from "$lib/components/ui/button";
 import { MAX_QUANTITY, actionUrl } from "$lib/cart";
+import QuantityField from "./QuantityField.astro";
 
 interface Props {
   variantId?: string | undefined;
@@ -27,28 +28,26 @@ const {
   class: className = "",
 } = Astro.props;
 const qtyId = `qty-${productId}`;
-const inputSize = size === "sm" ? "h-8 w-14" : size === "lg" ? "h-10 w-16" : "h-9 w-16";
 ---
 
 <form method="post" action={actionUrl("cart.add")} data-cart-form class={className}>
   <input type="hidden" name="back" value={back} />
   {variantId && <input type="hidden" name="variant_id" value={variantId} />}
   <slot name="before" />
-  <div class="flex items-end gap-2">
-    <div class="flex flex-col gap-1">
+  {/* flex-wrap: en tarjetas estrechas (carrusel móvil, 360 px) el botón baja en vez de salirse. */}
+  <div class="flex flex-wrap items-end gap-2">
+    {/* Agotado: sin cantidad (Fase D, 1.9); data-if-stock lo sigue LiveSync. */}
+    <div class="flex flex-col gap-1" data-if-stock="in">
       <label for={qtyId} class="text-xs text-muted-foreground">
         Cantidad
       </label>
-      <input
+      <QuantityField
         id={qtyId}
-        name="quantity"
-        type="number"
-        inputmode="numeric"
-        min="1"
+        value={1}
+        min={1}
         max={MAX_QUANTITY}
-        value="1"
-        required
-        class={`${inputSize} rounded-md border-2 border-line bg-background px-2 text-sm tabular-nums`}
+        size={size}
+        label={productTitle}
       />
     </div>
     <button

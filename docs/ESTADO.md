@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 08-oct-2026 · **I-Interficie cerrada** (PR #28, `db788b8`) → **siguiente: Fase D (diseño)** ([faseD-diseno.md](./fases/faseD-diseno.md), plan por hacer) → 8 Emails.
+> Última actualización: 12-oct-2026 · **Fase D (diseño) cerrada** (rama `feat/d-diseno`, PR por abrir) → **siguiente: 8 Emails**.
 
 ## 1. Dónde estamos
 
@@ -20,7 +20,7 @@
 | 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)                       |
 | I-Marca (identidad visual + tema)           | ✅     | [faseI-marca.md](./fases/faseI-marca.md)           |
 | I-Interficie (UX/UI)                        | ✅     | [faseI-interficie.md](./fases/faseI-interficie.md) |
-| D Diseño (afinar colores, interfaz…)        | ⏳     | [faseD-diseno.md](./fases/faseD-diseno.md)         |
+| D Diseño (afinar colores, interfaz…)        | ✅     | [faseD-diseno.md](./fases/faseD-diseno.md)         |
 
 Roadmap completo y tiempos: README §13.
 
@@ -29,9 +29,9 @@ Roadmap completo y tiempos: README §13.
 - **Monorepo pnpm 12.9.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), otro en `/buscar/` (`SearchLive`, ~0,8 KB gzip) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), el común `SiteClient` (~1,4 KB), `ScrollDrag` en carruseles, otro en `/buscar/` (`SearchLive`, ~0,9 KB gzip), `CartLive` en `/carrito/` (~0,6 KB) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
-    - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand con 0 JS. e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
+    - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand (con JS, `CartLive` aplica los cambios sin recargar; Fase D). e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
     - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Stripe solo autoriza; la captura se hace desde el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
     - **Imágenes**: `<Picture>` AVIF/WebP en build desde el bucket. El primer build tarda unos 30 min con 1000 productos × 4 fotos (`avif.effort: 2`); con la caché `node_modules/.astro`, unos 20 s.
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
@@ -129,7 +129,14 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - Contenido editorial en Content Collections (`apps/storefront/src/content/`); comercial en Medusa (Collections, Price Lists `sale`).
   - **Precio tachado + descuento** en toda la tienda (`Price.astro`, `LiveSync` con precio anterior). Backend: `GET /store/ofertas` y `seed:mock:ofertas`.
   - `/ofertas/`: la island recibe una clave de página (manifiesto `dist/server/offer-pages.json`), no los ids: JS inline fijo (~1,1 KB).
-- **Siguiente: Fase D (diseño)**: afinar colores, componentes e interfaz con el usuario ([faseD-diseno.md](./fases/faseD-diseno.md)). **No empezar sin plan + confirmación** (REGLA Nº 1). Después: 8 Emails → 9 Cuenta; la transferencia y Bizum, tras Emails.
+- **Fase D (diseño): cerrada** ([faseD-diseno.md](./fases/faseD-diseno.md), tabla final en §3).
+  - Tokens: borde oscuro `#8FA3AD` y `--shadow-color`; hover de botones (`btn-hover-*`) y de la cabecera (`.header-hover`).
+  - Carruseles 4,3 / 2,3 con flechas `::scroll-button` y arrastre con ratón (`ScrollDrag`, 361 B; todo carrusel nuevo lleva `data-drag-scroll` + `<ScrollDrag />`, AGENTS §3.4). Galería: una foto por vista.
+  - Panel del carrito = `popover` lateral (✕, Escape o clic fuera; el clic fuera no activa lo de debajo), en tres partes con pie fijo (total + «Ver carrito») y «Quitar» por línea.
+  - Cantidad − / + (`QuantityField.astro`, `<html data-js>` antes de pintar); `/carrito/` se actualiza sin recargar (`CartLive`, 625 B, parcial `/carrito/parcial/`); ofertas tachadas en el carrito (`compare_at_unit_price`).
+  - `/buscar/` sin parpadeo del panel de filtros; «Ver resultados».
+  - Pendientes: `/productos/` 91–94 en Lighthouse local; Safari sin probar; textos, foto del hero, logo en negativo, botón de pausa.
+- **Siguiente: 8 Emails** (Resend + React Email). **No empezar sin plan + confirmación** (REGLA Nº 1). Después: 9 Cuenta; la transferencia y Bizum, tras Emails.
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:

@@ -1,0 +1,51 @@
+---
+// Campo de cantidad (Fase D, 3.3). Sin JS: <input type="number"> normal (como siempre). Con JS
+// (SiteClient pone <html data-js>) aparecen los botones − / + (CSS .qty), se quitan las
+// flechas nativas (CSS .qty) y en táctil no se abre el teclado (inputmode="none"; con ratón
+// se sigue pudiendo escribir). Los botones respetan min/max y lanzan "input" + "change" (el
+// carrito se actualiza solo al cambiar, bloque 5).
+interface Props {
+  id: string;
+  value: number;
+  min: number;
+  max: number;
+  size?: "sm" | "default" | "lg";
+  /** Nombre accesible de los botones (p. ej. el producto). */
+  label: string;
+}
+const { id, value, min, max, size = "default", label } = Astro.props;
+const h = size === "sm" ? "h-8" : size === "lg" ? "h-10" : "h-9";
+const btn = `${h} w-8 shrink-0 font-bold hover:bg-muted disabled:opacity-40`;
+---
+
+<div class="qty flex rounded-md border-2 border-line bg-background" data-qty>
+  <button
+    type="button"
+    class={`${btn} border-r-2 border-line`}
+    data-qty-step="-1"
+    aria-label={`Una unidad menos de ${label}`}
+    aria-controls={id}
+  >
+    −
+  </button>
+  <input
+    id={id}
+    name="quantity"
+    type="number"
+    inputmode="numeric"
+    min={min}
+    max={max}
+    value={value}
+    required
+    class={`${h} w-12 min-w-0 bg-transparent px-1 text-center text-sm tabular-nums`}
+  />
+  <button
+    type="button"
+    class={`${btn} border-l-2 border-line`}
+    data-qty-step="1"
+    aria-label={`Una unidad más de ${label}`}
+    aria-controls={id}
+  >
+    +
+  </button>
+</div>

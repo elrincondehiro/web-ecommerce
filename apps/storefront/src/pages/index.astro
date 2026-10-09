@@ -17,6 +17,7 @@ import { productsInCategory } from "$lib/catalog";
 import { OFFERS_PATH, SITE_NAME } from "$lib/constants";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
+import ScrollDrag from "../components/ScrollDrag.astro";
 import LiveSync from "../components/LiveSync.astro";
 import ProductCard from "../components/ProductCard.astro";
 import ProductImage from "../components/ProductImage.astro";
@@ -116,7 +117,13 @@ const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
       {/* Carrusel solo CSS (scroll-snap): sin flechas ni JS; con teclado, la región recibe el foco
           y se desplaza con las flechas (tabindex=0 + role=region con nombre, WAI). La región
           es el carrusel (no la <section>, que no lleva nombre: así no hay dos regiones). */}
-      <div role="region" aria-labelledby="home-destacados" tabindex="0" class="carousel -mx-4 px-4">
+      <div
+        role="region"
+        aria-labelledby="home-destacados"
+        tabindex="0"
+        class="carousel -mx-4 px-4"
+        data-drag-scroll
+      >
         <ul class="carousel__track">
           {featured.map((p) => (
             <li class="carousel__item flex">
@@ -126,6 +133,7 @@ const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
         </ul>
       </div>
       <LiveSync collectionId={collection.id} offset={0} limit={featured.length} />
+      <ScrollDrag />
     </section>
   )}
 

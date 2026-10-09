@@ -1,0 +1,56 @@
+---
+// Arrastrar con el ratón los carruseles (Fase D, 3.4). UN bundle en /_astro/ (≤ 1 KB gzip, sin
+// imports; excepción de AGENTS §3.4), cargado solo en páginas con carrusel: el componente que
+// pinta un [data-drag-scroll] incluye <ScrollDrag /> (Astro deduplica el script). Hoy: el
+// carrusel de la home (index.astro) y la galería de la ficha (ProductGallery.astro).
+// check:budget exige ScrollDrag donde haya [data-drag-scroll] y en ningún otro sitio.
+// Solo ratón (táctil ya desliza; teclado: flechas y región con foco). Durante el arrastre se
+// quita el snap ([data-dragging], CSS) y al soltar vuelve, y el navegador encaja la tarjeta.
+// Si ha habido arrastre (> 5 px), el clic siguiente se anula: no abre el producto.
+---
+
+<script>
+  for (const el of document.querySelectorAll<HTMLElement>("[data-drag-scroll]")) {
+    let x0 = 0;
+    let s0 = 0;
+    let id = -1;
+    let moved = false;
+    el.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button) return;
+      x0 = e.clientX;
+      s0 = el.scrollLeft;
+      id = e.pointerId;
+      moved = false;
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (e.pointerId !== id) return;
+      const dx = e.clientX - x0;
+      if (!moved && Math.abs(dx) < 6) return;
+      if (!moved) {
+        moved = true;
+        el.setPointerCapture(id);
+        el.dataset.dragging = "";
+      }
+      el.scrollLeft = s0 - dx;
+    });
+    const end = (e: PointerEvent) => {
+      if (e.pointerId !== id) return;
+      id = -1;
+      delete el.dataset.dragging;
+    };
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+    el.addEventListener(
+      "click",
+      (e) => {
+        if (!moved) return;
+        moved = false;
+        e.preventDefault();
+        e.stopPropagation();
+      },
+      true,
+    );
+    // Sin el arrastre nativo de imágenes y enlaces (fantasma) al tirar del carrusel.
+    el.addEventListener("dragstart", (e) => e.preventDefault());
+  }
+</script>

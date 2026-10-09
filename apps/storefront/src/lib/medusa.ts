@@ -215,7 +215,7 @@ export const CART_COUNT_FIELDS =
 export const CART_FULL_FIELDS =
   "id,completed_at,currency_code,item_total,item_subtotal,item_tax_total," +
   "items.id,items.quantity,items.product_title,items.variant_title,items.product_handle," +
-  "items.thumbnail,items.unit_price,items.total,items.variant_id";
+  "items.thumbnail,items.unit_price,items.compare_at_unit_price,items.total,items.variant_id";
 
 function cartSdk(): Medusa {
   if (useFixtures) throw new Error("El carrito no está disponible con STOREFRONT_DATA=fixtures.");

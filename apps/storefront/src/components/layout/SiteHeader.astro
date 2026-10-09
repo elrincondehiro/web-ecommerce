@@ -37,7 +37,7 @@ const mainLinks = [
   { href: "/sobre-nosotros/", name: "Sobre nosotros" },
 ];
 const aria = (href: string) => (current.startsWith(href) ? "page" : undefined);
-const iconBtn = "inline-flex size-10 items-center justify-center rounded-md hover:bg-muted";
+const iconBtn = "header-hover inline-flex size-10 items-center justify-center rounded-md";
 ---
 
 <header class="site-header" data-site-header>
@@ -128,7 +128,7 @@ const iconBtn = "inline-flex size-10 items-center justify-center rounded-md hove
       />
       <button
         type="submit"
-        class="h-9 shrink-0 rounded-md border-2 border-line px-2 hover:bg-muted"
+        class="header-hover h-9 shrink-0 rounded-md border-2 border-line px-2"
         aria-label="Buscar"
       >
         <Icon name="magnifying-glass" class="size-5" />

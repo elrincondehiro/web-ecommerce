@@ -1,14 +1,23 @@
 ---
 // Contenido del carrito (fase 4), compartido por /carrito/ (variant "page") y el flyout
 // (variant "flyout", partial /carrito/flyout/). HTML de servidor, sin scripts.
-// - page: cantidades editables y "Quitar" con formularios (actions, sin JS) + totales.
-// - flyout: lista compacta de solo lectura + total + "Ver carrito".
+// - page: cantidades editables y "Quitar" con formularios (actions, sin JS) + totales. Con JS,
+//   CartLive.astro actualiza la cantidad sola (500 ms) y sustituye [data-cart-view] con el
+//   partial /carrito/parcial/ (Fase D, 5.3).
+// - flyout (Fase D): tres partes; la cabecera es de CartClient, aquí la lista con los totales
+//   al final (con scroll) y un pie fijo con el total y "Ver carrito". Cada línea enlaza a su
+//   producto y tiene "Quitar" (POST; con JS lo envía CartClient y vuelve a pedir el panel).
+// Ofertas (5.1): `compare_at_unit_price` de la línea (Medusa lo rellena con Price Lists sale;
+// con IVA, como unit_price: is_tax_inclusive) → precio anterior tachado + descuento.
 // Miniaturas: <Image> en runtime (/_image, origen permitido en image.remotePatterns).
 import { Image } from "astro:assets";
 import { buttonVariants } from "$lib/components/ui/button";
 import { CART_PATH, MAX_QUANTITY, actionUrl, itemCount } from "$lib/cart";
+import { discountPercent } from "$lib/catalog";
 import { formatPrice } from "$lib/format";
 import type { StoreCart } from "$lib/medusa";
+import Price from "./Price.astro";
+import QuantityField from "./QuantityField.astro";
 
 interface Props {
   cart: StoreCart | null;
@@ -22,128 +31,162 @@ const currency = cart?.currency_code ?? "eur";
 const count = itemCount(cart);
 const isPage = variant === "page";
 const thumb = isPage ? 80 : 56;
+// Marco retro (Fase D, 1.5). Tamaño con clases, no con style= (la CSP prevista lo bloquearía).
+const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs ${isPage ? "size-20" : "size-14"}`;
 ---
 
 {items.length === 0 ? (
-  <div class="flex flex-col items-start gap-4 py-6">
+  <div class:list={["flex flex-col items-start gap-4 py-6", !isPage && "px-4"]} data-cart-view>
     <p class="text-muted-foreground">Tu carrito está vacío.</p>
     <a href="/productos/" class={buttonVariants({ variant: "outline" })}>
       Ver productos
     </a>
   </div>
 ) : (
-  <div class="flex flex-col gap-6">
-    <ul class="divide-y border-y">
-      {items.map((item) => {
-        const href = item.product_handle ? `/producto/${item.product_handle}/` : undefined;
-        const qtyId = `qty-${item.id}`;
-        return (
-          <li class="flex gap-4 py-4">
-            {item.thumbnail ? (
-              <Image
-                src={item.thumbnail}
-                alt=""
-                width={thumb}
-                height={thumb}
-                fit="cover"
-                format="webp"
-                loading="lazy"
-                decoding="async"
-                class="shrink-0 rounded-md bg-muted object-cover"
-                style={`width:${thumb}px;height:${thumb}px`}
-              />
-            ) : (
-              <span
-                class="shrink-0 rounded-md bg-muted"
-                style={`width:${thumb}px;height:${thumb}px`}
-              />
-            )}
-            <div class="flex min-w-0 flex-1 flex-col gap-1">
-              <p class="font-medium">
-                {href ? (
-                  <a href={href} class="hover:underline">
-                    {item.product_title}
-                  </a>
+  <div class:list={isPage ? "flex flex-col gap-6" : "flex min-h-0 flex-1 flex-col"} data-cart-view>
+    <div class:list={[!isPage && "flex-1 overflow-y-auto overscroll-contain px-4 pb-4"]}>
+      <ul class="divide-y border-y">
+        {items.map((item) => {
+          const href = item.product_handle ? `/producto/${item.product_handle}/` : undefined;
+          const qtyId = `qty-${item.id}`;
+          const name = item.product_title ?? "producto";
+          const unit = item.unit_price ?? 0;
+          const was = item.compare_at_unit_price ?? null;
+          const onSale = was !== null && was > unit;
+          const ThumbTag = href ? "a" : "span";
+          return (
+            <li class="flex gap-4 py-4">
+              <ThumbTag
+                href={href}
+                class="shrink-0"
+                tabindex={href ? -1 : undefined}
+                aria-hidden={href ? "true" : undefined}
+              >
+                {item.thumbnail ? (
+                  <Image
+                    src={item.thumbnail}
+                    alt=""
+                    width={thumb}
+                    height={thumb}
+                    fit="cover"
+                    format="webp"
+                    loading="lazy"
+                    decoding="async"
+                    class={`${thumbClass} object-cover`}
+                  />
                 ) : (
-                  item.product_title
+                  <span class={`${thumbClass} block`} />
                 )}
-              </p>
-              {item.variant_title && item.variant_title !== "Única" && (
-                <p class="text-sm text-muted-foreground">{item.variant_title}</p>
-              )}
-              <p class="text-sm text-muted-foreground tabular-nums">
-                {isPage ? "" : `${item.quantity} × `}
-                {formatPrice(item.unit_price ?? 0, currency)}
-              </p>
-              {isPage && (
-                <div class="mt-2 flex flex-wrap items-end gap-2">
-                  <form
-                    method="post"
-                    action={actionUrl("cart.update")}
-                    class="flex items-end gap-2"
-                  >
-                    <input type="hidden" name="back" value={CART_PATH} />
-                    <input type="hidden" name="line_id" value={item.id} />
-                    <div class="flex flex-col gap-1">
-                      <label for={qtyId} class="text-xs text-muted-foreground">
-                        Cantidad
-                      </label>
-                      <input
-                        id={qtyId}
-                        name="quantity"
-                        type="number"
-                        inputmode="numeric"
-                        min="0"
-                        max={MAX_QUANTITY}
-                        value={item.quantity}
-                        required
-                        class="h-8 w-16 rounded-md border-2 border-line bg-background px-2 text-sm tabular-nums"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      class={buttonVariants({ size: "sm", variant: "outline" })}
-                    >
-                      Actualizar
-                    </button>
-                  </form>
-                  <form method="post" action={actionUrl("cart.remove")}>
+              </ThumbTag>
+              <div class="flex min-w-0 flex-1 flex-col gap-1">
+                <p class="font-medium">
+                  {href ? (
+                    <a href={href} class="hover:underline">
+                      {item.product_title}
+                    </a>
+                  ) : (
+                    item.product_title
+                  )}
+                </p>
+                {item.variant_title && item.variant_title !== "Única" && (
+                  <p class="text-sm text-muted-foreground">{item.variant_title}</p>
+                )}
+                <p class="flex flex-wrap items-baseline gap-x-1 text-sm text-muted-foreground tabular-nums">
+                  {!isPage && <span>{item.quantity} ×</span>}
+                  <Price
+                    amount={unit}
+                    currency={currency}
+                    wasAmount={onSale ? was : null}
+                    discountPercent={onSale ? discountPercent(unit, was) : null}
+                  />
+                </p>
+                {!isPage && (
+                  <form method="post" action={actionUrl("cart.remove")} data-cart-remove>
                     <input type="hidden" name="back" value={CART_PATH} />
                     <input type="hidden" name="line_id" value={item.id} />
                     <button
                       type="submit"
-                      class={buttonVariants({ size: "sm", variant: "ghost" })}
-                      aria-label={`Quitar ${item.product_title ?? "producto"} del carrito`}
+                      class="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                      aria-label={`Quitar ${name} del carrito`}
                     >
                       Quitar
                     </button>
                   </form>
-                </div>
-              )}
-            </div>
-            <p class="shrink-0 font-semibold tabular-nums">
-              {formatPrice(item.total ?? 0, currency)}
-            </p>
-          </li>
-        );
-      })}
-    </ul>
+                )}
+                {isPage && (
+                  <div class="mt-2 flex items-end gap-2">
+                    <form
+                      method="post"
+                      action={actionUrl("cart.update")}
+                      class="flex items-end gap-2"
+                      data-cart-update
+                    >
+                      <input type="hidden" name="back" value={CART_PATH} />
+                      <input type="hidden" name="line_id" value={item.id} />
+                      <div class="flex flex-col gap-1">
+                        <label for={qtyId} class="text-xs text-muted-foreground">
+                          Cantidad
+                        </label>
+                        <QuantityField
+                          id={qtyId}
+                          value={item.quantity}
+                          min={0}
+                          max={MAX_QUANTITY}
+                          size="sm"
+                          label={name}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        class={buttonVariants({ size: "sm", variant: "secondary" })}
+                        data-cart-update-button
+                      >
+                        Actualizar
+                      </button>
+                    </form>
+                    <form method="post" action={actionUrl("cart.remove")} data-cart-remove>
+                      <input type="hidden" name="back" value={CART_PATH} />
+                      <input type="hidden" name="line_id" value={item.id} />
+                      <button
+                        type="submit"
+                        class={buttonVariants({ size: "sm", variant: "ghost" })}
+                        aria-label={`Quitar ${name} del carrito`}
+                      >
+                        Quitar
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
+              <p class="shrink-0 font-semibold tabular-nums">
+                {formatPrice(item.total ?? 0, currency)}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
 
-    <dl class="ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm tabular-nums">
-      <dt class="text-muted-foreground">Artículos</dt>
-      <dd class="text-right">{count}</dd>
-      <dt class="text-base font-semibold">Total</dt>
-      <dd class="text-right text-base font-semibold">
-        {formatPrice(cart?.item_total ?? 0, currency)}
-      </dd>
-      <dt class="text-muted-foreground">IVA incluido</dt>
-      <dd class="text-right text-muted-foreground">
-        {formatPrice(cart?.item_tax_total ?? 0, currency)}
-      </dd>
-    </dl>
-    <p class="text-right text-xs text-muted-foreground">
-      Gastos de envío: se eligen al finalizar la compra.
-    </p>
+      <dl
+        class:list={[
+          "ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm tabular-nums",
+          !isPage && "mt-4",
+        ]}
+      >
+        <dt class="text-muted-foreground">Artículos</dt>
+        <dd class="text-right">{count}</dd>
+        <dt class="text-base font-semibold">Total</dt>
+        <dd class="text-right text-base font-semibold">
+          {formatPrice(cart?.item_total ?? 0, currency)}
+        </dd>
+        <dt class="text-muted-foreground">IVA incluido</dt>
+        <dd class="text-right text-muted-foreground">
+          {formatPrice(cart?.item_tax_total ?? 0, currency)}
+        </dd>
+      </dl>
+      <p class:list={["text-right text-xs text-muted-foreground", !isPage && "mt-2"]}>
+        Gastos de envío: se eligen al finalizar la compra.
+      </p>
+    </div>
 
     {isPage ? (
       <div class="flex flex-wrap justify-end gap-2">
@@ -155,9 +198,15 @@ const thumb = isPage ? 80 : 56;
         </a>
       </div>
     ) : (
-      <a href={CART_PATH} class={buttonVariants({ class: "w-full" })}>
-        Ver carrito
-      </a>
+      <div class="flex flex-col gap-2 border-t-2 border-line px-4 py-3">
+        <p class="flex justify-between font-semibold tabular-nums">
+          <span>Total</span>
+          <span>{formatPrice(cart?.item_total ?? 0, currency)}</span>
+        </p>
+        <a href={CART_PATH} class={buttonVariants({ class: "w-full" })}>
+          Ver carrito
+        </a>
+      </div>
     )}
   </div>
 )}

@@ -2,7 +2,9 @@
 // Home, listados y fichas: 0 bundles /_astro/*.js salvo, sin imports a otros chunks:
 //   - UN bundle de carrito (CartClient, ≤ 2 KB gzip, fase 4);
 //   - UN bundle común de la web (SiteClient, ≤ 1,5 KB gzip, fase 7-2: sugerencias), OBLIGATORIO
-//     (va en BaseLayout; también en carrito/checkout/pedido, comprobado en e2e/sugerencias).
+//     (va en BaseLayout; también en carrito/checkout/pedido, comprobado en e2e/sugerencias);
+//   - UN bundle de arrastre de carruseles (ScrollDrag, ≤ 1 KB gzip, Fase D) SOLO en páginas con
+//     un [data-drag-scroll] y obligatorio en ellas (un carrusel nuevo debe incluir <ScrollDrag />).
 // Se permite el script inline de las server
 // islands (lo genera Astro) y el aplicador de LiveSync, ≤ 1,2 KB gzip en total (margen: las props
 // cifradas de las islands cambian de longitud en cada build).
@@ -36,10 +38,15 @@ const INLINE_GZIP_MAX = 1434; // 1,4 KB: runtime de islands + LiveSync + script 
 const PAGE_BUNDLES = [
   { name: "carrito", re: /^CartClient\.[^/]*\.js$/, max: 2048, required: false },
   { name: "común", re: /^SiteClient\.[^/]*\.js$/, max: 1536, required: true },
+  { name: "arrastre", re: /^ScrollDrag\.[^/]*\.js$/, max: 1024, required: "drag" },
 ];
+const DRAG = /\bdata-drag-scroll\b/;
 /** Mejora progresiva de /buscar/ (modelo híbrido, fase 7-1). */
 const SEARCH_BUNDLE = /^SearchLive\.[^/]*\.js$/;
 const SEARCH_GZIP_MAX = 1024;
+/** /carrito/ (on-demand, Fase D 5.3): bundle CartLive; el e2e comprueba que es el único extra. */
+const CART_LIVE_BUNDLE = /^CartLive\.[^/]*\.js$/;
+const CART_LIVE_GZIP_MAX = 1024;
 const CLIENT = fileURLToPath(new URL("../dist/client", import.meta.url));
 
 /** @type {Map<string, number>} */
@@ -88,10 +95,14 @@ for await (const file of htmlFiles(ROOT)) {
   const inlineGzip = inline ? gzipSync(inline).length : 0;
   const others = bundles.filter((b) => !PAGE_BUNDLES.some(({ re }) => re.test(basename(b))));
   if (others.length) failures.push(`${rel}: bundles JS no permitidos ${others.join(", ")}`);
+  const hasDrag = DRAG.test(html);
   for (const { name, re, max, required } of PAGE_BUNDLES) {
     const found = [...new Set(bundles.filter((b) => re.test(basename(b))))];
     if (found.length > 1) failures.push(`${rel}: más de un bundle ${name} ${found.join(", ")}`);
-    if (required && !found.length) failures.push(`${rel}: falta el bundle ${name}`);
+    const must = required === "drag" ? hasDrag : required;
+    if (must && !found.length) failures.push(`${rel}: falta el bundle ${name}`);
+    if (required === "drag" && !hasDrag && found.length)
+      failures.push(`${rel}: bundle ${name} sin ningún [data-drag-scroll]`);
     for (const src of found) {
       const gz = await bundleGzip(src);
       if (gz > max)
@@ -140,6 +151,17 @@ if (search.length !== 1) {
     failures.push(`buscar: ${search[0]} ${gz} B gzip > ${SEARCH_GZIP_MAX} B (o con imports)`);
 }
 
+const cartLive = assets.filter((f) => CART_LIVE_BUNDLE.test(f));
+let cartLiveInfo = "sin bundle CartLive";
+if (cartLive.length !== 1) {
+  failures.push(`carrito: se esperaba 1 bundle CartLive y hay ${cartLive.length}`);
+} else {
+  const gz = await selfContainedGzip(join("_astro", cartLive[0] ?? ""));
+  cartLiveInfo = `carrito ${cartLive[0]} ${gz} B gzip`;
+  if (gz > CART_LIVE_GZIP_MAX)
+    failures.push(`carrito: ${cartLive[0]} ${gz} B gzip > ${CART_LIVE_GZIP_MAX} B (o con imports)`);
+}
+
 if (checked === 0) {
   process.stderr.write("check-js-budget: no hay HTML en dist/client (¿falta `pnpm build`?)\n");
   process.exit(1);
@@ -152,5 +174,5 @@ if (failures.length) {
 }
 const cartInfo = [...bundleSizes].map(([src, gz]) => `${basename(src)} ${gz} B gzip`).join(", ");
 process.stdout.write(
-  `check-js-budget: OK (${checked} páginas; bundles: ${cartInfo || "ninguno"}; ${searchInfo}; ${paymentInfo})\n`,
+  `check-js-budget: OK (${checked} páginas; bundles: ${cartInfo || "ninguno"}; ${searchInfo}; ${cartLiveInfo}; ${paymentInfo})\n`,
 );

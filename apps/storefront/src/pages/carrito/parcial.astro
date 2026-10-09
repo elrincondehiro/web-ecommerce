@@ -1,0 +1,16 @@
+---
+// Partial con el contenido de /carrito/ (Fase D, 5.3): lo pide CartLive.astro tras cambiar una
+// cantidad o quitar una línea y sustituye [data-cart-view] sin recargar. Mismo patrón que
+// /carrito/flyout/ (astro-docs, basics/astro-pages#page-partials): HTML sin scripts ni estilos.
+import { currentCart } from "$lib/cart-server";
+import CartView from "../../components/CartView.astro";
+
+export const prerender = false;
+export const partial = true;
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+const cart = await currentCart(Astro.cookies);
+---
+
+<CartView cart={cart} />

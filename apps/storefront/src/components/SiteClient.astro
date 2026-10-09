@@ -17,6 +17,15 @@
 // [data-site-header] (el CSS la desplaza con translate: sin cambio de layout, CLS 0). No se
 // oculta cerca del principio, con un menú/sugerencias abiertos ni con el foco dentro; un
 // listener pasivo + requestAnimationFrame. Sin JS, siempre visible (sticky).
+// Clic fuera de un popover abierto (Fase D, 3.1): el navegador lo cierra (light dismiss) pero
+// el clic llegaba también a lo de debajo (Chromium 153 y Firefox 155, medido). Si el
+// pointerdown empieza fuera de todo popover abierto y no en su botón (popovertarget, que ya
+// lo cierra), el click siguiente se anula: solo cierra. Así el icono del carrito hace de
+// interruptor del panel (CartClient). Se descartó <dialog closedby> (Safari no lo tiene).
+// Cantidad − / + (Fase D, 3.3, QuantityField.astro): <html data-js> (theme-init.ts, antes de
+// pintar) muestra los botones por CSS, también en HTML que llega después (p. ej. /buscar/);
+// aquí el clic: stepUp/stepDown respetan
+// min/max y se lanzan "input" + "change". Con el dedo, inputmode="none" (sin teclado).
 // Sin JS no hay sugerencias: el formulario GET a /buscar/ funciona igual. Los atributos ARIA
 // del combobox los pone este script (sin JS el campo es un <input type="search"> normal).
 // Fuente: APG (w3c/wai-aria-practices, combobox-autocomplete-list), astro-docs (scripts).
@@ -25,6 +34,43 @@
 <p class="sr-only" aria-live="polite" data-suggest-live></p>
 
 <script>
+  let swallow = false;
+  addEventListener(
+    "pointerdown",
+    (e) => {
+      const t = e.target as Element;
+      const open = [...document.querySelectorAll<HTMLElement>(":popover-open")];
+      swallow = open.some(
+        (p) =>
+          p.popover === "auto" &&
+          !p.contains(t) &&
+          (t.closest("[popovertarget]") as HTMLButtonElement | null)?.popoverTargetElement !== p,
+      );
+      const q = t.closest?.("[data-qty] input") as HTMLInputElement | null;
+      if (q && e.pointerType === "touch") q.inputMode = "none";
+    },
+    true,
+  );
+  addEventListener("keydown", () => (swallow = false), true);
+  addEventListener(
+    "click",
+    (e) => {
+      if (swallow) {
+        swallow = false;
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      const b = (e.target as Element).closest?.("[data-qty-step]");
+      const q = b?.parentElement?.querySelector("input");
+      if (!b || !q) return;
+      if (b.getAttribute("data-qty-step") === "1") q.stepUp();
+      else q.stepDown();
+      q.dispatchEvent(new Event("input", { bubbles: true }));
+      q.dispatchEvent(new Event("change", { bubbles: true }));
+    },
+    true,
+  );
   const header = document.querySelector<HTMLElement>("[data-site-header]");
   if (header) {
     let lastY = scrollY;

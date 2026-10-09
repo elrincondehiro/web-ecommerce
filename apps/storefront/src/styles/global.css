@@ -24,7 +24,7 @@
 }
 
 /* Claro: en :root y en cualquier bloque [data-theme="light"] (p. ej. una sección clara dentro
-   del modo oscuro, o la comparación de /estilo/). */
+   del modo oscuro). */
 :root,
 [data-theme="light"] {
   color-scheme: light;
@@ -45,7 +45,11 @@
   --destructive-foreground: oklch(1 0 0); /* #FFFFFF */
   --success: oklch(0.47 0.111 146.9); /* #276B33 */
   --border: oklch(0.861 0.023 67.5); /* #DCCFC2 */
-  --line: var(--foreground); /* trazo de marca: bordes y sombras sólidas */
+  --line: var(--foreground); /* trazo de marca: bordes de 2–3 px */
+  --shadow-color: var(--foreground); /* sombras sólidas (Retro 80); en oscuro, aparte (Fase D) */
+  --header-hover-bg: var(--muted); /* hover de la cabecera (Fase D, 1.3) */
+  --header-hover-fg: var(--foreground);
+  --header-hover-ring: var(--line);
   --radius: 0; /* Retro 80: esquinas rectas (rounded-full se mantiene en contadores y chips) */
 }
 
@@ -94,7 +98,12 @@
   --destructive-foreground: oklch(0.2 0.06 25); /* #2A0B08 */
   --success: oklch(0.776 0.145 147.8); /* #6FCF7F */
   --border: oklch(0.135 0.009 224.8); /* #05090B */
-  --line: oklch(0.135 0.009 224.8); /* #05090B */
+  /* Fase D: borde gris claro (≥ 3:1, theme.test.ts) y sombra negra aparte */
+  --line: oklch(0.703 0.027 229.3); /* #8FA3AD */
+  --shadow-color: oklch(0.135 0.009 224.8); /* #05090B */
+  --header-hover-bg: var(--secondary);
+  --header-hover-fg: var(--secondary-foreground);
+  --header-hover-ring: transparent;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -115,7 +124,12 @@
     --destructive-foreground: oklch(0.2 0.06 25); /* #2A0B08 */
     --success: oklch(0.776 0.145 147.8); /* #6FCF7F */
     --border: oklch(0.135 0.009 224.8); /* #05090B */
-    --line: oklch(0.135 0.009 224.8); /* #05090B */
+    /* Fase D: borde gris claro (≥ 3:1, theme.test.ts) y sombra negra aparte */
+    --line: oklch(0.703 0.027 229.3); /* #8FA3AD */
+    --shadow-color: oklch(0.135 0.009 224.8); /* #05090B */
+    --header-hover-bg: var(--secondary);
+    --header-hover-fg: var(--secondary-foreground);
+    --header-hover-ring: transparent;
   }
 }
 
@@ -137,11 +151,11 @@
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   /* Sombras sólidas desplazadas (Retro 80) */
-  --shadow-xs: 2px 2px 0 0 var(--line);
-  --shadow-sm: 3px 3px 0 0 var(--line);
-  --shadow: 4px 4px 0 0 var(--line);
-  --shadow-md: 6px 6px 0 0 var(--line);
-  --shadow-lg: 8px 8px 0 0 var(--line);
+  --shadow-xs: 2px 2px 0 0 var(--shadow-color);
+  --shadow-sm: 3px 3px 0 0 var(--shadow-color);
+  --shadow: 4px 4px 0 0 var(--shadow-color);
+  --shadow-md: 6px 6px 0 0 var(--shadow-color);
+  --shadow-lg: 8px 8px 0 0 var(--shadow-color);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -170,6 +184,43 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Hover de botones (Fase D, variante 4 elegida en la comparación del bloque 2): el color se mezcla con el texto para que
+ * el cambio se note; el hundimiento (2px + shadow-xs) está en button.svelte. Contraste del texto
+ * medido sobre la mezcla (AA ≥ 4,5): primario 7,0/9,3, secundario 6,1/5,0, destructivo 7,2/8,7
+ * (claro/oscuro); por eso el secundario mezcla menos. @media (hover: hover) = la variante hover:
+ * de Tailwind v4 (no se queda pegado en táctil).
+ */
+@utility btn-hover-primary {
+  @media (hover: hover) {
+    &:hover {
+      background-color: color-mix(in oklch, var(--primary), var(--foreground) 22%);
+    }
+  }
+}
+@utility btn-hover-secondary {
+  @media (hover: hover) {
+    &:hover {
+      background-color: color-mix(in oklch, var(--secondary), var(--foreground) 15%);
+    }
+  }
+}
+@utility btn-hover-outline {
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--secondary);
+      color: var(--secondary-foreground);
+    }
+  }
+}
+@utility btn-hover-destructive {
+  @media (hover: hover) {
+    &:hover {
+      background-color: color-mix(in oklch, var(--destructive), var(--foreground) 22%);
+    }
+  }
 }
 
 @layer base {
@@ -204,11 +255,53 @@
 [data-stock="out"] [data-dim] {
   opacity: 0.6;
 }
+/* Texto agotado atenuado por COLOR, no por opacidad: --muted-foreground mantiene AA (opacity
+   lo bajaba a ~3:1, Lighthouse). Fila de variante (ficha, Fase D 1.8): además sin clic; el radio
+   ya se oculta (data-if-vstock), pero su <label for> lo seguiría marcando. Tarjeta (1.9). */
+[data-stock="out"] [data-dim-text],
+.variant-row[data-vstock="out"] {
+  color: var(--muted-foreground);
+}
+.variant-row[data-vstock="out"] {
+  pointer-events: none;
+}
+
+/*
+ * Cantidad − / + (Fase D, 3.3, QuantityField.astro). Sin JS: solo el campo numérico con sus
+ * flechas. Con JS (<html data-js>, SiteClient): botones visibles y sin flechas nativas.
+ */
+.qty [data-qty-step] {
+  display: none;
+}
+[data-js] .qty [data-qty-step] {
+  display: block;
+}
+[data-js] .qty input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+[data-js] .qty input::-webkit-inner-spin-button,
+[data-js] .qty input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.qty:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.qty input:focus {
+  outline: none;
+}
 
 /*
  * Carrito (fase 4). Fuera de @layer por la misma razón que el bloque de stock.
  * Avisos sin JS: el 303 vuelve con #carrito-<código> y :target muestra ese aviso.
  */
+/* /carrito/ con CartLive cargado (Fase D 5.3): la cantidad se aplica sola; "Actualizar" solo
+   sin JS (o si el bundle no llega). Puede salir un instante al cargar: va al final de la línea. */
+[data-cart-live-on] [data-cart-update-button] {
+  display: none;
+}
 .cart-notice:not(:target) {
   display: none;
 }
@@ -274,25 +367,34 @@
   opacity: 1;
 }
 
-/* Flyout lateral (solo escritorio, <dialog> nativo con showModal). */
+/*
+ * Panel del carrito (Fase D, 3.2): `popover` (CartClient), lateral derecho a toda altura en
+ * móvil y escritorio (móvil: 88 % del ancho). Se cierra con ✕, Escape o pulsando fuera.
+ */
 .flyout {
   position: fixed;
   inset: 0 0 0 auto;
   margin: 0;
-  width: min(26rem, 100vw);
-  max-width: 100vw;
-  height: 100dvh;
-  max-height: 100dvh;
-  border-left: 1px solid var(--border);
+  width: 88vw;
+  max-width: 26rem;
+  height: auto;
+  max-height: none;
+  overflow: hidden;
+  border: 0;
+  border-left: 2px solid var(--line);
+  padding: 0;
   background: var(--background);
   color: var(--foreground);
+  box-shadow: var(--shadow-lg);
+  translate: 100% 0;
   transition:
     translate 250ms ease,
     overlay 250ms allow-discrete,
     display 250ms allow-discrete;
-  translate: 100% 0;
 }
-.flyout[open] {
+/* Tres partes (Fase D): cabecera fija, lista + totales con scroll, pie fijo (total + "Ver
+   carrito"). La columna flex con min-h-0 hace que solo la lista se desplace. */
+.flyout:popover-open {
   display: flex;
   flex-direction: column;
   translate: 0 0;
@@ -308,7 +410,7 @@
     display 250ms allow-discrete;
   opacity: 0;
 }
-.flyout[open]::backdrop {
+.flyout:popover-open::backdrop {
   opacity: 1;
   @starting-style {
     opacity: 0;
@@ -415,6 +517,14 @@
     padding-inline: 0;
     overflow: visible;
   }
+}
+/*
+ * Fase D (1.10): solo la lista hace scroll y el pie ("Aplicar") queda fijo. Las <legend class="sr-only">
+ * son position:absolute; sin un ancestro posicionado su bloque contenedor era el panel (fixed) y lo
+ * desbordaban: hacía scroll el panel entero y el pie se iba. Medido con Playwright (Pixel 7).
+ */
+.filter-panel__body {
+  position: relative;
 }
 /* Anclas #f-<grupo> y #resultados: que no queden pegadas al borde. */
 .filter-group,
@@ -613,10 +723,26 @@
   border-radius: var(--radius-md);
   padding: 0.5rem 0.75rem;
 }
-.nav-link:hover,
-.nav-link:popover-open,
 .nav-link[aria-current] {
   background: var(--muted);
+}
+/*
+ * Hover de la cabecera (Fase D, 1.3): menú, lupa, tema, carrito y ☰. Claro: el gris de siempre
+ * + contorno de 2px (inset: no mueve nada; en la lupa se suma a su borde). Oscuro: azul claro
+ * de los botones secundarios. Tokens --header-hover-* en los bloques del tema.
+ */
+.nav-link:popover-open {
+  background: var(--header-hover-bg);
+  color: var(--header-hover-fg);
+  box-shadow: inset 0 0 0 2px var(--header-hover-ring);
+}
+@media (hover: hover) {
+  .nav-link:hover,
+  .header-hover:hover {
+    background: var(--header-hover-bg);
+    color: var(--header-hover-fg);
+    box-shadow: inset 0 0 0 2px var(--header-hover-ring);
+  }
 }
 .nav-link[aria-current] {
   text-decoration: underline;
@@ -720,7 +846,7 @@
 
 /* Precio en oferta (components/Price.astro): color de rebaja si el bloque de oferta está
    visible. Con :has() → LiveSync solo cambia `hidden` y el color se ajusta solo. */
-.price:has([data-was-box]:not([hidden])) .price__now {
+.price:has(.price__was:not([hidden])) .price__now {
   color: var(--accent-text);
 }
 
@@ -734,30 +860,94 @@
   scroll-snap-type: x mandatory;
   scroll-padding-inline: 1rem;
   scrollbar-width: thin;
+  /* Barra visible con el color de marca (Fase D, 1.7): Chrome 121, Firefox 64, Safari 26.2. */
+  scrollbar-color: var(--primary) var(--muted);
   padding-bottom: 0.75rem;
+  anchor-name: --carousel;
 }
 .carousel:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+/* 2,3 · 3,3 · 4,3 tarjetas (Fase D, 1.7): la siguiente asoma e invita a desplazar. Más
+   estrechas que en la rejilla, así que las imágenes `card` (sizes de la rejilla) siguen sobrando. */
 .carousel__track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 1rem) / 2);
-  gap: 1rem;
+  grid-auto-columns: calc((100% - 2.5rem) / 2.3);
+  /* Móvil: más aire entre tarjetas (los botones con sombra casi se tocaban). */
+  gap: 1.25rem;
+  /* Que la sombra de la última tarjeta no se recorte al final del scroll. */
+  padding-right: 0.25rem;
 }
 @media (min-width: 40rem) {
   .carousel__track {
-    grid-auto-columns: calc((100% - 2rem) / 3);
+    grid-auto-columns: calc((100% - 3rem) / 3.3);
+    gap: 1rem;
   }
 }
 @media (min-width: 64rem) {
   .carousel__track {
-    grid-auto-columns: calc((100% - 3rem) / 4);
+    grid-auto-columns: calc((100% - 4rem) / 4.3);
+  }
+}
+/*
+ * Flechas nativas (Fase D, 1.7): ::scroll-button() es CSS puro (botones accesibles, el navegador
+ * los desactiva al llegar al final). Solo Chrome 135+; el resto sigue con scroll/teclado/barra.
+ * Colocadas con anchor positioning sobre los bordes del carrusel (MDN, guía de carruseles).
+ * Solo con ratón: en táctil se desliza con el dedo. Un único carrusel por página (anchor-name).
+ */
+@media (hover: hover) {
+  .carousel::scroll-button(*) {
+    position: absolute;
+    position-anchor: --carousel;
+    top: calc(anchor(center) - 1.25rem);
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 2px solid var(--line);
+    border-radius: 9999px;
+    background: var(--card);
+    color: var(--foreground);
+    box-shadow: var(--shadow-xs);
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .carousel::scroll-button(*):hover {
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+  }
+  .carousel::scroll-button(*):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .carousel::scroll-button(*):disabled {
+    opacity: 0;
+    cursor: default;
+  }
+  .carousel::scroll-button(inline-start) {
+    content: "←" / "Anteriores";
+    left: calc(anchor(left) + 0.5rem);
+  }
+  .carousel::scroll-button(inline-end) {
+    content: "→" / "Siguientes";
+    right: calc(anchor(right) + 0.5rem);
   }
 }
 .carousel__item {
   scroll-snap-align: start;
+}
+/* Arrastre con ratón (Fase D, 3.4, ScrollDrag.astro): cursor de mano solo con JS y ratón; sin
+   snap mientras se arrastra (al soltar vuelve y encaja). */
+@media (hover: hover) and (pointer: fine) {
+  [data-js] [data-drag-scroll] {
+    cursor: grab;
+  }
+}
+[data-dragging] {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
 }
 
 /* Prosa de páginas de contenido en Markdown (sobre-nosotros.astro). Sin plugin de tipografía. */

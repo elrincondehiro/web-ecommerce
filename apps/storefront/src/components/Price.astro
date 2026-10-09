@@ -5,11 +5,13 @@
 //   data-was (anterior) · data-off ("−20 %").
 // El bloque de oferta SIEMPRE se pinta (oculto si no hay): así LiveSync puede mostrarlo si la
 // oferta empieza después del build. Accesible: "Precio anterior" y "Precio" para lectores.
+// Sin `id` (carrito, Fase D 5.1: HTML on-demand con datos frescos) no lleva marcas de LiveSync
+// y el bloque de oferta solo se pinta si hay oferta.
 import { formatDiscount, formatPrice } from "$lib/format";
 
 interface Props {
-  /** Id del producto o de la variante (clave de LiveSync). */
-  id: string;
+  /** Id del producto o de la variante (clave de LiveSync). Sin id: precio estático. */
+  id?: string | undefined;
   amount: number;
   currency: string;
   wasAmount: number | null;
@@ -41,16 +43,22 @@ const onSale = wasAmount !== null && discountPercent !== null;
   <span class="price__now font-semibold" data-price={id}>
     {formatPrice(amount, currency)}
   </span>
-  <span class="inline-flex items-baseline gap-x-1.5" data-was-box={id} hidden={!onSale}>
-    <span class="sr-only">Precio anterior:</span>
-    <del class="text-[0.8em] font-normal text-muted-foreground" data-was={id}>
-      {onSale ? formatPrice(wasAmount, currency) : ""}
-    </del>
+  {(id !== undefined || onSale) && (
     <span
-      class="self-center rounded-full bg-accent px-1.5 text-[0.7em] leading-5 font-bold text-accent-foreground"
-      data-off={id}
+      class="price__was inline-flex items-baseline gap-x-1.5"
+      data-was-box={id}
+      hidden={!onSale}
     >
-      {onSale ? formatDiscount(discountPercent) : ""}
+      <span class="sr-only">Precio anterior:</span>
+      <del class="text-[0.8em] font-normal text-muted-foreground" data-was={id}>
+        {onSale ? formatPrice(wasAmount, currency) : ""}
+      </del>
+      <span
+        class="self-center rounded-full bg-accent px-1.5 text-[0.7em] leading-5 font-bold text-accent-foreground"
+        data-off={id}
+      >
+        {onSale ? formatDiscount(discountPercent) : ""}
+      </span>
     </span>
-  </span>
+  )}
 </span>

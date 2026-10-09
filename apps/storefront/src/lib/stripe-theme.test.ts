@@ -40,3 +40,9 @@ it.each([
     );
   }
 });
+
+it("el borde de los campos de Stripe en oscuro = --line", () => {
+  const line = hex('[data-theme="dark"]', "line");
+  expect(STRIPE_THEME.dark.rules[".Input"].border).toBe(`2px solid ${line}`);
+  expect(STRIPE_THEME.dark.rules[".Tab"].border).toBe(`2px solid ${line}`);
+});

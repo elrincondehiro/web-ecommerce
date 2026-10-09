@@ -210,9 +210,10 @@ export default defineConfig({
       // Scripts propios que van como bundle en /_astro/ (caché inmutable, se descargan una vez)
       // en vez de inline en cada HTML (Astro inlinea scripts < 4 KB): carrito (CartClient,
       // fase 4), /buscar/ (SearchLive, fase 7-1) y JS común de la web (SiteClient: sugerencias,
-      // fase 7-2). Resto: comportamiento por defecto (undefined).
+      // fase 7-2), arrastre de carruseles (ScrollDrag, Fase D) y /carrito/ (CartLive, Fase D).
+      // Resto: por defecto (undefined).
       assetsInlineLimit: (/** @type {string} */ file) =>
-        /CartClient|SearchLive|SiteClient/.test(file) ? false : undefined,
+        /CartClient|CartLive|SearchLive|SiteClient|ScrollDrag/.test(file) ? false : undefined,
     },
     resolve: {
       alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) },

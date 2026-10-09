@@ -109,6 +109,37 @@ test.describe("sin JS", () => {
 test.describe("con JS", () => {
   test.use({ javaScriptEnabled: true });
 
+  test("clic fuera de un menú abierto: solo lo cierra, no activa lo de debajo", async ({
+    page,
+  }) => {
+    test.skip(isMobile(page), "el menú Tienda es de escritorio");
+    await page.goto("/");
+    await page.getByRole("button", { name: "Tienda" }).click();
+    const menu = page.locator("#menu-tienda");
+    await expect(menu).toBeVisible();
+    const card = page.locator(".carousel article a[href^='/producto/']").first();
+    await card.click();
+    await expect(menu).toBeHidden();
+    await expect(page).toHaveURL(/\/$/);
+    await card.click();
+    await expect(page).toHaveURL(/\/producto\//);
+  });
+
+  test("carrusel: arrastrar con el ratón desplaza y no abre el producto", async ({ page }) => {
+    test.skip(isMobile(page), "solo ratón");
+    await page.goto("/");
+    const carousel = page.locator(".carousel[data-drag-scroll]");
+    await carousel.scrollIntoViewIfNeeded();
+    const box = (await carousel.boundingBox())!;
+    const y = box.y + 80;
+    await page.mouse.move(box.x + box.width * 0.6, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.2, y, { steps: 10 });
+    await page.mouse.up();
+    await expect.poll(() => carousel.evaluate((e) => e.scrollLeft)).toBeGreaterThan(100);
+    await expect(page).toHaveURL(/\/$/);
+  });
+
   test("la cabecera se oculta al bajar y vuelve al subir", async ({ page }) => {
     await page.goto("/productos/");
     const header = page.locator("[data-site-header]");

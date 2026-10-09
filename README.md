@@ -675,7 +675,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 7 Búsqueda y filtros                   | [fase7.md](./docs/fases/fase7.md)                                                                | ✅     |
 | I-Marca Identidad visual y tema        | [faseI-marca.md](./docs/fases/faseI-marca.md)                                                    | ✅     |
 | I-Interficie UX/UI (cabecera, home…)   | [faseI-interficie.md](./docs/fases/faseI-interficie.md)                                          | ✅     |
-| D Diseño (afinar colores, interfaz…)   | [faseD-diseno.md](./docs/fases/faseD-diseno.md) (borrador para planificar)                       | ⏳     |
+| D Diseño (afinar colores, interfaz…)   | [faseD-diseno.md](./docs/fases/faseD-diseno.md)                                                  | ✅     |
 | 8 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

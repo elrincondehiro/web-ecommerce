@@ -77,7 +77,11 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
             </thead>
             <tbody>
               {pricing.variants.map((v) => (
-                <tr class="border-t" data-pid={v.id} data-vstock={v.inStock ? "in" : "out"}>
+                <tr
+                  class="variant-row border-t"
+                  data-pid={v.id}
+                  data-vstock={v.inStock ? "in" : "out"}
+                >
                   <td class="py-1.5">
                     <input
                       type="radio"

@@ -74,6 +74,16 @@ describe.each([
   });
 });
 
+// Bordes de controles y tarjetas (--line): WCAG 1.4.11, contraste no textual ≥ 3:1 (Fase D).
+describe.each([
+  ["claro", light],
+  ["oscuro", dark],
+])("borde --line ≥ 3:1, modo %s", (_, tokens) => {
+  it.each(["background", "card", "muted"])("sobre %s", (bg) => {
+    expect(contrast(resolve(tokens, "line"), resolve(tokens, bg))).toBeGreaterThanOrEqual(3);
+  });
+});
+
 it("el oscuro explícito y el del sistema son iguales", () => {
   expect(darkSystem).toEqual(darkExplicit);
 });

@@ -79,7 +79,7 @@ test("precio, disponibilidad, orden y paginación", async ({ page, isMobile }) =
   await expect(page).toHaveURL(/\/buscar\/\?disponible=1#f-disponible$/);
   panel = await filters(page, isMobile);
   await panel.getByLabel("Máximo").fill("20");
-  await panel.getByRole("button", { name: "Aplicar precio" }).click();
+  await panel.getByRole("button", { name: "Ver resultados" }).click();
   await expect(page).toHaveURL(/\/buscar\/\?precio_max=20&disponible=1#resultados$/);
 
   await page.getByLabel("Ordenar por").selectOption("precio-asc");
@@ -162,6 +162,7 @@ test.describe("con JS (modelo híbrido: en el sitio)", () => {
     await mark(page);
     const before = await status(page).textContent();
     await filters(page, isMobile);
+    await page.evaluate(() => (document.getElementById("filtros")!.dataset.mark = "1"));
     const link = box(page, "talla", "M");
     await link.scrollIntoViewIfNeeded();
     const y = await page.evaluate(() => scrollY);
@@ -171,6 +172,8 @@ test.describe("con JS (modelo híbrido: en el sitio)", () => {
     await expect(box(page, "talla", "M")).toHaveAttribute("aria-checked", "true");
     await expect(box(page, "talla", "M")).toBeFocused();
     if (isMobile) await expect(page.locator("#filtros:popover-open")).toHaveCount(1);
+    // Fase D (4.1): el panel es el mismo elemento (no se cierra ni se vuelve a animar)
+    expect(await page.evaluate(() => document.getElementById("filtros")!.dataset.mark)).toBe("1");
     expect(await page.evaluate(() => scrollY)).toBe(y);
     await expect(page.locator("[data-search-announce]")).toHaveText(/\d+ productos?/);
 
@@ -190,10 +193,11 @@ test.describe("con JS (modelo híbrido: en el sitio)", () => {
     await expect(page).toHaveURL(/categoria=ropa&orden=precio-asc$/);
     const panel = await filters(page, isMobile);
     await panel.getByLabel("Máximo").fill("30");
-    await panel.getByRole("button", { name: "Aplicar precio" }).click();
+    await panel.getByRole("button", { name: "Ver resultados" }).click();
     // precio vacío (mínimo) se omite; la URL es la canónica
     await expect(page).toHaveURL(/categoria=ropa&precio_max=30&orden=precio-asc$/);
-    if (isMobile) await page.keyboard.press("Escape");
+    // Fase D (4.2): "Ver resultados" cierra el panel
+    await expect(page.locator("#filtros:popover-open")).toHaveCount(0);
     await page.getByRole("link", { name: "Siguiente" }).click();
     await expect(page).toHaveURL(/pagina=2$/);
     await expect(page.getByText(/Página 2 de \d+/)).toBeVisible();
