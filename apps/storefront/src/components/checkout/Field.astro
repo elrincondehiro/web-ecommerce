@@ -5,6 +5,8 @@ import type { HTMLAttributes } from "astro/types";
 
 type Props = Omit<HTMLAttributes<"input">, "name" | "id"> & {
   name: string;
+  /** Id del input (por defecto `f-<name>`); necesario si hay varios formularios en la página. */
+  id?: string | undefined;
   label: string;
   error?: string | undefined;
   hint?: string | undefined;
@@ -12,9 +14,9 @@ type Props = Omit<HTMLAttributes<"input">, "name" | "id"> & {
   optional?: boolean | undefined;
   class?: string | undefined;
 };
-const { name, label, error, hint, optional, class: className, ...attrs } = Astro.props;
+const { name, id: idProp, label, error, hint, optional, class: className, ...attrs } = Astro.props;
 const isOptional = optional ?? !attrs.required;
-const id = `f-${name}`;
+const id = idProp ?? `f-${name}`;
 const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ");
 ---
 

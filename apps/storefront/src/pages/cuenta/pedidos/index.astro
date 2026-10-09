@@ -1,0 +1,80 @@
+---
+// Mis pedidos (fase 9): listado paginado (Medusa filtra por el cliente del token). 0 JS.
+import { ORDERS_PATH, accountOrderPath, orderStatusLabel } from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { formatPrice } from "$lib/format";
+import { listCustomerOrders } from "$lib/medusa";
+import AccountLayout from "../../../components/account/AccountLayout.astro";
+import AccountNotice from "../../../components/account/AccountNotice.astro";
+
+export const prerender = false;
+
+const PAGE_SIZE = 10;
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const pageParam = Number.parseInt(Astro.url.searchParams.get("pagina") ?? "1", 10);
+const page = Number.isFinite(pageParam) && pageParam > 0 && pageParam < 1000 ? pageParam : 1;
+const { orders, count } = await listCustomerOrders(session.token, {
+  limit: PAGE_SIZE,
+  offset: (page - 1) * PAGE_SIZE,
+});
+const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" });
+const units = (o: (typeof orders)[number]) =>
+  (o.items ?? []).reduce((n, i) => n + (i.quantity ?? 0), 0);
+const pageUrl = (n: number) => (n === 1 ? ORDERS_PATH : `${ORDERS_PATH}?pagina=${n}`);
+---
+
+<AccountLayout title="Mis pedidos">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Mis pedidos</h1>
+  <AccountNotice code={flash.code} />
+
+  {orders.length === 0 ? (
+    <p class="text-muted-foreground">
+      {page > 1 ? "No hay más pedidos." : "Aún no has hecho ningún pedido."}
+      <a href="/productos/" class="ml-1 underline underline-offset-4">
+        Ver productos
+      </a>
+    </p>
+  ) : (
+    <ul class="flex flex-col divide-y rounded-lg border">
+      {orders.map((o) => (
+        <li>
+          <a
+            href={accountOrderPath(o.id)}
+            class="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 p-4 hover:bg-muted"
+          >
+            <span class="font-semibold">Pedido #{o.display_id}</span>
+            <span class="text-right font-semibold tabular-nums">
+              {formatPrice(o.total ?? 0, o.currency_code ?? "eur")}
+            </span>
+            <span class="text-sm text-muted-foreground">
+              {dateFmt.format(new Date(o.created_at))} · {units(o)}{" "}
+              {units(o) === 1 ? "artículo" : "artículos"}
+            </span>
+            <span class="text-right text-sm">{orderStatusLabel(o)}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+
+  {pages > 1 && (
+    <nav aria-label="Páginas de pedidos" class="mt-6 flex items-center gap-4 text-sm">
+      {page > 1 && (
+        <a href={pageUrl(page - 1)} rel="prev" class="underline underline-offset-4">
+          ← Más recientes
+        </a>
+      )}
+      <span class="text-muted-foreground">
+        Página {page} de {pages}
+      </span>
+      {page < pages && (
+        <a href={pageUrl(page + 1)} rel="next" class="underline underline-offset-4">
+          Más antiguos →
+        </a>
+      )}
+    </nav>
+  )}
+</AccountLayout>

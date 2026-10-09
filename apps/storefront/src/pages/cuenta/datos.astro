@@ -1,0 +1,94 @@
+---
+// Mis datos (fase 9): nombre, apellidos y teléfono; cambiar la contraseña envía el enlace de
+// restablecer (opción a: Medusa 2.21.2 no permite cambiarla con el token de sesión). El email no
+// se cambia aquí (exigiría verificarlo de nuevo).
+import { buttonVariants } from "$lib/components/ui/button";
+import { PROFILE_PATH, accountActionUrl } from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import AccountLayout from "../../components/account/AccountLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import Field from "../../components/checkout/Field.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const { customer } = session;
+const errors = flash.errors ?? {};
+const values = flash.values ?? {
+  first_name: customer.first_name ?? "",
+  last_name: customer.last_name ?? "",
+  phone: customer.phone ?? "",
+};
+---
+
+<AccountLayout title="Mis datos">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Mis datos</h1>
+  <AccountNotice code={flash.code} />
+
+  <div class="flex max-w-xl flex-col gap-8">
+    <section aria-labelledby="datos-personales" class="rounded-lg border p-4 sm:p-6">
+      <h2 id="datos-personales" class="mb-4 text-xl font-semibold">
+        Datos personales
+      </h2>
+      <form
+        method="post"
+        action={accountActionUrl(PROFILE_PATH, "account.profile")}
+        class="flex flex-col gap-4"
+      >
+        <div class="flex flex-col gap-1">
+          <span class="text-sm font-medium">Email</span>
+          <p class="text-sm break-all text-muted-foreground">{customer.email}</p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <Field
+            name="first_name"
+            label="Nombre"
+            autocomplete="given-name"
+            required
+            maxlength={80}
+            value={values.first_name}
+            error={errors.first_name}
+          />
+          <Field
+            name="last_name"
+            label="Apellidos"
+            autocomplete="family-name"
+            required
+            maxlength={80}
+            value={values.last_name}
+            error={errors.last_name}
+          />
+        </div>
+        <Field
+          name="phone"
+          type="tel"
+          label="Teléfono"
+          autocomplete="tel"
+          maxlength={20}
+          hint="Lo usaremos para rellenar el checkout y para la empresa de transporte."
+          value={values.phone}
+          error={errors.phone}
+        />
+        <button type="submit" class:list={[buttonVariants(), "self-start"]}>
+          Guardar
+        </button>
+      </form>
+    </section>
+
+    <section aria-labelledby="datos-password" class="rounded-lg border p-4 sm:p-6">
+      <h2 id="datos-password" class="mb-2 text-xl font-semibold">
+        Contraseña
+      </h2>
+      <p class="mb-4 text-sm text-muted-foreground">
+        Por seguridad, te enviaremos un enlace a tu email para crear una contraseña nueva.
+      </p>
+      <form method="post" action={accountActionUrl(PROFILE_PATH, "account.password")}>
+        <button type="submit" class={buttonVariants({ variant: "outline" })}>
+          Cambiar contraseña
+        </button>
+      </form>
+    </section>
+  </div>
+</AccountLayout>

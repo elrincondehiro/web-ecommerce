@@ -244,6 +244,8 @@ export const ADDRESS_FORM_FIELDS = [
   ...ADDRESS_FIELDS,
   "same_billing",
   ...ADDRESS_FIELDS.map((f) => `billing_${f}`),
+  // Cliente con sesión (fase 9): guardar la dirección de envío en la cuenta.
+  "save_address",
 ] as const;
 
 /**

@@ -1,0 +1,45 @@
+---
+// Crear contraseña nueva (fase 9): destino del enlace del email (`?token=`, 15 min, un solo uso;
+// fase 8). El token se reenvía en un campo oculto; Medusa lo valida al cambiar la contraseña.
+// Referrer-Policy same-origin: el token de la URL no sale a otros sitios (no-referrer haría que
+// el navegador enviase `Origin: null` en el POST y checkOrigin de Astro lo rechazaría: 403).
+import { buttonVariants } from "$lib/components/ui/button";
+import { RECOVER_PATH, RESET_PATH, accountActionUrl } from "$lib/account";
+import { accountPage } from "$lib/account-page";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import AuthCard from "../../components/account/AuthCard.astro";
+import PasswordField from "../../components/account/PasswordField.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+Astro.response.headers.set("Referrer-Policy", "same-origin");
+const token = Astro.url.searchParams.get("token") ?? "";
+if (!token || token.length > 4096) return Astro.redirect(RECOVER_PATH, 303);
+const errors = flash.errors ?? {};
+---
+
+<BaseLayout title="Contraseña nueva" description="Crea una contraseña nueva." noindex>
+  <AuthCard title="Contraseña nueva">
+    <AccountNotice code={flash.code} />
+    <form
+      method="post"
+      action={accountActionUrl(RESET_PATH, "account.reset")}
+      class="flex flex-col gap-4"
+    >
+      <input type="hidden" name="token" value={token} />
+      <PasswordField label="Contraseña nueva" autocomplete="new-password" error={errors.password} />
+      <PasswordField
+        name="password_confirm"
+        label="Repite la contraseña"
+        autocomplete="new-password"
+        hint=""
+        error={errors.password_confirm}
+      />
+      <button type="submit" class={buttonVariants()}>
+        Guardar contraseña
+      </button>
+    </form>
+  </AuthCard>
+</BaseLayout>

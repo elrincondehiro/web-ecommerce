@@ -1,8 +1,10 @@
 import {
   configureStoreSearch,
   defineMiddlewares,
+  validateAndTransformBody,
   validateAndTransformQuery,
 } from "@medusajs/framework/http";
+import { StoreDeletionRequestBody } from "./store/customers/me/deletion-request/route";
 import { StoreOfertasQuery } from "./store/ofertas/route";
 
 /**
@@ -22,6 +24,12 @@ export default defineMiddlewares({
       matcher: "/store/ofertas",
       methods: ["GET"],
       middlewares: [validateAndTransformQuery(StoreOfertasQuery, {})],
+    },
+    // Solicitud de baja (fase 9). La autenticación la pone Medusa (`/store/customers/me*`).
+    {
+      matcher: "/store/customers/me/deletion-request",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreDeletionRequestBody)],
     },
   ],
 });

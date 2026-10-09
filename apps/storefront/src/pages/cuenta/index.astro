@@ -1,0 +1,109 @@
+---
+// Mi cuenta: resumen (fase 9). On-demand, noindex, 0 JS. Sin sesión → "Entrar".
+import { buttonVariants } from "$lib/components/ui/button";
+import {
+  ADDRESSES_PATH,
+  DELETE_PATH,
+  ORDERS_PATH,
+  PROFILE_PATH,
+  accountOrderPath,
+  defaultAddress,
+} from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { formatPrice } from "$lib/format";
+import { listCustomerOrders } from "$lib/medusa";
+import AccountLayout from "../../components/account/AccountLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const { customer, token } = session;
+const { orders } = await listCustomerOrders(token, { limit: 1, offset: 0 });
+const last = orders[0];
+const address = defaultAddress(customer.addresses);
+const name = customer.first_name?.trim();
+const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" });
+const card = "flex flex-col gap-2 rounded-lg border p-4";
+---
+
+<AccountLayout title="Mi cuenta">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">{name ? `Hola, ${name}` : "Mi cuenta"}</h1>
+  <AccountNotice code={flash.code} />
+
+  {!name && (
+    <p class="mb-6 rounded-md border-2 border-line bg-muted px-4 py-3 text-sm">
+      Completa{" "}
+      <a href={PROFILE_PATH} class="font-medium underline underline-offset-4">
+        tus datos
+      </a>
+      para que rellenemos el checkout por ti.
+    </p>
+  )}
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <section aria-labelledby="resumen-pedido" class={card}>
+      <h2 id="resumen-pedido" class="text-lg font-semibold">
+        Último pedido
+      </h2>
+      {last ? (
+        <p class="text-sm">
+          <a href={accountOrderPath(last.id)} class="font-medium underline underline-offset-4">
+            Pedido #{last.display_id}
+          </a>
+          <span class="text-muted-foreground">
+            {" · "}
+            {dateFmt.format(new Date(last.created_at))} ·{" "}
+            {formatPrice(last.total ?? 0, last.currency_code ?? "eur")}
+          </span>
+        </p>
+      ) : (
+        <p class="text-sm text-muted-foreground">Aún no has hecho ningún pedido.</p>
+      )}
+      <a href={ORDERS_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Ver todos mis pedidos
+      </a>
+    </section>
+
+    <section aria-labelledby="resumen-direccion" class={card}>
+      <h2 id="resumen-direccion" class="text-lg font-semibold">
+        Dirección de envío
+      </h2>
+      {address ? (
+        <address class="text-sm not-italic">
+          {address.first_name} {address.last_name}
+          <br />
+          {address.address_1}
+          <br />
+          {address.postal_code} {address.city}
+        </address>
+      ) : (
+        <p class="text-sm text-muted-foreground">No tienes direcciones guardadas.</p>
+      )}
+      <a href={ADDRESSES_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Gestionar direcciones
+      </a>
+    </section>
+
+    <section aria-labelledby="resumen-datos" class={card}>
+      <h2 id="resumen-datos" class="text-lg font-semibold">
+        Mis datos
+      </h2>
+      <p class="text-sm break-all">{customer.email}</p>
+      <a href={PROFILE_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Editar mis datos y contraseña
+      </a>
+    </section>
+  </div>
+
+  <div class="mt-8 flex flex-wrap items-center gap-4 border-t-2 border-line pt-6">
+    <a href="/productos/" class={buttonVariants({ variant: "outline" })}>
+      Seguir comprando
+    </a>
+    <a href={DELETE_PATH} class="text-sm text-muted-foreground underline underline-offset-4">
+      Eliminar mi cuenta
+    </a>
+  </div>
+</AccountLayout>

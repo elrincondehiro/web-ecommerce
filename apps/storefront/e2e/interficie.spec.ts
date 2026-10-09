@@ -32,9 +32,12 @@ test.describe("sin JS", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Ofertas" })).toBeVisible();
   });
 
-  test("sin «Mi cuenta» (fase 9) ni fila de categorías antigua", async ({ page }) => {
+  test("«Mi cuenta» enlaza a /cuenta/ (fase 9); sin fila de categorías antigua", async ({
+    page,
+  }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: /Mi cuenta/ })).toHaveCount(0);
+    const account = page.getByRole("link", { name: "Mi cuenta" }).first();
+    await expect(account).toHaveAttribute("href", "/cuenta/");
     await expect(page.getByRole("navigation", { name: "Categorías" })).toHaveCount(0);
   });
 

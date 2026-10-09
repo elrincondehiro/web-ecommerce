@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 09-oct-2026 · **Fase 8 (emails) cerrada** en `feat/emails` (PR a `main` en Gitea; probada con Mailpit y Resend, §6.1) → **siguiente: 9 Cuenta de cliente** (plan por hacer).
+> Última actualización: 09-oct-2026 · **Fase 9 (cuenta de cliente) en curso** en `feat/cuenta`: implementada y probada en local, pendiente de revisión y PR (§6.2).
 
 ## 1. Dónde estamos
 
@@ -22,6 +22,7 @@
 | I-Interficie (UX/UI)                        | ✅     | [faseI-interficie.md](./fases/faseI-interficie.md) |
 | D Diseño (afinar colores, interfaz…)        | ✅     | [faseD-diseno.md](./fases/faseD-diseno.md)         |
 | 8 Emails                                    | ✅     | [fase8.md](./fases/fase8.md)                       |
+| 9 Cuenta de cliente                         | 🚧     | [fase9.md](./fases/fase9.md)                       |
 
 Roadmap completo y tiempos: README §13.
 
@@ -139,7 +140,8 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - `/buscar/` sin parpadeo del panel de filtros; «Ver resultados».
   - Pendientes: `/productos/` 91–94 en Lighthouse local; Safari sin probar; textos, foto del hero, logo en negativo, botón de pausa.
   - Aviso conocido en el build (local y CI, no rompe nada): «Found 6 warnings while optimizing generated CSS … 'scroll-button' is not recognized». Es Lightning CSS (1.32.0, vía `@tailwindcss/node` 4.3.3), que aún no conoce `::scroll-button()`; las reglas salen intactas en `dist/`. **No hacer nada**: desaparecerá al actualizar Lightning CSS (Renovate).
-- **Fase 8 (emails): cerrada** → ver §6.1. **Siguiente: 9 Cuenta**; la transferencia y Bizum, después.
+- **Fase 8 (emails): cerrada** (PR #31, `19e4cfd`) → ver §6.1.
+- **Fase 9 (cuenta): en curso** → ver §6.2. La transferencia y Bizum, después.
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
@@ -161,13 +163,34 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - Remitente `El Rincón de Hiro <pedidos@develop.hirobordercollie.es>`, sin reply-to (aviso en el pie). Pie legal provisional.
 - `EMAIL_ASSETS_URL` = **base** pública de los recursos de los emails (logo en `<base>/email/logo.png`); vacía = `STOREFRONT_URL`.
 - Probada con Resend: las 4 plantillas llegan a `delivered@resend.dev` y a un Gmail real (fase8.md §5.4).
-- **Para la fase 9 (cuenta)**: crear las páginas `/cuenta/restablecer/?token=` (`POST /auth/customer/emailpass/update` con el token) y `/cuenta/verificar/?token=` (`POST /auth/verification/confirm { code }`), y activar `http.authVerificationsPerActor.customer` (registro pendiente hasta confirmar). Los emails ya apuntan ahí. El email de pedido podrá enlazar al historial de la cuenta.
+- Las páginas `/cuenta/restablecer/` y `/cuenta/verificar/` y el enlace del email de pedido a la cuenta se hicieron en la fase 9 (§6.2).
 - Pendiente: pie legal con los datos de la gestoría (`packages/emails/src/_components/Layout.tsx`); variables de email también en el worker (fases 10/11).
+
+## 6.2 Fase 9 — Cuenta de cliente
+
+**Estado: 🚧** (`feat/cuenta`). Detalle, flujo de Medusa verificado y pruebas en [fase9.md](./fases/fase9.md).
+
+- **Verificación de email obligatoria** (`authVerificationsPerActor.customer`) y sesión de **7 días** (`jwtExpiresIn`, también el Admin).
+- Registro solo con email + contraseña. El cliente de Medusa se crea en el **primer login tras verificar** (por eso no se pide el nombre al registrarse).
+- JWT en la cookie httpOnly `customer_token`. El middleware pone `locals.customerToken` (sin red). El SDK compartido usa `nostore` y las llamadas de cuenta pasan el Bearer en cada petición: **nunca** guardar el token en la instancia del SDK.
+- Páginas `/cuenta/*` on-demand, sin JS, actions `account.*` con PRG (cookie `account_flash`).
+- Verificar con **botón** (POST); `Referrer-Policy: same-origin` (con `no-referrer` el POST lleva `Origin: null` → 403 de `checkOrigin`).
+- Cambiar contraseña = email de restablecer (opción a). `GET /store/orders/:id` no comprueba el dueño: comparar `customer_id`.
+- Backend: `POST /store/customers/me/deletion-request` (workflow + evento `customer.deletion_requested` → email a `SHOP_NOTIFY_EMAIL`), bienvenida en `customer.created` con `has_account`.
+- Checkout con sesión: dirección predeterminada, elegir guardada, «Guardar en mi cuenta», `transferCart`.
+- **Carrito entre dispositivos** (opción a): al entrar gana el carrito del navegador; si no hay, se carga el último de la cuenta (`GET /store/customers/me/carts`, ruta propia). Con sesión, el carrito nace asociado al cliente. Las páginas de cuenta cargan `CartClient` (el icono abre el panel).
+- **Más adelante** (detalle en fase9.md §7):
+  - **Fase 10/11**: job propio que **limpie carritos** sin completar (Medusa no lo hace; 764 en la BD local).
+  - **Fase de marketing** (tras producción): **programa de puntos** (0,8 % → Store Credit del `@medusajs/loyalty-plugin`) y **carrito abandonado** (tutorial oficial; comunicación comercial: consentimiento/baja).
+  - **Más datos del cliente** cuando el usuario pase la lista (campos de Medusa, `metadata` o módulo propio + `defineLink`).
+  - Formas de pago guardadas: descartadas por ahora. Lista de deseos: idea.
+- 5 e2e (`buscar` 103/112, `carrito` 169, `interficie` 50/128) **ya fallaban en `main`** con la BD local: revisar aparte.
 
 ## 7. Pendientes conocidos
 
 - **Fase 10 — typecheck del backend en CI igual que en local**: en local `tsc` usa los tipos generados en `apps/backend/.medusa/types` (ignorado por git; lo crean `medusa develop` y `medusa build`). En CI `typecheck` va antes que `build` y esos tipos no existen, así que `query.graph` devuelve `any` y fallan los parámetros implícitos. Solución prevista: generar los tipos en CI antes del `typecheck` (p. ej. ejecutar antes el build del backend; `medusa build` los genera con `skipDbConnection`, sin BD), **sin tocar código**. Después, **deshacer el parche del commit `2f12b98`** (tipo explícito `linked` en `apps/backend/src/scripts/stripe-region.ts`) y comprobar que el CI sigue en verde con los tipos generados ([fase5.md](./fases/fase5.md) §8).
 - **Fase 10 — Meilisearch en producción**: crear una key propia del backend (no la master) con permisos solo de índices, documentos, ajustes, tareas y búsqueda; `MEILISEARCH_HOST`/`MEILISEARCH_API_KEY` también en el `backend-worker`, que es el que llena el índice. Para cargas masivas, reindexar a mano: los eventos van a ~2,5/s en dev ([fase7.md](./fases/fase7.md) §2.0.2).
+- **Fase 10/11 — limpieza de carritos**: scheduled job que borre carritos de invitado sin completar con más de N días (Medusa no lo hace) ([fase9.md](./fases/fase9.md) §7).
 - Tests de integración del backend fuera del CI (necesitan Postgres/Redis como `services:`); propuesta para la fase 10.
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.

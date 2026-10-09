@@ -51,6 +51,8 @@ export const ORDER_EMAIL_FIELDS = [
   "shipping_address.province",
   "shipping_address.country_code",
   "shipping_address.phone",
+  // Cuenta del cliente (fase 9): solo si tiene cuenta se enlaza el pedido en "Mi cuenta".
+  "customer.has_account",
 ] as const;
 
 type Numeric = number | string | { toJSON(): unknown } | { valueOf(): unknown } | null | undefined;
@@ -111,6 +113,7 @@ export type OrderLike = {
   items?: (ItemLike | null)[] | null;
   shipping_methods?: ShippingMethodLike[] | null;
   shipping_address?: AddressLike;
+  customer?: { has_account?: boolean | null } | null;
 };
 
 const sumRates = (lines: TaxLineLike[] | null | undefined) =>
@@ -203,9 +206,10 @@ export function buildOrderPlacedProps(order: OrderLike, links: EmailLinks): Orde
     taxTotal: toNumber(order.tax_total),
     taxBreakdown: buildTaxBreakdown(orderTaxLines(order)),
     shippingAddress: toEmailAddress(order.shipping_address),
-    // La página de pedido solo muestra datos con la cookie `last_order` (fase 5, P7); sin ella
-    // enseña un "Pedido recibido" genérico. El historial completo llegará con la cuenta (fase 9).
-    orderUrl: null,
+    // Solo con cuenta (fase 9): /cuenta/pedidos/<id>/ exige sesión del dueño del pedido. Una
+    // compra como invitado no lleva enlace (/pedido/<id>/ solo muestra datos con la cookie
+    // `last_order`, fase 5, P7).
+    orderUrl: order.customer?.has_account ? accountOrderUrl(links.storefrontUrl, order.id) : null,
   };
 }
 
@@ -278,6 +282,16 @@ export function resetUrl(
   const t = encodeURIComponent(token);
   if (actorType === "customer") return `${urls.storefrontUrl}/cuenta/restablecer/?token=${t}`;
   return `${urls.backendUrl}${urls.adminPath}/reset-password?token=${t}`;
+}
+
+/** Pedido en "Mi cuenta" (fase 9). */
+export function accountOrderUrl(storefrontUrl: string, orderId: string): string {
+  return `${storefrontUrl}/cuenta/pedidos/${encodeURIComponent(orderId)}/`;
+}
+
+/** "Mi cuenta" (email de bienvenida, fase 9). */
+export function accountUrl(storefrontUrl: string): string {
+  return `${storefrontUrl}/cuenta/`;
 }
 
 /** Enlace de verificación de email: solo el código, sin el email en la URL (dato personal). */

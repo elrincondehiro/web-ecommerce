@@ -1,0 +1,109 @@
+---
+// Detalle de un pedido de la cuenta (fase 9). GET /store/orders/:id NO comprueba el dueño en
+// Medusa 2.21.2 (cualquiera con el id lo lee): aquí solo se muestra si `customer_id` es el del
+// cliente con sesión; si no, 404 (no se revela que existe). 0 JS.
+import { buttonVariants } from "$lib/components/ui/button";
+import { ORDERS_PATH, orderStatusLabel } from "$lib/account";
+import { requireCustomer } from "$lib/account-page";
+import { isValidId } from "$lib/cart";
+import { formatPrice } from "$lib/format";
+import { retrieveCustomerOrder, type StoreOrder } from "$lib/medusa";
+import AccountLayout from "../../../components/account/AccountLayout.astro";
+
+export const prerender = false;
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const { id } = Astro.params;
+if (!isValidId(id)) return new Response(null, { status: 404 });
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+
+let order: StoreOrder | null = null;
+try {
+  order = await retrieveCustomerOrder(id);
+} catch (err) {
+  if ((err as { status?: unknown } | null)?.status !== 404) throw err;
+}
+if (!order || order.customer_id !== session.customer.id) {
+  return new Response(null, { status: 404 });
+}
+const currency = order.currency_code ?? "eur";
+const addr = order.shipping_address;
+const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" });
+---
+
+<AccountLayout title={`Pedido #${order.display_id}`}>
+  <a href={ORDERS_PATH} class="mb-4 inline-block text-sm underline underline-offset-4">
+    ← Mis pedidos
+  </a>
+  <h1 class="mb-2 text-3xl font-semibold tracking-tight">Pedido #{order.display_id}</h1>
+  <p class="mb-6 text-muted-foreground">
+    {dateFmt.format(new Date(order.created_at))} · {orderStatusLabel(order)}
+  </p>
+
+  <div class="flex max-w-2xl flex-col gap-6">
+    <section aria-labelledby="pedido-lineas" class="rounded-lg border p-4">
+      <h2 id="pedido-lineas" class="mb-3 text-lg font-semibold">
+        Productos
+      </h2>
+      <ul class="divide-y text-sm">
+        {(order.items ?? []).map((item) => (
+          <li class="flex justify-between gap-4 py-2">
+            <span>
+              <span class="tabular-nums">{item.quantity} ×</span>{" "}
+              {item.product_handle ? (
+                <a href={`/producto/${item.product_handle}/`} class="underline underline-offset-4">
+                  {item.product_title}
+                </a>
+              ) : (
+                item.product_title
+              )}
+              {item.variant_title && item.variant_title !== "Única" && (
+                <span class="text-muted-foreground"> · {item.variant_title}</span>
+              )}
+            </span>
+            <span class="tabular-nums">{formatPrice(item.total ?? 0, currency)}</span>
+          </li>
+        ))}
+      </ul>
+      <dl class="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t pt-3 text-sm tabular-nums">
+        <dt class="text-muted-foreground">
+          Envío{order.shipping_methods?.[0]?.name ? ` (${order.shipping_methods[0].name})` : ""}
+        </dt>
+        <dd class="text-right">{formatPrice(order.shipping_total ?? 0, currency)}</dd>
+        <dt class="text-base font-semibold">Total</dt>
+        <dd class="text-right text-base font-semibold">
+          {formatPrice(order.total ?? 0, currency)}
+        </dd>
+        <dt class="text-muted-foreground">IVA incluido</dt>
+        <dd class="text-right text-muted-foreground">
+          {formatPrice(order.tax_total ?? 0, currency)}
+        </dd>
+      </dl>
+    </section>
+
+    {addr && (
+      <section aria-labelledby="pedido-envio" class="rounded-lg border p-4 text-sm">
+        <h2 id="pedido-envio" class="mb-2 text-lg font-semibold">
+          Dirección de envío
+        </h2>
+        <address class="not-italic">
+          {addr.first_name} {addr.last_name}
+          <br />
+          {addr.address_1}
+          {addr.address_2 && (
+            <>
+              <br />
+              {addr.address_2}
+            </>
+          )}
+          <br />
+          {addr.postal_code} {addr.city} ({addr.province})
+        </address>
+      </section>
+    )}
+  </div>
+  <a href="/productos/" class:list={[buttonVariants({ variant: "outline" }), "mt-8"]}>
+    Seguir comprando
+  </a>
+</AccountLayout>

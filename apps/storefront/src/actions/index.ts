@@ -28,6 +28,7 @@ import {
   updateLineItem,
   type StoreCart,
 } from "$lib/medusa";
+import { account } from "./account";
 import { checkout } from "./checkout";
 
 const id = z.string().regex(ID_PATTERN);
@@ -56,6 +57,7 @@ function titleOf(cart: StoreCart, variantId: string): string | null {
 }
 
 export const server = {
+  account,
   checkout,
   cart: {
     add: defineAction({
@@ -68,7 +70,8 @@ export const server = {
         for (let attempt = 0; attempt < 2; attempt++) {
           try {
             if (!cartId) {
-              cartId = (await createCart()).id;
+              // Con sesión, el carrito nace ya asociado al cliente (fase 9).
+              cartId = (await createCart(undefined, ctx.locals.customerToken)).id;
               setCartId(ctx, cartId);
             }
             const cart = await addLineItem(cartId, variant_id, quantity);

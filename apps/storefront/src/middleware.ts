@@ -8,10 +8,22 @@
 // rechaza POST de formulario de otros orígenes antes de llegar aquí.
 // Checkout (fase 5): las actions `checkout.*` siempre responden 303 a /checkout/#<paso>; el
 // aviso, los errores por campo y los valores viajan en la cookie flash (1 min, httpOnly).
+// Cuenta (fase 9): `locals.customerToken` = JWT de la cookie `customer_token` si es de un cliente
+// creado y no ha caducado (sin red: la firma la comprueba Medusa). Las actions `account.*`
+// responden siempre 303 (PRG) al destino que devuelvan, con el aviso en la cookie flash.
 import { getActionContext } from "astro:actions";
 import { COOKIE_SECURE } from "astro:env/server";
 import { defineMiddleware } from "astro:middleware";
+import type { AccountResult } from "./actions/account";
 import type { CheckoutResult } from "./actions/checkout";
+import {
+  ACCOUNT_FLASH_COOKIE,
+  TOKEN_COOKIE,
+  accountFlashCookieOptions,
+  encodeAccountFlash,
+  isSessionToken,
+  readToken,
+} from "$lib/account";
 import { CHECKOUT_PATH, FLASH_COOKIE, encodeFlash, flashCookieOptions } from "$lib/checkout";
 import {
   isErrorNotice,
@@ -32,8 +44,31 @@ function toResult(result: { data?: unknown; error?: { code?: string } | undefine
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Las páginas prerenderizadas no tienen cookies (Astro avisa si se leen en el build).
+  if (!context.isPrerendered) {
+    const token = context.cookies.get(TOKEN_COOKIE)?.value;
+    context.locals.customerToken = token && isSessionToken(readToken(token)) ? token : null;
+  }
+
   const { action } = getActionContext(context);
   if (action?.calledFrom !== "form") return next();
+
+  if (action.name.startsWith("account.")) {
+    const result = await action.handler();
+    const data: AccountResult = result.error
+      ? { to: context.url.pathname, flash: { code: "error" } }
+      : (result.data as AccountResult);
+    if (data.flash) {
+      context.cookies.set(
+        ACCOUNT_FLASH_COOKIE,
+        encodeAccountFlash(data.flash),
+        accountFlashCookieOptions(COOKIE_SECURE),
+      );
+    }
+    const response = context.redirect(data.to, 303);
+    response.headers.set("Cache-Control", NO_STORE);
+    return response;
+  }
 
   if (action.name.startsWith("checkout.")) {
     const result = await action.handler();

@@ -8,7 +8,8 @@
 // positioning: el invocador es el ancla implícita).
 // Ocultar al bajar / mostrar al subir (D1): `data-hide` lo pone SiteClient; sin JS, la cabecera
 // es fija (sticky) y siempre visible.
-// "Mi cuenta" oculto hasta la fase 9 (D7).
+// "Mi cuenta" (fase 9): enlace FIJO a /cuenta/ (igual para todos: la cabecera sigue estática y
+// cacheable). Sin sesión, /cuenta/ redirige a "Entrar".
 import Icon from "../Icon.astro";
 import CartCountBadge from "../CartCountBadge.astro";
 import CartCount from "../server/CartCount.astro";
@@ -16,6 +17,7 @@ import { CART_PATH } from "$lib/cart";
 import { getCategories } from "$lib/medusa";
 import { SEARCH_PATH } from "$lib/search";
 import { OFFERS_PATH } from "$lib/constants";
+import { ACCOUNT_PATH } from "$lib/account";
 
 interface Props {
   cartCount?: number | undefined;
@@ -148,6 +150,14 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
         <Icon name="moon" class="size-6 dark:hidden" />
         <Icon name="sun" class="hidden size-6 dark:block" />
       </button>
+      <a
+        href={ACCOUNT_PATH}
+        class={iconBtn}
+        aria-label="Mi cuenta"
+        aria-current={current.startsWith(ACCOUNT_PATH) ? "page" : undefined}
+      >
+        <Icon name="user" />
+      </a>
       {/* Carrito: enlace a /carrito/ (sin JS y en móvil); en escritorio el script del carrito
           abre el flyout. Contador: server island en páginas estáticas. */}
       <a
@@ -208,6 +218,15 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
           </a>
         </li>
       ))}
+      <li>
+        <a
+          href={ACCOUNT_PATH}
+          class="mobile-menu__link font-semibold"
+          aria-current={aria(ACCOUNT_PATH)}
+        >
+          Mi cuenta
+        </a>
+      </li>
     </ul>
   </div>
 </nav>

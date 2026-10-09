@@ -92,6 +92,13 @@ describe("emails: datos de Medusa → props", () => {
     expect(p.orderUrl).toBeNull();
   });
 
+  it("pedido de un cliente con cuenta: enlace a /cuenta/pedidos/<id>/", () => {
+    const p = buildOrderPlacedProps({ ...order, customer: { has_account: true } }, links);
+    expect(p.orderUrl).toBe(`${links.storefrontUrl}/cuenta/pedidos/${order.id}/`);
+    const guest = buildOrderPlacedProps({ ...order, customer: { has_account: false } }, links);
+    expect(guest.orderUrl).toBeNull();
+  });
+
   it("IVA: suma los tax_lines de cada línea", () => {
     expect(orderTaxLines(order).map((l) => l.rate)).toEqual([21, 4, 21]);
   });

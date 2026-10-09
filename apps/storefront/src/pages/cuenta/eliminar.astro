@@ -1,0 +1,81 @@
+---
+// Eliminar mi cuenta (fase 9): por ahora es una SOLICITUD (llega un email a la tienda, que la
+// tramita desde el Admin en el plazo del RGPD). Sin JS; exige marcar la casilla.
+import { buttonVariants } from "$lib/components/ui/button";
+import { ACCOUNT_PATH, DELETE_PATH, accountActionUrl } from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import AccountLayout from "../../components/account/AccountLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const errors = flash.errors ?? {};
+---
+
+<AccountLayout title="Eliminar mi cuenta">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Eliminar mi cuenta</h1>
+  <AccountNotice code={flash.code} />
+  <div class="flex max-w-xl flex-col gap-4 text-sm">
+    <p>
+      Si eliminas tu cuenta, borraremos tus datos personales y tus direcciones guardadas y ya no
+      podrás entrar. Conservaremos los datos de tus pedidos el tiempo que exige la normativa fiscal.
+    </p>
+    <p>
+      Recibiremos tu solicitud y te confirmaremos la baja por email en un plazo máximo de un mes.
+    </p>
+    <form
+      method="post"
+      action={accountActionUrl(DELETE_PATH, "account.deleteRequest")}
+      class="mt-2 flex flex-col gap-4 rounded-lg border p-4 sm:p-6"
+    >
+      <div class="flex flex-col gap-1">
+        <label for="f-reason" class="font-medium">
+          ¿Por qué te vas? <span class="font-normal text-muted-foreground">(opcional)</span>
+        </label>
+        <textarea
+          id="f-reason"
+          name="reason"
+          rows="3"
+          maxlength="500"
+          aria-invalid={errors.reason ? "true" : undefined}
+          aria-describedby={errors.reason ? "f-reason-error" : undefined}
+          class="rounded-md border-2 border-line bg-background px-3 py-2 text-base aria-invalid:border-destructive sm:text-sm"
+        >{flash.values?.reason ?? ""}</textarea>
+        {errors.reason && (
+          <p id="f-reason-error" class="text-destructive">
+            {errors.reason}
+          </p>
+        )}
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="flex items-start gap-2">
+          <input
+            type="checkbox"
+            name="confirm"
+            required
+            class="mt-0.5 size-4"
+            aria-invalid={errors.confirm ? "true" : undefined}
+            aria-describedby={errors.confirm ? "f-confirm-error" : undefined}
+          />
+          Quiero eliminar mi cuenta y mis datos personales.
+        </label>
+        {errors.confirm && (
+          <p id="f-confirm-error" class="text-destructive">
+            {errors.confirm}
+          </p>
+        )}
+      </div>
+      <div class="flex flex-wrap items-center gap-4">
+        <button type="submit" class={buttonVariants({ variant: "destructive" })}>
+          Solicitar la baja
+        </button>
+        <a href={ACCOUNT_PATH} class="underline underline-offset-4">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</AccountLayout>

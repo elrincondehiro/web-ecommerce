@@ -1,0 +1,47 @@
+---
+// Confirmar el email (fase 9): destino del enlace del email (`?token=<código>`). Se confirma al
+// pulsar el botón (POST), no al abrir la página: los antivirus y las vistas previas de correo
+// abren los enlaces (GET) y gastarían el código de un solo uso. Referrer-Policy same-origin: el
+// código no sale a otros sitios (no-referrer → `Origin: null` en el POST → 403 de checkOrigin).
+import { buttonVariants } from "$lib/components/ui/button";
+import { LOGIN_PATH, VERIFY_PATH, accountActionUrl } from "$lib/account";
+import { accountPage } from "$lib/account-page";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import AuthCard from "../../components/account/AuthCard.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+Astro.response.headers.set("Referrer-Policy", "same-origin");
+const token = Astro.url.searchParams.get("token") ?? "";
+const valid = token.length > 0 && token.length <= 512;
+---
+
+<BaseLayout title="Confirmar email" description="Confirma tu email para activar tu cuenta." noindex>
+  <AuthCard title="Confirma tu email">
+    <AccountNotice code={flash.code} />
+    {valid ? (
+      <form
+        method="post"
+        action={accountActionUrl(VERIFY_PATH, "account.verify")}
+        class="flex flex-col gap-4"
+      >
+        <input type="hidden" name="token" value={token} />
+        <p class="text-sm text-muted-foreground">
+          Pulsa el botón para activar tu cuenta. Después podrás entrar con tu email y contraseña.
+        </p>
+        <button type="submit" class={buttonVariants()}>
+          Confirmar mi email
+        </button>
+      </form>
+    ) : (
+      <p class="text-sm text-muted-foreground">
+        El enlace no es válido. Entra con tu email y contraseña y te enviaremos otro.
+      </p>
+    )}
+    <a href={LOGIN_PATH} class="text-sm underline underline-offset-4">
+      Ir a «Entrar»
+    </a>
+  </AuthCard>
+</BaseLayout>

@@ -675,7 +675,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | I-Interficie UX/UI (cabecera, home…)   | [faseI-interficie.md](./docs/fases/faseI-interficie.md)                                          | ✅     |
 | D Diseño (afinar colores, interfaz…)   | [faseD-diseno.md](./docs/fases/faseD-diseno.md)                                                  | ✅     |
 | 8 Emails                               | [fase8.md](./docs/fases/fase8.md)                                                                | ✅     |
-| 9 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 9 Cuenta de cliente                    | [fase9.md](./docs/fases/fase9.md)                                                                | 🚧     |
+| 10 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 
@@ -800,6 +801,7 @@ SMTP_HOST=localhost
 SMTP_PORT=1025
 STOREFRONT_URL=http://localhost:4321 # enlaces de los emails
 EMAIL_ASSETS_URL=                    # origen del logo (/email/logo.png); vacío = STOREFRONT_URL
+SHOP_NOTIFY_EMAIL=                   # avisos internos (fase 9: solicitudes de baja); vacío = no se envían
 
 STOREFRONT_REBUILD_WEBHOOK=          # opcional: dispara rebuild del storefront
 

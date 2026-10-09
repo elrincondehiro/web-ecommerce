@@ -1,0 +1,86 @@
+---
+// Crear cuenta (fase 9): solo email + contraseña (los datos se completan en "Mis datos"). Con la
+// verificación obligatoria, tras enviar el formulario se pide confirmar el email.
+import { buttonVariants } from "$lib/components/ui/button";
+import { ACCOUNT_PATH, LOGIN_PATH, REGISTER_PATH, accountActionUrl } from "$lib/account";
+import { accountPage } from "$lib/account-page";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import AuthCard from "../../components/account/AuthCard.astro";
+import PasswordField from "../../components/account/PasswordField.astro";
+import Field from "../../components/checkout/Field.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+if (Astro.locals.customerToken) return Astro.redirect(ACCOUNT_PATH, 303);
+const errors = flash.errors ?? {};
+---
+
+<BaseLayout
+  title="Crear cuenta"
+  description="Crea tu cuenta en El Rincón de Hiro para guardar tus direcciones y ver tus pedidos."
+  noindex
+>
+  <AuthCard title="Crear cuenta">
+    <p class="text-sm text-muted-foreground">
+      Guarda tus direcciones para comprar más rápido y consulta tus pedidos cuando quieras.
+    </p>
+    <AccountNotice code={flash.code} />
+    <form
+      method="post"
+      action={accountActionUrl(REGISTER_PATH, "account.register")}
+      class="flex flex-col gap-4"
+    >
+      <Field
+        name="email"
+        type="email"
+        label="Email"
+        autocomplete="email"
+        required
+        maxlength={254}
+        hint="Te enviaremos un enlace para confirmarlo."
+        value={flash.values?.email ?? ""}
+        error={errors.email}
+      />
+      <PasswordField autocomplete="new-password" error={errors.password} />
+      <div class="flex flex-col gap-1">
+        <label class="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="terms"
+            required
+            class="mt-0.5 size-4"
+            aria-invalid={errors.terms ? "true" : undefined}
+            aria-describedby={errors.terms ? "f-terms-error" : undefined}
+          />
+          <span>
+            He leído y acepto las
+            <a href="/condiciones/" class="underline underline-offset-4">
+              condiciones
+            </a>
+            y la
+            <a href="/privacidad/" class="underline underline-offset-4">
+              política de privacidad
+            </a>
+            .
+          </span>
+        </label>
+        {errors.terms && (
+          <p id="f-terms-error" class="text-sm text-destructive">
+            {errors.terms}
+          </p>
+        )}
+      </div>
+      <button type="submit" class={buttonVariants()}>
+        Crear cuenta
+      </button>
+    </form>
+    <p class="border-t-2 border-line pt-6 text-sm">
+      ¿Ya tienes cuenta?
+      <a href={LOGIN_PATH} class="font-medium underline underline-offset-4">
+        Entrar
+      </a>
+    </p>
+  </AuthCard>
+</BaseLayout>

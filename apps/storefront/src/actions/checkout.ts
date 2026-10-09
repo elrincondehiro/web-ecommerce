@@ -11,11 +11,16 @@ import {
   STRIPE_PROVIDER_ID,
   classifyCompleteError,
   parseAddressForm,
+  type CheckoutAddress,
   type Flash,
 } from "$lib/checkout";
+import { sameAddress } from "$lib/account";
 import {
   CHECKOUT_FIELDS,
+  createAddress,
   initiateStripeSession,
+  retrieveCustomer,
+  transferCart,
   listShippingOptions,
   retrieveCart,
   setShippingMethod,
@@ -50,6 +55,30 @@ async function prepareStripe(cartId: string): Promise<void> {
   await initiateStripeSession(cart, STRIPE_PROVIDER_ID);
 }
 
+/**
+ * Cliente con sesión (fase 9): el carrito pasa a ser suyo (el pedido sale en "Mis pedidos"
+ * aunque el carrito se creara antes de entrar) y, si lo pide, guarda la dirección de envío (si
+ * no la tiene ya). Si falla, el checkout sigue como invitado.
+ */
+async function linkCustomer(
+  ctx: ActionAPIContext,
+  token: string,
+  cartId: string,
+  save: boolean,
+  shipping: CheckoutAddress,
+): Promise<void> {
+  try {
+    await transferCart(token, cartId);
+    if (!save) return;
+    const customer = await retrieveCustomer(token);
+    const addresses = customer.addresses ?? [];
+    if (addresses.some((a) => sameAddress(a, shipping))) return;
+    await createAddress(token, { ...shipping, is_default_shipping: addresses.length === 0 });
+  } catch (err) {
+    logError(ctx, "cuenta", err);
+  }
+}
+
 export const checkout = {
   address: defineAction({
     accept: "form",
@@ -65,6 +94,9 @@ export const checkout = {
       }
       try {
         const { email, shipping, billing } = parsed.data;
+        const token = ctx.locals.customerToken;
+        if (token)
+          await linkCustomer(ctx, token, cartId, form.get("save_address") === "on", shipping);
         await updateCartContact(cartId, {
           email,
           shipping_address: shipping,

@@ -45,6 +45,9 @@ function sdk(): Medusa {
   sdkInstance ??= new Medusa({
     baseUrl: MEDUSA_BACKEND_URL,
     publishableKey: MEDUSA_PUBLISHABLE_KEY,
+    // Una instancia para TODAS las peticiones del servidor: nunca guarda el token del cliente
+    // (fase 9). Las llamadas de cuenta lo pasan en `Authorization` por petición.
+    auth: { type: "jwt", jwtTokenStorageMethod: "nostore" },
   });
   return sdkInstance;
 }
@@ -222,9 +225,20 @@ function cartSdk(): Medusa {
   return sdk();
 }
 
-export async function createCart(fields = CART_COUNT_FIELDS): Promise<StoreCart> {
+/**
+ * Crea un carrito. Con `token` (cliente con sesión, fase 9) Medusa lo asocia al cliente
+ * (`customer_id` = actor del token): así sigue a la cuenta aunque no llegue al checkout.
+ */
+export async function createCart(
+  fields = CART_COUNT_FIELDS,
+  token?: string | null,
+): Promise<StoreCart> {
   const region = await getRegionES();
-  const { cart } = await cartSdk().store.cart.create({ region_id: region.id }, { fields });
+  const { cart } = await cartSdk().store.cart.create(
+    { region_id: region.id },
+    { fields },
+    token ? { authorization: `Bearer ${token}` } : undefined,
+  );
   return cart;
 }
 
@@ -410,4 +424,168 @@ export async function getPricedProductsByIds(ids: string[]): Promise<StoreProduc
   if (cardCache) return (await cardCache.getMany(ids, fetchCards, (p) => p.id)).values;
   const byId = new Map((await fetchCards(ids)).map((p) => [p.id, p]));
   return ids.map((id) => byId.get(id)).filter((p): p is StoreProduct => Boolean(p));
+}
+
+// ── Cuenta de cliente (runtime: /cuenta/*, checkout). Fase 9. ──────────────────────────────
+// Flujo con verificación obligatoria (Medusa ≥ 2.16, `authVerificationsPerActor.customer`;
+// context7 /medusajs/medusa storefront-development/customers/verify-account), probado contra
+// 2.21.2: register → login devuelve { verification_required, token } → /auth/verification/request
+// con ese token (Bearer) → email → /auth/verification/confirm { code } → login (token con
+// actor_id vacío) → POST /store/customers con ese token → login de nuevo (token con actor_id).
+// Las rutas /auth/* se llaman con `client.fetch` (sin el almacenamiento de tokens del SDK) y el
+// token SIEMPRE se pasa por petición: la instancia del SDK es compartida entre usuarios.
+
+export type StoreCustomer = HttpTypes.StoreCustomer;
+export type StoreCustomerAddress = HttpTypes.StoreCustomerAddress;
+export type CustomerAddressInput = HttpTypes.StoreCreateCustomerAddress;
+
+const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
+
+export type LoginResult = { type: "token"; token: string } | { type: "verify"; token: string };
+
+/** Crea la identidad email+contraseña. Lanza FetchError (401 "Identity with email already exists"). */
+export async function registerIdentity(email: string, password: string): Promise<void> {
+  await cartSdk().client.fetch<{ token: string }>("/auth/customer/emailpass/register", {
+    method: "POST",
+    body: { email, password },
+  });
+}
+
+/** Inicia sesión. 401 si las credenciales no valen (mismo mensaje exista o no la cuenta). */
+export async function loginCustomer(email: string, password: string): Promise<LoginResult> {
+  const res = await cartSdk().client.fetch<{ token?: string; verification_required?: boolean }>(
+    "/auth/customer/emailpass",
+    { method: "POST", body: { email, password } },
+  );
+  if (!res.token) throw new Error("Respuesta de login inesperada");
+  return res.verification_required
+    ? { type: "verify", token: res.token }
+    : { type: "token", token: res.token };
+}
+
+/** Pide el email de verificación (el token es el "sin actor" que devuelve el login). */
+export async function requestEmailVerification(token: string, email: string): Promise<void> {
+  await cartSdk().client.fetch("/auth/verification/request", {
+    method: "POST",
+    headers: bearer(token),
+    body: { entity_id: email, entity_type: "email" },
+  });
+}
+
+/** Confirma el código del enlace. 400 si no vale o ya se usó. */
+export async function confirmEmailVerification(code: string): Promise<void> {
+  await cartSdk().client.fetch("/auth/verification/confirm", {
+    method: "POST",
+    body: { code },
+  });
+}
+
+/** Crea el cliente asociado a la identidad (primer login tras verificar). */
+export async function createCustomer(token: string, email: string): Promise<void> {
+  await cartSdk().store.customer.create({ email }, { fields: "id" }, bearer(token));
+}
+
+/**
+ * Pide el email de restablecer contraseña. Medusa responde 201 "Created" (texto, no JSON) exista o
+ * no la cuenta: `auth.resetPassword` del SDK ya pide `accept: text/plain`.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await cartSdk().auth.resetPassword("customer", "emailpass", { identifier: email });
+}
+
+/** Cambia la contraseña con el token (de un solo uso) del enlace de restablecer. */
+export async function resetPassword(token: string, password: string): Promise<void> {
+  await cartSdk().client.fetch("/auth/customer/emailpass/update", {
+    method: "POST",
+    headers: bearer(token),
+    body: { password },
+  });
+}
+
+const CUSTOMER_FIELDS = "id,email,first_name,last_name,phone,has_account,*addresses";
+
+export async function retrieveCustomer(token: string): Promise<StoreCustomer> {
+  const { customer } = await cartSdk().store.customer.retrieve(
+    { fields: CUSTOMER_FIELDS },
+    bearer(token),
+  );
+  return customer;
+}
+
+export async function updateCustomer(
+  token: string,
+  body: { first_name: string; last_name: string; phone: string | null },
+): Promise<void> {
+  await cartSdk().store.customer.update(body, { fields: "id" }, bearer(token));
+}
+
+export async function createAddress(token: string, body: CustomerAddressInput): Promise<void> {
+  await cartSdk().store.customer.createAddress(body, { fields: "id" }, bearer(token));
+}
+
+export async function updateAddress(
+  token: string,
+  addressId: string,
+  body: Partial<CustomerAddressInput>,
+): Promise<void> {
+  await cartSdk().store.customer.updateAddress(addressId, body, { fields: "id" }, bearer(token));
+}
+
+export async function deleteAddress(token: string, addressId: string): Promise<void> {
+  await cartSdk().store.customer.deleteAddress(addressId, bearer(token));
+}
+
+/**
+ * Último carrito sin completar y con artículos del cliente (ruta propia del backend, fase 9), o
+ * null. Sirve para que el carrito "siga" al cliente entre dispositivos.
+ */
+export async function latestCustomerCartId(token: string): Promise<string | null> {
+  const { cart_id } = await cartSdk().client.fetch<{ cart_id: string | null }>(
+    "/store/customers/me/carts",
+    { headers: bearer(token) },
+  );
+  return cart_id;
+}
+
+/** Asocia el carrito al cliente (refresca precios). Si ya es suyo, Medusa no cambia nada. */
+export async function transferCart(token: string, cartId: string): Promise<void> {
+  await cartSdk().store.cart.transferCart(cartId, { fields: "id" }, bearer(token));
+}
+
+const ORDER_LIST_FIELDS =
+  "id,display_id,status,created_at,currency_code,total,payment_status,fulfillment_status," +
+  "items.id,items.quantity";
+
+/** Pedidos del cliente (Medusa filtra por el `actor_id` del token), del más reciente al más antiguo. */
+export async function listCustomerOrders(
+  token: string,
+  page: { limit: number; offset: number },
+): Promise<{ orders: StoreOrder[]; count: number }> {
+  const { orders, count } = await cartSdk().store.order.list(
+    { ...page, fields: ORDER_LIST_FIELDS, order: "-created_at" },
+    bearer(token),
+  );
+  return { orders, count };
+}
+
+export const ACCOUNT_ORDER_FIELDS =
+  `${ORDER_FIELDS},customer_id,status,fulfillment_status,*billing_address,` +
+  "items.thumbnail,items.product_handle";
+
+/**
+ * Pedido del cliente. GET /store/orders/:id NO comprueba el dueño en Medusa 2.21.2: se pide el
+ * `customer_id` y la página lo compara con el del token.
+ */
+export async function retrieveCustomerOrder(id: string): Promise<StoreOrder> {
+  const { order } = await cartSdk().store.order.retrieve(id, { fields: ACCOUNT_ORDER_FIELDS });
+  return order;
+}
+
+/** Solicitud de baja (ruta propia del backend, fase 9). */
+export async function requestAccountDeletion(token: string, reason: string): Promise<void> {
+  await cartSdk().client.fetch("/store/customers/me/deletion-request", {
+    method: "POST",
+    headers: bearer(token),
+    body: reason ? { reason } : {},
+  });
 }

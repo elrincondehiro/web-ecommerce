@@ -1,0 +1,12 @@
+---
+// Tarjeta centrada de las páginas sin sesión (entrar, registro, recuperar…). Fase 9.
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<div class="mx-auto flex w-full max-w-md flex-col gap-6">
+  <h1 class="text-3xl font-semibold tracking-tight">{title}</h1>
+  <slot />
+</div>

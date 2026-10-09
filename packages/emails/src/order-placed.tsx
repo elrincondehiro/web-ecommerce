@@ -23,7 +23,7 @@ export type OrderPlacedProps = EmailLinks & {
   /** IVA agrupado por tipo (`buildTaxBreakdown`). */
   taxBreakdown: TaxBreakdownRow[];
   shippingAddress?: EmailAddress | null;
-  /** Página del pedido en el storefront (opcional). */
+  /** Página del pedido en "Mi cuenta" (solo si el pedido es de un cliente con cuenta). */
   orderUrl?: string | null;
 };
 
@@ -129,7 +129,7 @@ OrderPlaced.PreviewProps = {
     province: "Madrid",
     country: "España",
   },
-  orderUrl: "http://localhost:4321/pedido/order_01PREVIEW/",
+  orderUrl: "http://localhost:4321/cuenta/pedidos/order_01PREVIEW/",
 } satisfies OrderPlacedProps;
 
 export default OrderPlaced;

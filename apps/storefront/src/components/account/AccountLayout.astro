@@ -1,0 +1,61 @@
+---
+// Páginas de "Mi cuenta" con sesión (fase 9): menú de la cuenta + contenido. On-demand, noindex.
+// JS: el común (SiteClient) y el del carrito (CartClient: flyout y toasts), como el resto de la
+// tienda. El menú es una lista de enlaces (en móvil, arriba y con scroll horizontal).
+import {
+  ACCOUNT_PATH,
+  ADDRESSES_PATH,
+  ORDERS_PATH,
+  PROFILE_PATH,
+  accountActionUrl,
+} from "$lib/account";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+interface Props {
+  title: string;
+  description?: string | undefined;
+}
+const { title, description = "Tu cuenta en El Rincón de Hiro." } = Astro.props;
+const current = Astro.url.pathname;
+const links = [
+  { href: ACCOUNT_PATH, name: "Resumen" },
+  { href: ORDERS_PATH, name: "Mis pedidos" },
+  { href: ADDRESSES_PATH, name: "Direcciones" },
+  { href: PROFILE_PATH, name: "Mis datos" },
+];
+const isCurrent = (href: string) =>
+  href === ACCOUNT_PATH ? current === href : current.startsWith(href);
+---
+
+<BaseLayout title={title} description={description} noindex>
+  <div class="grid gap-8 lg:grid-cols-[14rem_1fr] lg:items-start">
+    <nav aria-label="Mi cuenta" class="lg:sticky lg:top-4">
+      <ul class="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible">
+        {links.map((l) => (
+          <li class="shrink-0">
+            <a
+              href={l.href}
+              aria-current={isCurrent(l.href) ? "page" : undefined}
+              class="block rounded-md px-3 py-2 text-sm font-medium hover:bg-muted aria-[current=page]:bg-muted aria-[current=page]:font-semibold"
+            >
+              {l.name}
+            </a>
+          </li>
+        ))}
+        <li class="shrink-0 lg:mt-2 lg:border-t-2 lg:border-line lg:pt-2">
+          <form method="post" action={accountActionUrl(ACCOUNT_PATH, "account.logout")}>
+            <button
+              type="submit"
+              class="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-muted"
+            >
+              Cerrar sesión
+            </button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+    <div class="min-w-0">
+      <slot />
+    </div>
+  </div>
+</BaseLayout>

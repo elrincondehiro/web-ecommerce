@@ -1,0 +1,23 @@
+---
+// Aviso de la cuenta tras un POST sin JS (fase 9): lo pinta la página con el código de la
+// cookie flash. role="status" (éxito) o "alert" (error) para lectores de pantalla.
+import { ACCOUNT_NOTICES, isSuccessNotice, type AccountNoticeCode } from "$lib/account";
+
+interface Props {
+  code: AccountNoticeCode | undefined;
+}
+const { code } = Astro.props;
+const ok = code ? isSuccessNotice(code) : false;
+---
+
+{code && (
+  <p
+    role={ok ? "status" : "alert"}
+    class:list={[
+      "mb-6 rounded-md border-2 px-4 py-3 text-sm",
+      ok ? "border-success/50 bg-muted" : "border-destructive text-destructive",
+    ]}
+  >
+    {ACCOUNT_NOTICES[code]}
+  </p>
+)}

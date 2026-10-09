@@ -1,0 +1,139 @@
+---
+// Direcciones guardadas (fase 9): listar, añadir, editar (`?editar=<id>`), borrar y elegir la
+// predeterminada. Sin JS: cada acción es un <form> (PRG). Se usan para rellenar el checkout.
+import { buttonVariants } from "$lib/components/ui/button";
+import { ADDRESSES_PATH, accountActionUrl } from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { isValidId } from "$lib/cart";
+import type { StoreCustomerAddress } from "$lib/medusa";
+import AccountLayout from "../../components/account/AccountLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import SavedAddressForm from "../../components/account/SavedAddressForm.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const addresses: StoreCustomerAddress[] = [...(session.customer.addresses ?? [])].sort(
+  (a, b) => Number(b.is_default_shipping) - Number(a.is_default_shipping),
+);
+const editId = Astro.url.searchParams.get("editar");
+const editing = isValidId(editId) ? addresses.find((a) => a.id === editId) : undefined;
+const errors = flash.errors ?? {};
+
+const fromAddress = (a: StoreCustomerAddress): Record<string, string> => ({
+  address_name: a.address_name ?? "",
+  first_name: a.first_name ?? "",
+  last_name: a.last_name ?? "",
+  address_1: a.address_1 ?? "",
+  address_2: a.address_2 ?? "",
+  postal_code: a.postal_code ?? "",
+  city: a.city ?? "",
+  phone: a.phone ?? "",
+  is_default: a.is_default_shipping ? "on" : "",
+});
+// Tras un error, los valores del flash son del formulario que se envió (el de editar si hay
+// `?editar=`, si no el de nueva).
+const editValues = editing ? (flash.values ?? fromAddress(editing)) : {};
+const newValues = !editing ? (flash.values ?? {}) : {};
+const linkBtn = "text-sm underline underline-offset-4";
+---
+
+<AccountLayout title="Direcciones">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Direcciones</h1>
+  <AccountNotice code={flash.code} />
+
+  {addresses.length > 0 && (
+    <ul class="mb-8 grid gap-4 sm:grid-cols-2">
+      {addresses.map((a) => (
+        <li id={`editar-${a.id}`} class="flex scroll-mt-4 flex-col gap-3 rounded-lg border p-4">
+          {editing?.id === a.id ? (
+            <>
+              <h2 class="text-lg font-semibold">Editar dirección</h2>
+              <SavedAddressForm
+                addressId={a.id}
+                values={editValues}
+                errors={errors}
+                showDefault={!a.is_default_shipping}
+              />
+            </>
+          ) : (
+            <>
+              <div class="flex items-start justify-between gap-2">
+                <h2 class="font-semibold">{a.address_name || `${a.first_name} ${a.last_name}`}</h2>
+                {a.is_default_shipping && (
+                  <span class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                    Predeterminada
+                  </span>
+                )}
+              </div>
+              <address class="text-sm not-italic">
+                {a.first_name} {a.last_name}
+                <br />
+                {a.address_1}
+                {a.address_2 && (
+                  <>
+                    <br />
+                    {a.address_2}
+                  </>
+                )}
+                <br />
+                {a.postal_code} {a.city} ({a.province})
+                <br />
+                {a.phone}
+              </address>
+              <div class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2">
+                <a href={`${ADDRESSES_PATH}?editar=${a.id}#editar-${a.id}`} class={linkBtn}>
+                  Editar
+                </a>
+                {!a.is_default_shipping && (
+                  <form
+                    method="post"
+                    action={accountActionUrl(ADDRESSES_PATH, "account.addressDefault")}
+                  >
+                    <input type="hidden" name="address_id" value={a.id} />
+                    <button type="submit" class={linkBtn}>
+                      Hacer predeterminada
+                    </button>
+                  </form>
+                )}
+                <form
+                  method="post"
+                  action={accountActionUrl(ADDRESSES_PATH, "account.addressDelete")}
+                >
+                  <input type="hidden" name="address_id" value={a.id} />
+                  <button type="submit" class:list={[linkBtn, "text-destructive"]}>
+                    Eliminar
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+
+  {!editing && (
+    <section
+      id="nueva"
+      aria-labelledby="nueva-titulo"
+      class="max-w-2xl scroll-mt-4 rounded-lg border p-4 sm:p-6"
+    >
+      <h2 id="nueva-titulo" class="mb-4 text-xl font-semibold">
+        {addresses.length ? "Añadir otra dirección" : "Añade tu primera dirección"}
+      </h2>
+      <SavedAddressForm
+        values={addresses.length ? newValues : { is_default: "on", ...newValues }}
+        errors={errors}
+        showDefault={addresses.length > 0}
+      />
+    </section>
+  )}
+  {editing && (
+    <a href={ADDRESSES_PATH} class={buttonVariants({ variant: "outline" })}>
+      Volver a mis direcciones
+    </a>
+  )}
+</AccountLayout>

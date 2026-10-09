@@ -1,0 +1,47 @@
+---
+// ¿Has olvidado tu contraseña? (fase 9): pide el email y Medusa envía el enlace (subscriber
+// `auth.password_reset`, fase 8). El aviso es el mismo exista o no la cuenta.
+import { buttonVariants } from "$lib/components/ui/button";
+import { LOGIN_PATH, RECOVER_PATH, accountActionUrl } from "$lib/account";
+import { accountPage } from "$lib/account-page";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import AuthCard from "../../components/account/AuthCard.astro";
+import Field from "../../components/checkout/Field.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const errors = flash.errors ?? {};
+---
+
+<BaseLayout title="Recuperar contraseña" description="Crea una contraseña nueva." noindex>
+  <AuthCard title="Recuperar contraseña">
+    <p class="text-sm text-muted-foreground">
+      Escribe el email de tu cuenta y te enviaremos un enlace para crear una contraseña nueva.
+    </p>
+    <AccountNotice code={flash.code} />
+    <form
+      method="post"
+      action={accountActionUrl(RECOVER_PATH, "account.recover")}
+      class="flex flex-col gap-4"
+    >
+      <Field
+        name="email"
+        type="email"
+        label="Email"
+        autocomplete="email"
+        required
+        maxlength={254}
+        value={flash.values?.email ?? ""}
+        error={errors.email}
+      />
+      <button type="submit" class={buttonVariants()}>
+        Enviar enlace
+      </button>
+    </form>
+    <a href={LOGIN_PATH} class="text-sm underline underline-offset-4">
+      Volver a «Entrar»
+    </a>
+  </AuthCard>
+</BaseLayout>

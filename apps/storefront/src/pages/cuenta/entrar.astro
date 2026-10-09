@@ -1,0 +1,52 @@
+---
+// Entrar (fase 9): on-demand, noindex, 0 JS. Formulario sin JS → action account.login (PRG).
+// Con sesión, va directo a la cuenta. `?next=` (ruta propia validada) = a dónde volver.
+import { buttonVariants } from "$lib/components/ui/button";
+import { LOGIN_PATH, RECOVER_PATH, REGISTER_PATH, accountActionUrl, safeNext } from "$lib/account";
+import { accountPage } from "$lib/account-page";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import AuthCard from "../../components/account/AuthCard.astro";
+import PasswordField from "../../components/account/PasswordField.astro";
+import Field from "../../components/checkout/Field.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const next = safeNext(Astro.url.searchParams.get("next"));
+if (Astro.locals.customerToken) return Astro.redirect(next, 303);
+const errors = flash.errors ?? {};
+const action = accountActionUrl(LOGIN_PATH, "account.login");
+---
+
+<BaseLayout title="Entrar" description="Entra en tu cuenta de El Rincón de Hiro." noindex>
+  <AuthCard title="Entrar">
+    <AccountNotice code={flash.code} />
+    <form method="post" action={action} class="flex flex-col gap-4">
+      <input type="hidden" name="next" value={next} />
+      <Field
+        name="email"
+        type="email"
+        label="Email"
+        autocomplete="email"
+        required
+        maxlength={254}
+        value={flash.values?.email ?? ""}
+        error={errors.email}
+      />
+      <PasswordField autocomplete="current-password" error={errors.password} />
+      <a href={RECOVER_PATH} class="self-start text-sm underline underline-offset-4">
+        ¿Has olvidado tu contraseña?
+      </a>
+      <button type="submit" class={buttonVariants()}>
+        Entrar
+      </button>
+    </form>
+    <p class="border-t-2 border-line pt-6 text-sm">
+      ¿Aún no tienes cuenta?
+      <a href={REGISTER_PATH} class="font-medium underline underline-offset-4">
+        Crear una cuenta
+      </a>
+    </p>
+  </AuthCard>
+</BaseLayout>

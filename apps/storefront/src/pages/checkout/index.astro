@@ -20,10 +20,14 @@ import {
   stripeSession,
 } from "$lib/checkout";
 import { formatPrice } from "$lib/format";
+import { LOGIN_PATH, defaultAddress } from "$lib/account";
+import { isValidId } from "$lib/cart";
 import {
   CHECKOUT_FIELDS,
   listShippingOptions,
+  retrieveCustomer,
   type StoreCart,
+  type StoreCustomer,
   type StoreShippingOption,
 } from "$lib/medusa";
 import BaseLayout from "../../layouts/BaseLayout.astro";
@@ -43,9 +47,26 @@ const flash = decodeFlash(Astro.cookies.get(FLASH_COOKIE)?.value);
 if (Astro.cookies.has(FLASH_COOKIE)) Astro.cookies.delete(FLASH_COOKIE, { path: "/checkout/" });
 const errors = flash.errors ?? {};
 
-// Valores del formulario: los del flash (tras un error) o los guardados en el carrito.
-const ship = cart.shipping_address;
-const bill = cart.billing_address;
+// Cliente con sesión (fase 9): rellena email y dirección (predeterminada o `?direccion=<id>`) y
+// ofrece guardar la dirección en la cuenta. Si el token falla, sigue como invitado.
+let customer: StoreCustomer | null = null;
+if (Astro.locals.customerToken) {
+  try {
+    customer = await retrieveCustomer(Astro.locals.customerToken);
+  } catch {
+    customer = null;
+  }
+}
+const saved = customer?.addresses ?? [];
+const pickId = Astro.url.searchParams.get("direccion");
+const picked = isValidId(pickId) ? saved.find((a) => a.id === pickId) : undefined;
+// Dirección guardada que se propone: la elegida, o la predeterminada si el carrito aún no tiene.
+const proposed = picked ?? (cart.shipping_address?.address_1 ? undefined : defaultAddress(saved));
+
+// Valores del formulario: los del flash (tras un error), la dirección guardada propuesta o los
+// guardados en el carrito.
+const ship = proposed ?? cart.shipping_address;
+const bill = proposed ? null : cart.billing_address;
 const sameBilling =
   !bill ||
   !ship ||
@@ -53,7 +74,7 @@ const sameBilling =
     (k) => (bill[k] ?? "") === (ship[k] ?? ""),
   );
 const values: Record<string, string> = flash.values ?? {
-  email: cart.email ?? "",
+  email: cart.email || customer?.email || "",
   phone: ship?.phone ?? "",
   first_name: ship?.first_name ?? "",
   last_name: ship?.last_name ?? "",
@@ -114,6 +135,37 @@ const currency = cart.currency_code ?? "eur";
           <h2 id="datos-titulo" class="mb-4 text-xl font-semibold">
             1. Datos y dirección de envío
           </h2>
+          {customer ? (
+            saved.length > 1 && (
+              <nav aria-label="Mis direcciones" class="mb-4 flex flex-col gap-2 text-sm">
+                <span class="font-medium">Usar una dirección guardada:</span>
+                <ul class="flex flex-wrap gap-2">
+                  {saved.map((a) => (
+                    <li>
+                      <a
+                        href={`?direccion=${a.id}#datos`}
+                        aria-current={proposed?.id === a.id ? "true" : undefined}
+                        class="block rounded-md border-2 border-line px-3 py-1.5 hover:bg-muted aria-[current=true]:border-primary aria-[current=true]:bg-muted"
+                      >
+                        {a.address_name || a.address_1}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )
+          ) : (
+            <p class="mb-4 text-sm text-muted-foreground">
+              ¿Tienes cuenta?
+              <a
+                href={`${LOGIN_PATH}?next=${encodeURIComponent("/checkout/")}`}
+                class="font-medium underline underline-offset-4"
+              >
+                Entra
+              </a>
+              y rellenaremos tus datos.
+            </p>
+          )}
           <form
             method="post"
             action={checkoutActionUrl("checkout.address")}
@@ -161,6 +213,18 @@ const currency = cart.currency_code ?? "eur";
               <legend class="mb-2 font-medium">Dirección de facturación</legend>
               <AddressFields prefix="billing_" values={values} errors={errors} />
             </fieldset>
+
+            {customer && (
+              <label class="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="save_address"
+                  checked={values.save_address === "on" || saved.length === 0}
+                  class="size-4"
+                />
+                Guardar la dirección de envío en mi cuenta
+              </label>
+            )}
 
             <button type="submit" class:list={[buttonVariants(), "self-start"]}>
               {step1 ? "Guardar y continuar" : "Continuar"}

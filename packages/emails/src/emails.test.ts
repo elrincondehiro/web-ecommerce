@@ -33,6 +33,18 @@ describe("renderEmail", () => {
     expect(verify.text).toContain("/cuenta/verificar/?token=preview-token");
   });
 
+  it("bienvenida y baja: enlace a la cuenta y datos de la solicitud", async () => {
+    const welcome = await renderEmail("welcome", previewProps("welcome"));
+    expect(welcome.text).toContain("/cuenta/");
+    const baja = await renderEmail(
+      "account-deletion-request",
+      previewProps("account-deletion-request"),
+    );
+    expect(baja.subject).toBe("Solicitud de baja de cuenta: ana@example.com");
+    expect(baja.text).toContain("cus_01PREVIEW");
+    expect(baja.text).toContain("Ya no voy a comprar más.");
+  });
+
   it("escapa los datos del cliente", async () => {
     const { html } = await renderEmail("order-placed", {
       ...previewProps("order-placed"),

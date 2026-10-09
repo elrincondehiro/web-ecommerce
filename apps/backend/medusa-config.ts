@@ -186,6 +186,14 @@ module.exports = defineConfig({
       authCors: required("AUTH_CORS"),
       jwtSecret: required("JWT_SECRET"),
       cookieSecret: required("COOKIE_SECRET"),
+      // Cuentas de cliente (fase 9). Fuente: context7 /medusajs/medusa (medusa-config `http`).
+      // - Sesión de 7 días (clientes y Admin): el storefront guarda el JWT en una cookie
+      //   httpOnly con la misma caducidad.
+      // - Email verificado obligatorio para que un cliente inicie sesión (Medusa ≥ 2.16).
+      jwtExpiresIn: "7d",
+      authVerificationsPerActor: {
+        customer: [{ entity_type: "email", auth_provider: "emailpass" }],
+      },
     },
   },
   admin: {
