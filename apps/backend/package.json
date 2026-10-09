@@ -27,7 +27,9 @@
     "@medusajs/cli": "2.21.2",
     "@medusajs/framework": "2.21.2",
     "@medusajs/medusa": "2.21.2",
-    "@rokmohar/medusa-plugin-meilisearch": "2.3.1"
+    "@rokmohar/medusa-plugin-meilisearch": "2.3.1",
+    "emails": "workspace:*",
+    "resend": "6.31.0"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.21.2",
@@ -35,9 +37,11 @@
     "@swc/jest": "0.2.39",
     "@types/jest": "29.5.14",
     "@types/node": "24.19.1",
+    "@types/nodemailer": "8.0.2",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "jest": "29.7.0",
+    "nodemailer": "10.0.16",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "ts-node": "10.9.2",

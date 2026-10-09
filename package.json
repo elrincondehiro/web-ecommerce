@@ -16,6 +16,7 @@
     "dev": "pnpm -r --parallel --if-present dev",
     "dev:backend": "pnpm --filter backend dev",
     "dev:storefront": "pnpm --filter storefront dev",
+    "dev:emails": "pnpm --filter emails preview",
     "backend:seed": "pnpm --filter backend seed",
     "backend:seed:mock": "pnpm --filter backend seed:mock",
     "backend:stock:mock": "pnpm --filter backend stock:mock",

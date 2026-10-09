@@ -228,19 +228,20 @@ Política:
 | Iconos Phosphor _(SVG copiados en `src/lib/icons.ts`; no es un paquete npm)_                                              | core 2.1.1                    | storefront: iconos de trazo (MIT, I-Marca; más en I-Interficie)                                                                    |
 | `@rokmohar/medusa-plugin-meilisearch`                                                                                     | 2.3.1                         | backend: proveedor Meilisearch del Search Module (fase 7; trae `meilisearch` 0.62.0)                                               |
 | `stripe` (Node) _(no instalado)_                                                                                          | 22.6.2                        | backend: solo si se usa fuera del provider. El provider `@medusajs/payment-stripe` 2.21.2 trae su propio `stripe` 15.12.0 (fase 5) |
-| `resend` _(no instalado; fase 8)_                                                                                         | 6.31.0                        | backend                                                                                                                            |
-| `react-email` (CLI preview) _(no instalado; fase 8)_                                                                      | 6.11.0                        | emails (dev)                                                                                                                       |
-| `@react-email/components` _(no instalado; fase 8)_                                                                        | 1.0.12                        | emails                                                                                                                             |
-| `@react-email/render` _(no instalado; fase 8)_                                                                            | 2.1.0                         | emails / backend                                                                                                                   |
+| `resend`                                                                                                                  | 6.31.0                        | backend: SDK de Resend en el proveedor `resend-notification` (fase 8)                                                              |
+| `react-email` (componentes + `render` + CLI `email dev`)                                                                  | 6.11.0                        | emails (fase 8). Sustituye a `@react-email/components`, **obsoleto** en React Email 6                                              |
+| `@react-email/ui` (servidor de previsualización)                                                                          | 6.11.0                        | emails (dev; misma versión que `react-email`; trae Next 16)                                                                        |
+| `@react-email/render`                                                                                                     | 2.1.0                         | emails                                                                                                                             |
+| `react` · `react-dom` · `@types/react` · `@types/react-dom`                                                               | 18.3.1 · 18.3.31 · 18.3.7     | emails y backend (Admin de Medusa): una sola copia de React 18                                                                     |
+| `nodemailer` · `@types/nodemailer`                                                                                        | 10.0.16 · 8.0.2               | backend (dev): SMTP a Mailpit con `EMAIL_TRANSPORT=smtp`; no entra en producción                                                   |
 | `typescript`                                                                                                              | **6.0.3**                     | todo el monorepo                                                                                                                   |
-| `vitest`                                                                                                                  | 5.0.3                         | storefront (tests de `src/lib`)                                                                                                    |
+| `vitest`                                                                                                                  | 5.0.3                         | storefront (tests de `src/lib`) y emails                                                                                           |
 | `@playwright/test`                                                                                                        | 1.63.0                        | storefront (e2e, solo local; CI en la fase 10)                                                                                     |
 | `eslint` 10.12.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                             | `packages/config` (lint)                                                                                                           |
 | `prettier`                                                                                                                | 3.9.9                         | `packages/config` (formato)                                                                                                        |
 | `eslint-plugin-astro` 3.2.1 · `eslint-plugin-svelte` 3.23.0                                                               | —                             | `packages/config` (lint, fase 3)                                                                                                   |
 | `prettier-plugin-astro` 1.1.0 · `prettier-plugin-svelte` 4.1.1 · `prettier-plugin-tailwindcss` 0.8.1                      | —                             | `packages/config` (formato, fase 3)                                                                                                |
 | `@types/node`                                                                                                             | 24.19.1                       | raíz (alineado con Node 24)                                                                                                        |
-| `react` / `react-dom` (solo admin de Medusa)                                                                              | 18.3.1                        | backend                                                                                                                            |
 | `@types/react` / `@types/react-dom`                                                                                       | 18.3.31 / 18.3.7              | backend                                                                                                                            |
 | `@swc/core` / `@swc/jest`                                                                                                 | 1.16.13 / 0.2.39              | backend                                                                                                                            |
 | `jest` / `@types/jest`                                                                                                    | 29.7.0 / 29.5.14              | backend (tests de Medusa)                                                                                                          |
@@ -514,16 +515,13 @@ pnpm --filter storefront fixtures:update               # regenera src/lib/__fixt
 
 ### 8.5 Emails (React Email)
 
-```bash
-mkdir -p packages/emails && cd packages/emails
-pnpm init                        # "name": "emails"
-pnpm add react react-dom @react-email/components@1.0.12 @react-email/render@2.1.0
-pnpm add -D react-email@6.11.0 @types/react typescript@6.0.3
-# scripts: "dev": "email dev --dir src --port 3001"
-pnpm dev:emails                  # previsualización en http://localhost:3001
-```
+Plantillas en `packages/emails` (React Email 6: componentes y `render` desde `react-email`). El backend depende de `"emails": "workspace:*"`: el paquete se compila a `dist/` (CommonJS) en `pnpm install` (`prepare`) y el proveedor `resend-notification` lo renderiza (HTML + texto plano) antes de enviar por Resend o, en desarrollo, por SMTP a Mailpit. Detalle en [fase8.md](./docs/fases/fase8.md).
 
-El backend depende de `"emails": "workspace:*"` y renderiza con `render()` antes de enviar vía Resend.
+```bash
+pnpm dev:emails                                   # previsualización en http://localhost:3001
+pnpm --filter emails build                        # tras cambiar una plantilla (el backend usa dist/)
+# apps/backend/.env: EMAIL_TRANSPORT=smtp (Mailpit) | resend (RESEND_API_KEY)
+```
 
 ### 8.6 Todo junto
 
@@ -548,7 +546,7 @@ pnpm infra:stripe                                    # webhooks Stripe (perfil o
 
 ```bash
 pnpm infra:up | infra:down | infra:ps | infra:logs | infra:stripe
-pnpm dev | dev:backend | dev:storefront   # dev:emails llegará en la fase 8
+pnpm dev | dev:backend | dev:storefront | dev:emails
 pnpm backend:seed | backend:seed:mock
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 pnpm --filter backend exec medusa db:generate <modulo>   # migraciones de módulos propios
@@ -676,7 +674,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | I-Marca Identidad visual y tema        | [faseI-marca.md](./docs/fases/faseI-marca.md)                                                    | ✅     |
 | I-Interficie UX/UI (cabecera, home…)   | [faseI-interficie.md](./docs/fases/faseI-interficie.md)                                          | ✅     |
 | D Diseño (afinar colores, interfaz…)   | [faseD-diseno.md](./docs/fases/faseD-diseno.md)                                                  | ✅     |
-| 8 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 8 Emails                               | [fase8.md](./docs/fases/fase8.md)                                                                | ✅     |
+| 9 … 13                                 | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 
@@ -793,8 +792,14 @@ MEILISEARCH_HOST=http://127.0.0.1:7700
 MEILISEARCH_API_KEY=dev_master_key_change_me_32chars_min   # prod: key propia del backend, no la master
 SEARCH_STOCK_SYNC_CRON="*/5 * * * *"   # reindexa in_stock por lotes (fase 7, D8)
 
-RESEND_API_KEY=re_...
-RESEND_FROM="Tienda <no-reply@tudominio.com>"
+EMAIL_TRANSPORT=smtp                 # smtp (Mailpit, solo dev) | resend · sin valor = no se envían emails
+EMAIL_FROM="El Rincón de Hiro <pedidos@develop.hirobordercollie.es>"
+EMAIL_REPLY_TO=                      # vacío: el dominio no recibe correo
+RESEND_API_KEY=re_...                # solo con EMAIL_TRANSPORT=resend (server y worker)
+SMTP_HOST=localhost
+SMTP_PORT=1025
+STOREFRONT_URL=http://localhost:4321 # enlaces de los emails
+EMAIL_ASSETS_URL=                    # origen del logo (/email/logo.png); vacío = STOREFRONT_URL
 
 STOREFRONT_REBUILD_WEBHOOK=          # opcional: dispara rebuild del storefront
 

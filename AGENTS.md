@@ -47,22 +47,22 @@ Esta regla está **por encima de todas las demás**.
 
 Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referencia en **README §4**, revisada al cerrar cada fase):
 
-| Pieza       | Versión                                               | Notas                                                                                                                  |
-| ----------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Node        | **24.21.0** (`.node-version`)                         | gestionado con fnm                                                                                                     |
-| pnpm        | **12.9.1** (`packageManager`)                         | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
-| Medusa      | **2.21.2**                                            | `@medusajs/*` todos en la **misma** versión                                                                            |
-| Astro       | **7.3.5**                                             | `@astrojs/node` 11.1.6 standalone, `@astrojs/svelte` 9.0.1                                                             |
-| Svelte      | **5.57.1** (runes)                                    | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
-| Tailwind    | **4.3.3**                                             | plugin `@tailwindcss/vite`, config CSS-first (`@theme` en `global.css`); **no** `tailwind.config.js`                   |
-| UI          | shadcn-svelte 1.7.0 + bits-ui 2.19.5                  | componentes copiados en `src/lib/components/ui`                                                                        |
-| TypeScript  | **6.0.3**                                             | TS 7 no soportado aún por Astro/Medusa                                                                                 |
-| PostgreSQL  | `postgres:17.11-alpine`                               |                                                                                                                        |
-| Redis       | `redis:8.10.2-alpine`                                 |                                                                                                                        |
-| Meilisearch | `getmeili/meilisearch:v1.54.3`                        |                                                                                                                        |
-| S3 local    | `chrislusf/seaweedfs:4.48`                            | solo dev; prod = Cloudflare R2. MinIO descartado                                                                       |
-| Caddy       | `caddy:2.11.4-alpine`                                 |                                                                                                                        |
-| React Email | react-email 6.11.0 · components 1.0.12 · render 2.1.0 | solo en `packages/emails`                                                                                              |
+| Pieza       | Versión                                       | Notas                                                                                                                  |
+| ----------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Node        | **24.21.0** (`.node-version`)                 | gestionado con fnm                                                                                                     |
+| pnpm        | **12.9.1** (`packageManager`)                 | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
+| Medusa      | **2.21.2**                                    | `@medusajs/*` todos en la **misma** versión                                                                            |
+| Astro       | **7.3.5**                                     | `@astrojs/node` 11.1.6 standalone, `@astrojs/svelte` 9.0.1                                                             |
+| Svelte      | **5.57.1** (runes)                            | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
+| Tailwind    | **4.3.3**                                     | plugin `@tailwindcss/vite`, config CSS-first (`@theme` en `global.css`); **no** `tailwind.config.js`                   |
+| UI          | shadcn-svelte 1.7.0 + bits-ui 2.19.5          | componentes copiados en `src/lib/components/ui`                                                                        |
+| TypeScript  | **6.0.3**                                     | TS 7 no soportado aún por Astro/Medusa                                                                                 |
+| PostgreSQL  | `postgres:17.11-alpine`                       |                                                                                                                        |
+| Redis       | `redis:8.10.2-alpine`                         |                                                                                                                        |
+| Meilisearch | `getmeili/meilisearch:v1.54.3`                |                                                                                                                        |
+| S3 local    | `chrislusf/seaweedfs:4.48`                    | solo dev; prod = Cloudflare R2. MinIO descartado                                                                       |
+| Caddy       | `caddy:2.11.4-alpine`                         |                                                                                                                        |
+| React Email | react-email 6.11.0 · ui 6.11.0 · render 2.1.0 | solo en `packages/emails`                                                                                              |
 
 Reglas de dependencias:
 
@@ -191,15 +191,16 @@ Excepción aprobada en la Fase D: las páginas con **carrusel** cargan **un bund
 - **Stripe**: proveedor oficial `payment-stripe`. Webhooks verificados con `STRIPE_WEBHOOK_SECRET`. El manejo debe ser **idempotente**. Importes siempre en la unidad que espere Medusa para la versión instalada; no conviertas a mano sin verificarlo.
 - **Ficheros**: `file-s3` apuntando a SeaweedFS (local, `forcePathStyle`) o R2 (prod). No guardes ficheros en disco local del contenedor.
 - **Búsqueda**: Search Module de Medusa con el proveedor Meilisearch (`@rokmohar/medusa-plugin-meilisearch`). Los índices se declaran en `src/search/*` con `defineSearchIndex` (campos con `searchable`/`filterable`/`sortable`/`facetable` explícitos) y se exponen solo los permitidos en `configureStoreSearch` (`src/api/middlewares.ts`). La key de Meilisearch solo está en el backend. Nada de subscribers ni de llamadas directas a Meilisearch para indexar: lo hace el módulo. Tras cambiar una definición: `medusa db:migrate` (nunca `--execute-all-search` sin revisar antes qué índices borra).
-- **Emails**: proveedor de notificaciones propio (`src/modules/resend-notification`) que importa plantillas de `emails` (workspace) y las renderiza con `@react-email/render`. En desarrollo, se permite enviar a Mailpit (SMTP :1025) o usar el modo test de Resend.
+- **Emails**: proveedor de notificaciones propio (`src/modules/resend-notification`) que importa plantillas de `emails` (workspace) y las renderiza (`renderEmail`: HTML + texto). `EMAIL_TRANSPORT=smtp` envía a Mailpit (SMTP :1025, solo desarrollo) y `resend` usa la API de Resend. Los subscribers de email usan `sendEmail` (`src/subscribers/_email.ts`) con una `idempotency_key` sin datos personales; nunca registres destinatarios, tokens ni contenido.
 - Logs con el logger de Medusa (`container.resolve("logger")`), nunca `console.log` en código final.
 
 ---
 
 ## 5. Emails (packages/emails)
 
-- Una plantilla por fichero en `src/`, exportando el componente y un tipo de props.
-- Usa solo componentes de `@react-email/components` (compatibilidad con clientes de correo). Nada de CSS externo ni JS.
+- Una plantilla por fichero en `src/` (`.tsx`, `export default` + `subject` + tipo de props), registrada en `src/index.ts`. Lo que no es plantilla va en carpetas con `_` (`_components`, `_lib`) para que `email dev` no lo muestre.
+- Usa solo componentes de `react-email` (React Email 6; `@react-email/components` está **obsoleto**). Estilos en línea con los colores **hex** de `_lib/theme.ts`; nada de CSS externo, webfonts ni JS. Imágenes con URL absoluta y en PNG/JPG (no SVG ni WebP).
+- El backend usa `dist/` (CommonJS): tras cambiar una plantilla, `pnpm --filter emails build` (`pnpm install` lo hace solo).
 - Incluye siempre versión texto plano (`render(..., { plainText: true })`).
 - Cada plantilla tiene `PreviewProps` para la previsualización de `email dev`.
 

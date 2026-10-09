@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 12-oct-2026 · **Fase D (diseño) cerrada** (rama `feat/d-diseno`, PR por abrir) → **siguiente: 8 Emails**.
+> Última actualización: 09-oct-2026 · **Fase 8 (emails) cerrada** en `feat/emails` (PR a `main` en Gitea; probada con Mailpit y Resend, §6.1) → **siguiente: 9 Cuenta de cliente** (plan por hacer).
 
 ## 1. Dónde estamos
 
@@ -21,6 +21,7 @@
 | I-Marca (identidad visual + tema)           | ✅     | [faseI-marca.md](./fases/faseI-marca.md)           |
 | I-Interficie (UX/UI)                        | ✅     | [faseI-interficie.md](./fases/faseI-interficie.md) |
 | D Diseño (afinar colores, interfaz…)        | ✅     | [faseD-diseno.md](./fases/faseD-diseno.md)         |
+| 8 Emails                                    | ✅     | [fase8.md](./fases/fase8.md)                       |
 
 Roadmap completo y tiempos: README §13.
 
@@ -79,6 +80,7 @@ pnpm infra:up | infra:down | infra:ps | infra:logs | infra:stripe
 pnpm dev                     # todas las apps
 pnpm dev:storefront          # :4321 (necesita apps/storefront/.env y el backend en marcha)
 pnpm dev:backend             # API :9000 · Admin :9000/app (usuario admin ya creado por el usuario)
+pnpm dev:emails              # previsualización de emails :3001 (Mailpit en :8025)
 pnpm backend:seed            # idempotente
 pnpm backend:seed:mock       # idempotente; `backend:seed:mock 100` para 100 (pnpm 12: sin `--`)
 pnpm backend:seed:mock:v2    # idempotente: etiquetas + 100 productos mock-v2 (Talla/Color)
@@ -129,14 +131,15 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - Contenido editorial en Content Collections (`apps/storefront/src/content/`); comercial en Medusa (Collections, Price Lists `sale`).
   - **Precio tachado + descuento** en toda la tienda (`Price.astro`, `LiveSync` con precio anterior). Backend: `GET /store/ofertas` y `seed:mock:ofertas`.
   - `/ofertas/`: la island recibe una clave de página (manifiesto `dist/server/offer-pages.json`), no los ids: JS inline fijo (~1,1 KB).
-- **Fase D (diseño): cerrada** ([faseD-diseno.md](./fases/faseD-diseno.md), tabla final en §3).
+- **Fase D (diseño): cerrada** (PR #30, `20ca7ff`; [faseD-diseno.md](./fases/faseD-diseno.md), tabla final en §3).
   - Tokens: borde oscuro `#8FA3AD` y `--shadow-color`; hover de botones (`btn-hover-*`) y de la cabecera (`.header-hover`).
   - Carruseles 4,3 / 2,3 con flechas `::scroll-button` y arrastre con ratón (`ScrollDrag`, 361 B; todo carrusel nuevo lleva `data-drag-scroll` + `<ScrollDrag />`, AGENTS §3.4). Galería: una foto por vista.
   - Panel del carrito = `popover` lateral (✕, Escape o clic fuera; el clic fuera no activa lo de debajo), en tres partes con pie fijo (total + «Ver carrito») y «Quitar» por línea.
   - Cantidad − / + (`QuantityField.astro`, `<html data-js>` antes de pintar); `/carrito/` se actualiza sin recargar (`CartLive`, 625 B, parcial `/carrito/parcial/`); ofertas tachadas en el carrito (`compare_at_unit_price`).
   - `/buscar/` sin parpadeo del panel de filtros; «Ver resultados».
   - Pendientes: `/productos/` 91–94 en Lighthouse local; Safari sin probar; textos, foto del hero, logo en negativo, botón de pausa.
-- **Siguiente: 8 Emails** (Resend + React Email). **No empezar sin plan + confirmación** (REGLA Nº 1). Después: 9 Cuenta; la transferencia y Bizum, tras Emails.
+  - Aviso conocido en el build (local y CI, no rompe nada): «Found 6 warnings while optimizing generated CSS … 'scroll-button' is not recognized». Es Lightning CSS (1.32.0, vía `@tailwindcss/node` 4.3.3), que aún no conoce `::scroll-button()`; las reglas salen intactas en `dist/`. **No hacer nada**: desaparecerá al actualizar Lightning CSS (Renovate).
+- **Fase 8 (emails): cerrada** → ver §6.1. **Siguiente: 9 Cuenta**; la transferencia y Bizum, después.
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
@@ -148,6 +151,18 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - Navegación en la fase 13: Speculation Rules inline y view transitions CSS, sin JS ([fase3.md §7.1](./fases/fase3.md)).
 - **No borrar** `apps/storefront/node_modules/.astro` (caché de imágenes, ~2 GB) ni `apps/backend/.cache/mock-images`.
 - Matar procesos **por PID**. Un `pkill -f` con un patrón que coincida con la propia shell la mata (exit 143).
+
+## 6.1 Fase 8 — Emails
+
+**Estado: ✅** (`feat/emails`, PR a `main`). Todo el detalle (decisiones, fuentes, cómo probar) en [fase8.md](./fases/fase8.md).
+
+- `packages/emails` (React Email **6**: `react-email` + `@react-email/ui`; `@react-email/components` está obsoleto): `order-placed`, `order-shipped`, `password-reset`, `verify-email`. Se compila a `dist/` en `pnpm install`.
+- Backend: proveedor `resend-notification` (`EMAIL_TRANSPORT=smtp` → Mailpit en dev, `resend` → Resend) y 4 subscribers con `idempotency_key`. Sin `EMAIL_TRANSPORT` no se envía nada (CI, tests).
+- Remitente `El Rincón de Hiro <pedidos@develop.hirobordercollie.es>`, sin reply-to (aviso en el pie). Pie legal provisional.
+- `EMAIL_ASSETS_URL` = **base** pública de los recursos de los emails (logo en `<base>/email/logo.png`); vacía = `STOREFRONT_URL`.
+- Probada con Resend: las 4 plantillas llegan a `delivered@resend.dev` y a un Gmail real (fase8.md §5.4).
+- **Para la fase 9 (cuenta)**: crear las páginas `/cuenta/restablecer/?token=` (`POST /auth/customer/emailpass/update` con el token) y `/cuenta/verificar/?token=` (`POST /auth/verification/confirm { code }`), y activar `http.authVerificationsPerActor.customer` (registro pendiente hasta confirmar). Los emails ya apuntan ahí. El email de pedido podrá enlazar al historial de la cuenta.
+- Pendiente: pie legal con los datos de la gestoría (`packages/emails/src/_components/Layout.tsx`); variables de email también en el worker (fases 10/11).
 
 ## 7. Pendientes conocidos
 

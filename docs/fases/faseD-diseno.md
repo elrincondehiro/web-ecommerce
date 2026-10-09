@@ -1,7 +1,7 @@
 # Fase D — Cambios de diseño (afinar colores, interfaz y detalles)
 
 > **Estado:** ✅ completada (12-oct-2026)
-> **Rama/PR:** `feat/d-diseno` (desde `main` = `34b17ab`) · PR por abrir
+> **Rama/PR:** `feat/d-diseno` (desde `main` = `34b17ab`) · PR #30, squash `20ca7ff`
 > **Anterior:** [I-Interficie](./faseI-interficie.md) · **Siguiente:** Fase 8 (Emails)
 
 ## 0. Punto de partida (tras I-Marca e I-Interficie)
@@ -120,6 +120,7 @@
 
 - `/productos/` da 91–94 en Lighthouse local (ya antes de la fase): mirarlo aparte.
 - Safari/WebKit sin probar en esta máquina (Arch); `::scroll-button` y `anchor-name` son mejora progresiva (solo Chromium).
+- Aviso conocido en el build: Lightning CSS (vía Tailwind 4.3.3) no reconoce `::scroll-button()` («Found 6 warnings while optimizing generated CSS»); las reglas salen intactas. No se hace nada: se irá al actualizar Lightning CSS.
 - Heredados: textos de «Sobre nosotros» y anuncios, foto del hero, logo en negativo, botón de pausa de la barra.
 
 ## 4. Cómo testear (base)

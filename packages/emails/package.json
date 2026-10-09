@@ -1,0 +1,42 @@
+{
+  "name": "emails",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Plantillas de email (React Email) que renderiza el backend",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm run build",
+    "preview": "email dev --dir src --port 3001",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": "24.21.0"
+  },
+  "dependencies": {
+    "@react-email/render": "2.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-email": "6.11.0"
+  },
+  "devDependencies": {
+    "@react-email/ui": "6.11.0",
+    "@types/node": "24.19.1",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  }
+}

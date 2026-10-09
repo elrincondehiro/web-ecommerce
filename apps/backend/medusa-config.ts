@@ -133,6 +133,48 @@ const searchModule = MEILISEARCH_HOST
     ]
   : [];
 
+/**
+ * Emails (fase 8): Notification Module con el proveedor propio `resend-notification`, canal `email`
+ * (plantillas de `packages/emails`). Fuente: context7 /medusajs/medusa (Notification Module,
+ * create notification module provider, guía Resend).
+ * - EMAIL_TRANSPORT=resend → API de Resend (RESEND_API_KEY); =smtp → Mailpit (solo desarrollo).
+ * - Sin EMAIL_TRANSPORT (CI, tests, `medusa build`) no se registra: Medusa no envía emails y los
+ *   subscribers lo detectan y no hacen nada. En producción es obligatorio.
+ * - Sin reply-to por ahora (el dominio no recibe correo); el pie de los emails lo avisa.
+ */
+const EMAIL_TRANSPORT = isProduction ? required("EMAIL_TRANSPORT") : process.env.EMAIL_TRANSPORT;
+const notificationModule = EMAIL_TRANSPORT
+  ? [
+      {
+        resolve: "@medusajs/medusa/notification",
+        options: {
+          providers: [
+            // Proveedor por defecto de Medusa para el panel de avisos del Admin (canal `feed`):
+            // al configurar el módulo se sustituye la config por defecto, así que se repite.
+            {
+              resolve: "@medusajs/medusa/notification-local",
+              id: "local",
+              options: { name: "Local Notification Provider", channels: ["feed"] },
+            },
+            {
+              resolve: "./src/modules/resend-notification",
+              id: "resend",
+              options: {
+                channels: ["email"],
+                transport: EMAIL_TRANSPORT,
+                from: required("EMAIL_FROM"),
+                ...(process.env.EMAIL_REPLY_TO ? { replyTo: process.env.EMAIL_REPLY_TO } : {}),
+                ...(EMAIL_TRANSPORT === "resend" ? { apiKey: required("RESEND_API_KEY") } : {}),
+                smtpHost: process.env.SMTP_HOST ?? "localhost",
+                smtpPort: Number(process.env.SMTP_PORT ?? 1025),
+              },
+            },
+          ],
+        },
+      },
+    ]
+  : [];
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: required("DATABASE_URL"),
@@ -149,11 +191,14 @@ module.exports = defineConfig({
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
     backendUrl: process.env.MEDUSA_BACKEND_URL,
+    // Enlaces de los emails de cliente (reset de contraseña, verificación, pedido).
+    storefrontUrl: process.env.STOREFRONT_URL,
   },
   modules: [
     ...fileModule,
     ...paymentModule,
     ...searchModule,
+    ...notificationModule,
     {
       resolve: "@medusajs/medusa/caching",
       options: {
