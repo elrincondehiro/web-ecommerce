@@ -174,31 +174,31 @@ Política:
 | Node.js (LTS "Krypton")           | **24.21.0**                             | `.node-version` (fnm) y `engines`                                                                                                                |
 | pnpm                              | **12.10.1**                             | `packageManager` en `package.json` raíz                                                                                                          |
 | fnm                               | 1.39.0                                  | host                                                                                                                                             |
-| Docker Engine                     | 29.8.1                                  | host / VPS                                                                                                                                       |
-| Docker Compose                    | 5.5.1                                   | host / VPS                                                                                                                                       |
-| git                               | 2.55.0                                  | host                                                                                                                                             |
+| Docker Engine                     | 29.8.2                                  | host / VPS                                                                                                                                       |
+| Docker Compose                    | 5.6.0                                   | host / VPS                                                                                                                                       |
+| git                               | 2.56.0                                  | host                                                                                                                                             |
 | Gitea                             | **28.0.0** (nuevo esquema: 1.27.x → 28) | servidor Gitea (LXC Debian 13, binario)                                                                                                          |
 | gitea-runner (antes `act_runner`) | 4.0.1                                   | binario en el LXC (≥ 4 GB RAM + 1 GB swap: Renovate usa ~1 GB), runner **de usuario**; etiqueta `ubuntu-latest` → `docker://node:24.21.0-trixie` |
 
 ### 4.2 Imágenes Docker
 
-| Servicio                | Imagen                            | Uso                                                               |
-| ----------------------- | --------------------------------- | ----------------------------------------------------------------- |
-| Node (base Dockerfiles) | `node:24.21.0-alpine3.24`         | build y runtime de backend y storefront                           |
-| PostgreSQL              | `postgres:17.11-alpine`           | dev + prod                                                        |
-| Redis                   | `redis:8.10.2-alpine`             | dev + prod                                                        |
-| Meilisearch             | `getmeili/meilisearch:v1.54.3`    | dev + prod                                                        |
-| Caddy                   | `caddy:2.11.4-alpine`             | prod                                                              |
-| SeaweedFS (S3 local)    | `chrislusf/seaweedfs:4.48`        | solo dev (en prod → Cloudflare R2)                                |
-| Mailpit                 | `axllent/mailpit:v1.31.4`         | solo dev                                                          |
-| Stripe CLI              | `stripe/stripe-cli:v1.53.1`       | solo dev (webhooks)                                               |
-| Renovate                | `renovate/renovate:44.149.0`      | CI (Gitea Actions, workflow `renovate.yml`)                       |
-| Uptime Kuma             | `louislam/uptime-kuma:2.5.5`      | monitorización · homelab                                          |
-| Beszel hub              | `henrygd/beszel:0.20.0`           | monitorización · homelab                                          |
-| Beszel agent            | `henrygd/beszel-agent:0.20.0`     | monitorización · VPS Hetzner (y homelab)                          |
-| Dozzle                  | `amir20/dozzle:v11.1.3`           | logs · homelab (UI) + VPS (modo agent)                            |
-| GlitchTip               | `glitchtip/glitchtip:6.2.6`       | errores de aplicación · homelab                                   |
-| cloudflared             | `cloudflare/cloudflared:2026.9.3` | túnel para exponer GlitchTip/Beszel del homelab sin abrir puertos |
+| Servicio                | Imagen                            | Uso                                                                           |
+| ----------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
+| Node (base Dockerfiles) | `node:24.21.0-alpine3.24`         | build y runtime de backend y storefront (sintaxis `docker/dockerfile:1.28.0`) |
+| PostgreSQL              | `postgres:17.11-alpine`           | dev + prod                                                                    |
+| Redis                   | `redis:8.10.2-alpine`             | dev + prod                                                                    |
+| Meilisearch             | `getmeili/meilisearch:v1.54.3`    | dev + prod                                                                    |
+| Caddy                   | `caddy:2.11.4-alpine`             | prod                                                                          |
+| SeaweedFS (S3 local)    | `chrislusf/seaweedfs:4.48`        | solo dev (en prod → Cloudflare R2)                                            |
+| Mailpit                 | `axllent/mailpit:v1.31.4`         | solo dev                                                                      |
+| Stripe CLI              | `stripe/stripe-cli:v1.53.1`       | solo dev (webhooks)                                                           |
+| Renovate                | `renovate/renovate:44.149.0`      | CI (Gitea Actions, workflow `renovate.yml`)                                   |
+| Uptime Kuma             | `louislam/uptime-kuma:2.5.5`      | monitorización · homelab                                                      |
+| Beszel hub              | `henrygd/beszel:0.20.0`           | monitorización · homelab                                                      |
+| Beszel agent            | `henrygd/beszel-agent:0.20.0`     | monitorización · VPS Hetzner (y homelab)                                      |
+| Dozzle                  | `amir20/dozzle:v11.1.3`           | logs · homelab (UI) + VPS (modo agent)                                        |
+| GlitchTip               | `glitchtip/glitchtip:6.2.6`       | errores de aplicación · homelab                                               |
+| cloudflared             | `cloudflare/cloudflared:2026.9.3` | túnel para exponer GlitchTip/Beszel del homelab sin abrir puertos             |
 
 > MinIO se descarta: ha dejado de publicar imágenes en Docker Hub.
 
@@ -483,6 +483,7 @@ pnpm --filter backend exec medusa db:migrate
 pnpm backend:seed                                         # región ES, IVA, envíos, publishable key
 pnpm backend:seed:mock                                    # catálogo de prueba (24; o `backend:seed:mock 100`)
 pnpm backend:stock:mock                                   # repone stock libre de los mock (los e2e de checkout lo gastan)
+CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup  # limpieza de carritos a mano (borrado suave, fase 10-4)
 pnpm backend:seed:mock:ofertas                            # Collection destacados + Price List sale de prueba (I-Interficie)
 pnpm --filter backend images:import <carpeta>             # fotos handle_XX.jpg → bucket + producto (fase 6)
 pnpm --filter backend exec medusa user -e <email> -p <contraseña>   # admin (lo creas tú)
@@ -680,7 +681,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 8 Emails                               | [fase8.md](./docs/fases/fase8.md)                                                                | ✅     |
 | 9 Cuenta de cliente                    | [fase9.md](./docs/fases/fase9.md)                                                                | ✅     |
 | Auditoría previa a la fase 10          | [auditoria-pre-fase10.md](./docs/fases/auditoria-pre-fase10.md)                                  | ✅     |
-| 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | 🚧     |
+| 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | ✅     |
 | 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

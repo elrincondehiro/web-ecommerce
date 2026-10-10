@@ -56,6 +56,9 @@ x-backend: &backend
     MEILISEARCH_HOST: http://meilisearch:7700
     MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:?}
     SEARCH_STOCK_SYNC_CRON: ${SEARCH_STOCK_SYNC_CRON:-*/5 * * * *}
+    # Limpieza de carritos (fase 10-4): el job solo corre en el worker
+    CART_CLEANUP_DAYS: ${CART_CLEANUP_DAYS:-30}
+    CART_CLEANUP_CRON: ${CART_CLEANUP_CRON:-0 3 * * *}
     # Emails
     EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:?}
     EMAIL_FROM: ${EMAIL_FROM:?}

@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 10-oct-2026 · **Fase 10 en curso**: 10-1 (Dockerfiles + `compose.prod.yml`) mergeado (PR #36, `0b7e699`); 10-2 (`images.yml` → GHCR) mergeado (PR #37, imágenes públicas, ~7 min); 10-3 (CI: integración, audit, Lighthouse, `chore/ci-mejoras`) en PR; sigue 10-4 (limpieza de carritos). Plan y decisiones en [fase10.md](./fases/fase10.md).
+> Última actualización: 10-oct-2026 · **Fase 10 cerrada** (imágenes Docker en GHCR, `compose.prod.yml`, CI con integración/audit/Lighthouse y limpieza de carritos; [fase10.md](./fases/fase10.md)). **Siguiente: fase 11** (producción en Hetzner), ver §6.5.
 
 ## 1. Dónde estamos
 
@@ -24,7 +24,7 @@
 | 8 Emails                                    | ✅     | [fase8.md](./fases/fase8.md)                               |
 | 9 Cuenta de cliente                         | ✅     | [fase9.md](./fases/fase9.md)                               |
 | Auditoría previa a la fase 10               | ✅     | [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md) |
-| 10 CD + imágenes Docker                     | 🚧     | [fase10.md](./fases/fase10.md)                             |
+| 10 CD + imágenes Docker                     | ✅     | [fase10.md](./fases/fase10.md)                             |
 
 Roadmap completo y tiempos: README §13.
 
@@ -49,8 +49,15 @@ Roadmap completo y tiempos: README §13.
   - **Búsqueda** (fase 7): Search Module con el proveedor Meilisearch (`@rokmohar/medusa-plugin-meilisearch`), índice `product` en `src/search/product.ts` y `POST /store/search` permitido en `src/api/middlewares.ts`. Sin `MEILISEARCH_HOST` (tests, CI) se usa el proveedor PostgreSQL de Medusa.
   - **Ficheros**: `file-s3` contra SeaweedFS (R2 en producción), activo solo si existe `S3_BUCKET`. Fotos por lotes con `images:import <carpeta>` (`handle_XX.jpg`) y fotos mock con `images:mock` (`.cache/mock-images`, 1,5 GB, ignorado por git).
   - Importes de Medusa v2 en **unidad principal** (4.95 = 4,95 €).
-- **CI** (`.github/workflows/ci.yml`, mismo fichero en Gitea y GitHub):
-  - Job **`quality`**: install `--frozen-lockfile`, lint, format:check, typecheck, test, build (storefront con fixtures) y `check:budget`. Es check obligatorio en ambas plataformas.
+- **CI** (`.github/workflows/ci.yml`, mismo fichero en Gitea y GitHub; fase 10-3):
+  - **`quality`**: install `--frozen-lockfile`, lint, format:check, build (storefront con fixtures; genera `.medusa/types`), typecheck, test y `check:budget`.
+  - **`integration`**: tests HTTP del backend con Postgres/Redis de `services:` (hosts `*-localhost` y `SWC_NATIVE_BINDING_CACHE`, ver fase10.md §4.6).
+  - **`audit`**: `pnpm audit --prod` (nivel y excepciones en `pnpm-workspace.yaml` → `audit`).
+  - **`lighthouse`**: `@lhci/cli` móvil sobre fixtures detrás de un proxy brotli; referencia = notas de GitHub (100 en todo salvo SEO de `/carrito/`, `noindex`).
+  - Los cuatro son checks obligatorios en Gitea y GitHub.
+- **Imágenes** (`images.yml`, solo GitHub → GHCR, públicas): `ghcr.io/elrincondehiro/ecommerce-backend` (`sha-<7>`, `main`; en tag `X.Y.Z`, `X.Y`, `latest`) y `ecommerce-storefront` con sufijo `-fixtures` (no desplegable hasta la fase 11).
+- **Producción** (fase 10-1): `docker/compose.prod.yml` + Caddyfile mínimo, probado en local desde cero (`compose.prod.local.yml`, `.env.prod.local`).
+- **Limpieza de carritos** (fase 10-4): job `delete-stale-carts` en el worker, borrado **suave** de carritos sin cliente inactivos > `CART_CLEANUP_DAYS` (5 en pruebas, 30 por defecto).
   - Actions fijadas por **SHA + tag en comentario**.
 - **Renovate autoalojado** (`renovate.yml`, solo en Gitea, bot `renovate-bot`, secret `RENOVATE_TOKEN`):
   - Se ejecuta los lunes a las 04:00 UTC, a mano, y al marcar casillas del Dependency Dashboard.
@@ -89,6 +96,7 @@ pnpm backend:seed:mock       # idempotente; `backend:seed:mock 100` para 100 (pn
 pnpm backend:seed:mock:v2    # idempotente: etiquetas + 100 productos mock-v2 (Talla/Color)
 pnpm backend:seed:mock:ofertas  # idempotente: Collection destacados + Price List sale de prueba (I-Interficie)
 pnpm backend:stock:mock      # idempotente: repone stock libre de los mock (los e2e de checkout lo gastan)
+CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos a mano (borrado suave, fase 10-4)
 pnpm --filter backend images:import <carpeta> [dry-run] [replace]
 pnpm --filter backend exec medusa db:migrate
 pnpm --filter backend test:integration:http   # necesita apps/backend/.env.test
@@ -144,7 +152,8 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - Aviso conocido en el build (local y CI, no rompe nada): «Found 6 warnings while optimizing generated CSS … 'scroll-button' is not recognized». Es Lightning CSS (1.32.0, vía `@tailwindcss/node` 4.3.3), que aún no conoce `::scroll-button()`; las reglas salen intactas en `dist/`. **No hacer nada**: desaparecerá al actualizar Lightning CSS (Renovate).
 - **Fase 8 (emails): cerrada** (PR #31, `19e4cfd`) → ver §6.1.
 - **Fase 9 (cuenta): cerrada** (PR #32, `d27945b`) → ver §6.2. La transferencia y Bizum, después.
-- **Auditoría previa a la fase 10: hecha** → ver §6.3. **Siguiente: fase 10.**
+- **Auditoría previa a la fase 10: hecha** → ver §6.3.
+- **Fase 10 (CD + imágenes Docker): cerrada** (PR #36–#39 + `feat/backend-limpieza-carritos`) → [fase10.md](./fases/fase10.md). **Siguiente: fase 11** → §6.5.
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
@@ -234,14 +243,24 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 Recursos de las runners: el build del backend llega a ~3,7 GB de pico en el LXC de 4 GB (§5); las imágenes deben poder construirse sin dos builds a la vez.
 
+## 6.5 Handover → fase 11 (producción en Hetzner)
+
+- VPS Hetzner CPX22 (x86, 2 vCPU, 4 GB, 80 GB). Imágenes de GHCR **públicas**: el VPS hace `docker pull` sin token (si se vuelven privadas: PAT clásico con `read:packages`).
+- Por hacer (README §13 y fase10.md §7):
+  - **storefront real**: build contra la API del VPS (secret con la publishable key en CI, o build en el VPS con `STOREFRONT_BUILD_BACKEND_URL`);
+  - R2, Cloudflare (Full strict, Origin CA, WAF, regla de caché que respete el origen, rate limiting), firewall;
+  - Resend con el dominio real (con `NODE_ENV=production` no vale Mailpit);
+  - backups `pg_dump` → R2 con restauración probada;
+  - primer tag `v1.0.0` (lo crea el usuario) → comprobar `:X.Y.Z` en GHCR;
+  - `CART_CLEANUP_DAYS` a 30 antes de abrir la tienda.
+- Primer despliegue con **datos mock**.
+- Prueba local de la pila: fase10.md §5.1. El proyecto `web-ecommerce-prodlocal` está parado con sus volúmenes (`$C down -v` para borrarlo).
+
 ## 7. Pendientes conocidos
 
-- **Fase 10 — typecheck del backend en CI igual que en local**: en local `tsc` usa los tipos generados en `apps/backend/.medusa/types` (ignorado por git; lo crean `medusa develop` y `medusa build`). En CI `typecheck` va antes que `build` y esos tipos no existen, así que `query.graph` devuelve `any` y fallan los parámetros implícitos. Solución prevista: generar los tipos en CI antes del `typecheck` (p. ej. ejecutar antes el build del backend; `medusa build` los genera con `skipDbConnection`, sin BD), **sin tocar código**. Después, **deshacer el parche del commit `2f12b98`** (tipo explícito `linked` en `apps/backend/src/scripts/stripe-region.ts`) y comprobar que el CI sigue en verde con los tipos generados ([fase5.md](./fases/fase5.md) §8).
-- **Fase 10 — Meilisearch en producción**: crear una key propia del backend (no la master) con permisos solo de índices, documentos, ajustes, tareas y búsqueda; `MEILISEARCH_HOST`/`MEILISEARCH_API_KEY` también en el `backend-worker`, que es el que llena el índice. Para cargas masivas, reindexar a mano: los eventos van a ~2,5/s en dev ([fase7.md](./fases/fase7.md) §2.0.2).
-- **Fase 10 — CI**: Lighthouse CI (método de la auditoría, §2) y `pnpm audit --prod --audit-level=high` con excepciones de `@medusajs/*`.
+- **Carritos de «invitado con email»** (con pago de Stripe pendiente) y purgado definitivo de los borrados en suave: ver fase10.md §7.
+
 - **Fase 11 — Cloudflare**: regla de caché que **respete el origen** (no «Cache Everything» por encima de `no-store`); rate limiting de entrar/registro/recuperar/checkout.
 - **Fase 11/13**: CSS crítico (~110 ms), LCP variable de la ficha (ancho de 720 px) y logos del pie/cabecera más pequeños ([auditoría](./fases/auditoria-pre-fase10.md) §6).
-- **Fase 10/11 — limpieza de carritos**: scheduled job que borre carritos de invitado sin completar con más de N días (Medusa no lo hace) ([fase9.md](./fases/fase9.md) §7).
-- Tests de integración del backend fuera del CI (necesitan Postgres/Redis como `services:`); propuesta para la fase 10.
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.

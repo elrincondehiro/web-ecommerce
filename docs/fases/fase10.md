@@ -1,6 +1,6 @@
 # Fase 10 — CD: imágenes Docker
 
-> **Estado:** 🚧 en curso (10-1 ✅ PR #36; 10-2 ✅ PR #37; 10-3 en curso)
+> **Estado:** ✅ cerrada (10-1 PR #36 · 10-2 PR #37 · 10-3 PR #38 + arreglo #39 · 10-4 `feat/backend-limpieza-carritos`)
 > **Rama/PR:** `feat/docker-imagenes` (10-1) · `feat/ci-imagenes` (10-2) · `chore/ci-mejoras` (10-3) · `feat/backend-limpieza-carritos` (10-4)
 > **Anterior:** [Auditoría previa](./auditoria-pre-fase10.md) · **Siguiente:** fase 11 (producción en Hetzner)
 
@@ -9,7 +9,7 @@
 - [x] **10-1** Dockerfiles multi-stage de backend (server + worker) y storefront, `.dockerignore`, `compose.prod.yml` + Caddyfile mínimo, `/health` del storefront, `security.allowedDomains`, variables del storefront leídas en runtime. Pila de producción probada en local desde cero.
 - [x] **10-2** `images.yml`: imágenes en **GitHub → GHCR** (push a `main` → `sha-<7>` + `main`; tag `vX.Y.Z` → `X.Y.Z`, `X.Y`, `latest`). Gitea preparado pero desactivado (variable `REGISTRY`).
 - [x] **10-3** `ci.yml`: tipos de Medusa antes del typecheck (y deshacer `2f12b98`), job `integration` con `services:`, `pnpm audit --prod` (nivel alto, con excepciones), Lighthouse CI (`@lhci/cli`), caché `.astro`.
-- [ ] **10-4** Job de limpieza de carritos de invitado (5 días durante las pruebas).
+- [x] **10-4** Job de limpieza de carritos sin cliente (5 días durante las pruebas), borrado suave. Probado contra la BD de dev: 171 borrados.
 
 ## 2. Decisiones tomadas
 
@@ -40,6 +40,9 @@
 | Lighthouse con `@lhci/cli` 0.15.1 (Lighthouse 12.6.1), 4 páginas × 3 pasadas, móvil, Chromium de Playwright                                                                                                                                         | Sin descarga de Chrome aparte (misma versión que los e2e). Accesibilidad ≥ 95, Buenas prácticas ≥ 95 y SEO 100 bloquean (sin SEO en `/carrito/`, `noindex`); Rendimiento ≥ 95 avisa. Informes solo como artefacto (14 días)                                                | context7 `/googlechrome/lighthouse-ci` (configuration.md: `assertMatrix`, `upload.target=filesystem`, `chromeFlags --no-sandbox`)                     |
 | Proxy con brotli delante del storefront (`scripts/lhci-server.mjs`)                                                                                                                                                                                 | Sin compresión Lighthouse mide de más (auditoría §2: 91–94 en vez de 99). Imita a Caddy: brotli y `/_astro/*` inmutable. Solo `node:http` + `node:zlib`                                                                                                                    | auditoría pre-fase 10 §2                                                                                                                              |
 | Caché de `node_modules/.astro` con `actions/cache` (clave: lockfile + fixtures)                                                                                                                                                                     | Imágenes ya optimizadas: build de fixtures de 22 s a 4 s en local                                                                                                                                                                                                          | astro-docs (`cacheDir`); context7 `/websites/gitea` (runner: cache v2 con `actions/cache` ≥ 4.2)                                                      |
+| Limpieza: solo carritos **sin cliente**, sin completar, sin pedido y con la última actividad (carrito **o** su línea más reciente) de hace más de `CART_CLEANUP_DAYS`                                                                               | En dev, 74 carritos tenían líneas más nuevas que `cart.updated_at` (cambiar una línea no siempre lo actualiza). 1 carrito sin completar tiene pedido. Los 137 de «invitado con email» tienen un pago de Stripe pendiente: fuera por ahora (§7)                             | consulta a la BD de dev; usuario                                                                                                                      |
+| Borrado **suave** (`softDeleteCarts`) + `removeRemoteLinkStep`, con compensación (`restoreCarts` / `link.restore`)                                                                                                                                  | Se puede volver atrás si algo se rompe. `softDelete` del modelo `Cart` cascada a líneas, envíos y direcciones                                                                                                                                                              | context7 `/medusajs/medusa` (service factory softDelete/restore; createStep con compensación); `deleteProductsWorkflow` de core-flows 2.21.2          |
+| Job diario en el worker (`CART_CLEANUP_CRON`, `0 3 * * *`), lotes de 100 y tope de 2.000 por ejecución                                                                                                                                              | Nada pesado en el server; el resto se borra la noche siguiente. El log solo lleva el número                                                                                                                                                                                | context7 `/medusajs/medusa` (scheduled jobs; tutorial abandoned-cart: `query.graph` con `$lt` y `completed_at: null`)                                 |
 
 ## 3. Qué se ha hecho (10-1)
 
@@ -124,10 +127,40 @@ Con `NODE_ENV=production` el proveedor rechaza `EMAIL_TRANSPORT=smtp` (Mailpit e
 - Notas medidas en local, en la imagen del runner de Gitea como root (mediana de 3): home 99/100/100/100, `/productos/` y ficha 100/100/100/100, `/carrito/` 100/100/100/69 (SEO 69 por `noindex`, a propósito). LCP 1,5–1,9 s y CLS ≤ 0,01. Son las páginas de **fixtures** (24 productos, sin fotos): sirven para detectar regresiones, no como medida de producción (auditoría pre-fase 10 para eso).
 - Rendimiento solo avisa: en runners compartidos varía de una ejecución a otra; si baja de 95, el aviso queda en el log y en el informe.
 - Ver un informe: en la ejecución del job → artefacto **lighthouse** → abrir el `.report.html`.
+- **Notas de Lighthouse en GitHub** (referencia; ejecución de `708b494`, mediana de 3, 4G lento + CPU ×4, brotli):
+
+  | Página        | Rend. | A11y | BP  | SEO  | LCP    | FCP    | TBT | CLS     |
+  | ------------- | ----- | ---- | --- | ---- | ------ | ------ | --- | ------- |
+  | Home          | 100   | 100  | 100 | 100  | 1,36 s | 0,91 s | 0   | 0,003   |
+  | `/productos/` | 100   | 100  | 100 | 100  | 1,67 s | 0,91 s | 0   | ≤ 0,004 |
+  | Ficha         | 100   | 100  | 100 | 100  | 1,52 s | 1,22 s | 0   | 0,001   |
+  | `/carrito/`   | 100   | 100  | 100 | 69\* | 1,74 s | 1,36 s | 0   | 0,002   |
+
+  \* `noindex`. Avisos que no restan nota y ya estaban apuntados (auditoría §6): CSS que bloquea el pintado (10 KB brotli, ~300 ms simulados → CSS crítico), `logo-pie.webp` (16 KB, sobran 14) y `simbolo-header.webp` (7 KB, sobran 5). En `/carrito/` vacío el LCP es el logo del pie, que carga en diferido (`lcp-lazy-loaded`); con productos cambia. `/productos/`: 896 elementos en el DOM.
+
 - **Arreglo tras el merge (PR `fix/ci-integracion`)**: en GitHub `integration` fallaba con `Failed to load native binding` de `@swc/core` (lo usa Jest). Desde la 1.16, SWC descomprime su binario en una caché (`~/.cache`) y la rechaza si una carpeta padre es de otro usuario (`ERR_SWC_NATIVE_CACHE`). En GitHub el job corre como root dentro del contenedor, pero `HOME=/github/home` es del usuario del runner. En Gitea `HOME` es de root y no pasaba. Arreglo: `SWC_NATIVE_BINDING_CACHE=/root/.cache/swc` en el job (fuente: swc `docs/native-addon-carriers.md`). Reproducido y comprobado en local con un `HOME` de otro usuario (14/14).
 - Avisos normales en los logs de `integration` (no se corrigen): `Search index "product" has no active version yet` (los tests van sin Meilisearch), y del Postgres de servicio `SET LOCAL can only be used in transaction blocks`, `database "…-template" does not exist` y `terminating connection due to administrator command` (test-utils crea y borra sus BD). En Lighthouse las tarjetas salen sin foto: los fixtures no tienen imágenes. La referencia de Rendimiento son las notas de GitHub; en Gitea la CPU del homelab las baja.
 - **Checks obligatorios** (los añade el usuario): `integration`, `audit` y `lighthouse` junto a `quality`, en la protección de `main` de Gitea y en el ruleset de GitHub.
 - Excepciones del audit: quitarlas cuando `pnpm audit --prod` deje de mostrarlas tras subir Medusa (Renovate). Si aparece un aviso alto nuevo, el job falla: se arregla con `overrides` (como en la auditoría) o, si no hay arreglo y no llega al código de producción, se añade a la lista con su motivo.
+
+### 4.7 Limpieza de carritos (10-4)
+
+- **Qué borra**: carritos sin cliente (`customer_id` vacío), sin completar, sin pedido y sin actividad desde hace más de `CART_CLEANUP_DAYS` días (la del carrito o la de su línea más reciente). Nunca los de clientes (con cuenta o «invitado con email»).
+- **Cómo**: job `delete-stale-carts` (worker, `CART_CLEANUP_CRON`, por defecto a diario a las 3:00) → `lib/stale-carts.ts` busca por lotes → workflow `delete-stale-carts` (`softDeleteCarts` + quita enlaces, con compensación). Log: `[cart-cleanup] N carritos sin cliente borrados (…)`, sin ids.
+- **Variables**: `CART_CLEANUP_DAYS` (por defecto **30**; **5** en los `.env.example` mientras dure la prueba) y `CART_CLEANUP_CRON`. En `compose.prod.yml`, en las variables comunes del backend (el job solo corre en el worker).
+- **La tienda**: un carrito borrado da 404; el storefront ya lo trata como caducado (borra la cookie y crea otro al añadir). Sin cambios en el storefront.
+- **A mano**: `CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup` (en el contenedor: `./node_modules/.bin/medusa exec ./src/scripts/delete-stale-carts.js`).
+- **Volver atrás**: es borrado suave. Restaurar un carrito (y sus líneas): `restoreCarts([id])` del módulo Cart (p. ej. desde un script de `medusa exec`). Restaurar actualiza `updated_at`, así que no se vuelve a borrar hasta pasar otros `CART_CLEANUP_DAYS` días. Ver todos los borrados: `select id, deleted_at from cart where deleted_at is not null;`.
+- **Prueba contra la BD de dev (10-oct-2026)**, `CART_CLEANUP_DAYS=5`:
+
+  | Antes                            | Después                             |
+  | -------------------------------- | ----------------------------------- |
+  | 1130 carritos vivos, 0 borrados  | 959 vivos, **171 borrados** (6 s)   |
+  | 870 sin cliente sin completar    | 699                                 |
+  | candidatos según SQL propio: 171 | 0 (la segunda pasada no borra nada) |
+  | 244 líneas con `deleted_at`      | 338 (las líneas de los borrados)    |
+
+  Ninguno borrado con cliente, completado o con pedido; los 137 de «invitado con email» y los 87 pedidos, intactos. `GET /store/carts/<borrado>` → 404. Restaurar uno devolvió el carrito y sus 3 líneas; luego se volvió a borrar.
 
 ## 5. Cómo testear esta fase
 
@@ -219,17 +252,31 @@ pnpm exec lhci assert --assertions.categories:seo=error   # comprobar que falla:
 
 Ojo: el build de fixtures sobrescribe `apps/storefront/dist`; vuelve a construir con datos de dev antes de los e2e.
 
+### 5.4 Limpieza de carritos (10-4)
+
+```bash
+pnpm --filter backend test                          # incluye stale-carts.unit.spec.ts
+pnpm --filter backend test:integration:http         # carritos-caducados.spec.ts (fechas retrasadas por SQL en el test)
+# Contra la BD de dev (borra de verdad, en suave): contar antes y después
+docker exec web-ecommerce-dev-postgres-1 psql -U medusa -d medusa -Atc \
+  "select count(*) filter (where deleted_at is null), count(*) filter (where deleted_at is not null) from cart"
+CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup
+```
+
 ## 6. Criterio de salida
 
 - [x] Las dos imágenes se construyen y arrancan con `USER node`, `HEALTHCHECK` y solo dependencias de producción.
 - [x] Pila de producción completa en local desde cero: migraciones solo en el server, worker indexando, tienda/API/Admin por Caddy.
-- [ ] Merge → `:sha-*` y `:main` en GHCR (se comprueba al mergear el 10-2); tag → `:X.Y.Z` (se comprueba con el primer tag, lo crea el usuario).
-- [x] CI con tipos de Medusa, integración, audit y Lighthouse (10-3). Probado en local con la imagen del runner; en CI, al abrir el PR.
-- [ ] Limpieza de carritos probada (10-4).
+- [x] Merge → `:sha-*` y `:main` en GHCR (públicas, ~7 min). Tag → `:X.Y.Z`: se comprueba con el primer tag (lo crea el usuario, fase 11).
+- [x] CI con tipos de Medusa, integración, audit y Lighthouse (10-3): verde en Gitea y GitHub (tras el arreglo de `@swc/core`, PR #39).
+- [x] Limpieza de carritos probada (10-4): tests unitarios e integración, y una pasada real contra la BD de dev (§4.7).
 
 ## 7. Pendientes / riesgos
 
 - **Fase 11**: build real del storefront contra la API del VPS (CI con la publishable key como secret o build en el VPS), R2, Origin CA, Cloudflare y primer deploy con datos mock.
 - Con `NODE_ENV=production` no se pueden probar los emails con Mailpit; hace falta Resend (§4.4).
 - `docker compose build` del storefront en el VPS necesita llegar a la API por su URL pública (`STOREFRONT_BUILD_BACKEND_URL`).
+- **Carritos de «invitado con email»** (137 en dev): no se limpian. Medusa crea un cliente sin cuenta al poner el email en el checkout y todos tienen un pago de Stripe **pendiente**. Para limpiarlos habría que cancelar antes el pago (`cancelPaymentCollection`/sesiones) y decidir qué hacer con ese cliente sin cuenta. Los carritos de clientes con cuenta tampoco se tocan (fase9.md §7: «más tiempo o vaciarlos»).
+- **Purgado definitivo** de los carritos borrados en suave: más adelante, si la tabla crece mucho (p. ej. borrar de verdad los que lleven > 90 días con `deleted_at`).
+- `CART_CLEANUP_DAYS=5` es para las pruebas: subir a 30 (o quitar la variable) antes de abrir la tienda.
 - Imagen del backend de 1 GB (644 MB de `node_modules` de producción de Medusa). Revisar si conviene adelgazarla más adelante.
