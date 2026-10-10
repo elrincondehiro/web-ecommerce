@@ -28,8 +28,10 @@ const isCurrent = (href: string) =>
 ---
 
 <BaseLayout title={title} description={description} noindex>
-  <div class="grid gap-8 lg:grid-cols-[14rem_1fr] lg:items-start">
-    <nav aria-label="Mi cuenta" class="lg:sticky lg:top-4">
+  <!-- `grid-cols-1` = minmax(0, 1fr) y `min-w-0` en el nav: sin ellos, en móvil la columna implícita
+       (auto) tomaba el ancho del menú sin encoger (~420 px) y la página desbordaba en horizontal. -->
+  <div class="grid grid-cols-1 gap-8 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start">
+    <nav aria-label="Mi cuenta" class="min-w-0 lg:sticky lg:top-4">
       <ul class="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible">
         {links.map((l) => (
           <li class="shrink-0">

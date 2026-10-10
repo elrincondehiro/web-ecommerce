@@ -40,19 +40,30 @@ const CSP_ENABLED = false;
  * Fuente: astro-docs (configuration-reference#securityalloweddomains) + astro 7.3.8
  * core/app/node.js (createRequestFromNodeRequest).
  */
+/** @param {string} raw */
+const domainPattern = (raw) => {
+  const url = new URL(raw);
+  return {
+    hostname: url.hostname,
+    protocol: url.protocol.replace(":", ""),
+    ...(url.port ? { port: url.port } : {}),
+  };
+};
+/**
+ * Hosts extra SOLO para desarrollo (p. ej. probar desde el móvil por la IP de la LAN):
+ * DEV_ALLOWED_HOSTS=192.168.1.39:4321 (lista separada por comas; sin protocolo = http). Sin esto,
+ * Astro trata la petición como `localhost` y el control CSRF (`checkOrigin`) rechaza los
+ * formularios: por http fuera de localhost el navegador no envía `Sec-Fetch-Site` y el `Origin`
+ * (la IP) no coincide. Vacía en producción. Fuente: astro-docs (security.checkOrigin) + astro
+ * 7.3.8 core/app/origin-check.js.
+ */
+const DEV_ALLOWED_HOSTS = (process.env.DEV_ALLOWED_HOSTS || dotenv.DEV_ALLOWED_HOSTS || "")
+  .split(",")
+  .map((h) => h.trim())
+  .filter(Boolean)
+  .map((h) => domainPattern(/^https?:\/\//.test(h) ? h : `http://${h}`));
 /** @type {Array<{ hostname: string; protocol: string; port?: string }>} */
-const ALLOWED_DOMAINS = SITE_URL
-  ? [
-      (() => {
-        const url = new URL(SITE_URL);
-        return {
-          hostname: url.hostname,
-          protocol: url.protocol.replace(":", ""),
-          ...(url.port ? { port: url.port } : {}),
-        };
-      })(),
-    ]
-  : [];
+const ALLOWED_DOMAINS = [...(SITE_URL ? [domainPattern(SITE_URL)] : []), ...DEV_ALLOWED_HOSTS];
 
 const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal/"];
 

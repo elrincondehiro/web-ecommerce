@@ -818,6 +818,7 @@ SENTRY_DSN=                          # fase 12: DSN del proyecto en GlitchTip (v
 
 ```ini
 SITE_URL=http://localhost:4321       # prod: https://elrincondehiro.com
+# DEV_ALLOWED_HOSTS=192.168.1.39:4321 # solo dev (build): entrar desde el móvil por la IP de la LAN
 MEDUSA_BACKEND_URL=http://localhost:9000
 MEDUSA_PUBLISHABLE_KEY=pk_...
 STOREFRONT_DATA=medusa               # fixtures en CI (sin backend)

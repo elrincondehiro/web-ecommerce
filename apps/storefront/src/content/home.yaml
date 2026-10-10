@@ -25,6 +25,9 @@
       - icono: heart
         titulo: Te recomendamos lo mejor, aunque perdamos la venta
         texto: Si lo que buscas no es lo que tu perro o tu gato necesita, te lo decimos y te orientamos hacia lo que sí le conviene.
+      - icono: heart
+        titulo: Te recomendamos lo mejor 2, aunque perdamos la venta
+        texto: Si lo que buscas no es lo que tu perro o tu gato necesita, te lo decimos y te orientamos hacia lo que sí le conviene.
       - icono: seal-check
         titulo: Calidad sin atajos
         texto: Rechazamos productos y pedidos que no llegan a nuestro estándar. Preferimos vender menos y vender bien.

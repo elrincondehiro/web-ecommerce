@@ -81,6 +81,20 @@ test.describe("cuenta sin JS", () => {
     await expect(page).toHaveURL(/\/cuenta\/entrar\/\?next=%2Fcuenta%2Fdatos%2F$/);
   });
 
+  test("móvil: las páginas de la cuenta no desbordan en horizontal", async ({ page }) => {
+    // El menú de la cuenta (scroll horizontal) estiraba la columna del grid: ~420 px en 320.
+    await page.setViewportSize({ width: 320, height: 640 });
+    await login(page, email);
+    for (const path of ["/cuenta/", "/cuenta/pedidos/", "/cuenta/direcciones/", "/cuenta/datos/"]) {
+      await page.goto(path);
+      const { scroll, client } = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        client: document.documentElement.clientWidth,
+      }));
+      expect(scroll, path).toBeLessThanOrEqual(client);
+    }
+  });
+
   test("datos y direcciones; el checkout se rellena con la predeterminada", async ({ page }) => {
     await login(page, email);
     await page.getByRole("link", { name: "Mis datos" }).first().click();

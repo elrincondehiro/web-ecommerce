@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 10-oct-2026 · **Fase 10 cerrada** (imágenes Docker en GHCR, `compose.prod.yml`, CI con integración/audit/Lighthouse y limpieza de carritos; [fase10.md](./fases/fase10.md)). **Siguiente: fase 11** (producción en Hetzner), ver §6.5.
+> Última actualización: 11-oct-2026 · **Fase 10 cerrada**. Después: mejoras del storefront (`feat/storefront-mejoras`) y, en una sesión nueva, el **importador de catálogo** (CSV + `products:import`), ver §6.6. Luego, fase 11 (producción en Hetzner), §6.5.
 
 ## 1. Dónde estamos
 
@@ -153,7 +153,11 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - **Fase 8 (emails): cerrada** (PR #31, `19e4cfd`) → ver §6.1.
 - **Fase 9 (cuenta): cerrada** (PR #32, `d27945b`) → ver §6.2. La transferencia y Bizum, después.
 - **Auditoría previa a la fase 10: hecha** → ver §6.3.
-- **Fase 10 (CD + imágenes Docker): cerrada** (PR #36–#39 + `feat/backend-limpieza-carritos`) → [fase10.md](./fases/fase10.md). **Siguiente: fase 11** → §6.5.
+- **Fase 10 (CD + imágenes Docker): cerrada** (PR #36–#40) → [fase10.md](./fases/fase10.md).
+- **Mejoras del storefront** (`feat/storefront-mejoras`, 11-oct-2026; se pueden sumar más antes del merge):
+  - `DEV_ALLOWED_HOSTS` (solo dev, se fija en el build): hosts extra en `security.allowedDomains` para entrar desde el móvil por la IP de la LAN. Sin esto, por `http://<IP>` los formularios daban «Cross-site POST form submissions are forbidden» (el navegador no envía `Sec-Fetch-Site` fuera de https/localhost y Astro, sin la IP en la lista, toma la URL como `localhost`). `checkOrigin` sigue activo.
+  - Cuenta en móvil: la página desbordaba en horizontal (~420 px) y el panel del carrito se abría fuera de la pantalla. El menú de la cuenta estiraba la columna implícita del grid → `grid-cols-1` + `min-w-0` en `AccountLayout.astro`; e2e a 320 px en `cuenta.spec.ts`.
+- **Siguiente: importador de catálogo** (sesión nueva) → §6.6. Después, fase 11 → §6.5.
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
@@ -255,6 +259,44 @@ Recursos de las runners: el build del backend llega a ~3,7 GB de pico en el LXC 
   - `CART_CLEANUP_DAYS` a 30 antes de abrir la tienda.
 - Primer despliegue con **datos mock**.
 - Prueba local de la pila: fase10.md §5.1. El proyecto `web-ecommerce-prodlocal` está parado con sus volúmenes (`$C down -v` para borrarlo).
+
+## 6.6 Handover → importador de catálogo (CSV + scripts)
+
+**Objetivo**: cargar en producción (y en dev) el catálogo real (> 1000 productos con variantes) desde una hoja, sin el Admin uno a uno. Prod pasa a ser la fuente de verdad del catálogo; región, IVA, envíos y Stripe ya son scripts idempotentes (`seed`, `stripe:region`); clientes y pedidos nunca bajan de prod a dev.
+
+**Ya hablado con el usuario (pendiente de sus respuestas antes del plan)**:
+
+- El importador CSV del Admin de Medusa 2.21.2 (una fila por variante) **no conviene**: pide IDs internos (etiquetas, colecciones, tipos, canal, perfil de envío), no carga stock ni nuestros tipos de IVA (`iva-reducido` / `iva-superreducido`) ni las opciones globales Talla/Color (`seed:mock:v2`).
+- Propuesta: **plantilla propia con nombres legibles** (una fila por variante; los datos del producto solo en la primera fila de cada `handle`), p. ej. `handle, título, descripción, categoría, etiquetas (a|b), iva, colección, talla, color, sku, precio, precio_oferta, stock, peso_g, estado` + script **`products:import <fichero> [dry-run]`**:
+  - valida TODO antes de escribir (informe por fila: categoría inexistente, SKU repetido…);
+  - **idempotente** (upsert por `handle` / `sku`): se corrige la hoja y se vuelve a cargar;
+  - crea etiquetas y valores de opción que falten; las categorías, mejor creadas a propósito;
+  - solo workflows oficiales de Medusa (así Meilisearch se actualiza solo; nada de SQL);
+  - aviso de títulos que empiezan en minúscula (la API de Medusa ordena por título distinguiendo mayúsculas: `chaqueta` sale tras «Vestido…»).
+- **Fotos**: ya existe `images:import <carpeta>` (`handle_01.jpg`…, `_01` = miniatura; sube por el módulo de ficheros → R2 en prod; idempotente; `dry-run`). Alternativa B: subirlas a R2 a mano y un `images:link` que liste el bucket y asocie (necesita el cliente S3 como dependencia directa → aprobación). Recomendado: A para la carga inicial.
+
+**Preguntas abiertas al usuario** (hacerlas al empezar):
+
+1. ¿CSV UTF-8 (sin dependencias; ojo: Excel en español guarda con `;`) o **.xlsx** con desplegables (dependencia nueva → aprobación)?
+2. ¿Qué campos? (subtítulo, material, medidas/peso para envío, EAN, precio de oferta, metadatos: marca, autor, edad…).
+3. ¿Precio distinto por variante?
+4. ¿Opciones solo Talla y Color u otras?
+5. ¿Categorías con jerarquía? ¿Se crean en el Admin o también desde fichero?
+6. ¿Fotos por producto (handle), por variante (SKU) o ambas? (por variante: comprobar en la doc qué soporta Medusa 2.21).
+7. ¿Fotos en carpeta local (A) o subidas a R2 a mano (B)?
+
+**Antes de planificar, consultar** (REGLA Nº 1): context7 `/medusajs/medusa` (`createProductsWorkflow` / `updateProductsWorkflow` / `batchProductsWorkflow`, inventario y niveles de stock, price lists para el precio de oferta, opciones globales) y el código de `importProductsAsChunksWorkflow` / `normalize-for-import` de `@medusajs/core-flows` 2.21.2 como referencia. Reutilizar lo de `src/scripts/seed-mock*.ts` y `scripts/lib/image-files.ts`.
+
+## 6.7 Posible mejora futura (descartada por ahora): orden y novedades
+
+Plan estudiado el 11-oct-2026 y aparcado por el usuario (no es necesario ahora):
+
+- **Orden de los listados**: preferentes → novedades → resto, alfabético dentro de cada grupo (`Intl.Collator("es", { sensitivity: "base", numeric: true })`, sin dependencias) en categorías, `/productos/`, ofertas y carrusel de la home.
+  - ⚠️ Hoy el build y la island de `LiveSync` piden a Medusa el MISMO orden (`order: "title"`) y la misma ventana (offset/limit): por eso coinciden y el precio/stock en vivo funciona (comprobado con `chaqueta`). Si Astro reordena, deja de coincidir → hay que pasar todos los listados al patrón de **manifiesto de páginas** de `/ofertas/` (`lib/offer-pages.ts`: clave corta por página → ids del build en `dist/server`; ~120 KB).
+- **Novedad automática**: creado tras `NEW_PRODUCT_SINCE` y hace menos de `NEW_PRODUCT_DAYS` días, **o** con la etiqueta `novedad` de Medusa. Se calcula en el build (un build nocturno lo mantiene al día). `NEW_PRODUCT_SINCE` evita que la carga masiva inicial salga entera como novedad. Medusa solo guarda `created_at` (no la fecha de publicación).
+- **Distintivo**: «Novedad» arriba a la izquierda (azul `--primary`, mismo estilo que «Oferta»); en tarjetas estrechas, distintivos apilados y más pequeños con container queries. Ojo: hoy «Agotado» ya ocupa esa esquina.
+- **Filtro «Solo novedades»** (como «Solo disponibles»), incluidas las automáticas: en listados, del build; en `/buscar/`, `created_at ≥ corte` `$or` etiqueta `novedad` (el proveedor `@rokmohar/medusa-plugin-meilisearch` 2.3.1 compila `$gte` y `$or`). La etiqueta `novedad` saldría de «Etiquetas».
+- **Etiqueta interna `preferente`**: fuera de filtros y del campo `tags` del índice; campo `preferente` (0/1) `sortable` en `src/search/product.ts` → `/buscar/` sin texto: `preferente DESC, title ASC`. Requiere `medusa db:migrate` (reconstruye el índice sin cortes).
 
 ## 7. Pendientes conocidos
 
