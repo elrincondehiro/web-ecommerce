@@ -1,0 +1,42 @@
+# Caddy de PRODUCCIÓN (fase 10: mínimo funcional). Proxy inverso a los contenedores internos.
+# La configuración fina es la fase 11: Origin CA de Cloudflare (Full strict), trusted_proxies
+# con los rangos de Cloudflare + client_ip_headers CF-Connecting-IP, cabeceras de seguridad, CSP
+# y rate limiting.
+#
+# Dominios por variable (docker/.env.prod): STORE_DOMAIN, API_DOMAIN, ADMIN_DOMAIN.
+# CADDY_TLS: vacío = certificados automáticos de Caddy; `tls internal` = CA local de Caddy
+# (prueba en local con *.localhost). En la fase 11 → `tls /certs/origin.pem /certs/origin.key`.
+# Fuente: context7 /websites/caddyserver (caddyfile/concepts: {$VAR:default}; directives encode,
+# reverse_proxy, tls).
+
+{
+	admin off
+}
+
+(comun) {
+	{$CADDY_TLS}
+	encode zstd gzip
+}
+
+{$STORE_DOMAIN:tienda.localhost} {
+	import comun
+	# Assets con hash de Astro: inmutables 1 año (AGENTS §3.3). El resto de Cache-Control lo
+	# pone el storefront (estático, server islands, rutas por usuario `private, no-store`).
+	@astro path /_astro/*
+	header @astro Cache-Control "public, max-age=31536000, immutable"
+	reverse_proxy storefront:4321
+}
+
+{$API_DOMAIN:api.localhost} {
+	import comun
+	reverse_proxy backend-server:9000
+}
+
+# Admin de Medusa en su propio dominio (protegible con Cloudflare Access, fase 11). La imagen se
+# compila sin `admin.backendUrl`: el Admin llama a su mismo origen (/admin, /auth), que se reenvía
+# al backend. La Store API pública va por API_DOMAIN.
+{$ADMIN_DOMAIN:admin.localhost} {
+	import comun
+	redir / /app/ 302
+	reverse_proxy backend-server:9000
+}

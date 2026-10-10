@@ -1,0 +1,184 @@
+# Pila de PRODUCCIÓN (fase 10; despliegue en el VPS: fase 11). Variables en docker/.env.prod
+# (desde docker/.env.prod.example, nunca versionado):
+#
+#   docker compose --env-file docker/.env.prod -f docker/compose.prod.yml pull
+#   docker compose --env-file docker/.env.prod -f docker/compose.prod.yml up -d --wait
+#
+# - Solo Caddy publica puertos (80/443). El resto, en la red interna del proyecto, sin puertos.
+# - backend-server y backend-worker: MISMA imagen (MEDUSA_WORKER_MODE). Solo el server migra.
+# - Imágenes: ${REGISTRY}/${IMAGE_NAMESPACE}/ecommerce-<app>:${IMAGE_TAG} (GHCR o Gitea). Los
+#   `build:` permiten la alternativa "build en el VPS" (README §11).
+# - Tags completos y fijos (README §4.2); prohibido `:latest` (AGENTS §6).
+# Fuentes: AGENTS §6, README §11, context7 /medusajs/medusa (deployment/general, worker-mode).
+name: web-ecommerce
+
+x-backend: &backend
+  image: ${REGISTRY:?}/${IMAGE_NAMESPACE:?}/ecommerce-backend:${IMAGE_TAG:?}
+  build:
+    context: ..
+    dockerfile: apps/backend/Dockerfile
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    meilisearch:
+      condition: service_healthy
+  # Variables comunes de server y worker. El worker es el que procesa eventos y jobs: indexado de
+  # Meilisearch, emails, limpieza de carritos… así que necesita TODAS las de los proveedores.
+  environment: &backend-env
+    NODE_ENV: production
+    MEDUSA_DISABLE_TELEMETRY: "true"
+    # Postgres del compose sin TLS: sin `sslmode=disable` Medusa intenta SSL con todo host que no
+    # sea localhost (@medusajs/utils load-module-database-config).
+    DATABASE_URL: postgres://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}?sslmode=disable
+    REDIS_URL: redis://redis:6379
+    JWT_SECRET: ${JWT_SECRET:?}
+    COOKIE_SECRET: ${COOKIE_SECRET:?}
+    STORE_CORS: ${STORE_CORS:?}
+    ADMIN_CORS: ${ADMIN_CORS:?}
+    AUTH_CORS: ${AUTH_CORS:?}
+    STOREFRONT_URL: ${STOREFRONT_URL:?}
+    # Ficheros: R2 en producción (en la prueba local, SeaweedFS de compose.prod.local.yml)
+    S3_ENDPOINT: ${S3_ENDPOINT:?}
+    S3_REGION: ${S3_REGION:-auto}
+    S3_BUCKET: ${S3_BUCKET:?}
+    S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?}
+    S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?}
+    S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+    S3_FILE_URL: ${S3_FILE_URL:?}
+    S3_PREFIX: ${S3_PREFIX:-}
+    # Stripe (opcional hasta tener las claves; sin ellas Medusa arranca sin el proveedor)
+    STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+    STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    # Búsqueda: key PROPIA del backend (no la master), fase10.md §2
+    MEILISEARCH_HOST: http://meilisearch:7700
+    MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:?}
+    SEARCH_STOCK_SYNC_CRON: ${SEARCH_STOCK_SYNC_CRON:-*/5 * * * *}
+    # Emails
+    EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:?}
+    EMAIL_FROM: ${EMAIL_FROM:?}
+    EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+    RESEND_API_KEY: ${RESEND_API_KEY:-}
+    SMTP_HOST: ${SMTP_HOST:-}
+    SMTP_PORT: ${SMTP_PORT:-1025}
+    EMAIL_ASSETS_URL: ${EMAIL_ASSETS_URL:-}
+    SHOP_NOTIFY_EMAIL: ${SHOP_NOTIFY_EMAIL:-}
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      STORE_DOMAIN: ${STORE_DOMAIN:?}
+      API_DOMAIN: ${API_DOMAIN:?}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?}
+      CADDY_TLS: ${CADDY_TLS:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - storefront
+      - backend-server
+
+  backend-server:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      MEDUSA_WORKER_MODE: server
+      DISABLE_MEDUSA_ADMIN: "false"
+
+  backend-worker:
+    <<: *backend
+    depends_on:
+      backend-server:
+        condition: service_healthy
+    environment:
+      <<: *backend-env
+      MEDUSA_WORKER_MODE: worker
+      DISABLE_MEDUSA_ADMIN: "true"
+
+  storefront:
+    image: ${REGISTRY:?}/${IMAGE_NAMESPACE:?}/ecommerce-storefront:${IMAGE_TAG:?}
+    build:
+      context: ..
+      dockerfile: apps/storefront/Dockerfile
+      # El build lee el catálogo de la API pública (STOREFRONT_BUILD_BACKEND_URL); no ve la red
+      # interna del compose (en la prueba local: compose.prod.local.yml, red `host`).
+      args:
+        SITE_URL: ${SITE_URL:?}
+        IMAGE_BASE_URL: ${IMAGE_BASE_URL:?}
+        MEDUSA_BACKEND_URL: ${STOREFRONT_BUILD_BACKEND_URL:-}
+        STOREFRONT_MAX_PRODUCTS: ${STOREFRONT_MAX_PRODUCTS:-}
+      secrets:
+        - medusa_publishable_key
+        - astro_key
+    restart: unless-stopped
+    environment:
+      MEDUSA_BACKEND_URL: http://backend-server:9000
+      MEDUSA_PUBLISHABLE_KEY: ${MEDUSA_PUBLISHABLE_KEY:?}
+      PUBLIC_STRIPE_PUBLISHABLE_KEY: ${PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+      COOKIE_SECURE: "true"
+
+  postgres:
+    image: postgres:17.11-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8.10.2-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.54.3
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?}
+      # production: master key obligatoria (≥ 16 bytes) y sin la interfaz de búsqueda de prueba.
+      # Sin MEILI_UPGRADE_DB: en producción, snapshot + subida de versión controlada.
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilidata:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:7700/health >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+secrets:
+  medusa_publishable_key:
+    environment: MEDUSA_PUBLISHABLE_KEY
+  astro_key:
+    environment: ASTRO_KEY
+
+volumes:
+  pgdata:
+  redisdata:
+  meilidata:
+  caddy_data:
+  caddy_config:

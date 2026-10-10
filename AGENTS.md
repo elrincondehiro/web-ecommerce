@@ -50,7 +50,7 @@ Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referenci
 | Pieza       | Versión                                       | Notas                                                                                                                  |
 | ----------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Node        | **24.21.0** (`.node-version`)                 | gestionado con fnm                                                                                                     |
-| pnpm        | **12.10.1** (`packageManager`)                | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
+| pnpm        | **12.10.1** (`packageManager`)                | workspaces, `node-linker` isolated (por defecto), `save-exact=true`                                                    |
 | Medusa      | **2.21.2**                                    | `@medusajs/*` todos en la **misma** versión                                                                            |
 | Astro       | **7.3.8**                                     | `@astrojs/node` 11.1.7 standalone, `@astrojs/svelte` 9.0.1                                                             |
 | Svelte      | **5.57.2** (runes)                            | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
@@ -219,6 +219,8 @@ Excepción aprobada en la Fase D: las páginas con **carrusel** cargan **un bund
 - La imagen del backend es **una sola** para `server` y `worker`, diferenciada por `MEDUSA_WORKER_MODE`. Solo `server` ejecuta migraciones al arrancar.
 - Usa tags **completos y fijos** (los vigentes están en `docker/*.yml`; referencia en README §4.2). **Prohibido `:latest`** en compose y Dockerfiles (dev y prod). El tag `:latest` solo existe como etiqueta de publicación de _nuestras_ imágenes.
 - Imágenes referenciadas como `${REGISTRY}/${IMAGE_NAMESPACE}/ecommerce-<app>:${IMAGE_TAG}` para poder elegir Gitea o GHCR.
+- Storefront (fase 10): el catálogo se genera **en el build** de la imagen (contra la API de Medusa; la publishable key como build secret, nunca `ARG`). Lo que debe poder cambiar sin reconstruir (URL del backend, claves, cachés) es `access: "secret"` en `astro:env` (se lee en runtime). Una variable `public` de servidor queda fija en el build.
+- Toda variable nueva que lea el backend va también en `docker/compose.prod.yml` (bloque común de server **y** worker) y en `docker/.env.prod.example`. Detalle en `docs/fases/fase10.md`.
 
 ---
 

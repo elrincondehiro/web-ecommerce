@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 10-oct-2026 · **Fase 9 cerrada** (PR #32), **auditoría previa a la fase 10 cerrada** (PR #33) y Renovate no-major mergeado (PR #34, `3734f39`) → **siguiente: fase 10 (CD + imágenes Docker), sin empezar**. Punto de arranque: **§6.4 Handover**.
+> Última actualización: 10-oct-2026 · **Fase 10 en curso**: PR 10-1 (Dockerfiles + `compose.prod.yml`, `feat/docker-imagenes`) hecho; siguen 10-2 (`images.yml` → GHCR), 10-3 (mejoras de CI) y 10-4 (limpieza de carritos). Plan y decisiones en [fase10.md](./fases/fase10.md).
 
 ## 1. Dónde estamos
 
@@ -24,6 +24,7 @@
 | 8 Emails                                    | ✅     | [fase8.md](./fases/fase8.md)                               |
 | 9 Cuenta de cliente                         | ✅     | [fase9.md](./fases/fase9.md)                               |
 | Auditoría previa a la fase 10               | ✅     | [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md) |
+| 10 CD + imágenes Docker                     | 🚧     | [fase10.md](./fases/fase10.md)                             |
 
 Roadmap completo y tiempos: README §13.
 

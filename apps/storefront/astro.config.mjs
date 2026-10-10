@@ -12,14 +12,15 @@ import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 
 // `site` se necesita al cargar la config (sitemap, canonical), antes de que exista astro:env.
-// Prioridad: variable de entorno > apps/storefront/.env > dominio de producción.
+// Prioridad: variable de entorno > apps/storefront/.env > dominio de producción. `||` y no `??`:
+// una variable vacía (p. ej. un ARG de Docker sin valor, fase 10) cuenta como no definida.
 const envFile = fileURLToPath(new URL("./.env", import.meta.url));
 const dotenv = existsSync(envFile) ? parseEnv(readFileSync(envFile, "utf8")) : {};
-const SITE_URL = process.env.SITE_URL ?? dotenv.SITE_URL;
+const SITE_URL = process.env.SITE_URL || dotenv.SITE_URL;
 // Origen público de las imágenes de producto (bucket SeaweedFS/R2). Solo se optimizan en build
 // las imágenes de ese origen (image.remotePatterns). Fase 6.
 const IMAGE_BASE_URL = new URL(
-  process.env.IMAGE_BASE_URL ?? dotenv.IMAGE_BASE_URL ?? "http://localhost:8333/medusa",
+  process.env.IMAGE_BASE_URL || dotenv.IMAGE_BASE_URL || "http://localhost:8333/medusa",
 );
 
 /**
@@ -29,6 +30,29 @@ const IMAGE_BASE_URL = new URL(
  * se usa sin CSP configurada (astro 7.3.5, core/fetch/fetch-state.js getCsp).
  */
 const CSP_ENABLED = false;
+
+/**
+ * Hosts de confianza para las rutas on-demand (`security.allowedDomains`, fase 10). Detrás de Caddy,
+ * Astro solo acepta `Host`/`X-Forwarded-Host`/`X-Forwarded-Proto` que coincidan; si no, usa
+ * `localhost` y las URL generadas (redirecciones, `Astro.url`) llevarían el host interno.
+ * Se fija en el build a partir de SITE_URL (el dominio público). Sin SITE_URL (CI con fixtures),
+ * vacío = comportamiento por defecto de Astro.
+ * Fuente: astro-docs (configuration-reference#securityalloweddomains) + astro 7.3.8
+ * core/app/node.js (createRequestFromNodeRequest).
+ */
+/** @type {Array<{ hostname: string; protocol: string; port?: string }>} */
+const ALLOWED_DOMAINS = SITE_URL
+  ? [
+      (() => {
+        const url = new URL(SITE_URL);
+        return {
+          hostname: url.hostname,
+          protocol: url.protocol.replace(":", ""),
+          ...(url.port ? { port: url.port } : {}),
+        };
+      })(),
+    ]
+  : [];
 
 const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal/"];
 
@@ -133,9 +157,12 @@ export default defineConfig({
   },
   env: {
     schema: {
+      // URL de la API de Medusa. `secret` no por ser secreta sino para leerla en RUNTIME (las
+      // `public` de servidor se fijan en el build): en Docker el build y el contenedor pueden usar
+      // URL distintas (pública / red interna `http://backend-server:9000`). Fase 10.
       MEDUSA_BACKEND_URL: envField.string({
         context: "server",
-        access: "public",
+        access: "secret",
         default: "http://localhost:9000",
       }),
       MEDUSA_PUBLISHABLE_KEY: envField.string({
@@ -151,9 +178,12 @@ export default defineConfig({
       }),
       // Clave PUBLICABLE de Stripe (pk_test_… / pk_live_…) para el Payment Element (fase 5). Es
       // pública por diseño: se escribe en un data- del paso de pago. Sin ella, el pago se desactiva.
+      // `secret` para leerla en RUNTIME (/checkout/ es on-demand): la misma imagen sirve para test
+      // y live (fase 10). El prefijo PUBLIC_ no la expone: Astro trata las `secret` del esquema
+      // como privadas aunque coincidan con `envPrefix` (astro 7.3.8 env/env-loader.js).
       PUBLIC_STRIPE_PUBLISHABLE_KEY: envField.string({
         context: "server",
-        access: "public",
+        access: "secret",
         optional: true,
         startsWith: "pk_",
       }),
@@ -202,7 +232,10 @@ export default defineConfig({
       }),
     },
   },
-  ...(CSP_ENABLED ? { security: { csp: true } } : {}),
+  security: {
+    ...(ALLOWED_DOMAINS.length ? { allowedDomains: ALLOWED_DOMAINS } : {}),
+    ...(CSP_ENABLED ? { csp: true } : {}),
+  },
   vite: {
     define: { "import.meta.env.CSP_ENABLED": JSON.stringify(CSP_ENABLED) },
     plugins: [tailwindcss()],

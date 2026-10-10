@@ -1,0 +1,45 @@
+# Override para PROBAR la pila de producción EN LOCAL (fase 10). No se usa en el VPS.
+#
+#   docker compose --env-file docker/.env.prod.local \
+#     -f docker/compose.prod.yml -f docker/compose.prod.local.yml up -d --wait
+#
+# Añade lo que en producción es externo: SeaweedFS (en lugar de R2). Emails: con NODE_ENV=production
+# el proveedor rechaza `smtp` (Mailpit es solo desarrollo, fase 8); para probarlos hace falta
+# EMAIL_TRANSPORT=resend + RESEND_API_KEY (p. ej. a delivered@resend.dev).
+# Publica en 127.0.0.1 (puertos distintos a los de compose.dev.yml, que puede seguir en marcha):
+#   - backend-server :19000 → para que el BUILD del storefront lea el catálogo;
+#   - SeaweedFS :18333      → URL pública de las imágenes (build y navegador).
+# Caddy usa `tls internal` (CADDY_TLS) con tienda/api/admin.localhost.
+# El storefront se construye aparte (lee el catálogo de http://localhost:19000 con la red del
+# host, que `docker compose build` 5.x no permite sin bake --allow); docs/fases/fase10.md §5.
+name: web-ecommerce-prodlocal
+
+services:
+  backend-server:
+    ports:
+      - "127.0.0.1:19000:9000"
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    restart: unless-stopped
+    command: ["mini", "-dir=/data", "-master.telemetry=false"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+    ports:
+      - "127.0.0.1:18333:8333"
+    volumes:
+      - seaweeddata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8333/healthz >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+volumes:
+  seaweeddata:

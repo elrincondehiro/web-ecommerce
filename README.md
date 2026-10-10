@@ -678,7 +678,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 8 Emails                               | [fase8.md](./docs/fases/fase8.md)                                                                | ✅     |
 | 9 Cuenta de cliente                    | [fase9.md](./docs/fases/fase9.md)                                                                | ✅     |
 | Auditoría previa a la fase 10          | [auditoria-pre-fase10.md](./docs/fases/auditoria-pre-fase10.md)                                  | ✅     |
-| 10 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | 🚧     |
+| 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 

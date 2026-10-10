@@ -1,0 +1,32 @@
+# Contexto de build de las imágenes (fase 10): la raíz del monorepo (los Dockerfiles están en
+# apps/<app>/Dockerfile). Fuera todo lo que no sea código fuente: dependencias, builds, cachés y
+# secretos. AGENTS §6.
+**/node_modules
+**/dist
+**/.astro
+**/.medusa
+**/.cache
+**/coverage
+**/test-results
+**/playwright-report
+**/*.tsbuildinfo
+**/.eslintcache
+**/*.log
+
+# Secretos: nunca dentro de una imagen (las variables llegan en runtime o como build secrets)
+**/.env
+**/.env.*
+
+# Repo, documentación y herramientas de desarrollo
+.git
+.github
+.pi
+.vscode
+.idea
+docs
+docker
+**/.DS_Store
+apps/backend/integration-tests
+apps/backend/uploads
+apps/backend/static
+apps/storefront/e2e
