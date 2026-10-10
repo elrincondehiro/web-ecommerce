@@ -41,3 +41,18 @@ overrides:
   # GHSA moderado: ReDoS con la opción `$data`. Lo traen @medusajs/cli (umzug/@rushstack) y
   # react-email (conf). Misma major 8.
   "ajv@>=8.0.0 <8.18.0": "8.20.0"
+
+# `pnpm audit --prod` en CI (fase 10-3): falla con avisos altos o críticos. Excepciones: avisos
+# altos que solo llegan por herramientas de build/CLI de @medusajs/* y aún no tienen versión
+# arreglada en el árbol de Medusa (auditoría pre-fase 10 §4.6). Quitarlas cuando Renovate suba
+# Medusa y `pnpm audit --prod` deje de mostrarlas (`audit.ignorePrune` las detecta).
+# Fuente: context7 /pnpm/pnpm.io (cli/audit, releases 11.15: sección `audit`).
+audit:
+  level: high
+  ignore:
+    # lodash (prototype pollution en _.template/_.unset): @medusajs/cli y codegen
+    - GHSA-r5fr-rjxr-66jc
+    # braces (DoS con patrones anidados): @mikro-orm/cli → globby, sin versión arreglada
+    - GHSA-vfj7-8cjw-p6xm
+    # @graphql-tools/utils (prototype pollution en mergeDeep): codegen de @medusajs/utils
+    - GHSA-7mx3-vvmw-hjmv

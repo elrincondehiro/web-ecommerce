@@ -1,4 +1,4 @@
-// e2e del storefront (fase 4). Solo en local por ahora (entra en CI en la fase 10).
+// e2e del storefront (fase 4). Solo en local (necesitan el backend con datos; CI: Lighthouse, fase 10).
 // Requisitos: `pnpm infra:up`, `pnpm dev:backend`, apps/storefront/.env con COOKIE_SECURE=false
 // y un build (`pnpm --filter storefront build`; vale STOREFRONT_MAX_PRODUCTS=100). Antes,
 // `pnpm backend:stock:mock` si los e2e de checkout ya han gastado stock. globalSetup espera a

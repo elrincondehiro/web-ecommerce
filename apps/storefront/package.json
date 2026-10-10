@@ -14,7 +14,8 @@
     "check:budget": "node ./scripts/check-js-budget.mjs",
     "fixtures:update": "node ./scripts/update-fixtures.mjs",
     "start": "HOST=0.0.0.0 PORT=4321 node --env-file-if-exists=.env ./dist/server/entry.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "lhci": "lhci autorun"
   },
   "engines": {
     "node": "24.21.0"
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
+    "@lhci/cli": "0.15.1",
     "@playwright/test": "1.64.0",
     "@types/node": "24.19.1",
     "svelte-check": "4.7.6",

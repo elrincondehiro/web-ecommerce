@@ -12,6 +12,8 @@ coverage/
 # Playwright (e2e del storefront)
 test-results/
 playwright-report/
+# Lighthouse CI (informes locales y del job)
+.lighthouseci/
 *.tsbuildinfo
 .eslintcache
 

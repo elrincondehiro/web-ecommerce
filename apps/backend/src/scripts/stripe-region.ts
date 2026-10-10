@@ -38,9 +38,7 @@ export default async function stripeRegion({ container }: ExecArgs) {
   const region = regions[0];
   if (!region) throw new Error(`No existe la región "${REGION_NAME}" (ejecuta antes el seed)`);
 
-  // Tipo explícito: sin los tipos generados de `.medusa/types` (CI), query.graph devuelve `any`.
-  const linked: ({ id?: string } | null)[] = region.payment_providers ?? [];
-  const current = linked.map((p) => p?.id).filter(Boolean);
+  const current = (region.payment_providers ?? []).map((p) => p?.id).filter(Boolean);
   if (current.length === 1 && current[0] === STRIPE_PROVIDER_ID) {
     logger.info(`Región "${REGION_NAME}": ya tiene solo ${STRIPE_PROVIDER_ID}.`);
     return;

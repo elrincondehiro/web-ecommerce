@@ -1,8 +1,14 @@
-# CI básico de PR (fase 1). Mismo fichero para Gitea Actions y GitHub Actions.
+# CI de PR (fase 1; ampliado en la fase 10-3). Mismo fichero para Gitea Actions y GitHub Actions.
 # - Gitea: runner de usuario en el homelab; la etiqueta `ubuntu-latest` apunta a
 #   docker://node:24.21.0-trixie (Debian 13 + Node 24). Ver docs/fases/fase1.md.
 # - GitHub: runner hospedado ubuntu-latest.
 # Actions fijadas por SHA (tag en comentario); Renovate las actualiza.
+# Jobs (todos son checks obligatorios en la protección de main):
+#   quality      lint, formato, build, typecheck, tests unitarios, presupuesto de JS
+#   integration  tests de integración HTTP del backend (Postgres + Redis como `services:`)
+#   audit        pnpm audit --prod (altos y críticos; excepciones en pnpm-workspace.yaml)
+#   lighthouse   Lighthouse CI móvil sobre el build de fixtures (apps/storefront/lighthouserc.cjs)
+# En Gitea el runner tiene `capacity: 2`: corren como mucho dos jobs a la vez (fase 1 §capacidad).
 name: CI
 
 on:
@@ -51,11 +57,14 @@ jobs:
       - name: Formato
         run: pnpm format:check
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Tests
-        run: pnpm test
+      # Antes del typecheck: `medusa build` genera los tipos de `.medusa/types` (query.graph
+      # tipado), que el tsconfig del backend incluye.
+      - name: Caché de Astro (imágenes optimizadas)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: apps/storefront/node_modules/.astro
+          key: astro-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/storefront/src/lib/__fixtures__/**') }}
+          restore-keys: astro-${{ runner.os }}-
 
       - name: Build
         run: pnpm build
@@ -63,5 +72,143 @@ jobs:
           # Storefront sin backend en CI: catálogo desde src/lib/__fixtures__ (fase 3)
           STOREFRONT_DATA: fixtures
 
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+
       - name: Presupuesto de JS (storefront)
         run: pnpm --filter storefront check:budget
+
+  # Tests de integración del backend (@medusajs/test-utils): cada suite crea y borra su BD.
+  # Los hosts de los servicios llevan «localhost» en el nombre a propósito: test-utils solo
+  # desactiva SSL si la URL de la BD contiene «localhost» (y Postgres de CI no tiene SSL). En
+  # Gitea y GitHub el job corre en un contenedor, y los servicios se alcanzan por su nombre.
+  integration:
+    name: integration
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: node:24.21.0-trixie
+    services:
+      postgres-localhost:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: medusa
+          POSTGRES_PASSWORD: medusa
+        options: >-
+          --health-cmd "pg_isready -U medusa" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+      redis-localhost:
+        image: redis:8.10.2-alpine
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: postgres-localhost
+      DB_USERNAME: medusa
+      DB_PASSWORD: medusa
+      REDIS_URL: redis://redis-localhost:6379
+      # Resto de variables: apps/backend/.env.test.example (sin secretos reales)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Instalar pnpm (versión de packageManager)
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Instalar Node (.node-version)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Entorno de tests
+        run: cp apps/backend/.env.test.example apps/backend/.env.test
+
+      - name: Tests de integración (HTTP)
+        run: pnpm --filter backend test:integration:http
+
+  # Avisos de seguridad de dependencias de producción. Configuración (nivel y excepciones con su
+  # motivo) en pnpm-workspace.yaml → `audit`.
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Instalar pnpm (versión de packageManager)
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Instalar Node (.node-version)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: pnpm audit
+        run: pnpm audit --prod
+
+  # Lighthouse CI móvil (AGENTS.md §3.4) sobre el build de fixtures, detrás de un proxy con
+  # brotli que imita a Caddy (apps/storefront/scripts/lhci-server.mjs). Informes como artefacto.
+  lighthouse:
+    name: lighthouse
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      STOREFRONT_DATA: fixtures
+      SITE_URL: http://127.0.0.1:4330
+      # Sin backend: las server islands devuelven su valor de reserva
+      MEDUSA_BACKEND_URL: http://127.0.0.1:9
+      COOKIE_SECURE: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Instalar pnpm (versión de packageManager)
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Instalar Node (.node-version)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Caché de Astro (imágenes optimizadas)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: apps/storefront/node_modules/.astro
+          key: astro-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/storefront/src/lib/__fixtures__/**') }}
+          restore-keys: astro-${{ runner.os }}-
+
+      - name: Build del storefront
+        run: pnpm --filter storefront build
+
+      # Chromium de Playwright (misma versión que los e2e) con sus dependencias del sistema.
+      # `--with-deps` usa sudo solo si no es root (GitHub); en Gitea el job ya corre como root.
+      - name: Chromium
+        run: |
+          cd apps/storefront
+          pnpm exec playwright install --with-deps chromium
+          echo "CHROME_PATH=$(node -p 'require("@playwright/test").chromium.executablePath()')" >> "$GITHUB_ENV"
+
+      - name: Lighthouse CI
+        run: pnpm --filter storefront lhci
+
+      - name: Informes de Lighthouse
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse
+          path: apps/storefront/.lighthouseci/informes/
+          retention-days: 14
+          if-no-files-found: ignore

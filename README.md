@@ -236,7 +236,8 @@ Política:
 | `nodemailer` · `@types/nodemailer`                                                                                        | 10.0.16 · 8.0.2               | backend (dev): SMTP a Mailpit con `EMAIL_TRANSPORT=smtp`; no entra en producción                                                   |
 | `typescript`                                                                                                              | **6.0.3**                     | todo el monorepo                                                                                                                   |
 | `vitest`                                                                                                                  | 5.0.3                         | storefront (tests de `src/lib`) y emails                                                                                           |
-| `@playwright/test`                                                                                                        | 1.64.0                        | storefront (e2e, solo local; CI en la fase 10)                                                                                     |
+| `@playwright/test`                                                                                                        | 1.64.0                        | storefront (e2e, solo local; su Chromium lo usa Lighthouse CI)                                                                     |
+| `@lhci/cli`                                                                                                               | 0.15.1                        | storefront (dev): Lighthouse CI en `ci.yml` (incluye Lighthouse 12.6.1, fase 10)                                                   |
 | `eslint` 10.12.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.71.1 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                             | `packages/config` (lint)                                                                                                           |
 | `prettier`                                                                                                                | 3.9.9                         | `packages/config` (formato)                                                                                                        |
 | `eslint-plugin-astro` 3.2.1 · `eslint-plugin-svelte` 3.23.0                                                               | —                             | `packages/config` (lint, fase 3)                                                                                                   |
@@ -566,12 +567,12 @@ feat/*, fix/*, chore/*  ──PR──▶  CI (lint · typecheck · test · buil
 
 - **Ramas**: `feat/<descripcion-corta>`, `fix/…`, `chore/…`, `docs/…`. Nunca commits directos a `main`.
 - **PR y merge en Gitea**; GitHub recibe `main` por push mirror (ver §7.3).
-- **Check obligatorio**: job `quality` de `ci.yml` (Gitea y GitHub).
+- **Checks obligatorios**: jobs `quality`, `integration`, `audit` y `lighthouse` de `ci.yml` (Gitea y GitHub).
 - **Renovate**: `renovate.yml` en Gitea Actions con el bot `renovate-bot`: lunes 04:00 UTC, manual, y **al marcar una casilla del Dependency Dashboard** (evento `issues: edited`). Abre PRs que pasan por el mismo CI y se re-basan solos si `main` avanza.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) (`feat(storefront): …`).
 - **Versionado**: SemVer. Release = `git tag -a v1.2.3 -m "v1.2.3" && git push origin v1.2.3`.
 - **Workflows** (`.github/workflows/`):
-  - `ci.yml` — en `pull_request`: `pnpm install --frozen-lockfile`, lint, typecheck, test, build, presupuesto de JS y Lighthouse CI sobre el storefront.
+  - `ci.yml` — en `pull_request` y push a `main`: `quality` (`pnpm install --frozen-lockfile`, lint, formato, build, typecheck, test, presupuesto de JS), `integration` (tests HTTP del backend con Postgres/Redis), `audit` (`pnpm audit --prod`) y `lighthouse` (Lighthouse CI móvil sobre el storefront de fixtures). Detalle en [fase10.md](./docs/fases/fase10.md) §4.6.
   - `images.yml` — en `push` a `main`, tags `v*.*.*` y a mano: build con Buildx y push usando `docker/metadata-action`, una imagen detrás de otra:
     ```yaml
     tags: |

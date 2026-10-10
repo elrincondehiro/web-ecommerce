@@ -1,6 +1,6 @@
 # Fase 10 — CD: imágenes Docker
 
-> **Estado:** 🚧 en curso (10-1 ✅ PR #36; 10-2 en curso)
+> **Estado:** 🚧 en curso (10-1 ✅ PR #36; 10-2 ✅ PR #37; 10-3 en curso)
 > **Rama/PR:** `feat/docker-imagenes` (10-1) · `feat/ci-imagenes` (10-2) · `chore/ci-mejoras` (10-3) · `feat/backend-limpieza-carritos` (10-4)
 > **Anterior:** [Auditoría previa](./auditoria-pre-fase10.md) · **Siguiente:** fase 11 (producción en Hetzner)
 
@@ -8,7 +8,7 @@
 
 - [x] **10-1** Dockerfiles multi-stage de backend (server + worker) y storefront, `.dockerignore`, `compose.prod.yml` + Caddyfile mínimo, `/health` del storefront, `security.allowedDomains`, variables del storefront leídas en runtime. Pila de producción probada en local desde cero.
 - [x] **10-2** `images.yml`: imágenes en **GitHub → GHCR** (push a `main` → `sha-<7>` + `main`; tag `vX.Y.Z` → `X.Y.Z`, `X.Y`, `latest`). Gitea preparado pero desactivado (variable `REGISTRY`).
-- [ ] **10-3** `ci.yml`: tipos de Medusa antes del typecheck (y deshacer `2f12b98`), job `integration` con `services:`, `pnpm audit --prod` (nivel alto, con excepciones), Lighthouse CI (`@lhci/cli`), caché `.astro`.
+- [x] **10-3** `ci.yml`: tipos de Medusa antes del typecheck (y deshacer `2f12b98`), job `integration` con `services:`, `pnpm audit --prod` (nivel alto, con excepciones), Lighthouse CI (`@lhci/cli`), caché `.astro`.
 - [ ] **10-4** Job de limpieza de carritos de invitado (5 días durante las pruebas).
 
 ## 2. Decisiones tomadas
@@ -34,6 +34,12 @@
 | `flavor: latest=false` + `latest` solo en tags `v*`                                                                                                                                                                                                 | metadata-action pone `latest` automáticamente con `type=semver`; así queda explícito                                                                                                                                                                                       | context7 `/docker/metadata-action` (flavor, «Latest tag»)                                                                                             |
 | `main` con `github.ref == 'refs/heads/main'` (no `{{is_default_branch}}`)                                                                                                                                                                           | Independiente de cómo detecte cada plataforma la rama por defecto (mirror)                                                                                                                                                                                                 | context7 `/docker/metadata-action` (README: `type=raw` con expresión)                                                                                 |
 | Storefront de CI = **fixtures**, tags con sufijo `-fixtures` y sin `latest`                                                                                                                                                                         | Comprueba el Dockerfile en cada merge sin backend; el sufijo impide desplegarla por error con `IMAGE_TAG`. El storefront desplegable se construye en la fase 11                                                                                                            | decisión del usuario (fase 10, «primer deploy con mock data»)                                                                                         |
+| Build antes del Typecheck en `quality`; se deshace `2f12b98`                                                                                                                                                                                        | `medusa build` genera `.medusa/types` (comprobado borrándolos), así `query.graph` sale tipado en CI igual que en local y sobra el tipo a mano                                                                                                                              | prueba local                                                                                                                                          |
+| Job `integration` en contenedor `node:24.21.0-trixie` con `services:` llamados `postgres-localhost` / `redis-localhost`                                                                                                                             | `@medusajs/test-utils` 2.21.2 activa SSL si la URL de la BD **no** contiene «localhost» (`medusa-test-runner-utils/config.js`) y Postgres de CI no tiene SSL. En contenedor, Gitea y GitHub resuelven los servicios por nombre igual                                       | código de `@medusajs/test-utils`; prueba local con una red Docker igual a la del runner (14/14, 52 s)                                                 |
+| `pnpm audit --prod` con `audit.level: high` y 3 excepciones en `pnpm-workspace.yaml`                                                                                                                                                                | Los 3 altos que quedan van solo por el CLI/codegen de `@medusajs/*` (auditoría §4.6). Los moderados no bloquean. Configurado en el repo para que `pnpm audit` dé lo mismo en local y en CI                                                                                 | context7 `/pnpm/pnpm.io` (cli/audit; releases 11.15: sección `audit`)                                                                                 |
+| Lighthouse con `@lhci/cli` 0.15.1 (Lighthouse 12.6.1), 4 páginas × 3 pasadas, móvil, Chromium de Playwright                                                                                                                                         | Sin descarga de Chrome aparte (misma versión que los e2e). Accesibilidad ≥ 95, Buenas prácticas ≥ 95 y SEO 100 bloquean (sin SEO en `/carrito/`, `noindex`); Rendimiento ≥ 95 avisa. Informes solo como artefacto (14 días)                                                | context7 `/googlechrome/lighthouse-ci` (configuration.md: `assertMatrix`, `upload.target=filesystem`, `chromeFlags --no-sandbox`)                     |
+| Proxy con brotli delante del storefront (`scripts/lhci-server.mjs`)                                                                                                                                                                                 | Sin compresión Lighthouse mide de más (auditoría §2: 91–94 en vez de 99). Imita a Caddy: brotli y `/_astro/*` inmutable. Solo `node:http` + `node:zlib`                                                                                                                    | auditoría pre-fase 10 §2                                                                                                                              |
+| Caché de `node_modules/.astro` con `actions/cache` (clave: lockfile + fixtures)                                                                                                                                                                     | Imágenes ya optimizadas: build de fixtures de 22 s a 4 s en local                                                                                                                                                                                                          | astro-docs (`cacheDir`); context7 `/websites/gitea` (runner: cache v2 con `actions/cache` ≥ 4.2)                                                      |
 
 ## 3. Qué se ha hecho (10-1)
 
@@ -104,6 +110,22 @@ Con `NODE_ENV=production` el proveedor rechaza `EMAIL_TRANSPORT=smtp` (Mailpit e
   ```
 
 - **Activar Gitea** (si algún día el VPS puede llegar al registro del homelab): token de Gitea con permiso de paquetes (lectura y escritura) → secrets `REGISTRY_USER`/`REGISTRY_TOKEN`; variables `REGISTRY=git.hirokobu.duckdns.org` e `IMAGE_NAMESPACE=jacknoddy`; CA interna en `/etc/docker/certs.d/git.hirokobu.duckdns.org/ca.crt` del LXC. Ojo: el build del backend en el LXC de 4 GB.
+
+### 4.6 CI ampliado (10-3)
+
+| Job           | Qué hace                                                                                    | Depende de | Tiempo (local)  |
+| ------------- | ------------------------------------------------------------------------------------------- | ---------- | --------------- |
+| `quality`     | lint → formato → **build** → typecheck → tests unitarios → presupuesto de JS                | —          | igual que antes |
+| `integration` | 4 suites / 14 tests HTTP del backend con Postgres 17 y Redis 8 de `services:`               | `quality`  | ~1 min          |
+| `audit`       | `pnpm audit --prod` (altos y críticos, salvo las excepciones)                               | —          | segundos        |
+| `lighthouse`  | build de fixtures + proxy brotli + `lhci autorun` (home, `/productos/`, ficha, `/carrito/`) | `quality`  | ~4,5 min        |
+
+- `integration` y `lighthouse` esperan a `quality`: con `capacity: 2` en el LXC no corren tres jobs pesados a la vez y, si el código no compila, no se gastan minutos.
+- Notas medidas en local, en la imagen del runner de Gitea como root (mediana de 3): home 99/100/100/100, `/productos/` y ficha 100/100/100/100, `/carrito/` 100/100/100/69 (SEO 69 por `noindex`, a propósito). LCP 1,5–1,9 s y CLS ≤ 0,01. Son las páginas de **fixtures** (24 productos, sin fotos): sirven para detectar regresiones, no como medida de producción (auditoría pre-fase 10 para eso).
+- Rendimiento solo avisa: en runners compartidos varía de una ejecución a otra; si baja de 95, el aviso queda en el log y en el informe.
+- Ver un informe: en la ejecución del job → artefacto **lighthouse** → abrir el `.report.html`.
+- **Checks obligatorios** (los añade el usuario): `integration`, `audit` y `lighthouse` junto a `quality`, en la protección de `main` de Gitea y en el ruleset de GitHub.
+- Excepciones del audit: quitarlas cuando `pnpm audit --prod` deje de mostrarlas tras subir Medusa (Renovate). Si aparece un aviso alto nuevo, el job falla: se arregla con `overrides` (como en la auditoría) o, si no hay arreglo y no llega al código de producción, se añade a la lista con su motivo.
 
 ## 5. Cómo testear esta fase
 
@@ -178,12 +200,29 @@ pnpm --filter storefront check:budget       # OK, sin cambios de JS de cliente
 pnpm --filter storefront test:e2e           # 97/97 contra el backend de dev
 ```
 
+### 5.3 Jobs nuevos del CI en local (10-3)
+
+```bash
+pnpm audit --prod                                   # 5 moderados, 3 altos ignorados → exit 0
+pnpm --filter backend test:integration:http         # 14/14 (BD temporal en el Postgres de dev)
+
+# Lighthouse (Chromium de Playwright ya instalado: `pnpm --filter storefront exec playwright install chromium`)
+STOREFRONT_DATA=fixtures pnpm --filter storefront build
+cd apps/storefront
+CHROME_PATH=$(node -p 'require("@playwright/test").chromium.executablePath()') \
+  STOREFRONT_DATA=fixtures SITE_URL=http://127.0.0.1:4330 MEDUSA_BACKEND_URL=http://127.0.0.1:9 COOKIE_SECURE=false \
+  pnpm lhci                                         # informes en .lighthouseci/informes/
+pnpm exec lhci assert --assertions.categories:seo=error   # comprobar que falla: SEO de /carrito/ (exit 1)
+```
+
+Ojo: el build de fixtures sobrescribe `apps/storefront/dist`; vuelve a construir con datos de dev antes de los e2e.
+
 ## 6. Criterio de salida
 
 - [x] Las dos imágenes se construyen y arrancan con `USER node`, `HEALTHCHECK` y solo dependencias de producción.
 - [x] Pila de producción completa en local desde cero: migraciones solo en el server, worker indexando, tienda/API/Admin por Caddy.
 - [ ] Merge → `:sha-*` y `:main` en GHCR (se comprueba al mergear el 10-2); tag → `:X.Y.Z` (se comprueba con el primer tag, lo crea el usuario).
-- [ ] CI con tipos de Medusa, integración, audit y Lighthouse (10-3).
+- [x] CI con tipos de Medusa, integración, audit y Lighthouse (10-3). Probado en local con la imagen del runner; en CI, al abrir el PR.
 - [ ] Limpieza de carritos probada (10-4).
 
 ## 7. Pendientes / riesgos
