@@ -1,13 +1,13 @@
 # Fase 10 — CD: imágenes Docker
 
-> **Estado:** 🚧 en curso (PR 10-1 de 4)
+> **Estado:** 🚧 en curso (10-1 ✅ PR #36; 10-2 en curso)
 > **Rama/PR:** `feat/docker-imagenes` (10-1) · `feat/ci-imagenes` (10-2) · `chore/ci-mejoras` (10-3) · `feat/backend-limpieza-carritos` (10-4)
 > **Anterior:** [Auditoría previa](./auditoria-pre-fase10.md) · **Siguiente:** fase 11 (producción en Hetzner)
 
 ## 1. Objetivos
 
 - [x] **10-1** Dockerfiles multi-stage de backend (server + worker) y storefront, `.dockerignore`, `compose.prod.yml` + Caddyfile mínimo, `/health` del storefront, `security.allowedDomains`, variables del storefront leídas en runtime. Pila de producción probada en local desde cero.
-- [ ] **10-2** `images.yml`: imágenes en **GitHub → GHCR** (push a `main` → `sha-<7>` + `main`; tag `vX.Y.Z` → `X.Y.Z`, `X.Y`, `latest`). Gitea preparado pero desactivado (variable `REGISTRY`).
+- [x] **10-2** `images.yml`: imágenes en **GitHub → GHCR** (push a `main` → `sha-<7>` + `main`; tag `vX.Y.Z` → `X.Y.Z`, `X.Y`, `latest`). Gitea preparado pero desactivado (variable `REGISTRY`).
 - [ ] **10-3** `ci.yml`: tipos de Medusa antes del typecheck (y deshacer `2f12b98`), job `integration` con `services:`, `pnpm audit --prod` (nivel alto, con excepciones), Lighthouse CI (`@lhci/cli`), caché `.astro`.
 - [ ] **10-4** Job de limpieza de carritos de invitado (5 días durante las pruebas).
 
@@ -28,6 +28,12 @@
 | Key propia de Meilisearch para el backend (no la master)                                                                                                                                                                                            | Acciones `search`, `documents.*`, `indexes.*`, `settings.*`, `tasks.get`, `stats.get` sobre `*` (el proveedor crea `product_v1`…). Probada: el worker indexa con ella                                                                                                      | meilisearch-docs (manage_api_keys, create-api-key) + código del proveedor 2.3.1                                                                       |
 | Caddyfile mínimo con dominios por variable y `CADDY_TLS`                                                                                                                                                                                            | `tls internal` para la prueba local; la fase 11 pone Origin CA, `trusted_proxies`, cabeceras, CSP y rate limiting                                                                                                                                                          | context7 `/websites/caddyserver` (caddyfile/concepts `{$VAR:default}`, encode, reverse_proxy)                                                         |
 | `node-linker` corregido en AGENTS.md                                                                                                                                                                                                                | El repo usa `isolated` (decisión de la fase 0), no `hoisted`                                                                                                                                                                                                               | fase0.md                                                                                                                                              |
+| `images.yml` en GitHub con `GITHUB_TOKEN`; en Gitea solo con `vars.REGISTRY`                                                                                                                                                                        | Ver la primera fila. En GitHub no hacen falta secrets. El job de Gitea instala el CLI de Docker y usa el daemon del host (driver `docker`), que es el que confiaría en la CA interna                                                                                       | action.yml de `docker/login-action` 4.6.0 y `setup-buildx-action` 4.4.1                                                                               |
+| Backend y storefront en el **mismo job, uno detrás de otro**                                                                                                                                                                                        | Nunca dos builds a la vez (memoria del LXC si se activa Gitea; en GitHub, un solo runner)                                                                                                                                                                                  | ESTADO §5                                                                                                                                             |
+| Caché de capas `type=gha` con `scope` por imagen y `mode=max` (solo GitHub)                                                                                                                                                                         | Sin `scope`, las dos imágenes se pisarían la caché. `mode=max` guarda también las etapas intermedias (deps, build)                                                                                                                                                         | context7 `/docker/build-push-action` (CI: `type=gha,scope=…,mode=max`)                                                                                |
+| `flavor: latest=false` + `latest` solo en tags `v*`                                                                                                                                                                                                 | metadata-action pone `latest` automáticamente con `type=semver`; así queda explícito                                                                                                                                                                                       | context7 `/docker/metadata-action` (flavor, «Latest tag»)                                                                                             |
+| `main` con `github.ref == 'refs/heads/main'` (no `{{is_default_branch}}`)                                                                                                                                                                           | Independiente de cómo detecte cada plataforma la rama por defecto (mirror)                                                                                                                                                                                                 | context7 `/docker/metadata-action` (README: `type=raw` con expresión)                                                                                 |
+| Storefront de CI = **fixtures**, tags con sufijo `-fixtures` y sin `latest`                                                                                                                                                                         | Comprueba el Dockerfile en cada merge sin backend; el sufijo impide desplegarla por error con `IMAGE_TAG`. El storefront desplegable se construye en la fase 11                                                                                                            | decisión del usuario (fase 10, «primer deploy con mock data»)                                                                                         |
 
 ## 3. Qué se ha hecho (10-1)
 
@@ -77,6 +83,27 @@ docker compose --env-file docker/.env.prod -f docker/compose.prod.yml exec -T me
 ### 4.4 Emails en la pila de producción
 
 Con `NODE_ENV=production` el proveedor rechaza `EMAIL_TRANSPORT=smtp` (Mailpit es solo desarrollo, fase 8). En producción: `resend` + `RESEND_API_KEY`. Para probar sin dañar la reputación del dominio: `delivered@resend.dev`.
+
+### 4.5 Imágenes publicadas (10-2)
+
+- Flujo: merge en Gitea → push mirror a GitHub → `images.yml` → `ghcr.io/elrincondehiro/ecommerce-backend` y `…/ecommerce-storefront`.
+- Tags:
+
+  | Evento        | backend                             | storefront (fixtures, no desplegable)                |
+  | ------------- | ----------------------------------- | ---------------------------------------------------- |
+  | push a `main` | `sha-<7>`, `main`                   | `sha-<7>-fixtures`, `main-fixtures`                  |
+  | tag `vX.Y.Z`  | `X.Y.Z`, `X.Y`, `latest`, `sha-<7>` | `X.Y.Z-fixtures`, `X.Y-fixtures`, `sha-<7>-fixtures` |
+
+- Ver qué se ha publicado: GitHub → repo → Actions → «Images» (resumen con los tags) o perfil de la organización → Packages.
+- **Visibilidad**: GHCR puede crear los paquetes como **privados** la primera vez (depende de la configuración de paquetes de la organización). Para que el VPS descargue sin token: Packages → `ecommerce-backend` → Package settings → Change visibility → Public (y lo mismo con `ecommerce-storefront`). Una sola vez.
+- Comprobar desde cualquier máquina (sin login, una vez públicos):
+
+  ```bash
+  docker pull ghcr.io/elrincondehiro/ecommerce-backend:main
+  docker run --rm --entrypoint sh ghcr.io/elrincondehiro/ecommerce-backend:main -c 'id; ls /server'
+  ```
+
+- **Activar Gitea** (si algún día el VPS puede llegar al registro del homelab): token de Gitea con permiso de paquetes (lectura y escritura) → secrets `REGISTRY_USER`/`REGISTRY_TOKEN`; variables `REGISTRY=git.hirokobu.duckdns.org` e `IMAGE_NAMESPACE=jacknoddy`; CA interna en `/etc/docker/certs.d/git.hirokobu.duckdns.org/ca.crt` del LXC. Ojo: el build del backend en el LXC de 4 GB.
 
 ## 5. Cómo testear esta fase
 
@@ -155,7 +182,7 @@ pnpm --filter storefront test:e2e           # 97/97 contra el backend de dev
 
 - [x] Las dos imágenes se construyen y arrancan con `USER node`, `HEALTHCHECK` y solo dependencias de producción.
 - [x] Pila de producción completa en local desde cero: migraciones solo en el server, worker indexando, tienda/API/Admin por Caddy.
-- [ ] Merge → `:sha-*` y `:main` en GHCR; tag → `:X.Y.Z` (10-2).
+- [ ] Merge → `:sha-*` y `:main` en GHCR (se comprueba al mergear el 10-2); tag → `:X.Y.Z` (se comprueba con el primer tag, lo crea el usuario).
 - [ ] CI con tipos de Medusa, integración, audit y Lighthouse (10-3).
 - [ ] Limpieza de carritos probada (10-4).
 

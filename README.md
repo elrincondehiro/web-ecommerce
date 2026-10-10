@@ -572,26 +572,27 @@ feat/*, fix/*, chore/*  ──PR──▶  CI (lint · typecheck · test · buil
 - **Versionado**: SemVer. Release = `git tag -a v1.2.3 -m "v1.2.3" && git push origin v1.2.3`.
 - **Workflows** (`.github/workflows/`):
   - `ci.yml` — en `pull_request`: `pnpm install --frozen-lockfile`, lint, typecheck, test, build, presupuesto de JS y Lighthouse CI sobre el storefront.
-  - `images.yml` — en `push` a `main` y tags `v*.*.*`: build multi-stage con Buildx y push usando `docker/metadata-action`:
+  - `images.yml` — en `push` a `main`, tags `v*.*.*` y a mano: build con Buildx y push usando `docker/metadata-action`, una imagen detrás de otra:
     ```yaml
     tags: |
       type=sha,prefix=sha-,format=short
-      type=raw,value=main,enable={{is_default_branch}}
+      type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
       type=semver,pattern={{version}}
       type=semver,pattern={{major}}.{{minor}}
       type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
     ```
+    Hoy se ejecuta **solo en GitHub** y publica en **GHCR** (`ghcr.io/elrincondehiro/…`) con el `GITHUB_TOKEN` del job; le llegan `main` y los tags por el push mirror. En Gitea solo corre si se define la variable `REGISTRY` (ver [fase10.md](./docs/fases/fase10.md) §4.5).
   - `deploy.yml` (opcional) — en tag: SSH al VPS y `docker compose pull && up -d`.
 - **Registro configurable** mediante variables del repo:
 
-  | Plataforma | `REGISTRY`          | Imagen                                          |
-  | ---------- | ------------------- | ----------------------------------------------- |
-  | Gitea      | `git.tudominio.com` | `git.tudominio.com/<usuario>/ecommerce-backend` |
-  | GitHub     | `ghcr.io`           | `ghcr.io/<usuario>/ecommerce-backend`           |
+  | Plataforma          | `REGISTRY`                 | Imagen                                                 |
+  | ------------------- | -------------------------- | ------------------------------------------------------ |
+  | GitHub (activo)     | `ghcr.io` (por defecto)    | `ghcr.io/elrincondehiro/ecommerce-backend`             |
+  | Gitea (desactivado) | `git.hirokobu.duckdns.org` | `git.hirokobu.duckdns.org/jacknoddy/ecommerce-backend` |
 
-  Secrets: `REGISTRY_USER`, `REGISTRY_TOKEN`. (El registro de Gitea funciona por HTTPS, no por el puerto SSH 2222.)
+  GitHub no necesita secrets (`GITHUB_TOKEN` con `packages: write`). Gitea: `vars.REGISTRY`, `vars.IMAGE_NAMESPACE` y secrets `REGISTRY_USER`, `REGISTRY_TOKEN` (PAT con permiso de paquetes; `GITEA_TOKEN` no puede publicar). El registro de Gitea funciona por HTTPS, no por el puerto SSH 2222.
 
-- Imágenes publicadas: `ecommerce-backend` (server y worker usan la misma) y `ecommerce-storefront`.
+- Imágenes publicadas: `ecommerce-backend` (server y worker usan la misma) y `ecommerce-storefront`. Hasta la fase 11 el storefront se construye con fixtures: sus tags llevan `-fixtures` (`sha-<7>-fixtures`, `main-fixtures`, `X.Y.Z-fixtures`), nunca `latest`, y **no se despliega**.
 
 ## 11. Despliegue en el VPS
 

@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 10-oct-2026 · **Fase 10 en curso**: PR 10-1 (Dockerfiles + `compose.prod.yml`, `feat/docker-imagenes`) hecho; siguen 10-2 (`images.yml` → GHCR), 10-3 (mejoras de CI) y 10-4 (limpieza de carritos). Plan y decisiones en [fase10.md](./fases/fase10.md).
+> Última actualización: 10-oct-2026 · **Fase 10 en curso**: 10-1 (Dockerfiles + `compose.prod.yml`) mergeado (PR #36, `0b7e699`); 10-2 (`images.yml` → GHCR, `feat/ci-imagenes`) en PR; siguen 10-3 (mejoras de CI) y 10-4 (limpieza de carritos). Plan y decisiones en [fase10.md](./fases/fase10.md).
 
 ## 1. Dónde estamos
 

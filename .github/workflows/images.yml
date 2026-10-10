@@ -1,0 +1,154 @@
+# Imágenes Docker (fase 10-2). Mismo fichero en GitHub y Gitea; ver docs/fases/fase10.md §4.5.
+#   - push a main       → :sha-<7> y :main
+#   - tag vX.Y.Z        → :X.Y.Z, :X.Y, :latest (y :sha-<7>)
+#   - manual            → workflow_dispatch (mismas reglas según la rama/tag elegida)
+# Dónde se ejecuta:
+#   - GitHub (por defecto): GHCR (ghcr.io/<owner>) con el GITHUB_TOKEN del job (permiso
+#     packages: write). Llega por el push mirror de Gitea (main y tags).
+#   - Gitea: SOLO si existe la variable de repo REGISTRY (desactivado hoy: el LXC del runner tiene
+#     4 GB y el registro usa una CA interna). Necesita además IMAGE_NAMESPACE y los secrets
+#     REGISTRY_USER / REGISTRY_TOKEN (PAT con package: escritura; GITEA_TOKEN no puede publicar).
+# Las imágenes se construyen UNA DETRÁS DE OTRA en el mismo job (pico de RAM ~2,4 GB por build).
+# Storefront: catálogo de fixtures (STOREFRONT_DATA=fixtures) → NO desplegable. Sus tags llevan el
+# sufijo `-fixtures` y nunca `latest`: un `IMAGE_TAG` del compose no puede coger esta imagen por
+# error. El build real (contra la API del VPS) es de la fase 11.
+# Actions fijadas por SHA (tag en comentario); Renovate las actualiza.
+# Fuentes: context7 /docker/metadata-action (tags, flavor, labels), /docker/build-push-action
+# (cache type=gha con scope, build-args), action.yml de cada action en su tag, context7
+# /websites/gitea (actions/comparison: GITEA_TOKEN y el registro de paquetes).
+name: Images
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Nunca cancelar a medias una publicación
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    name: images
+    if: ${{ github.server_url == 'https://github.com' || vars.REGISTRY != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ON_GITHUB: ${{ github.server_url == 'https://github.com' }}
+      REGISTRY: ${{ vars.REGISTRY || 'ghcr.io' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Nombre de las imágenes: <registro>/<namespace en minúsculas>/ecommerce-<app>
+      - name: Nombres de las imágenes
+        id: names
+        env:
+          NAMESPACE: ${{ vars.IMAGE_NAMESPACE || github.repository_owner }}
+        run: |
+          ns="$(printf '%s' "$NAMESPACE" | tr '[:upper:]' '[:lower:]')"
+          echo "backend=${REGISTRY}/${ns}/ecommerce-backend" >> "$GITHUB_OUTPUT"
+          echo "storefront=${REGISTRY}/${ns}/ecommerce-storefront" >> "$GITHUB_OUTPUT"
+
+      # Gitea: la imagen del runner (node:24-trixie) no trae Docker. Se usa el daemon del host
+      # (socket montado por el runner con `docker_host` vacío). Sin probar hasta activarlo.
+      - name: CLI de Docker (solo Gitea)
+        if: ${{ env.ON_GITHUB != 'true' }}
+        run: |
+          if ! command -v docker >/dev/null; then
+            apt-get update -qq && apt-get install -y -qq --no-install-recommends docker-cli docker-buildx
+          fi
+          docker version
+
+      - name: Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          # GitHub: builder aislado (caché type=gha). Gitea: el daemon del host (confía en su CA).
+          driver: ${{ env.ON_GITHUB == 'true' && 'docker-container' || 'docker' }}
+
+      - name: Login en el registro
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USER || github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN || secrets.GITHUB_TOKEN }}
+
+      # ── Backend (server + worker) ────────────────────────────────────────────────────────────────
+      - name: Metadatos (backend)
+        id: meta-backend
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ steps.names.outputs.backend }}
+          flavor: latest=false
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          labels: |
+            org.opencontainers.image.title=ecommerce-backend
+            org.opencontainers.image.description=Backend Medusa (server y worker) de web-ecommerce
+
+      - name: Build y push (backend)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: ${{ env.ON_GITHUB == 'true' && 'type=gha,scope=backend' || '' }}
+          cache-to: ${{ env.ON_GITHUB == 'true' && 'type=gha,scope=backend,mode=max' || '' }}
+
+      # ── Storefront (fixtures: valida el Dockerfile; NO desplegable) ──────────────────────────────
+      - name: Metadatos (storefront)
+        id: meta-storefront
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ steps.names.outputs.storefront }}
+          flavor: |
+            latest=false
+            suffix=-fixtures
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.title=ecommerce-storefront
+            org.opencontainers.image.description=Storefront Astro de web-ecommerce (build con fixtures, no desplegable)
+
+      - name: Build y push (storefront)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/storefront/Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            STOREFRONT_DATA=fixtures
+          tags: ${{ steps.meta-storefront.outputs.tags }}
+          labels: ${{ steps.meta-storefront.outputs.labels }}
+          cache-from: ${{ env.ON_GITHUB == 'true' && 'type=gha,scope=storefront' || '' }}
+          cache-to: ${{ env.ON_GITHUB == 'true' && 'type=gha,scope=storefront,mode=max' || '' }}
+
+      - name: Resumen
+        env:
+          BACKEND_TAGS: ${{ steps.meta-backend.outputs.tags }}
+          STOREFRONT_TAGS: ${{ steps.meta-storefront.outputs.tags }}
+        run: |
+          {
+            echo "### Imágenes publicadas"
+            echo '```'
+            echo "$BACKEND_TAGS"
+            echo "$STOREFRONT_TAGS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
