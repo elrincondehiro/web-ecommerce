@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 10-oct-2026 · **Fase 9 (cuenta) cerrada** (PR #32) y **auditoría previa a la fase 10** hecha en `fix/auditoria-pre-fase10` (§6.3) → **siguiente: fase 10 (CD + imágenes Docker)**, plan por hacer.
+> Última actualización: 10-oct-2026 · **Fase 9 cerrada** (PR #32), **auditoría previa a la fase 10 cerrada** (PR #33) y Renovate no-major mergeado (PR #34, `3734f39`) → **siguiente: fase 10 (CD + imágenes Docker), sin empezar**. Punto de arranque: **§6.4 Handover**.
 
 ## 1. Dónde estamos
 
@@ -29,10 +29,10 @@ Roadmap completo y tiempos: README §13.
 
 ## 2. Qué hay construido
 
-- **Monorepo pnpm 12.9.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
+- **Monorepo pnpm 12.10.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront`: Astro 7.3.5 estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), el común `SiteClient` (~1,4 KB), `ScrollDrag` en carruseles, otro en `/buscar/` (`SearchLive`, ~0,9 KB gzip), `CartLive` en `/carrito/` (~0,6 KB) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/storefront`: Astro 7.3.8 (`@astrojs/node` 11.1.7) estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), el común `SiteClient` (~1,4 KB), `ScrollDrag` en carruseles, otro en `/buscar/` (`SearchLive`, ~0,9 KB gzip), `CartLive` en `/carrito/` (~0,6 KB) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
     - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand (con JS, `CartLive` aplica los cambios sin recargar; Fase D). e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
     - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Stripe solo autoriza; la captura se hace desde el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
@@ -190,13 +190,48 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 6.3 Auditoría previa a la fase 10
 
-**Estado: ✅** (`fix/auditoria-pre-fase10`). Detalle y medidas en [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md).
+**Estado: ✅** (PR #33, `fde9906`). Detalle y medidas en [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md).
 
 - **Lighthouse móvil** (1000 productos, brotli, mediana de 3): todas las páginas con Perf ≥ 99 y A11y 100; LCP ≤ 2 s en los listados. Medir **siempre con compresión** (proxy brotli o Caddy): sin ella, los listados bajan a 91–94.
 - **Caché**: el middleware pone `private, no-store` en TODA respuesta de `/carrito/`, `/checkout/`, `/pedido/`, `/cuenta/` y `/_actions/` (también en las redirecciones; Cloudflare cachea los 303 sin cabecera 20 min). Toda ruta por usuario nueva va bajo esos prefijos o se añade a `lib/cache.ts`.
 - **Imágenes**: `sizes` con el ancho real (rejilla, carrusel y categorías) y un ancho de 240 px: de −45 % a −48 % de imágenes en los listados. Tarjetas fuera de la rejilla: pasar `imageSizes`.
 - **Overrides de seguridad** (`pnpm-workspace.yaml`): `http-cache-semantics` 4.3.0 y `ajv` 8.20.0. Quedan 8 avisos dentro de `@medusajs/*` (Renovate).
 - **e2e**: `globalSetup` espera a que el backend responda de forma estable. **No** cambiar de rama ni lanzar `medusa exec` mientras corren (el watcher de `medusa develop` se reinicia). Tres pasadas seguidas: 97/97.
+
+## 6.4 Handover → fase 10 (CD + imágenes Docker)
+
+**Situación al cerrar la sesión (10-oct-2026)**:
+
+- `main` = `3734f39` en local, Gitea y GitHub. No quedan ramas de trabajo abiertas (salvo la de este handover, si no se ha mergeado aún). Ningún proceso en segundo plano; infra Docker de dev en marcha.
+- **Verificado en `main` tras el PR #34 de Renovate**:
+  - lint, format, typecheck, test (153 + 14 + 34), build (1203 páginas) y `check:budget` en verde;
+  - e2e 97/97 dos veces;
+  - `db:migrate` solo ejecutó un script de datos interno de Medusa (`create-super-admin-role`), sin cambios de esquema;
+  - `pnpm audit --prod`: 8 avisos, todos en `@medusajs/*`. Los dos `overrides` **siguen haciendo falta**: astro 7.3.8 acepta `http-cache-semantics ^4.2.0` y `@rushstack/node-core-library` pide `ajv ~8.13.0`.
+- **Playwright 1.64** usa Chromium **1248** (descargado en `~/.cache/ms-playwright`). Para Lighthouse local, `CHROME_PATH` puede apuntar a `chromium-1248` (la 1243 ya no hace falta).
+
+**Qué incluye la fase 10** (README §13 y pendientes de §7; el plan lo presenta el agente y lo aprueba el usuario):
+
+1. **Dockerfiles** multi-stage de `apps/backend` (una imagen para `server` y `worker`, `MEDUSA_WORKER_MODE`; solo `server` migra) y `apps/storefront` (`@astrojs/node` standalone), con `pnpm deploy --filter <app> --prod`, `USER node`, `HEALTHCHECK` y `.dockerignore` (AGENTS §6).
+2. **`images.yml`**: push a `main` → `:sha-<7>` + `:main`; tag `vX.Y.Z` → `:X.Y.Z`, `:X.Y`, `:latest`. Debe funcionar igual en Gitea y GitHub (`vars.REGISTRY`, `vars.IMAGE_NAMESPACE`, `REGISTRY_USER`/`REGISTRY_TOKEN`; AGENTS §8.2).
+3. **`docker/compose.prod.yml`**: solo Caddy publica 80/443 (la configuración fina de Caddy y Cloudflare es la fase 11).
+4. **CI** (§7):
+   - generar los tipos de Medusa antes del `typecheck` y deshacer el parche `2f12b98`;
+   - tests de integración del backend con `services:`;
+   - Lighthouse CI;
+   - `pnpm audit --prod --audit-level=high` con excepciones;
+   - persistir la caché `.astro`.
+5. **Pendientes**:
+   - Meilisearch en producción (key propia, también en el worker);
+   - job de limpieza de carritos;
+   - **`security.allowedDomains`** en `astro.config.mjs` con el dominio real. Desde `@astrojs/node` 11.1.7 se valida `Host` y, sin esto, Astro ignora `X-Forwarded-Host` detrás de Caddy: las URL generadas llevarían el host interno. Comprobado en local que un `Host` falso ya no se cuela.
+
+**Antes de planificar, consultar** (REGLA Nº 1):
+
+- context7: Docker (multi-stage, cache mounts), pnpm (`deploy`, `fetch`), Medusa `/medusajs/medusa` (build, `medusa start`, worker mode, despliegue) y docker/build-push-action;
+- astro-docs: node adapter standalone, `allowedDomains`, despliegue con Docker.
+
+Recursos de las runners: el build del backend llega a ~3,7 GB de pico en el LXC de 4 GB (§5); las imágenes deben poder construirse sin dos builds a la vez.
 
 ## 7. Pendientes conocidos
 

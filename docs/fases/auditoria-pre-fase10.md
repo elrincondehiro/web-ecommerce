@@ -1,7 +1,7 @@
 # Auditoría previa a la fase 10 — rendimiento, bugs y seguridad
 
 > **Estado:** ✅ completada (10-oct-2026)
-> **Rama/PR:** `fix/auditoria-pre-fase10` · PR en Gitea (`fix/auditoria-pre-fase10` → `main`)
+> **Rama/PR:** `fix/auditoria-pre-fase10` · PR #33 (`fde9906`) · después, Renovate no-major PR #34 (`3734f39`), verificado en local (ESTADO §6.4)
 > **Anterior:** [Fase 9](./fase9.md) · **Siguiente:** Fase 10 (CD + imágenes Docker)
 
 ## 1. Objetivos
@@ -117,4 +117,5 @@ Peso de las imágenes, antes → después del arreglo §4.2:
   - LCP de la ficha **variable** (1,8–2,6 s entre pasadas sin cambios de código; el desglose apunta a la carga, no a la imagen). La imagen principal pide 800 px para 372 px CSS × DPR 1,75 = 651 px; un ancho de 720 px ahorraría unos 10 KB. Revisarlo con el CSS crítico;
   - `logo-pie.webp` (16 KB, se muestra a 120 px) y `simbolo-header.webp` (7 KB a 26 px) se pueden servir más pequeños.
 - **Fase 10/11:** limpieza de carritos (fase9.md §7).
+- **Fase 10/11:** `security.allowedDomains` con el dominio real (`@astrojs/node` 11.1.7 valida `Host`; sin esto, detrás de Caddy se ignora `X-Forwarded-Host`).
 - Quitar los `overrides` cuando `astro` / `@medusajs/*` / `react-email` traigan las versiones arregladas (Renovate lo verá en el Dependency Dashboard).

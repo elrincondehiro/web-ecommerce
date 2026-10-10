@@ -50,10 +50,10 @@ Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referenci
 | Pieza       | Versión                                       | Notas                                                                                                                  |
 | ----------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Node        | **24.21.0** (`.node-version`)                 | gestionado con fnm                                                                                                     |
-| pnpm        | **12.9.1** (`packageManager`)                 | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
+| pnpm        | **12.10.1** (`packageManager`)                | workspaces, `node-linker=hoisted`, `save-exact=true`                                                                   |
 | Medusa      | **2.21.2**                                    | `@medusajs/*` todos en la **misma** versión                                                                            |
-| Astro       | **7.3.5**                                     | `@astrojs/node` 11.1.6 standalone, `@astrojs/svelte` 9.0.1                                                             |
-| Svelte      | **5.57.1** (runes)                            | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
+| Astro       | **7.3.8**                                     | `@astrojs/node` 11.1.7 standalone, `@astrojs/svelte` 9.0.1                                                             |
+| Svelte      | **5.57.2** (runes)                            | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
 | Tailwind    | **4.3.3**                                     | plugin `@tailwindcss/vite`, config CSS-first (`@theme` en `global.css`); **no** `tailwind.config.js`                   |
 | UI          | shadcn-svelte 1.7.0 + bits-ui 2.19.5          | componentes copiados en `src/lib/components/ui`                                                                        |
 | TypeScript  | **6.0.3**                                     | TS 7 no soportado aún por Astro/Medusa                                                                                 |
@@ -62,7 +62,7 @@ Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referenci
 | Meilisearch | `getmeili/meilisearch:v1.54.3`                |                                                                                                                        |
 | S3 local    | `chrislusf/seaweedfs:4.48`                    | solo dev; prod = Cloudflare R2. MinIO descartado                                                                       |
 | Caddy       | `caddy:2.11.4-alpine`                         |                                                                                                                        |
-| React Email | react-email 6.11.0 · ui 6.11.0 · render 2.1.0 | solo en `packages/emails`                                                                                              |
+| React Email | react-email 6.11.1 · ui 6.11.1 · render 2.1.0 | solo en `packages/emails`                                                                                              |
 
 Reglas de dependencias:
 
