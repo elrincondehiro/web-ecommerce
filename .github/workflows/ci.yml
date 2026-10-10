@@ -110,6 +110,11 @@ jobs:
       DB_USERNAME: medusa
       DB_PASSWORD: medusa
       REDIS_URL: redis://redis-localhost:6379
+      # @swc/core ≥ 1.16 (Jest) descomprime su binario en una caché y la rechaza si una carpeta
+      # padre es de otro usuario. En GitHub el job corre como root con HOME=/github/home (del
+      # usuario del runner) → ERR_SWC_NATIVE_CACHE. Caché en una carpeta de root.
+      # Fuente: swc docs/native-addon-carriers.md (SWC_NATIVE_BINDING_CACHE).
+      SWC_NATIVE_BINDING_CACHE: /root/.cache/swc
       # Resto de variables: apps/backend/.env.test.example (sin secretos reales)
     steps:
       - name: Checkout

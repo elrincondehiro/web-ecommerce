@@ -78,7 +78,7 @@ test.describe("con JS (Stripe test)", () => {
   test.setTimeout(90_000);
 
   const stripeFrame = (page: Page): FrameLocator =>
-    page.frameLocator('#pago-element iframe[name^="__privateStripeFrame"]').first();
+    page.locator('#pago-element iframe[name^="__privateStripeFrame"]').first().contentFrame();
 
   async function toPayment(page: Page) {
     await addAndGoToCheckout(page);
