@@ -1,0 +1,17 @@
+# PLANTILLA DE CATEGORÍAS · catalog:import (instrucciones completas en LEEME.md). Las filas que empiezan por # se ignoran: bórralas o déjalas.
+# Guardar como CSV UTF-8 (separador coma o punto y coma). Se carga ANTES que productos.csv. Una fila por categoría.
+"# handle: identificador en la URL (minúsculas, números y guiones; obligatorio, no cambiarlo después; único en toda la tienda: sufijo -perro / -gato en las subcategorías) · nombre: obligatorio al crear."
+# padre: HANDLE (no el nombre) de la categoría padre (vacío = categoría principal). Puede ser otra fila de esta hoja o una que ya exista en la tienda.
+"# descripcion: texto libre (vacío = no tocar; un guion - = borrarla) · orden: 0, 1, 2… entre hermanas · activa: sí / no (por defecto sí)."
+# Volver a cargar la hoja actualiza las categorías por handle; las que existen en la tienda y no están aquí no se tocan.
+handle,nombre,padre,descripcion,orden,activa
+perros,Perros,,Todo para tu perro,0,sí
+alimentacion-perro,Alimentación,perros,"Pienso, latas y snacks para perros",0,sí
+pienso-perro,Pienso,alimentacion-perro,,0,sí
+snacks-perro,Snacks y premios,alimentacion-perro,,1,sí
+paseo-perro,Paseo,perros,,1,sí
+collares-perro,Collares,paseo-perro,Collares de nailon y cuero,0,sí
+gatos,Gatos,,Todo para tu gato,1,sí
+para-ti,Para ti,,Regalos para personas amantes de los animales,2,sí
+tazas-para-ti,Tazas,para-ti,,0,sí
+libros-para-ti,Libros,para-ti,,1,no

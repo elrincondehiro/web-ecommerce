@@ -4,3 +4,6 @@
 /build
 medusa-db.sql
 /.cache
+# Cargas reales del importador de catálogo (datos del negocio): solo se versiona la plantilla
+/catalog/*
+!/catalog/plantilla/

@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 11-oct-2026 · **Fase 10 cerrada**. Después: mejoras del storefront (`feat/storefront-mejoras`) y, en una sesión nueva, el **importador de catálogo** (CSV + `products:import`), ver §6.6. Luego, fase 11 (producción en Hetzner), §6.5.
+> Última actualización: 11-oct-2026 · **Fase 10 y mejoras del storefront cerradas**; **importador de catálogo** (`catalog:import`) hecho en `feat/importador-catalogo`, ver §6.6. Siguiente: fase 11 (producción en Hetzner), §6.5, y una fase de storefront para las subcategorías.
 
 ## 1. Dónde estamos
 
@@ -25,6 +25,7 @@
 | 9 Cuenta de cliente                         | ✅     | [fase9.md](./fases/fase9.md)                               |
 | Auditoría previa a la fase 10               | ✅     | [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md) |
 | 10 CD + imágenes Docker                     | ✅     | [fase10.md](./fases/fase10.md)                             |
+| C Importador de catálogo (CSV)              | ✅     | [faseC-catalogo.md](./fases/faseC-catalogo.md)             |
 
 Roadmap completo y tiempos: README §13.
 
@@ -97,6 +98,7 @@ pnpm backend:seed:mock:v2    # idempotente: etiquetas + 100 productos mock-v2 (T
 pnpm backend:seed:mock:ofertas  # idempotente: Collection destacados + Price List sale de prueba (I-Interficie)
 pnpm backend:stock:mock      # idempotente: repone stock libre de los mock (los e2e de checkout lo gastan)
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos a mano (borrado suave, fase 10-4)
+pnpm --filter backend catalog:import <carpeta> [dry-run]   # categorias.csv + productos.csv (plantilla en apps/backend/catalog/plantilla)
 pnpm --filter backend images:import <carpeta> [dry-run] [replace]
 pnpm --filter backend exec medusa db:migrate
 pnpm --filter backend test:integration:http   # necesita apps/backend/.env.test
@@ -154,10 +156,10 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - **Fase 9 (cuenta): cerrada** (PR #32, `d27945b`) → ver §6.2. La transferencia y Bizum, después.
 - **Auditoría previa a la fase 10: hecha** → ver §6.3.
 - **Fase 10 (CD + imágenes Docker): cerrada** (PR #36–#40) → [fase10.md](./fases/fase10.md).
-- **Mejoras del storefront** (`feat/storefront-mejoras`, 11-oct-2026; se pueden sumar más antes del merge):
+- **Mejoras del storefront** (PR #41, `58d2ee0`):
   - `DEV_ALLOWED_HOSTS` (solo dev, se fija en el build): hosts extra en `security.allowedDomains` para entrar desde el móvil por la IP de la LAN. Sin esto, por `http://<IP>` los formularios daban «Cross-site POST form submissions are forbidden» (el navegador no envía `Sec-Fetch-Site` fuera de https/localhost y Astro, sin la IP en la lista, toma la URL como `localhost`). `checkOrigin` sigue activo.
   - Cuenta en móvil: la página desbordaba en horizontal (~420 px) y el panel del carrito se abría fuera de la pantalla. El menú de la cuenta estiraba la columna implícita del grid → `grid-cols-1` + `min-w-0` en `AccountLayout.astro`; e2e a 320 px en `cuenta.spec.ts`.
-- **Siguiente: importador de catálogo** (sesión nueva) → §6.6. Después, fase 11 → §6.5.
+- **Importador de catálogo: hecho** (`feat/importador-catalogo`) → §6.6 y [faseC-catalogo.md](./fases/faseC-catalogo.md). **Siguiente**: fase 11 → §6.5. Pendiente: fase de storefront para **subcategorías** (§6.6).
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
@@ -260,32 +262,28 @@ Recursos de las runners: el build del backend llega a ~3,7 GB de pico en el LXC 
 - Primer despliegue con **datos mock**.
 - Prueba local de la pila: fase10.md §5.1. El proyecto `web-ecommerce-prodlocal` está parado con sus volúmenes (`$C down -v` para borrarlo).
 
-## 6.6 Handover → importador de catálogo (CSV + scripts)
+## 6.6 Importador de catálogo (CSV + `catalog:import`)
 
-**Objetivo**: cargar en producción (y en dev) el catálogo real (> 1000 productos con variantes) desde una hoja, sin el Admin uno a uno. Prod pasa a ser la fuente de verdad del catálogo; región, IVA, envíos y Stripe ya son scripts idempotentes (`seed`, `stripe:region`); clientes y pedidos nunca bajan de prod a dev.
+**Estado: ✅** (`feat/importador-catalogo`). Detalle, decisiones y pruebas en [faseC-catalogo.md](./fases/faseC-catalogo.md). Guía para rellenar la hoja: [`apps/backend/catalog/plantilla/LEEME.md`](../apps/backend/catalog/plantilla/LEEME.md).
 
-**Ya hablado con el usuario (pendiente de sus respuestas antes del plan)**:
-
-- El importador CSV del Admin de Medusa 2.21.2 (una fila por variante) **no conviene**: pide IDs internos (etiquetas, colecciones, tipos, canal, perfil de envío), no carga stock ni nuestros tipos de IVA (`iva-reducido` / `iva-superreducido`) ni las opciones globales Talla/Color (`seed:mock:v2`).
-- Propuesta: **plantilla propia con nombres legibles** (una fila por variante; los datos del producto solo en la primera fila de cada `handle`), p. ej. `handle, título, descripción, categoría, etiquetas (a|b), iva, colección, talla, color, sku, precio, precio_oferta, stock, peso_g, estado` + script **`products:import <fichero> [dry-run]`**:
-  - valida TODO antes de escribir (informe por fila: categoría inexistente, SKU repetido…);
-  - **idempotente** (upsert por `handle` / `sku`): se corrige la hoja y se vuelve a cargar;
-  - crea etiquetas y valores de opción que falten; las categorías, mejor creadas a propósito;
-  - solo workflows oficiales de Medusa (así Meilisearch se actualiza solo; nada de SQL);
-  - aviso de títulos que empiezan en minúscula (la API de Medusa ordena por título distinguiendo mayúsculas: `chaqueta` sale tras «Vestido…»).
-- **Fotos**: ya existe `images:import <carpeta>` (`handle_01.jpg`…, `_01` = miniatura; sube por el módulo de ficheros → R2 en prod; idempotente; `dry-run`). Alternativa B: subirlas a R2 a mano y un `images:link` que liste el bucket y asocie (necesita el cliente S3 como dependencia directa → aprobación). Recomendado: A para la carga inicial.
-
-**Preguntas abiertas al usuario** (hacerlas al empezar):
-
-1. ¿CSV UTF-8 (sin dependencias; ojo: Excel en español guarda con `;`) o **.xlsx** con desplegables (dependencia nueva → aprobación)?
-2. ¿Qué campos? (subtítulo, material, medidas/peso para envío, EAN, precio de oferta, metadatos: marca, autor, edad…).
-3. ¿Precio distinto por variante?
-4. ¿Opciones solo Talla y Color u otras?
-5. ¿Categorías con jerarquía? ¿Se crean en el Admin o también desde fichero?
-6. ¿Fotos por producto (handle), por variante (SKU) o ambas? (por variante: comprobar en la doc qué soporta Medusa 2.21).
-7. ¿Fotos en carpeta local (A) o subidas a R2 a mano (B)?
-
-**Antes de planificar, consultar** (REGLA Nº 1): context7 `/medusajs/medusa` (`createProductsWorkflow` / `updateProductsWorkflow` / `batchProductsWorkflow`, inventario y niveles de stock, price lists para el precio de oferta, opciones globales) y el código de `importProductsAsChunksWorkflow` / `normalize-for-import` de `@medusajs/core-flows` 2.21.2 como referencia. Reutilizar lo de `src/scripts/seed-mock*.ts` y `scripts/lib/image-files.ts`.
+- `catalog:import <carpeta> [dry-run]` carga primero `categorias.csv` (con jerarquía: columna `padre`) y después `productos.csv`, una fila por variante.
+- Formato: CSV UTF-8 sin dependencias, separador `,` o `;`. Las filas `#` son comentarios: las plantillas llevan ahí las instrucciones.
+- **Opciones**: una columna por opción con el prefijo `opcion:` (`opcion:Talla`, `opcion:Color`, `opcion:Proteína`, `opcion:Tamaño`…). Son **globales**; las opciones y valores que falten se crean, y el dry-run los lista. Un producto sin opciones lleva «Formato: Única», porque Medusa exige al menos una opción.
+- **Herencia** (solo dentro del mismo producto): `precio`, `precio_oferta`, peso y medidas vacíos toman el valor de la fila de arriba. La oferta va con su precio.
+- **Todo o nada**: valida todo e informa por fila y columna. Es idempotente: upsert por `handle`/`sku`, y una segunda carga no cambia nada.
+- Lo que está en Medusa y no en la hoja **se ignora**. El **stock** solo se fija al crear la variante.
+- Celda vacía = no tocar; `-` = borrar. Etiquetas y categorías con valor sustituyen a las actuales.
+- Ofertas en la Price List `sale` «Catálogo — ofertas», que gestiona el importador.
+- **Analíticos** (`proteina_pct`, `grasa_pct`, `fibra_pct`, `cenizas_pct`, `humedad_pct` y `analitico:<Nombre>`) en la metadata del producto; **contenido neto** (`neto_g`/`neto_ml`) en la de la variante.
+- **Granel** (`granel`, `paso_g`, `min_g`, `precio_kg`, `precio_oferta_kg`, `stock_g`): la unidad de venta es un paso de gramos; el inventario va en gramos (artículo propio, `required_quantity = paso_g`) y el mínimo lo valida Medusa en el carrito (`src/workflows/hooks/granel-minimo.ts`). **Listo en Medusa; el storefront aún no lo muestra** (productos a granel en borrador hasta esa fase).
+- **Fotos**: `images:import` como siempre, por producto (`handle_01.jpg`…) desde una carpeta local.
+- Las cargas reales van en `apps/backend/catalog/<carpeta>`, fuera de git (solo se versiona `plantilla/`).
+- En la BD local quedan 3 productos de la plantilla (`camiseta-basica`, `proteina-whey`, `taza-logo`) y 3 subcategorías (`camisetas`, `sudaderas`, `suplementos`) de la prueba.
+- **Pendiente**:
+  - Fase de storefront para **subcategorías**: hoy solo se generan páginas de las categorías principales y un listado no incluye los productos de sus hijas.
+  - Fase de storefront para **granel** (selector de gramos, €/kg, total en gramos en el carrito), **analíticos** (tabla y filtros sobre materia seca) y **precio por kilo/litro** (`neto_g`/`neto_ml`). Detalle en faseC-catalogo.md §7.
+  - `stock:import` para reponer stock en masa.
+  - Limpieza de los mock en producción (tarea aparte).
 
 ## 6.7 Posible mejora futura (descartada por ahora): orden y novedades
 

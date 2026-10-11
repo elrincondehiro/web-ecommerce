@@ -19,6 +19,7 @@
     "seed:mock:ofertas": "medusa exec ./src/scripts/seed-mock-ofertas.ts",
     "images:mock": "medusa exec ./src/scripts/mock-images.ts",
     "images:import": "medusa exec ./src/scripts/import-images.ts",
+    "catalog:import": "medusa exec ./src/scripts/import-catalog.ts",
     "stripe:region": "medusa exec ./src/scripts/stripe-region.ts",
     "stock:mock": "medusa exec ./src/scripts/stock-mock.ts",
     "carts:cleanup": "medusa exec ./src/scripts/delete-stale-carts.ts"

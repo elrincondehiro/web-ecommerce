@@ -485,6 +485,7 @@ pnpm backend:seed:mock                                    # catálogo de prueba 
 pnpm backend:stock:mock                                   # repone stock libre de los mock (los e2e de checkout lo gastan)
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup  # limpieza de carritos a mano (borrado suave, fase 10-4)
 pnpm backend:seed:mock:ofertas                            # Collection destacados + Price List sale de prueba (I-Interficie)
+pnpm --filter backend catalog:import <carpeta> [dry-run]  # categorías + productos desde CSV (apps/backend/catalog/plantilla)
 pnpm --filter backend images:import <carpeta>             # fotos handle_XX.jpg → bucket + producto (fase 6)
 pnpm --filter backend exec medusa user -e <email> -p <contraseña>   # admin (lo creas tú)
 pnpm dev:backend                                          # API :9000 · Admin :9000/app
@@ -682,6 +683,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 9 Cuenta de cliente                    | [fase9.md](./docs/fases/fase9.md)                                                                | ✅     |
 | Auditoría previa a la fase 10          | [auditoria-pre-fase10.md](./docs/fases/auditoria-pre-fase10.md)                                  | ✅     |
 | 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | ✅     |
+| C Importador de catálogo (CSV)         | [faseC-catalogo.md](./docs/fases/faseC-catalogo.md)                                              | ✅     |
 | 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

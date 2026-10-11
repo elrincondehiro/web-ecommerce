@@ -28,5 +28,7 @@ docker
 **/.DS_Store
 apps/backend/integration-tests
 apps/backend/uploads
+# Cargas del importador de catálogo (datos del negocio): se copian al contenedor con docker cp
+apps/backend/catalog
 apps/backend/static
 apps/storefront/e2e
