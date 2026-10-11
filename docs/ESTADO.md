@@ -2,30 +2,31 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 11-oct-2026 · **Fase 10 y mejoras del storefront cerradas**; **importador de catálogo** (`catalog:import`) hecho en `feat/importador-catalogo`, ver §6.6. Siguiente: fase 11 (producción en Hetzner), §6.5, y una fase de storefront para las subcategorías.
+> Última actualización: 11-oct-2026 · **Fase C (importador de catálogo) cerrada** (PR #42, §6.6). **Siguiente: Fase S — catálogo en el storefront** (subcategorías, manifiesto de LiveSync, €/kg, analíticos, granel), handover en **§6.8**. Después, fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
-| Fase                                        | Estado | Doc                                                        |
-| ------------------------------------------- | ------ | ---------------------------------------------------------- |
-| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md)                           |
-| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)                               |
-| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)                               |
-| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)                               |
-| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)                               |
-| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)                               |
-| 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)                               |
-| 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)                               |
-| 7-1 Búsqueda + filtros                      | ✅     | [fase7.md](./fases/fase7.md)                               |
-| 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)                               |
-| I-Marca (identidad visual + tema)           | ✅     | [faseI-marca.md](./fases/faseI-marca.md)                   |
-| I-Interficie (UX/UI)                        | ✅     | [faseI-interficie.md](./fases/faseI-interficie.md)         |
-| D Diseño (afinar colores, interfaz…)        | ✅     | [faseD-diseno.md](./fases/faseD-diseno.md)                 |
-| 8 Emails                                    | ✅     | [fase8.md](./fases/fase8.md)                               |
-| 9 Cuenta de cliente                         | ✅     | [fase9.md](./fases/fase9.md)                               |
-| Auditoría previa a la fase 10               | ✅     | [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md) |
-| 10 CD + imágenes Docker                     | ✅     | [fase10.md](./fases/fase10.md)                             |
-| C Importador de catálogo (CSV)              | ✅     | [faseC-catalogo.md](./fases/faseC-catalogo.md)             |
+| Fase                                        | Estado | Doc                                                                  |
+| ------------------------------------------- | ------ | -------------------------------------------------------------------- |
+| Prefase (decisiones, SSH, repos, MCPs)      | ✅     | [prefase.md](./fases/prefase.md)                                     |
+| 0 Fundaciones (monorepo pnpm, infra Docker) | ✅     | [fase0.md](./fases/fase0.md)                                         |
+| 1 CI básico + Renovate                      | ✅     | [fase1.md](./fases/fase1.md)                                         |
+| 2 Backend Medusa                            | ✅     | [fase2.md](./fases/fase2.md)                                         |
+| 3 Storefront base (Astro)                   | ✅     | [fase3.md](./fases/fase3.md)                                         |
+| 6 Ficheros R2 + imágenes                    | ✅     | [fase6.md](./fases/fase6.md)                                         |
+| 4 Carrito                                   | ✅     | [fase4.md](./fases/fase4.md)                                         |
+| 5 Checkout + Stripe                         | ✅     | [fase5.md](./fases/fase5.md)                                         |
+| 7-1 Búsqueda + filtros                      | ✅     | [fase7.md](./fases/fase7.md)                                         |
+| 7-2 Sugerencias                             | ✅     | [fase7.md](./fases/fase7.md)                                         |
+| I-Marca (identidad visual + tema)           | ✅     | [faseI-marca.md](./fases/faseI-marca.md)                             |
+| I-Interficie (UX/UI)                        | ✅     | [faseI-interficie.md](./fases/faseI-interficie.md)                   |
+| D Diseño (afinar colores, interfaz…)        | ✅     | [faseD-diseno.md](./fases/faseD-diseno.md)                           |
+| 8 Emails                                    | ✅     | [fase8.md](./fases/fase8.md)                                         |
+| 9 Cuenta de cliente                         | ✅     | [fase9.md](./fases/fase9.md)                                         |
+| Auditoría previa a la fase 10               | ✅     | [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md)           |
+| 10 CD + imágenes Docker                     | ✅     | [fase10.md](./fases/fase10.md)                                       |
+| C Importador de catálogo (CSV)              | ✅     | [faseC-catalogo.md](./fases/faseC-catalogo.md)                       |
+| S Catálogo en el storefront                 | ⏳     | [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) |
 
 Roadmap completo y tiempos: README §13.
 
@@ -159,7 +160,7 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - **Mejoras del storefront** (PR #41, `58d2ee0`):
   - `DEV_ALLOWED_HOSTS` (solo dev, se fija en el build): hosts extra en `security.allowedDomains` para entrar desde el móvil por la IP de la LAN. Sin esto, por `http://<IP>` los formularios daban «Cross-site POST form submissions are forbidden» (el navegador no envía `Sec-Fetch-Site` fuera de https/localhost y Astro, sin la IP en la lista, toma la URL como `localhost`). `checkOrigin` sigue activo.
   - Cuenta en móvil: la página desbordaba en horizontal (~420 px) y el panel del carrito se abría fuera de la pantalla. El menú de la cuenta estiraba la columna implícita del grid → `grid-cols-1` + `min-w-0` en `AccountLayout.astro`; e2e a 320 px en `cuenta.spec.ts`.
-- **Importador de catálogo: hecho** (`feat/importador-catalogo`) → §6.6 y [faseC-catalogo.md](./fases/faseC-catalogo.md). **Siguiente**: fase 11 → §6.5. Pendiente: fase de storefront para **subcategorías** (§6.6).
+- **Fase C (importador de catálogo): cerrada** (PR #42, `2233ae8`) → §6.6 y [faseC-catalogo.md](./fases/faseC-catalogo.md). **Siguiente**: Fase S → §6.8; después, fase 11 → §6.5.
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
@@ -264,7 +265,7 @@ Recursos de las runners: el build del backend llega a ~3,7 GB de pico en el LXC 
 
 ## 6.6 Importador de catálogo (CSV + `catalog:import`)
 
-**Estado: ✅** (`feat/importador-catalogo`). Detalle, decisiones y pruebas en [faseC-catalogo.md](./fases/faseC-catalogo.md). Guía para rellenar la hoja: [`apps/backend/catalog/plantilla/LEEME.md`](../apps/backend/catalog/plantilla/LEEME.md).
+**Estado: ✅** (PR #42, `2233ae8`). Detalle, decisiones y pruebas en [faseC-catalogo.md](./fases/faseC-catalogo.md). Guía para rellenar la hoja: [`apps/backend/catalog/plantilla/LEEME.md`](../apps/backend/catalog/plantilla/LEEME.md).
 
 - `catalog:import <carpeta> [dry-run]` carga primero `categorias.csv` (con jerarquía: columna `padre`) y después `productos.csv`, una fila por variante.
 - Formato: CSV UTF-8 sin dependencias, separador `,` o `;`. Las filas `#` son comentarios: las plantillas llevan ahí las instrucciones.
@@ -278,10 +279,10 @@ Recursos de las runners: el build del backend llega a ~3,7 GB de pico en el LXC 
 - **Granel** (`granel`, `paso_g`, `min_g`, `precio_kg`, `precio_oferta_kg`, `stock_g`): la unidad de venta es un paso de gramos; el inventario va en gramos (artículo propio, `required_quantity = paso_g`) y el mínimo lo valida Medusa en el carrito (`src/workflows/hooks/granel-minimo.ts`). **Listo en Medusa; el storefront aún no lo muestra** (productos a granel en borrador hasta esa fase).
 - **Fotos**: `images:import` como siempre, por producto (`handle_01.jpg`…) desde una carpeta local.
 - Las cargas reales van en `apps/backend/catalog/<carpeta>`, fuera de git (solo se versiona `plantilla/`).
-- En la BD local quedan 3 productos de la plantilla (`camiseta-basica`, `proteina-whey`, `taza-logo`) y 3 subcategorías (`camisetas`, `sudaderas`, `suplementos`) de la prueba.
+- En la BD local quedan 3 productos de una prueba con la plantilla antigua (`camiseta-basica`, `proteina-whey`, `taza-logo`) y 3 subcategorías (`camisetas`, `sudaderas`, `suplementos`). La plantilla actual (collar, pienso, alas a granel, taza, libro) **no** se ha cargado en dev, solo el dry-run.
+- **Hoja real del usuario**: `apps/backend/catalog/mi-carga/categorias.csv` (37 categorías perro/gato/«Para ti», dry-run sin errores; fuera de git) y su original `categorias-original.csv`. Aún **no** cargada en dev.
 - **Pendiente**:
-  - Fase de storefront para **subcategorías**: hoy solo se generan páginas de las categorías principales y un listado no incluye los productos de sus hijas.
-  - Fase de storefront para **granel** (selector de gramos, €/kg, total en gramos en el carrito), **analíticos** (tabla y filtros sobre materia seca) y **precio por kilo/litro** (`neto_g`/`neto_ml`). Detalle en faseC-catalogo.md §7.
+  - Storefront del catálogo (subcategorías, granel, analíticos, €/kg/l): **Fase S**, §6.8.
   - `stock:import` para reponer stock en masa.
   - Limpieza de los mock en producción (tarea aparte).
 
@@ -290,11 +291,32 @@ Recursos de las runners: el build del backend llega a ~3,7 GB de pico en el LXC 
 Plan estudiado el 11-oct-2026 y aparcado por el usuario (no es necesario ahora):
 
 - **Orden de los listados**: preferentes → novedades → resto, alfabético dentro de cada grupo (`Intl.Collator("es", { sensitivity: "base", numeric: true })`, sin dependencias) en categorías, `/productos/`, ofertas y carrusel de la home.
-  - ⚠️ Hoy el build y la island de `LiveSync` piden a Medusa el MISMO orden (`order: "title"`) y la misma ventana (offset/limit): por eso coinciden y el precio/stock en vivo funciona (comprobado con `chaqueta`). Si Astro reordena, deja de coincidir → hay que pasar todos los listados al patrón de **manifiesto de páginas** de `/ofertas/` (`lib/offer-pages.ts`: clave corta por página → ids del build en `dist/server`; ~120 KB).
+  - ⚠️ Hoy el build y la island de `LiveSync` piden a Medusa el MISMO orden (`order: "title"`) y la misma ventana (offset/limit). Si Astro reordena, deja de coincidir → **manifiesto de páginas**, ya decidido para la Fase S (§6.8, D-S1): con él, este cambio de orden no tocaría LiveSync.
 - **Novedad automática**: creado tras `NEW_PRODUCT_SINCE` y hace menos de `NEW_PRODUCT_DAYS` días, **o** con la etiqueta `novedad` de Medusa. Se calcula en el build (un build nocturno lo mantiene al día). `NEW_PRODUCT_SINCE` evita que la carga masiva inicial salga entera como novedad. Medusa solo guarda `created_at` (no la fecha de publicación).
 - **Distintivo**: «Novedad» arriba a la izquierda (azul `--primary`, mismo estilo que «Oferta»); en tarjetas estrechas, distintivos apilados y más pequeños con container queries. Ojo: hoy «Agotado» ya ocupa esa esquina.
 - **Filtro «Solo novedades»** (como «Solo disponibles»), incluidas las automáticas: en listados, del build; en `/buscar/`, `created_at ≥ corte` `$or` etiqueta `novedad` (el proveedor `@rokmohar/medusa-plugin-meilisearch` 2.3.1 compila `$gte` y `$or`). La etiqueta `novedad` saldría de «Etiquetas».
 - **Etiqueta interna `preferente`**: fuera de filtros y del campo `tags` del índice; campo `preferente` (0/1) `sortable` en `src/search/product.ts` → `/buscar/` sin texto: `preferente DESC, title ASC`. Requiere `medusa db:migrate` (reconstruye el índice sin cortes).
+
+## 6.8 Handover → Fase S (catálogo en el storefront)
+
+Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) (⏳ planificada: objetivos, decisiones previas y qué consultar). **No empezar sin plan aprobado** (REGLA Nº 1).
+
+**Situación al cerrar la Fase C (11-oct-2026)**:
+
+- Fase C mergeada: PR #42 (`2233ae8`). Este handover va en el PR `docs/cierre-fase-c`.
+- Medusa ya guarda todo lo que la Fase S tiene que mostrar (contrato en `apps/backend/catalog/plantilla/LEEME.md`):
+  - categorías con `parent_category` (productos solo en la hoja más concreta);
+  - `product.metadata`: `marca`, `proteina_pct`, `grasa_pct`, `fibra_pct`, `cenizas_pct`, `humedad_pct`, `analitico:<Nombre>`, `granel: true`;
+  - `variant.metadata`: `neto_g` / `neto_ml`; granel `paso_g`, `min_g` (precio de Medusa = precio de UN paso; `inventory_quantity` en pasos);
+  - mínimo de granel validado por Medusa en el carrito (400 con mensaje en español).
+
+**Decisión D-S1 (11-oct-2026): manifiesto de páginas para LiveSync en TODOS los listados** (categorías, `/productos/`, carrusel de la home), como `/ofertas/` (`lib/offer-pages.ts`). Análisis:
+
+- Hoy la island pide «categoría + offset + limit, orden por título». Si Medusa cambia sin rebuild (alta, baja, cambio de título o de categoría), las páginas **posteriores** se desplazan: hasta N tarjetas por página se quedan con precio/stock del build. Nunca hay datos cruzados (el script empareja por id). Solo se ve mal si además ese producto cambió de precio/stock; ficha, carrito y pago siempre son correctos.
+- Con el uso previsto (rebuild tras la carga masiva, pocos cambios, builds diarios/semanales) el impacto es bajo → **no es urgente**. Se hace en la Fase S porque con subcategorías (el padre agrega las hijas) y con el orden de §6.7 la island tendría que repetir la consulta exacta del build; con el manifiesto ya no depende de ella.
+- Coste: 0 B de JS de cliente; respuesta de la island igual (~1,2 KB gzip); JSON en `dist/server` (~140 KB con 1000 productos, ~700 KB con 5000) en memoria del servidor Astro; Medusa consulta por ids (igual o más barato); infra sin cambios. HTML de un build anterior → clave desconocida → «{}» (se queda lo del build).
+- **Descartada** la «ventana ancha» (offset−K, limit+2K): +~0,5 KB gzip y +40 % de trabajo en Medusa en cada vista, y falla sin avisar al pasar de K cambios.
+- Que un producto NUEVO aparezca en los listados depende del **rebuild** (webhook, fase 13), no del manifiesto.
 
 ## 7. Pendientes conocidos
 

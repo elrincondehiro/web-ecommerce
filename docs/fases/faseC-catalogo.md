@@ -1,8 +1,8 @@
 # Fase C — Importador de catálogo (CSV + `catalog:import`)
 
 > **Estado:** ✅ completada (11-oct-2026)
-> **Rama/PR:** `feat/importador-catalogo` · PR #…
-> **Anterior:** [Fase 10](./fase10.md) · **Siguiente:** fase 11 (producción en Hetzner, [ESTADO §6.5](../ESTADO.md))
+> **Rama/PR:** `feat/importador-catalogo` · PR #42 (squash merge `2233ae8`)
+> **Anterior:** [Fase 10](./fase10.md) · **Siguiente:** [Fase S — catálogo en el storefront](./faseS-catalogo-storefront.md) y fase 11 (producción, [ESTADO §6.5](../ESTADO.md))
 
 ## 1. Objetivos
 
@@ -124,6 +124,8 @@ Resultado en dev, el 11-oct-2026:
 - [x] `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build` en verde.
 
 ## 7. Pendientes / riesgos
+
+- Todo lo del storefront va en la [Fase S](./faseS-catalogo-storefront.md): subcategorías, granel, analíticos, €/kg y manifiesto de LiveSync en los listados.
 
 - **Storefront: granel** (fase posterior). Medusa ya lo tiene todo (precio por paso, stock en gramos, `metadata.paso_g`/`min_g`, mínimo validado en el carrito). Falta:
   - ficha con selector de gramos (múltiplos del paso desde el mínimo) que envíe `quantity = gramos / paso`;

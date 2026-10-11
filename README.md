@@ -684,6 +684,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | Auditoría previa a la fase 10          | [auditoria-pre-fase10.md](./docs/fases/auditoria-pre-fase10.md)                                  | ✅     |
 | 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | ✅     |
 | C Importador de catálogo (CSV)         | [faseC-catalogo.md](./docs/fases/faseC-catalogo.md)                                              | ✅     |
+| S Catálogo en el storefront            | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | ⏳     |
 | 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
