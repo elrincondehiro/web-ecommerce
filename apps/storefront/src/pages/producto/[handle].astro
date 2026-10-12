@@ -1,7 +1,9 @@
 ---
 import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
 import { metaDescription } from "$lib/catalog";
+import { categoryHref, deepestCategory } from "$lib/categories";
 import { getAllProducts } from "$lib/medusa";
+import { getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
@@ -16,10 +18,11 @@ export const getStaticPaths = (async () => {
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 const { product } = Astro.props as Props;
-const category = product.categories?.[0];
+// Migas: cadena completa de la categoría más concreta del producto (Fase S)
+const category = deepestCategory(await getShopTree(true), product);
 const crumbs = [
   { name: "Inicio", href: "/" },
-  ...(category ? [{ name: category.name, href: `/categorias/${category.handle}/` }] : []),
+  ...(category?.path ?? []).map((c) => ({ name: c.name, href: categoryHref(c) })),
   { name: product.title, href: `/producto/${product.handle}/` },
 ];
 const gallery = (product.images ?? [])

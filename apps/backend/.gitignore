@@ -4,6 +4,10 @@
 /build
 medusa-db.sql
 /.cache
-# Cargas reales del importador de catálogo (datos del negocio): solo se versiona la plantilla
+# Cargas reales del importador de catálogo (datos del negocio): solo se versionan la plantilla y
+# el árbol de categorías del catálogo de prueba (catalog:mock genera productos.csv, ignorado)
 /catalog/*
 !/catalog/plantilla/
+!/catalog/mock/
+/catalog/mock/*
+!/catalog/mock/categorias.csv

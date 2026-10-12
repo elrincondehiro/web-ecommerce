@@ -1,37 +1,295 @@
 [
   {
-    "id": "pcat_01M3ZEJEZ0VAMTB4VWDXCSTMXY",
-    "name": "Ropa",
-    "handle": "ropa",
+    "id": "pcat_01M4S0R2PXNWR9R03JQ6X88B53",
+    "name": "Perro",
+    "handle": "perro",
     "description": "",
     "rank": 0
   },
   {
-    "id": "pcat_01M3ZEJEZ1TVWA88KRV1N6ECR2",
-    "name": "Hogar",
-    "handle": "hogar",
+    "id": "pcat_01M4S0R2PXS07J7RCHVSVGMNQ1",
+    "name": "Gato",
+    "handle": "gato",
     "description": "",
     "rank": 1
   },
   {
-    "id": "pcat_01M3ZEJEZ28EN9WE24C7FKXCCF",
-    "name": "Libros",
-    "handle": "libros",
-    "description": "",
-    "rank": 3
-  },
-  {
-    "id": "pcat_01M3ZEJEZ2PZ9ZH6SETXJ57XR8",
-    "name": "Accesorios",
-    "handle": "accesorios",
-    "description": "",
-    "rank": 4
-  },
-  {
-    "id": "pcat_01M3ZEJEZ2Y7BNHVX52QCDF5QS",
-    "name": "Alimentación",
-    "handle": "alimentacion",
-    "description": "",
+    "id": "pcat_01M4S0R2PYCASE34E4YRGYCACY",
+    "name": "Para ti",
+    "handle": "para-ti",
+    "description": "Regalos y accesorios para personas muy perrunas",
     "rank": 2
+  },
+  {
+    "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
+    "name": "Alimentación",
+    "handle": "alimentacion-perro",
+    "description": "Alimentación y suplementos",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2PXNWR9R03JQ6X88B53"
+  },
+  {
+    "id": "pcat_01M4S0R2QZHF2FXVDQEVT8XSF2",
+    "name": "Higiene y cuidados",
+    "handle": "higiene-cuidados-perro",
+    "description": "Higiene y cuidados para el perro",
+    "rank": 2,
+    "parent_category_id": "pcat_01M4S0R2PXNWR9R03JQ6X88B53"
+  },
+  {
+    "id": "pcat_01M4S0R2QZSD3GH8M97J3M2XD5",
+    "name": "Accesorios",
+    "handle": "accesorios-perro",
+    "description": "Accesorios para perros",
+    "rank": 1,
+    "parent_category_id": "pcat_01M4S0R2PXNWR9R03JQ6X88B53"
+  },
+  {
+    "id": "pcat_01M4S0R2R0C534YJAAWXENP89D",
+    "name": "Juguetes",
+    "handle": "juguetes-perro",
+    "description": "Juguetes para perros",
+    "rank": 3,
+    "parent_category_id": "pcat_01M4S0R2PXNWR9R03JQ6X88B53"
+  },
+  {
+    "id": "pcat_01M4S0R2R1VGB7DFHKHX2X2T69",
+    "name": "Descanso",
+    "handle": "descanso-perro",
+    "description": "Camas para perros",
+    "rank": 4,
+    "parent_category_id": "pcat_01M4S0R2PXNWR9R03JQ6X88B53"
+  },
+  {
+    "id": "pcat_01M4S0R2R91XM1CRVS1ZYFDZM5",
+    "name": "Juguetes",
+    "handle": "juguetes-gato",
+    "description": "Juguetes para gatos",
+    "rank": 1,
+    "parent_category_id": "pcat_01M4S0R2PXS07J7RCHVSVGMNQ1"
+  },
+  {
+    "id": "pcat_01M4S0R2RA3WR2T4AQH0FEQYKZ",
+    "name": "Higiene y cuidados",
+    "handle": "higiene-cuidados-gato",
+    "description": "Higiene y cuidados para gatos",
+    "rank": 2,
+    "parent_category_id": "pcat_01M4S0R2PXS07J7RCHVSVGMNQ1"
+  },
+  {
+    "id": "pcat_01M4S0R2RBMKKCTM340NPGK5FZ",
+    "name": "Accesorios",
+    "handle": "accesorios-gato",
+    "description": "Accesorios para gatos",
+    "rank": 3,
+    "parent_category_id": "pcat_01M4S0R2PXS07J7RCHVSVGMNQ1"
+  },
+  {
+    "id": "pcat_01M4S0R2RBQW5K6C5BBY22K9RC",
+    "name": "Descanso",
+    "handle": "descanso-gato",
+    "description": "Camas para gatos",
+    "rank": 4,
+    "parent_category_id": "pcat_01M4S0R2PXS07J7RCHVSVGMNQ1"
+  },
+  {
+    "id": "pcat_01M4S0R2RCC1HT49Z3XAK8FEDF",
+    "name": "Alimentación",
+    "handle": "alimentacion-gato",
+    "description": "Alimentación y suplementos para gatos",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2PXS07J7RCHVSVGMNQ1"
+  },
+  {
+    "id": "pcat_01M4S0R2RCQKZ8YHX7A2ECGZFV",
+    "name": "Libros",
+    "handle": "libros-para-ti",
+    "description": "Libros para humanos muy perros",
+    "rank": 1,
+    "parent_category_id": "pcat_01M4S0R2PYCASE34E4YRGYCACY"
+  },
+  {
+    "id": "pcat_01M4S0R2RCVPZFHMSGTTDR771F",
+    "name": "Accesorios",
+    "handle": "accesorios-para-ti",
+    "description": "Accesorios para humanos",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2PYCASE34E4YRGYCACY"
+  },
+  {
+    "id": "pcat_01M4S0R2SPH3449N028X5BYD3G",
+    "name": "Piensos",
+    "handle": "piensos-perro",
+    "description": "Piensos para perros",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+  },
+  {
+    "id": "pcat_01M4S0R2SQJG1EFX548E1NAF4Q",
+    "name": "Dieta BARF",
+    "handle": "barf-perro",
+    "description": "Dieta BARF, cruda para perros",
+    "rank": 1,
+    "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+  },
+  {
+    "id": "pcat_01M4S0R2SRS3G1JMMR9ZB6KVZ3",
+    "name": "Comida húmeda",
+    "handle": "comida-humeda-perro",
+    "description": "Latas para perros",
+    "rank": 2,
+    "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+  },
+  {
+    "id": "pcat_01M4S0R2SRXW6P1JFR5P3PMTTQ",
+    "name": "Comida cocinada",
+    "handle": "comida-cocinada-perro",
+    "description": "Comida cocinada para perros",
+    "rank": 3,
+    "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+  },
+  {
+    "id": "pcat_01M4S0R2SSTWHSRPQZ1KGCC5VM",
+    "name": "Snacks y masticación",
+    "handle": "snacks-perro",
+    "description": "Snacks y masticación para perros",
+    "rank": 4,
+    "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+  },
+  {
+    "id": "pcat_01M4S0R2SSXKFTKYKR0TNRT0GN",
+    "name": "Suplementos",
+    "handle": "suplementos-perro",
+    "description": "Suplementos para perros",
+    "rank": 5,
+    "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+  },
+  {
+    "id": "pcat_01M4S0R2T9M0WCJ3NCPZHT2FVS",
+    "name": "Viaje",
+    "handle": "viaje-perro",
+    "description": "Accesorios para los viajes",
+    "rank": 1,
+    "parent_category_id": "pcat_01M4S0R2QZSD3GH8M97J3M2XD5"
+  },
+  {
+    "id": "pcat_01M4S0R2TAG6VSSH5HWC2V8C2F",
+    "name": "Ropa",
+    "handle": "ropa-perro",
+    "description": "Ropa para perros",
+    "rank": 2,
+    "parent_category_id": "pcat_01M4S0R2QZSD3GH8M97J3M2XD5"
+  },
+  {
+    "id": "pcat_01M4S0R2TAV8G5RH0D8P1VBWG6",
+    "name": "Entrenamiento",
+    "handle": "entrenamiento-perro",
+    "description": "Accesorios para entrenar",
+    "rank": 3,
+    "parent_category_id": "pcat_01M4S0R2QZSD3GH8M97J3M2XD5"
+  },
+  {
+    "id": "pcat_01M4S0R2TBB44PN4YZ1ADCJ82V",
+    "name": "Comederos y bebederos",
+    "handle": "comederos-perro",
+    "description": "Comederos y bebederos para perros",
+    "rank": 4,
+    "parent_category_id": "pcat_01M4S0R2QZSD3GH8M97J3M2XD5"
+  },
+  {
+    "id": "pcat_01M4S0R2TBY3MJC0J90BZ3J1HK",
+    "name": "Para la ducha",
+    "handle": "ducha-perro",
+    "description": "Todo lo necesario para la ducha del perro",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2QZHF2FXVDQEVT8XSF2"
+  },
+  {
+    "id": "pcat_01M4S0R2TC3MFSY673QJZ99CF5",
+    "name": "Antiparasitarios",
+    "handle": "antiparasitarios-perro",
+    "description": "Antiparasitarios internos y externos para perros",
+    "rank": 1,
+    "parent_category_id": "pcat_01M4S0R2QZHF2FXVDQEVT8XSF2"
+  },
+  {
+    "id": "pcat_01M4S0R2TC9B7GD1R7RHAWFTYZ",
+    "name": "Ojos, oídos, piel y patas",
+    "handle": "ojos-oidos-piel-patas-perro",
+    "description": "Cuidado de ojos, oídos, piel y patas de tu perro",
+    "rank": 2,
+    "parent_category_id": "pcat_01M4S0R2QZHF2FXVDQEVT8XSF2"
+  },
+  {
+    "id": "pcat_01M4S0R2TCM7GE5XXTWNTAQ8VC",
+    "name": "Empapadores y toallitas",
+    "handle": "empapadores-toallitas-perro",
+    "description": "Empapadores, pañales y toallitas para perros",
+    "rank": 3,
+    "parent_category_id": "pcat_01M4S0R2QZHF2FXVDQEVT8XSF2"
+  },
+  {
+    "id": "pcat_01M4S0R2TD6AAKNPAJX2M52K0H",
+    "name": "Motivadores",
+    "handle": "motivadores-perro",
+    "description": "Motivadores para jugar",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2R0C534YJAAWXENP89D"
+  },
+  {
+    "id": "pcat_01M4S0R2TD6TBREEDKGZSWKCZH",
+    "name": "Peluches",
+    "handle": "peluches-perro",
+    "description": "Peluches para perros",
+    "rank": 1,
+    "parent_category_id": "pcat_01M4S0R2R0C534YJAAWXENP89D"
+  },
+  {
+    "id": "pcat_01M4S0R2TDSDDXX0FXMS3WE77D",
+    "name": "Primeros auxilios",
+    "handle": "primeros-auxilios-perro",
+    "description": "Todo lo necesario para primeros auxilios",
+    "rank": 4,
+    "parent_category_id": "pcat_01M4S0R2QZHF2FXVDQEVT8XSF2"
+  },
+  {
+    "id": "pcat_01M4S0R2TE29SH543JKFZ635E4",
+    "name": "Más juguetes",
+    "handle": "mas-juguetes-perro",
+    "description": "Otros juguetes para perros",
+    "rank": 3,
+    "parent_category_id": "pcat_01M4S0R2R0C534YJAAWXENP89D"
+  },
+  {
+    "id": "pcat_01M4S0R2TEN0BYT8DFMKQN5NQ1",
+    "name": "Estimulación mental",
+    "handle": "estimulacion-mental-perro",
+    "description": "Juguetes para estimular la mente",
+    "rank": 2,
+    "parent_category_id": "pcat_01M4S0R2R0C534YJAAWXENP89D"
+  },
+  {
+    "id": "pcat_01M4S0R2TFF5THWHKESMEW1TTP",
+    "name": "Camas y sofás",
+    "handle": "camas-sofas-perro",
+    "description": "Camas para perros",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2R1VGB7DFHKHX2X2T69"
+  },
+  {
+    "id": "pcat_01M4S0R2TFKE6ZQ66T0VBK19FB",
+    "name": "Paseo",
+    "handle": "paseo-perro",
+    "description": "Accesorios para el paseo",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2QZSD3GH8M97J3M2XD5"
+  },
+  {
+    "id": "pcat_01M4S0R2TFXVGJCW2K3MF4CYVA",
+    "name": "Camas refrescantes",
+    "handle": "camas-refrescantes-perro",
+    "description": "Camas refrescantes para perros",
+    "rank": 1,
+    "parent_category_id": "pcat_01M4S0R2R1VGB7DFHKHX2X2T69"
   }
 ]

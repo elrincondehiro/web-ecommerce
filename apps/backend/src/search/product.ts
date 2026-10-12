@@ -53,7 +53,8 @@ type ProductRow = {
   created_at: string | Date;
   sales_channels?: ({ id: string } | null)[] | null;
   variants?: (StockVariant | null)[] | null;
-  categories?: ({ name?: string | null; handle?: string | null } | null)[] | null;
+  categories?:
+    ({ name?: string | null; handle?: string | null; mpath?: string | null } | null)[] | null;
   tags?: ({ value?: string | null } | null)[] | null;
   options?:
     | ({ title?: string | null; values?: ({ value?: string | null } | null)[] | null } | null)[]
@@ -75,6 +76,42 @@ function toOptionValues(options: ProductRow["options"]) {
       });
     }),
   );
+}
+
+/**
+ * Handles de las categorías del producto y de TODOS sus ancestros (Fase S, S-1): el filtro por
+ * una categoría padre incluye los productos de sus subcategorías. `mpath` (modelo
+ * `product_category` de @medusajs/product 2.21.2) es la cadena de ids desde la raíz
+ * (`raíz.hija.nieta`); se piden los handles de esos ids en una consulta por lote.
+ */
+async function loadCategoryTrees(rows: ProductRow[], { container }: IngestionContext) {
+  const paths = new Map<string, string[]>();
+  for (const p of rows) {
+    paths.set(p.id, compact((p.categories ?? []).flatMap((c) => (c?.mpath ?? "").split("."))));
+  }
+  const ids = compact([...paths.values()].flat());
+  const handleOf = new Map<string, string>();
+  if (ids.length) {
+    const { data } = await container.query.graph({
+      entity: "product_category",
+      fields: ["id", "handle"],
+      filters: { id: ids },
+    });
+    for (const c of data as { id: string; handle?: string | null }[]) {
+      if (c.handle) handleOf.set(c.id, c.handle);
+    }
+  }
+  const trees = new Map<string, string[]>();
+  for (const p of rows) {
+    trees.set(
+      p.id,
+      compact([
+        ...(p.categories ?? []).map((c) => c?.handle),
+        ...(paths.get(p.id) ?? []).map((id) => handleOf.get(id)),
+      ]),
+    );
+  }
+  return trees;
 }
 
 async function loadEurPrices(ids: string[], { container }: IngestionContext) {
@@ -146,6 +183,8 @@ const fields = search.define({
   thumbnail: search.keyword().retrievable(),
   created_at: search.date().sortable().retrievable(),
   category_handles: search.keyword().array().filterable().facetable().retrievable(),
+  // Categorías del producto + sus ancestros (S-1): filtro y faceta por niveles del storefront.
+  category_tree_handles: search.keyword().array().filterable().facetable().retrievable(false),
   category_names: search.keyword().array().searchable({ weight: 2 }).retrievable(),
   tags: search.keyword().array().searchable({ weight: 2 }).filterable().facetable().retrievable(),
   option_values: search
@@ -186,17 +225,19 @@ const source = {
     "variants.allow_backorder",
     "categories.name",
     "categories.handle",
+    "categories.mpath",
     "tags.value",
     "options.title",
     "options.values.value",
   ],
   transform: async (rows: ProductRow[], context: IngestionContext) => {
-    const [prices, stock] = await Promise.all([
+    const [prices, stock, trees] = await Promise.all([
       loadEurPrices(
         rows.map((r) => r.id),
         context,
       ),
       loadInStock(rows, context),
+      loadCategoryTrees(rows, context),
     ]);
     return rows.map((p) => {
       const price = prices.get(p.id);
@@ -211,6 +252,7 @@ const source = {
         thumbnail: p.thumbnail ?? undefined,
         created_at: new Date(p.created_at),
         category_handles: compact((p.categories ?? []).map((c) => c?.handle)),
+        category_tree_handles: trees.get(p.id) ?? [],
         category_names: compact((p.categories ?? []).map((c) => c?.name)),
         tags: compact((p.tags ?? []).map((t) => t?.value)),
         option_values: toOptionValues(p.options),

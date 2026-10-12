@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // I-Interficie: cabecera (menús popover sin JS, se oculta al bajar), barra de anuncios, pie,
-// home, /ofertas/ (precio tachado) y /sobre-nosotros/. Datos: seed:mock:ofertas (Collection
+// home, /ofertas/ (precio tachado) y /sobre-nosotros/. Datos: catalog:mock (Collection
 // "destacados" y Price List sale de prueba).
 const isMobile = (page: Page) => (page.viewportSize()?.width ?? 0) < 1024;
 /** El panel móvil entra con una transición (translate): esperar a que termine antes del clic. */
@@ -61,7 +61,10 @@ test.describe("sin JS", () => {
     const carousel = page.getByRole("region", { name: "Nuestros favoritos" });
     await expect(carousel).toHaveCount(1);
     await expect(carousel).toHaveAttribute("tabindex", "0");
-    await expect(carousel.locator("article")).toHaveCount(12);
+    // Collection «destacados» (catalog:mock: 11), como mucho `maximo` (home.yaml: 12)
+    const featured = await carousel.locator("article").count();
+    expect(featured).toBeGreaterThan(0);
+    expect(featured).toBeLessThanOrEqual(12);
     await expect(page.getByRole("link", { name: "Ver ofertas" })).toHaveAttribute(
       "href",
       "/ofertas/",
@@ -83,12 +86,35 @@ test.describe("sin JS", () => {
   });
 
   test("producto sin oferta: sin tachado", async ({ page }) => {
-    await page.goto("/producto/mock-sudadera-artesano-006/");
+    await page.goto("/producto/mock-clicker-esencial-018/");
     await expect(page.locator("main del").first()).toBeHidden();
   });
 
-  test("el manifiesto de páginas de ofertas no es público", async ({ page }) => {
-    expect((await page.request.get("/ofertas/paginas.json")).status()).toBe(404);
+  test("los manifiestos de listados no son públicos", async ({ page }) => {
+    for (const path of ["/listados/paginas.json", "/listados/categorias.json"]) {
+      expect((await page.request.get(path)).status()).toBe(404);
+    }
+  });
+
+  test("subcategorías: el padre agrega a sus hijas; migas con la cadena", async ({ page }) => {
+    await page.goto("/categorias/perro/");
+    const subs = page.getByRole("navigation", { name: "Subcategorías de Perro" });
+    await expect(subs.getByRole("link", { name: "Alimentación" })).toBeVisible();
+    await expect(page.locator("main article").first()).toBeVisible();
+    await subs.getByRole("link", { name: "Alimentación" }).click();
+    await page
+      .getByRole("navigation", { name: "Subcategorías de Alimentación" })
+      .getByRole("link", { name: "Piensos" })
+      .click();
+    await expect(page).toHaveURL(/\/categorias\/piensos-perro\/$/);
+    const crumbs = page.getByRole("navigation", { name: /migas/i });
+    await expect(crumbs.getByRole("link", { name: "Perro" })).toHaveAttribute(
+      "href",
+      "/categorias/perro/",
+    );
+    await expect(crumbs.getByRole("link", { name: "Alimentación" })).toBeVisible();
+    // Hoja: sin subcategorías
+    await expect(page.getByRole("navigation", { name: /^Subcategorías/ })).toHaveCount(0);
   });
 
   test("/sobre-nosotros/ y pie con contacto, redes y pagos", async ({ page }) => {

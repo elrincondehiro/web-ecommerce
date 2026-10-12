@@ -1,8 +1,10 @@
 ---
 // Cabecera (I-Interficie). HTML estático; los menús son `popover` nativos (sin JS, D2):
-//   - Escritorio (≥ lg): Tienda ▾ (popover anclado a su botón: categorías), Ofertas, Sobre
+//   - Escritorio (≥ lg): Tienda ▾ (popover anclado a su botón: una columna por categoría raíz con
+//     sus hijas; el 3.er nivel, en la página de cada categoría — Fase S), Ofertas, Sobre
 //     nosotros; búsqueda; tema; carrito.
-//   - Móvil: ☰ (popover lateral con todo el menú) · logo · tema · carrito; búsqueda en la 2.ª fila.
+//   - Móvil: ☰ (popover lateral con todo el menú; un <details> por raíz) · logo · tema ·
+//     carrito; búsqueda en la 2.ª fila.
 // `popover="auto"` se cierra al pulsar fuera y con Escape; el botón lleva `popovertarget` (el
 // navegador gestiona aria-expanded y devuelve el foco). Fuente: MDN (Popover API, anchor
 // positioning: el invocador es el ancla implícita).
@@ -14,7 +16,8 @@ import Icon from "../Icon.astro";
 import CartCountBadge from "../CartCountBadge.astro";
 import CartCount from "../server/CartCount.astro";
 import { CART_PATH } from "$lib/cart";
-import { getCategories } from "$lib/medusa";
+import { categoryHref } from "$lib/categories";
+import { getShopTree } from "$lib/shop";
 import { SEARCH_PATH } from "$lib/search";
 import { OFFERS_PATH } from "$lib/constants";
 import { ACCOUNT_PATH } from "$lib/account";
@@ -23,17 +26,20 @@ interface Props {
   cartCount?: number | undefined;
 }
 const { cartCount } = Astro.props;
-const categories = await getCategories();
+// Árbol sin categorías vacías: del build en páginas estáticas; del manifiesto en on-demand.
+const tree = await getShopTree(Astro.isPrerendered);
 const current = Astro.url.pathname;
 const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : "";
 const inShop =
   current.startsWith("/productos/") ||
   current.startsWith("/categorias/") ||
   current.startsWith("/producto/");
-const shopLinks = [
-  { href: "/productos/", name: "Todos los productos" },
-  ...categories.map((c) => ({ href: `/categorias/${c.handle}/`, name: c.name ?? "" })),
-];
+const allLink = { href: "/productos/", name: "Todos los productos" };
+const shopGroups = tree.roots.map((r) => ({
+  href: categoryHref(r),
+  name: r.name,
+  children: r.children.map((c) => ({ href: categoryHref(c), name: c.name })),
+}));
 const mainLinks = [
   { href: OFFERS_PATH, name: "Ofertas" },
   { href: "/sobre-nosotros/", name: "Sobre nosotros" },
@@ -84,13 +90,39 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
           >
             Tienda <Icon name="caret-down" class="size-4" />
           </button>
-          <div id="menu-tienda" popover class="nav-menu">
-            <ul class="flex flex-col py-1">
-              {shopLinks.map((l) => (
+          <div id="menu-tienda" popover class="nav-menu nav-menu--tienda">
+            <a
+              href={allLink.href}
+              class="nav-menu__link font-bold"
+              aria-current={aria(allLink.href)}
+            >
+              {allLink.name}
+            </a>
+            <ul class="nav-menu__cols">
+              {shopGroups.map((g) => (
                 <li>
-                  <a href={l.href} class="nav-menu__link" aria-current={aria(l.href)}>
-                    {l.name}
+                  <a
+                    href={g.href}
+                    class="nav-menu__link nav-menu__root"
+                    aria-current={aria(g.href)}
+                  >
+                    {g.name}
                   </a>
+                  {g.children.length > 0 && (
+                    <ul>
+                      {g.children.map((c) => (
+                        <li>
+                          <a
+                            href={c.href}
+                            class="nav-menu__link text-muted-foreground"
+                            aria-current={aria(c.href)}
+                          >
+                            {c.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>
@@ -203,11 +235,36 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
         Tienda
       </h2>
       <ul class="flex flex-col">
-        {shopLinks.map((l) => (
+        <li>
+          <a href={allLink.href} class="mobile-menu__link" aria-current={aria(allLink.href)}>
+            {allLink.name}
+          </a>
+        </li>
+        {shopGroups.map((g) => (
           <li>
-            <a href={l.href} class="mobile-menu__link" aria-current={aria(l.href)}>
-              {l.name}
-            </a>
+            {g.children.length > 0 ? (
+              <details class="mobile-menu__group" open={current.startsWith(g.href) || undefined}>
+                <summary class="mobile-menu__link">{g.name}</summary>
+                <ul class="mb-1 ml-3 border-l-2 border-line pl-2">
+                  <li>
+                    <a href={g.href} class="mobile-menu__link" aria-current={aria(g.href)}>
+                      Todo en {g.name}
+                    </a>
+                  </li>
+                  {g.children.map((c) => (
+                    <li>
+                      <a href={c.href} class="mobile-menu__link" aria-current={aria(c.href)}>
+                        {c.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : (
+              <a href={g.href} class="mobile-menu__link" aria-current={aria(g.href)}>
+                {g.name}
+              </a>
+            )}
           </li>
         ))}
       </ul>

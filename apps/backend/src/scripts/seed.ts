@@ -8,8 +8,10 @@
  *     por tipo de producto (product_type "iva-reducido" / "iva-superreducido").
  *   - Almacén, envío estándar/exprés y publishable API key.
  *   - Pago: Stripe (`pp_stripe_stripe`) si existe STRIPE_API_KEY; si no, el manual (fase 5).
+ *   - Collection `destacados` (carrusel de la home, I-Interficie), vacía: los productos se le
+ *     asignan desde la hoja del catálogo (columna `coleccion`) o el Admin (Fase S).
  *
- * NO crea productos: para eso está `pnpm --filter backend seed:mock`.
+ * NO crea productos: el catálogo se carga con `catalog:import` (de prueba: `catalog:mock`).
  *
  * Basado en medusa-starter-default (commit 9565d9d) y en la documentación de Medusa:
  *   - Tax Module: "Override Tax Rates with Rules" (TaxRateRule reference = product_type).
@@ -22,6 +24,7 @@ import type { ExecArgs } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import {
   createApiKeysWorkflow,
+  createCollectionsWorkflow,
   createProductTypesWorkflow,
   createRegionsWorkflow,
   createSalesChannelsWorkflow,
@@ -38,6 +41,8 @@ import {
 
 export const SALES_CHANNEL_NAME = "Tienda online";
 export const REGION_NAME = "España";
+/** Collection del carrusel de la home (storefront: content/home.yaml → destacados.coleccion). */
+export const FEATURED_COLLECTION = { title: "Destacados", handle: "destacados" };
 export const COUNTRY = "es";
 export const CURRENCY = "eur";
 
@@ -279,6 +284,17 @@ export default async function seedStore({ container }: ExecArgs) {
     input: { id: publishableKey.id, add: [salesChannel.id] },
   });
 
+  // ── Collection del carrusel de la home ─────────────────────────────────────
+  const [featured] = await productModuleService.listProductCollections({
+    handle: FEATURED_COLLECTION.handle,
+  });
+  if (!featured) {
+    logger.info(`Seed: Collection ${FEATURED_COLLECTION.handle}…`);
+    await createCollectionsWorkflow(container).run({
+      input: { collections: [FEATURED_COLLECTION] },
+    });
+  }
+
   // Comprobación final de las reglas de IVA
   const rates = await taxModuleService.listTaxRates({ tax_region_id: taxRegion.id });
   logger.info(
@@ -291,5 +307,8 @@ export default async function seedStore({ container }: ExecArgs) {
   logger.info(
     `Publishable key (para el storefront, PUBLIC_MEDUSA_PUBLISHABLE_KEY): ${publishableKey.token}`,
   );
-  logger.info("Seed base completado. Catálogo de prueba: pnpm --filter backend seed:mock");
+  logger.info(
+    "Seed base completado. Catálogo de prueba: pnpm --filter backend catalog:mock " +
+      "&& pnpm --filter backend catalog:import catalog/mock",
+  );
 }

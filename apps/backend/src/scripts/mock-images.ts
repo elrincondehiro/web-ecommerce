@@ -35,7 +35,9 @@ export default async function mockImages({ container, args }: ExecArgs) {
   const { data: products } = await query.graph({ entity: "product", fields: ["handle"] });
   const handles = products.map((p) => p.handle).filter((h) => h.startsWith("mock-"));
   if (!handles.length) {
-    throw new Error("No hay productos mock-*. Ejecuta antes: pnpm --filter backend seed:mock");
+    throw new Error(
+      "No hay productos mock-*. Ejecuta antes: pnpm --filter backend catalog:mock y catalog:import catalog/mock",
+    );
   }
   await mkdir(OUT_DIR, { recursive: true });
 

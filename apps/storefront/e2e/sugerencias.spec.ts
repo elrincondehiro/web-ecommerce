@@ -11,12 +11,12 @@ const list = (page: Page) => page.getByRole("listbox", { name: "Sugerencias" });
 
 test("productos, categoría y Ver todos; teclado ↓/Enter abre la ficha", async ({ page }) => {
   await page.goto("/");
-  await combo(page).fill("bufan"); // prefijo de la última palabra
+  await combo(page).fill("abrig"); // prefijo de la última palabra
   const options = list(page).getByRole("option");
-  await expect(options.first()).toHaveText(/Bufanda/);
+  await expect(options.first()).toHaveText(/Abrigo/);
   await expect(combo(page)).toHaveAttribute("aria-expanded", "true");
-  await expect(list(page).getByRole("option", { name: /«bufan» en Accesorios/ })).toBeVisible();
-  await expect(options.last()).toHaveText("Ver todos los resultados para «bufan»");
+  await expect(list(page).getByRole("option", { name: /«abrig» en Ropa/ })).toBeVisible();
+  await expect(options.last()).toHaveText("Ver todos los resultados para «abrig»");
   await expect(page.locator("[data-suggest-live]")).toHaveText(/\d+ sugerencias/);
 
   await combo(page).press("ArrowDown");
@@ -33,13 +33,13 @@ test("productos, categoría y Ver todos; teclado ↓/Enter abre la ficha", async
 
 test("Escape cierra; Enter sin opción marcada envía el formulario", async ({ page }) => {
   await page.goto("/");
-  await combo(page).fill("jersei"); // errata (≥ 5 letras: el motor tolera 1)
-  await expect(list(page).getByRole("option").first()).toHaveText(/Jersey/);
+  await combo(page).fill("abrijo"); // errata (≥ 5 letras: el motor tolera 1)
+  await expect(list(page).getByRole("option").first()).toHaveText(/Abrigo/);
   await combo(page).press("Escape");
   await expect(list(page)).toBeHidden();
   await expect(combo(page)).toHaveAttribute("aria-expanded", "false");
   await combo(page).press("Enter");
-  await expect(page).toHaveURL(/\/buscar\/\?q=jersei$/);
+  await expect(page).toHaveURL(/\/buscar\/\?q=abrijo$/);
 });
 
 test("clic en la categoría → /buscar/ filtrado; sin resultados no se abre", async ({ page }) => {
@@ -47,12 +47,12 @@ test("clic en la categoría → /buscar/ filtrado; sin resultados no se abre", a
   await combo(page).fill("zzzqqqxxx");
   await expect(page.locator("[data-suggest-live]")).toHaveText("Sin sugerencias");
   await expect(list(page)).toBeHidden();
-  await combo(page).fill("cami");
+  await combo(page).fill("chubas");
   await list(page)
-    .getByRole("option", { name: /«cami» en Ropa/ })
+    .getByRole("option", { name: /«chubas» en Ropa/ })
     .click();
-  await expect(page).toHaveURL(/\/buscar\/\?q=cami&categoria=ropa$/);
-  await expect(page.locator("[data-results] article").first()).toContainText(/Camiseta/);
+  await expect(page).toHaveURL(/\/buscar\/\?q=chubas&categoria=ropa-perro$/);
+  await expect(page.locator("[data-results] article").first()).toContainText(/Chubasquero/);
 });
 
 test("también en el carrito (páginas sin CartClient)", async ({ page }) => {
@@ -68,9 +68,9 @@ test.describe("sin JS", () => {
     await page.goto("/");
     await expect(page.getByRole("combobox")).toHaveCount(0);
     await expect(list(page)).toBeHidden();
-    await page.getByRole("searchbox", { name: "Buscar productos" }).fill("jersei");
+    await page.getByRole("searchbox", { name: "Buscar productos" }).fill("abrijo");
     await page.getByRole("searchbox", { name: "Buscar productos" }).press("Enter");
-    await expect(page).toHaveURL(/\/buscar\/\?q=jersei$/);
+    await expect(page).toHaveURL(/\/buscar\/\?q=abrijo$/);
   });
 
   test("endpoint: 301 canónica, caché, noindex; SiteClient ≤ 1,5 KB", async ({ page }) => {

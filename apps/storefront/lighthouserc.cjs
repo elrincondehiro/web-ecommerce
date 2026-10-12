@@ -22,7 +22,15 @@ module.exports = {
       startServerCommand: "node ./scripts/lhci-server.mjs",
       startServerReadyPattern: "lhci-server ready",
       startServerReadyTimeout: 30000,
-      url: [`${BASE}/`, `${BASE}/productos/`, `${BASE}/producto/${PRODUCT}/`, `${BASE}/carrito/`],
+      url: [
+        `${BASE}/`,
+        `${BASE}/productos/`,
+        // Fase S: categoría padre (agrega subcategorías, chips de hijas) y una hoja
+        `${BASE}/categorias/perro/`,
+        `${BASE}/categorias/piensos-perro/`,
+        `${BASE}/producto/${PRODUCT}/`,
+        `${BASE}/carrito/`,
+      ],
       numberOfRuns: 3,
       settings: {
         // Contenedor del runner como root: Chromium necesita --no-sandbox

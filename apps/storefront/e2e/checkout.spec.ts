@@ -4,7 +4,7 @@
 // 4000 0000 0000 0002 (rechazada).
 import { expect, test, type FrameLocator, type Page } from "@playwright/test";
 
-const PRODUCT = "/producto/mock-bufanda-natural-020/";
+const PRODUCT = "/producto/mock-clicker-esencial-018/";
 
 async function addAndGoToCheckout(page: Page) {
   await page.goto(PRODUCT);

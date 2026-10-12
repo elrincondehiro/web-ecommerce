@@ -1,17 +1,17 @@
 // e2e del carrito (fase 4). Criterio de salida: todo funciona CON JS DESACTIVADO.
-// Datos: catálogo mock de la BD local (`pnpm backend:seed:mock`). Cada test tiene su propio
+// Datos: catálogo mock de la BD local (`catalog:mock` + `catalog:import catalog/mock`). Cada test tiene su propio
 // contexto (cookies nuevas → carrito nuevo).
 import { gzipSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";
 
-const SINGLE = "/producto/mock-bufanda-natural-020/"; // 1 variante, con stock (< 99)
-const MULTI = "/producto/mock-aceite-de-oliva-ligero-063/"; // 2 variantes con stock
-const SALE = "/producto/mock-camiseta-clasico-001/"; // en oferta (seed:mock:ofertas)
+const SINGLE = "/producto/mock-clicker-esencial-018/"; // 1 variante, con stock (< 99)
+const MULTI = "/producto/mock-champu-plus-020/"; // 2 variantes con stock
+const SALE = "/producto/mock-lata-confort-005/"; // en oferta (precio_oferta del CSV)
 /** Productos de 1 variante con stock para llenar el panel. */
 const EXTRA = [
-  "/producto/mock-cartera-ligero-015/",
-  "/producto/mock-cojin-ligero-007/",
-  "/producto/mock-gorra-esencial-010/",
+  "/producto/mock-pelota-plus-028/",
+  "/producto/mock-mordedor-premium-025/",
+  "/producto/mock-alfombra-olfativa-original-027/",
 ];
 
 const addButton = (page: Page) => page.getByRole("button", { name: /^Añadir .* al carrito$/ });
@@ -39,7 +39,7 @@ test.describe("sin JS", () => {
     await page.locator("#carrito-added").getByRole("link", { name: "Ver carrito" }).click();
     await expect(page).toHaveURL(/\/carrito\/$/);
     await expect(cartCount(page)).toHaveText("2");
-    await expect(page.getByRole("link", { name: "Bufanda Natural 020" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Clicker Esencial" })).toBeVisible();
 
     await page.getByLabel("Cantidad").fill("3");
     await page.getByRole("button", { name: "Actualizar" }).click();
@@ -125,7 +125,7 @@ test.describe("con JS", () => {
     await addButton(page).click();
 
     await expect(cartCount(page)).toHaveText("2");
-    await expect(page.locator(".toast")).toContainText("Añadido: Bufanda Natural 020");
+    await expect(page.locator(".toast")).toContainText("Añadido: Clicker Esencial");
     expect(page.url()).toBe(url);
     expect(navigated).toBe(false);
 
@@ -144,7 +144,7 @@ test.describe("con JS", () => {
       await expect(flyout).toBeVisible();
     }
     await expect(flyout.getByRole("link", { name: "Ver carrito" })).toBeVisible();
-    await expect(flyout).toContainText("Bufanda Natural 020");
+    await expect(flyout).toContainText("Clicker Esencial");
     // Pulsar fuera (a la izquierda del panel) solo cierra: no activa lo de debajo (3.1)
     await page.mouse.click(10, 300);
     await expect(flyout).toBeHidden();
@@ -186,7 +186,7 @@ test.describe("con JS", () => {
     await page.getByRole("link", { name: /^Carrito( \d+)?$/ }).click();
     await expect(flyout.locator("li")).toHaveCount(2 + EXTRA.length);
     // 5.1: precio anterior tachado + descuento en la línea en oferta
-    const sale = flyout.locator("li").filter({ hasText: "Camiseta Clásico 001" });
+    const sale = flyout.locator("li").filter({ hasText: "Lata Confort" });
     await expect(sale.locator("del")).toHaveText(/\d,\d{2}\s€/);
     await expect(sale).toContainText("%");
     // Tres partes: "Ver carrito" siempre a la vista aunque la lista tenga scroll
@@ -195,7 +195,7 @@ test.describe("con JS", () => {
     await expect(flyout.getByText("Total", { exact: true }).last()).toBeInViewport();
     // 5.4: "Quitar" en el panel, sin cerrar ni navegar
     const url = page.url();
-    await flyout.getByRole("button", { name: "Quitar Bufanda Natural 020 del carrito" }).click();
+    await flyout.getByRole("button", { name: "Quitar Clicker Esencial del carrito" }).click();
     await expect(flyout.locator("li")).toHaveCount(1 + EXTRA.length);
     await expect(flyout).toBeVisible();
     expect(page.url()).toBe(url);

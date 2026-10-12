@@ -13,7 +13,7 @@ import {
   STOREFRONT_MAX_PRODUCTS,
 } from "astro:env/server";
 import { CardCache } from "./card-cache";
-import { productsInCategory, sliceRange, type StoreProduct } from "./catalog";
+import type { StoreProduct } from "./catalog";
 import type { RawSearchResult, SearchQueryBody } from "./search";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
@@ -77,26 +77,29 @@ export function getRegionES(): Promise<StoreRegionRef> {
   return regionPromise;
 }
 
-/** Categorías de primer nivel ordenadas por `rank`. */
-export async function getCategories(): Promise<StoreCategory[]> {
-  const all = useFixtures
-    ? await fixtures.categories()
-    : (
-        await sdk().store.category.list({
-          limit: PAGE,
-          fields: CATEGORY_FIELDS,
-          parent_category_id: "null",
-        })
-      ).product_categories;
-  return all.filter((c) => !c.parent_category_id).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+/**
+ * TODAS las categorías (lista plana con `parent_category_id`; Fase S). El árbol lo arma
+ * lib/categories.ts y el de la tienda (sin las vacías) lib/shop-tree.ts. La Store API ya filtra
+ * `is_active` / `is_internal` (@medusajs/medusa 2.21.2, product-categories/helpers.js).
+ */
+export async function getCategoryList(): Promise<StoreCategory[]> {
+  if (useFixtures) return fixtures.categories();
+  const out: StoreCategory[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { product_categories, count } = await sdk().store.category.list({
+      limit: PAGE,
+      offset,
+      fields: CATEGORY_FIELDS,
+    });
+    out.push(...product_categories);
+    if (out.length >= count || product_categories.length === 0) break;
+  }
+  return out;
 }
 
 /** Todo el catálogo con precio y stock (build, getStaticPaths). Paginado contra la API. */
-export async function getAllProducts(
-  opts: { categoryId?: string | undefined } = {},
-): Promise<StoreProduct[]> {
-  const all = await (catalogPromise ??= loadCatalog());
-  return opts.categoryId ? productsInCategory(all, opts.categoryId) : all;
+export function getAllProducts(): Promise<StoreProduct[]> {
+  return (catalogPromise ??= loadCatalog());
 }
 
 // Memo de módulo: el catálogo se descarga UNA vez por build y lo reutilizan home, listados,
@@ -141,9 +144,9 @@ export async function getCollectionProducts(collectionId: string): Promise<Store
  * del backend `GET /store/ofertas` (la Store API no filtra por Price List; D5 = A).
  */
 export function getSaleProductIds(): Promise<string[]> {
-  // Memo de módulo (como el catálogo): /ofertas/, su manifiesto (ofertas/paginas.json) y la home
+  // Memo de módulo (como el catálogo): /ofertas/, el manifiesto de listados (listados/paginas.json) y la home
   // ven la MISMA lista aunque una oferta cambie a mitad del build. Solo build y `astro dev`: en
-  // producción la island de /ofertas/ lee el manifiesto (lib/offer-pages.ts).
+  // producción la island de los listados lee el manifiesto (lib/listing-pages.ts).
   return (saleIdsPromise ??= loadSaleProductIds());
 }
 let saleIdsPromise: Promise<string[]> | undefined;
@@ -164,40 +167,7 @@ export async function getSaleProducts(): Promise<StoreProduct[]> {
   return all.filter((p) => set.has(p.id));
 }
 
-/**
- * Productos con precio y stock actuales (server island). Mismo orden que getAllProducts,
- * así offset/limit coinciden con la página estática.
- */
-export async function getPricedProducts(q: {
-  categoryId?: string | undefined;
-  collectionId?: string | undefined;
-  offset: number;
-  limit: number;
-}): Promise<StoreProduct[]> {
-  if (useFixtures) {
-    const all = await fixtures.products();
-    const scoped = q.categoryId
-      ? productsInCategory(all, q.categoryId)
-      : q.collectionId
-        ? all.filter((p) => p.collection_id === q.collectionId)
-        : all;
-    return sliceRange(scoped, q.offset, q.limit);
-  }
-  const region = await getRegionES();
-  const { products } = await sdk().store.product.list({
-    limit: q.limit,
-    offset: q.offset,
-    order: ORDER,
-    region_id: region.id,
-    country_code: COUNTRY_CODE,
-    fields: PRICED_FIELDS,
-    ...(q.categoryId ? { category_id: q.categoryId } : {}),
-    ...(q.collectionId ? { collection_id: q.collectionId } : {}),
-  });
-  return products;
-}
-
-/** Productos con precio y stock actuales por id (island de /ofertas/), en el orden de `ids`. */
+/** Productos con precio y stock actuales por id (island de los listados), en el orden de `ids`. */
 export async function getPricedProductsFresh(ids: string[]): Promise<StoreProduct[]> {
   if (!ids.length) return [];
   if (useFixtures) {

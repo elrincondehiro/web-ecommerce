@@ -117,7 +117,7 @@ test.describe("cuenta sin JS", () => {
     await expect(page.getByText("Dirección guardada.")).toBeVisible();
     await expect(page.getByText("Predeterminada", { exact: true })).toBeVisible();
 
-    await page.goto("/producto/mock-bufanda-natural-020/");
+    await page.goto("/producto/mock-clicker-esencial-018/");
     await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
     await page.goto("/checkout/");
     const datos = page.locator("#datos");
@@ -158,23 +158,23 @@ test.describe("cuenta sin JS", () => {
     // Con sesión y sin carrito en el navegador: el carrito nace asociado al cliente.
     await login(page, email, "Nueva-4567");
     await page.context().clearCookies({ name: "cart_id" });
-    await page.goto("/producto/mock-bufanda-natural-020/");
+    await page.goto("/producto/mock-clicker-esencial-018/");
     await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
     await page.goto("/cuenta/");
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
     await page.goto("/carrito/");
-    await expect(page.getByText(/bufanda/i)).toHaveCount(0);
+    await expect(page.getByText(/clicker/i)).toHaveCount(0);
 
     await login(page, email, "Nueva-4567");
     await page.goto("/carrito/");
-    await expect(page.getByText(/bufanda/i).first()).toBeVisible();
+    await expect(page.getByText(/clicker/i).first()).toBeVisible();
 
     // Otro "dispositivo": contexto nuevo, sin cookies.
     const other = await browser.newContext({ javaScriptEnabled: false });
     const page2 = await other.newPage();
     await login(page2, email, "Nueva-4567");
     await page2.goto("/carrito/");
-    await expect(page2.getByText(/bufanda/i).first()).toBeVisible();
+    await expect(page2.getByText(/clicker/i).first()).toBeVisible();
     await other.close();
   });
 });

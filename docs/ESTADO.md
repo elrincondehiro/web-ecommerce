@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 11-oct-2026 · **Fase C (importador de catálogo) cerrada** (PR #42, §6.6). **Siguiente: Fase S — catálogo en el storefront** (subcategorías, manifiesto de LiveSync, €/kg, analíticos, granel), handover en **§6.8**. Después, fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 12-oct-2026 · **Fase S en curso: S-1 hecha** (subcategorías + manifiesto de LiveSync, rama `feat/storefront-subcategorias`, pendiente de PR). **Siguiente: S-2** (€/kg, analíticos) y S-3 (granel), handover en **§6.8**. Después, fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -26,7 +26,7 @@
 | Auditoría previa a la fase 10               | ✅     | [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md)           |
 | 10 CD + imágenes Docker                     | ✅     | [fase10.md](./fases/fase10.md)                                       |
 | C Importador de catálogo (CSV)              | ✅     | [faseC-catalogo.md](./fases/faseC-catalogo.md)                       |
-| S Catálogo en el storefront                 | ⏳     | [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) |
+| S Catálogo en el storefront                 | 🚧     | [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) |
 
 Roadmap completo y tiempos: README §13.
 
@@ -39,15 +39,14 @@ Roadmap completo y tiempos: README §13.
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
     - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand (con JS, `CartLive` aplica los cambios sin recargar; Fase D). e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
     - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Stripe solo autoriza; la captura se hace desde el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
-    - **Imágenes**: `<Picture>` AVIF/WebP en build desde el bucket. El primer build tarda unos 30 min con 1000 productos × 4 fotos (`avif.effort: 2`); con la caché `node_modules/.astro`, unos 20 s.
+    - **Imágenes**: `<Picture>` AVIF/WebP en build desde el bucket. El primer build tarda unos 11 min con 300 productos × 4 fotos (`avif.effort: 2`; 30 min con 1000); con la caché `node_modules/.astro`, unos 20 s.
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
 - **Backend**:
   - Redis para caching, event bus, workflow engine y locking.
   - `MEDUSA_WORKER_MODE` shared/server/worker; `DISABLE_MEDUSA_ADMIN`.
   - Telemetría OFF: `MEDUSA_DISABLE_TELEMETRY=true` + `allowBuilds` de `@medusajs/telemetry` a false.
   - Seed **España**: EUR **IVA incluido**, IVA **21 %** por defecto; **10 %** y **4 %** vía tipo de producto `iva-reducido` / `iva-superreducido`; un solo canal "Tienda online"; envíos 4,95 / 9,95 €; publishable key (sale en el log del seed).
-  - `seed:mock`: catálogo de prueba idempotente (24 productos por defecto). En la BD local hay **1000 productos mock con 4 fotos** cada uno.
-  - `seed:mock:v2` (fase 7, idempotente): 6 etiquetas repartidas por todos los `mock-*` y 100 productos `mock-v2-*` con las opciones **globales** Talla y Color (con 4 fotos cada uno). No toca variantes, handles ni imágenes de los existentes.
+  - **Catálogo mock** (Fase S): `catalog:mock [N=300]` genera `catalog/mock/productos.csv` sobre el árbol real (`catalog/mock/categorias.csv`, 37 categorías) y se carga con `catalog:import catalog/mock`. En la BD local: **300 productos** (728 variantes, 4 fotos de picsum cada uno), 25 en oferta, 11 en `destacados`, 8 a granel en borrador. Los `seed:mock*` antiguos están archivados (`src/scripts/OBSOLETOS.md`).
   - **Búsqueda** (fase 7): Search Module con el proveedor Meilisearch (`@rokmohar/medusa-plugin-meilisearch`), índice `product` en `src/search/product.ts` y `POST /store/search` permitido en `src/api/middlewares.ts`. Sin `MEILISEARCH_HOST` (tests, CI) se usa el proveedor PostgreSQL de Medusa.
   - **Ficheros**: `file-s3` contra SeaweedFS (R2 en producción), activo solo si existe `S3_BUCKET`. Fotos por lotes con `images:import <carpeta>` (`handle_XX.jpg`) y fotos mock con `images:mock` (`.cache/mock-images`, 1,5 GB, ignorado por git).
   - Importes de Medusa v2 en **unidad principal** (4.95 = 4,95 €).
@@ -94,9 +93,9 @@ pnpm dev:storefront          # :4321 (necesita apps/storefront/.env y el backend
 pnpm dev:backend             # API :9000 · Admin :9000/app (usuario admin ya creado por el usuario)
 pnpm dev:emails              # previsualización de emails :3001 (Mailpit en :8025)
 pnpm backend:seed            # idempotente
-pnpm backend:seed:mock       # idempotente; `backend:seed:mock 100` para 100 (pnpm 12: sin `--`)
-pnpm backend:seed:mock:v2    # idempotente: etiquetas + 100 productos mock-v2 (Talla/Color)
-pnpm backend:seed:mock:ofertas  # idempotente: Collection destacados + Price List sale de prueba (I-Interficie)
+pnpm --filter backend catalog:mock [300]          # genera catalog/mock/productos.csv (determinista)
+pnpm --filter backend catalog:import catalog/mock  # idempotente; antes: catalog:import catalog/mi-carga (categorías)
+pnpm --filter backend images:mock && pnpm --filter backend images:import .cache/mock-images
 pnpm backend:stock:mock      # idempotente: repone stock libre de los mock (los e2e de checkout lo gastan)
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos a mano (borrado suave, fase 10-4)
 pnpm --filter backend catalog:import <carpeta> [dry-run]   # categorias.csv + productos.csv (plantilla en apps/backend/catalog/plantilla)
@@ -299,7 +298,7 @@ Plan estudiado el 11-oct-2026 y aparcado por el usuario (no es necesario ahora):
 
 ## 6.8 Handover → Fase S (catálogo en el storefront)
 
-Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) (⏳ planificada: objetivos, decisiones previas y qué consultar). **No empezar sin plan aprobado** (REGLA Nº 1).
+Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md). **S-1 hecha** (detalle en su §2: `category_tree_handles`, `lib/categories.ts`, `lib/shop.ts`, manifiestos `listing-pages.json` + `shop-categories.json`, catálogo mock `catalog:mock`). Quedan S-2 y S-3. **No empezar sin plan aprobado** (REGLA Nº 1).
 
 **Situación al cerrar la Fase C (11-oct-2026)**:
 

@@ -88,15 +88,6 @@ export function getProductPricing(product: StoreProduct): ProductPricing {
   };
 }
 
-/** Rango [offset, offset+limit) de una lista; para paginar fixtures igual que la Store API. */
-export function sliceRange<T>(items: T[], offset = 0, limit = items.length): T[] {
-  return items.slice(Math.max(0, offset), Math.max(0, offset) + Math.max(0, limit));
-}
-
-export function productsInCategory(products: StoreProduct[], categoryId: string): StoreProduct[] {
-  return products.filter((p) => p.categories?.some((c) => c.id === categoryId));
-}
-
 /** Descripción corta para meta description (≤ 160 caracteres, sin cortar palabras). */
 export function metaDescription(text: string | null | undefined, max = 160): string {
   const clean = (text ?? "").replace(/\s+/g, " ").trim();

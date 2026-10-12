@@ -130,7 +130,7 @@ describe("buildSearchQueries", () => {
     );
     expect(main!.filters).toEqual({
       $and: [
-        { category_handles: { $in: ["ropa"] } },
+        { category_tree_handles: { $in: ["ropa"] } },
         { option_values: { $in: ["Color:Rojo"] } },
         { option_values: { $in: ["Talla:L", "Talla:M"] } },
         { max_price_eur: { $gte: 5 } },
@@ -155,7 +155,7 @@ describe("parseSearchResults", () => {
         hits: [{ id: "a" }, { id: "b" }],
         metadata: { count: 2 },
         facets: {
-          category_handles: { values: [{ value: "ropa", count: 2 }] },
+          category_tree_handles: { values: [{ value: "ropa", count: 2 }] },
           option_values: {
             values: [
               { value: "Talla:M", count: 99 },

@@ -4,6 +4,7 @@ import { Modules, ProductStatus } from "@medusajs/framework/utils";
 import {
   createApiKeysWorkflow,
   createInventoryLevelsWorkflow,
+  createProductCategoriesWorkflow,
   createProductsWorkflow,
   createSalesChannelsWorkflow,
   createStockLocationsWorkflow,
@@ -200,6 +201,44 @@ medusaIntegrationTestRunner({
           (h) => h?.document.in_stock === false,
         );
         expect(hit?.document.in_stock).toBe(false);
+      });
+
+      it("category_tree_handles: el filtro por un padre incluye las subcategorías (S-1)", async () => {
+        const {
+          result: [raiz],
+        } = await createProductCategoriesWorkflow(container).run({
+          input: { product_categories: [{ name: "Perro", handle: "perro-t", is_active: true }] },
+        });
+        const {
+          result: [hoja],
+        } = await createProductCategoriesWorkflow(container).run({
+          input: {
+            product_categories: [
+              {
+                name: "Piensos",
+                handle: "piensos-perro-t",
+                parent_category_id: raiz!.id,
+                is_active: true,
+              },
+            ],
+          },
+        });
+        await updateProductsWorkflow(container).run({
+          input: { selector: { id: published.id }, update: { category_ids: [hoja!.id] } },
+        });
+        const inTree = (handle: string) =>
+          search({ $and: [{ category_tree_handles: { $in: [handle] } }] });
+        const hits = await eventually(
+          () => inTree("perro-t"),
+          (h) => h.some((x) => x.document.handle === published.handle),
+        );
+        expect(hits.map((h) => h.document.handle)).toContain(published.handle);
+        expect((await inTree("piensos-perro-t")).map((h) => h.document.handle)).toContain(
+          published.handle,
+        );
+        // category_handles sigue siendo solo la categoría directa
+        const direct = await search({ $and: [{ category_handles: { $in: ["perro-t"] } }] });
+        expect(direct.map((h) => h.document.handle)).not.toContain(published.handle);
       });
     });
   },

@@ -2,18 +2,15 @@
 // Home (I-Interficie). Estática (0 JS propio): hero, categorías, carrusel de destacados
 // (Collection de Medusa, scroll-snap CSS), banner de ofertas (solo si hay ofertas en el build) y
 // valores. Textos en src/content/home.yaml; productos de Medusa. Precio/stock del carrusel: build
-// + <LiveSync collectionId> (mismo orden que el build).
+// + <LiveSync pageKey> (clave del bloque, D-S1: lib/listing-pages.ts). Categorías: las raíces
+// del árbol de la tienda (Fase S), con la foto del primer producto de su subárbol.
 import { Picture } from "astro:assets";
 import { getEntry } from "astro:content";
 import { buttonVariants } from "$lib/components/ui/button";
-import {
-  getAllProducts,
-  getCategories,
-  getCollectionByHandle,
-  getCollectionProducts,
-  getSaleProductIds,
-} from "$lib/medusa";
-import { productsInCategory } from "$lib/catalog";
+import { getAllProducts, getSaleProductIds } from "$lib/medusa";
+import { productsInSubtree } from "$lib/categories";
+import { listingPageKey } from "$lib/listing-pages";
+import { getFeaturedProducts, getShopTree } from "$lib/shop";
 import { OFFERS_PATH, SITE_NAME } from "$lib/constants";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
@@ -24,18 +21,15 @@ import ProductImage from "../components/ProductImage.astro";
 import { CAROUSEL_CARD_SIZES, CATEGORY_CARD_SIZES } from "$lib/images";
 
 const home = (await getEntry("home", "home"))!.data;
-const [products, categories, collection, saleIds] = await Promise.all([
+const [products, tree, featured, saleIds] = await Promise.all([
   getAllProducts(),
-  getCategories(),
-  getCollectionByHandle(home.destacados.coleccion),
+  getShopTree(true),
+  getFeaturedProducts(),
   getSaleProductIds(),
 ]);
-const featured = collection
-  ? (await getCollectionProducts(collection.id)).slice(0, home.destacados.maximo)
-  : [];
 // Categoría → imagen de su primer producto con foto (orden del catálogo).
-const categoryCards = categories.map((c) => {
-  const first = productsInCategory(products, c.id).find((p) => p.thumbnail ?? p.images?.[0]);
+const categoryCards = tree.roots.map((c) => {
+  const first = productsInSubtree(products, c).find((p) => p.thumbnail ?? p.images?.[0]);
   return { ...c, image: first ? (first.thumbnail ?? first.images?.[0]?.url ?? null) : null };
 });
 const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
@@ -105,7 +99,7 @@ const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
     </section>
   )}
 
-  {featured.length > 0 && collection && (
+  {featured.length > 0 && (
     <section class="mb-14">
       <div class="mb-5 flex items-baseline justify-between gap-4">
         <h2 id="home-destacados" class={heading}>
@@ -133,7 +127,7 @@ const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
           ))}
         </ul>
       </div>
-      <LiveSync collectionId={collection.id} offset={0} limit={featured.length} />
+      <LiveSync pageKey={listingPageKey(featured.map((p) => p.id))} />
       <ScrollDrag />
     </section>
   )}

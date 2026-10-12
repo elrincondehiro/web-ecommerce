@@ -1,13 +1,13 @@
 ---
 // /ofertas/ (I-Interficie, D5): productos con Price List `sale` vigente al hacer el build
-// (GET /store/ofertas del backend). Estática y paginada como /productos/. <LiveSync offersKey>
-// corrige precio y stock de ESTOS productos (clave corta → ids del build, lib/offer-pages.ts):
+// (GET /store/ofertas del backend). Estática y paginada como /productos/. <LiveSync pageKey>
+// corrige precio y stock de ESTOS productos (clave corta → ids del build, lib/listing-pages.ts):
 // si una oferta termina después del build, su tarjeta deja de mostrar el tachado; una oferta
 // NUEVA no aparece en el listado hasta el siguiente build (webhook de rebuild, fase 13).
 import type { GetStaticPaths } from "astro";
 import { PAGE_SIZE } from "$lib/constants";
 import { getSaleProducts } from "$lib/medusa";
-import { offerPageKey } from "$lib/offer-pages";
+import { listingPageKey } from "$lib/listing-pages";
 import { breadcrumbJsonLd } from "$lib/seo";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
@@ -54,7 +54,7 @@ const title = page.currentPage > 1 ? `Ofertas (página ${page.currentPage})` : "
       </p>
       <ProductGrid products={page.data} priorityCount={2} />
       <Pagination page={page} />
-      <LiveSync offersKey={offerPageKey(page.data.map((p) => p.id))} />
+      <LiveSync pageKey={listingPageKey(page.data.map((p) => p.id))} />
     </>
   )}
 </BaseLayout>

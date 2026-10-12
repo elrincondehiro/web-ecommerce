@@ -1,7 +1,8 @@
 // Lee un manifiesto JSON del build desde dist/server (NO público), una vez por proceso. Solo
 // servidor (node:fs). Los generan endpoints prerenderizados en dist/client y la integración
 // `privateBuildManifests` (astro.config.mjs) los mueve a dist/server:
-//   card-images.json (miniaturas de /buscar/, fase 7-1) · offer-pages.json (/ofertas/, I-Interficie).
+//   card-images.json (miniaturas de /buscar/, fase 7-1) · listing-pages.json (claves de LiveSync
+//   de los listados, Fase S) · shop-categories.json (árbol de la tienda, Fase S).
 // Ruta: igual que @astrojs/node 11.1.6 (shared.js resolveClientDir), se sube desde este módulo
 // hasta la carpeta `server` del build.
 import { existsSync, readFileSync } from "node:fs";

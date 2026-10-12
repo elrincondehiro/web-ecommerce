@@ -1,5 +1,6 @@
 // Regenera src/lib/__fixtures__/*.json desde un backend Medusa local (catálogo mock del seed).
 // Uso: pnpm --filter storefront fixtures:update   (lee MEDUSA_BACKEND_URL y MEDUSA_PUBLISHABLE_KEY de .env)
+// Datos (Fase S): seed + catalog:mock + catalog:import catalog/mock (árbol de categorías real).
 // Los fixtures permiten `STOREFRONT_DATA=fixtures pnpm build` en CI sin backend.
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -32,19 +33,20 @@ const { product_categories } = await get("/store/product-categories", {
   fields: "id,name,handle,description,rank,parent_category_id",
 });
 
-// Solo el catálogo BASE de seed:mock (sufijo 001–024, sin v2) y sin imágenes: el build de CI no
-// tiene bucket. Mismos productos que usa seed:mock:ofertas (Collection y ofertas de prueba).
-// Mismos campos que usa el storefront: catálogo + precios/stock (para las server islands).
-const BASE = /^mock-(?!v2-).*-0(0[1-9]|1\d|2[0-4])$/;
-const handles = Array.from({ length: 24 }, (_, i) => String(i + 1).padStart(3, "0"));
+// Subconjunto estable del catálogo mock (Fase S): los productos `mock-*-001…048` (catalog:mock
+// reparte los primeros 39 por todas las hojas del árbol) y sin imágenes: el build de CI no tiene
+// bucket. Las ofertas y la Collection se recortan a ese subconjunto.
+const FIXTURE_MAX = 48;
+const inFixture = (/** @type {string} */ handle) => {
+  const n = Number(/^mock-.*-(\d{3})$/.exec(handle)?.[1] ?? NaN);
+  return n >= 1 && n <= FIXTURE_MAX;
+};
 const { products: listed } = await get("/store/products", {
   limit: "2000",
   fields: "id,handle",
 });
 const ids = listed
-  .filter(
-    (/** @type {any} */ p) => BASE.test(p.handle) && handles.some((n) => p.handle.endsWith(n)),
-  )
+  .filter((/** @type {any} */ p) => inFixture(p.handle))
   .map((/** @type {any} */ p) => p.id);
 const query = new URLSearchParams({
   limit: String(ids.length),
@@ -66,19 +68,19 @@ const products = base.map((/** @type {any} */ p) => ({
 }));
 
 // I-Interficie: Collection del carrusel de la home y productos en oferta (backend /store/ofertas;
-// datos de prueba con `pnpm backend:seed:mock:ofertas`).
+// datos de prueba con `catalog:import catalog/mock`, columna precio_oferta).
 const { collections } = await get("/store/collections", {
   handle: "destacados",
   fields: "id,title,handle",
 });
-const { product_ids: offers } = await get("/store/ofertas", { region_id: region.id });
+const { product_ids: allOffers } = await get("/store/ofertas", { region_id: region.id });
+const offers = allOffers.filter((/** @type {string} */ id) => ids.includes(id));
 
 // Fixtures pequeños y estables: sin timestamps, metadatos ni campos no usados.
 const DROP = new Set([
   "created_at",
   "updated_at",
   "deleted_at",
-  "metadata",
   "raw_calculated_amount",
   "raw_original_amount",
   "calculated_price_list_id",

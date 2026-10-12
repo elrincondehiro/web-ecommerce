@@ -63,7 +63,7 @@ describe("buildListingFacets", () => {
     expect(f.stockFilter).toBe(true);
   });
 
-  it("categorías solo si el listado las mezcla", () => {
+  it("categorías solo si el listado las mezcla, en el orden del árbol (el del Map)", () => {
     const f = buildListingFacets(products, {
       categories: new Map([
         ["ropa", "Ropa"],
@@ -74,10 +74,24 @@ describe("buildListingFacets", () => {
       key: "categoria",
       title: "Categoría",
       values: [
-        { value: "hogar", label: "Hogar" },
         { value: "ropa", label: "Ropa" },
+        { value: "hogar", label: "Hogar" },
       ],
     });
+  });
+
+  it("categoryHandles: cuenta también los ancestros (subcategorías)", () => {
+    const f = buildListingFacets(products, {
+      categories: new Map([
+        ["perro", "Perro"],
+        ["gato", "Gato"],
+      ]),
+      categoryHandles: (p) => (p.id === "c" ? ["gato", "juguetes-gato"] : ["perro", "ropa"]),
+    });
+    expect(f.groups[0]?.values).toEqual([
+      { value: "perro", label: "Perro" },
+      { value: "gato", label: "Gato" },
+    ]);
   });
 
   it("todo con stock o un único precio → sin esos filtros", () => {

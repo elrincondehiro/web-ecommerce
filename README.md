@@ -480,11 +480,11 @@ pnpm infra:up
 cp apps/backend/.env.example apps/backend/.env            # y genera secretos: openssl rand -hex 32
 cp apps/backend/.env.test.example apps/backend/.env.test  # tests de integración
 pnpm --filter backend exec medusa db:migrate
-pnpm backend:seed                                         # región ES, IVA, envíos, publishable key
-pnpm backend:seed:mock                                    # catálogo de prueba (24; o `backend:seed:mock 100`)
+pnpm backend:seed                                         # región ES, IVA, envíos, publishable key, Collection destacados
+pnpm --filter backend catalog:mock [300]                  # genera catalog/mock/productos.csv (árbol de categorías real)
+pnpm --filter backend catalog:import catalog/mock         # … y lo carga (idempotente)
 pnpm backend:stock:mock                                   # repone stock libre de los mock (los e2e de checkout lo gastan)
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup  # limpieza de carritos a mano (borrado suave, fase 10-4)
-pnpm backend:seed:mock:ofertas                            # Collection destacados + Price List sale de prueba (I-Interficie)
 pnpm --filter backend catalog:import <carpeta> [dry-run]  # categorías + productos desde CSV (apps/backend/catalog/plantilla)
 pnpm --filter backend images:import <carpeta>             # fotos handle_XX.jpg → bucket + producto (fase 6)
 pnpm --filter backend exec medusa user -e <email> -p <contraseña>   # admin (lo creas tú)
@@ -551,7 +551,7 @@ pnpm infra:stripe                                    # webhooks Stripe (perfil o
 ```bash
 pnpm infra:up | infra:down | infra:ps | infra:logs | infra:stripe
 pnpm dev | dev:backend | dev:storefront | dev:emails
-pnpm backend:seed | backend:seed:mock
+pnpm backend:seed | backend:stock:mock
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 pnpm --filter backend exec medusa db:generate <modulo>   # migraciones de módulos propios
 pnpm --filter backend exec medusa db:migrate
@@ -684,7 +684,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | Auditoría previa a la fase 10          | [auditoria-pre-fase10.md](./docs/fases/auditoria-pre-fase10.md)                                  | ✅     |
 | 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | ✅     |
 | C Importador de catálogo (CSV)         | [faseC-catalogo.md](./docs/fases/faseC-catalogo.md)                                              | ✅     |
-| S Catálogo en el storefront            | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | ⏳     |
+| S Catálogo en el storefront            | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | 🚧     |
 | 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

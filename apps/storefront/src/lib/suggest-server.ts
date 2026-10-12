@@ -2,7 +2,9 @@
 // con caché en memoria por texto normalizado (SEARCH_SUGGEST_CACHE_TTL, 500 entradas).
 import { SEARCH_SUGGEST_CACHE_TTL } from "astro:env/server";
 import { CardCache } from "./card-cache";
-import { getCategories, searchProducts } from "./medusa";
+import { categoryNames } from "./categories";
+import { searchProducts } from "./medusa";
+import { getShopTree } from "./shop";
 import { buildSuggestQuery, parseSuggestions, type Suggestions } from "./suggest";
 
 const cache =
@@ -14,11 +16,11 @@ const cache =
 export async function getSuggestions(q: string): Promise<Suggestions> {
   const hit = cache?.get(q);
   if (hit) return hit;
-  const [[result], categories] = await Promise.all([
+  const [[result], tree] = await Promise.all([
     searchProducts([buildSuggestQuery(q)]),
-    getCategories(),
+    getShopTree(false),
   ]);
-  const s = parseSuggestions(q, result, new Map(categories.map((c) => [c.handle, c.name])));
+  const s = parseSuggestions(q, result, categoryNames(tree));
   cache?.set(q, s);
   return s;
 }

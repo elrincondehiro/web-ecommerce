@@ -231,7 +231,12 @@ export interface SearchQueryBody {
   };
 }
 
-export const FACET_FIELDS = ["category_handles", "tags", "option_values", "in_stock"] as const;
+/**
+ * Categoría: `category_tree_handles` (la del producto + sus ancestros, Fase S): filtrar por un
+ * padre incluye sus subcategorías. Filtro y faceta en el MISMO campo (faceta disyuntiva).
+ */
+export const CATEGORY_FIELD = "category_tree_handles";
+export const FACET_FIELDS = [CATEGORY_FIELD, "tags", "option_values", "in_stock"] as const;
 const PRICE_FACET = { field: "min_price_eur", type: "stats" } as const;
 
 /** Opciones marcadas agrupadas por título: dentro de un grupo OR, entre grupos AND. */
@@ -246,7 +251,7 @@ export function optionGroups(opcion: string[]): Map<string, string[]> {
 
 function filtersFor(p: SearchParams, skipOptionGroup?: string): Filter {
   const and: Filter[] = [];
-  if (p.categoria.length) and.push({ category_handles: { $in: p.categoria } });
+  if (p.categoria.length) and.push({ [CATEGORY_FIELD]: { $in: p.categoria } });
   if (p.etiqueta.length) and.push({ tags: { $in: p.etiqueta } });
   for (const [title, values] of optionGroups(p.opcion)) {
     if (title !== skipOptionGroup) and.push({ option_values: { $in: values } });
@@ -356,7 +361,7 @@ export function parseSearchResults(p: SearchParams, results: RawSearchResult[]):
     ids: (main?.hits ?? []).map((h) => h.id),
     total: main?.metadata?.count ?? 0,
     facets: {
-      categoria: facets.category_handles?.values ?? [],
+      categoria: facets[CATEGORY_FIELD]?.values ?? [],
       etiqueta: facets.tags?.values ?? [],
       opcion,
       disponible: facets.in_stock?.values?.find((v) => v.value === "true")?.count ?? 0,

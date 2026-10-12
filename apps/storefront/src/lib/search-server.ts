@@ -5,7 +5,9 @@ import { getCardImages } from "./card-images";
 import type { StoreProduct } from "./catalog";
 import { facetsFromSearch, type ListingFacets } from "./facets";
 import type { CardImage } from "./images";
-import { getCategories, getPricedProductsByIds, searchProducts } from "./medusa";
+import { categoryNames, facetCategories, narrowCategories } from "./categories";
+import { getPricedProductsByIds, searchProducts } from "./medusa";
+import { getShopTree } from "./shop";
 import { buildSearchQueries, parseSearchResults, type SearchParams } from "./search";
 import type { Timings } from "./server-timing";
 
@@ -13,6 +15,7 @@ export interface SearchPage {
   products: StoreProduct[];
   total: number;
   facets: ListingFacets;
+  /** handle → nombre de todo el árbol (chips de filtros). */
   categories: Map<string, string>;
   images: Map<string, CardImage> | undefined;
 }
@@ -21,23 +24,22 @@ export interface SearchPage {
 export async function loadSearchPage(params: SearchParams, timings?: Timings): Promise<SearchPage> {
   const measure = <T>(name: string, work: Promise<T>) =>
     timings ? timings.measure(name, work) : work;
-  const [results, categoryList] = await Promise.all([
-    measure("search", searchProducts(buildSearchQueries(params))),
-    measure("categories", getCategories()),
-  ]);
+  const tree = await getShopTree(false); // en memoria (manifiesto del build): sin red
+  const query = { ...params, categoria: narrowCategories(tree, params.categoria) };
+  const results = await measure("search", searchProducts(buildSearchQueries(query)));
   const outcome = parseSearchResults(params, results);
-  const categories = new Map(categoryList.map((c) => [c.handle, c.name]));
   const products = await measure("cards", getPricedProductsByIds(outcome.ids));
   return {
     products,
     total: outcome.total,
     facets: facetsFromSearch(outcome.facets, {
-      categories,
+      // Filtro por niveles (Fase S): raíces, o las hijas de lo elegido
+      categories: facetCategories(tree, params.categoria),
       selected: new Set([...params.categoria, ...params.etiqueta, ...params.opcion]),
       total: outcome.total,
       disponible: params.disponible,
     }),
-    categories,
+    categories: categoryNames(tree),
     images: getCardImages(),
   };
 }

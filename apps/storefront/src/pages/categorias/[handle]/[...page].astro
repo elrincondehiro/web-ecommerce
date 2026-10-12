@@ -1,24 +1,38 @@
 ---
+// Página de categoría (Fase S, S-1): TODAS las categorías con productos en su subárbol (las
+// vacías no se generan). El listado de un padre agrega los de sus descendientes (los productos
+// van solo en la categoría más concreta). URL plana /categorias/<handle>/ (handles únicos).
+// Migas y BreadcrumbList con la cadena de padres; enlaces a las hijas (HTML, 0 JS).
+// Fuente: astro-docs (routing: nested pagination, `paginate()` con `params`).
 import type { GetStaticPaths } from "astro";
 import { metaDescription } from "$lib/catalog";
+import { categoryHref } from "$lib/categories";
 import { buildListingFacets } from "$lib/facets";
 import { PAGE_SIZE } from "$lib/constants";
-import { getAllProducts, getCategories } from "$lib/medusa";
+import { getCategoryProducts, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd } from "$lib/seo";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../../components/Breadcrumbs.astro";
 import CatalogPage from "../../../components/CatalogPage.astro";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  const categories = await getCategories();
+  const tree = await getShopTree(true);
   const perCategory = await Promise.all(
-    categories.map(async (category) => {
-      const products = await getAllProducts({ categoryId: category.id });
+    tree.all.map(async (node) => {
+      const products = await getCategoryProducts(node);
       // Facetas de TODA la categoría (no de la página): filtrar busca en los N productos.
+      // Sin «Categoría»: las hijas salen como enlaces arriba.
       const facets = buildListingFacets(products);
+      const category = {
+        handle: node.handle,
+        name: node.name,
+        description: node.description,
+        path: node.path.map((n) => ({ name: n.name, handle: n.handle })),
+        children: node.children.map((n) => ({ name: n.name, handle: n.handle })),
+      };
       return paginate(products, {
         pageSize: PAGE_SIZE,
-        params: { handle: category.handle },
+        params: { handle: node.handle },
         props: { category, facets },
       });
     }),
@@ -29,23 +43,36 @@ export const getStaticPaths = (async ({ paginate }) => {
 const { page, category, facets } = Astro.props;
 const crumbs = [
   { name: "Inicio", href: "/" },
-  { name: category.name, href: `/categorias/${category.handle}/` },
+  ...category.path.map((c) => ({ name: c.name, href: categoryHref(c) })),
 ];
-const title =
-  page.currentPage > 1 ? `${category.name} (página ${page.currentPage})` : category.name;
+// En una subcategoría, el título lleva el padre para distinguir «Juguetes» de perro y de gato.
+const parent = category.path.at(-2);
+const baseTitle = parent ? `${category.name} · ${parent.name}` : category.name;
+const title = page.currentPage > 1 ? `${baseTitle} (página ${page.currentPage})` : baseTitle;
 ---
 
 <BaseLayout
   title={title}
-  description={metaDescription(category.description) || `${category.name} en El Rincón de Hiro.`}
+  description={metaDescription(category.description) || `${baseTitle} en El Rincón de Hiro.`}
   jsonLd={[breadcrumbJsonLd(crumbs, Astro.site!)]}
 >
   <Breadcrumbs items={crumbs} />
   <h1 class="mb-2 text-2xl font-semibold tracking-tight">{category.name}</h1>
-  <CatalogPage
-    page={page}
-    categoryId={category.id}
-    facets={facets}
-    categoryHandle={category.handle}
-  />
+  {category.children.length > 0 && (
+    <nav aria-label={`Subcategorías de ${category.name}`} class="mb-6">
+      <ul class="flex flex-wrap gap-2">
+        {category.children.map((c) => (
+          <li>
+            <a
+              href={categoryHref(c)}
+              class="header-hover inline-flex items-center rounded-md border-2 border-line px-3 py-1.5 text-sm font-semibold"
+            >
+              {c.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )}
+  <CatalogPage page={page} facets={facets} categoryHandle={category.handle} />
 </BaseLayout>

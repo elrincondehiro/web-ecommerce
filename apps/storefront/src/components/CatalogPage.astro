@@ -1,6 +1,8 @@
 ---
-// Listado paginado: rejilla estática con precio/stock del build + <LiveSync> que los corrige.
+// Listado paginado: rejilla estática con precio/stock del build + <LiveSync> que los corrige
+// (por la clave de la página, D-S1: lib/listing-pages.ts).
 import type { Page } from "astro";
+import { listingPageKey } from "$lib/listing-pages";
 import type { StoreProduct } from "$lib/catalog";
 import type { ListingFacets } from "$lib/facets";
 import ProductGrid from "./ProductGrid.astro";
@@ -10,12 +12,11 @@ import ListingFilters from "./search/ListingFilters.astro";
 
 interface Props {
   page: Page<StoreProduct>;
-  categoryId?: string | undefined;
   /** Facetas del build para el botón "Filtrar" (fase 7-1). */
   facets?: ListingFacets | undefined;
   categoryHandle?: string | undefined;
 }
-const { page, categoryId, facets, categoryHandle } = Astro.props;
+const { page, facets, categoryHandle } = Astro.props;
 ---
 
 {page.total === 0 ? (
@@ -30,6 +31,6 @@ const { page, categoryId, facets, categoryHandle } = Astro.props;
     </div>
     <ProductGrid products={page.data} priorityCount={2} />
     <Pagination page={page} />
-    <LiveSync categoryId={categoryId} offset={page.start} limit={page.size} />
+    <LiveSync pageKey={listingPageKey(page.data.map((p) => p.id))} />
   </>
 )}

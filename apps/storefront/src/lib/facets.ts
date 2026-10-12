@@ -43,12 +43,18 @@ const frequent = (map: Map<string, Set<string>>, min: number) =>
   [...map.entries()].filter(([, ids]) => ids.size >= min).map(([v, ids]) => [v, ids.size] as const);
 
 /**
- * Facetas válidas para un listado. `categories` = { handle → nombre } si el listado mezcla
- * categorías (p. ej. /productos/); en una categoría no se ofrece ese filtro.
+ * Facetas válidas para un listado. `categories` = { handle → nombre } de las categorías que se
+ * ofrecen como filtro (Fase S: el nivel siguiente del árbol — raíces en /productos/, hijas en la
+ * página de un padre; en una hoja, ninguna). `categoryHandles`: handles con los que cuenta un
+ * producto (por defecto, los suyos; con subcategorías, también sus ancestros).
  */
 export function buildListingFacets(
   products: StoreProduct[],
-  opts: { categories?: Map<string, string>; min?: number } = {},
+  opts: {
+    categories?: Map<string, string>;
+    categoryHandles?: (p: StoreProduct) => string[];
+    min?: number;
+  } = {},
 ): ListingFacets {
   const min = opts.min ?? MIN_PRODUCTS;
   const categories = new Map<string, Set<string>>();
@@ -59,7 +65,10 @@ export function buildListingFacets(
   let inStock = 0;
 
   for (const p of products) {
-    for (const c of p.categories ?? []) if (c?.handle) addCount(categories, c.handle, p.id);
+    const handles = opts.categoryHandles
+      ? opts.categoryHandles(p)
+      : (p.categories ?? []).map((c) => c?.handle).filter((h): h is string => Boolean(h));
+    for (const h of handles) addCount(categories, h, p.id);
     for (const t of p.tags ?? []) if (t?.value) addCount(tags, t.value, p.id);
     for (const o of p.options ?? []) {
       const title = o?.title?.trim();
@@ -83,10 +92,12 @@ export function buildListingFacets(
 
   const groups: FacetGroup[] = [];
   if (opts.categories) {
+    // Orden del árbol (el del Map: rank), no alfabético
+    const order = [...opts.categories.keys()];
     const values = frequent(categories, 1)
       .filter(([handle]) => opts.categories!.has(handle))
       .map(([value]) => ({ value, label: opts.categories!.get(value)! }))
-      .sort((a, b) => compareValues(a.label, b.label));
+      .sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
     if (values.length > 1) groups.push({ key: "categoria", title: "Categoría", values });
   }
   for (const [title, byValue] of [...options.entries()].sort(([a], [b]) => compareValues(a, b))) {
@@ -127,10 +138,12 @@ export function facetsFromSearch(
   // Lo marcado se muestra siempre (aunque su recuento sea 0) para poder desmarcarlo.
   const keep = (f: FacetValue) => f.count >= 1 || opts.selected.has(f.value);
   const groups: FacetGroup[] = [];
+  // `categories`: las del nivel que se ofrece (Fase S), en el orden del árbol.
+  const order = [...opts.categories.keys()];
   const categoria = facets.categoria
     .filter((f) => keep(f) && opts.categories.has(f.value))
     .map((f) => ({ value: f.value, label: opts.categories.get(f.value)!, count: f.count }))
-    .sort((a, b) => compareValues(a.label, b.label));
+    .sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
   if (categoria.length) groups.push({ key: "categoria", title: "Categoría", values: categoria });
 
   const byTitle = new Map<string, FacetGroup["values"]>();

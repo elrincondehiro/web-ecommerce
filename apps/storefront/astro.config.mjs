@@ -72,7 +72,10 @@ const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal
  * (lo que se sirve); al terminar el build se mueven a dist/server, que solo lee el servidor
  * (lib/build-manifest.ts):
  *   - buscar/tarjetas.json → card-images.json (miniaturas de /buscar/, fase 7-1, D6)
- *   - ofertas/paginas.json → offer-pages.json (clave → ids de /ofertas/, I-Interficie)
+ *   - listados/paginas.json → listing-pages.json (clave → ids de cada página de listado para
+ *     LiveSync: categorías, /productos/, /ofertas/, home; Fase S, D-S1)
+ *   - listados/categorias.json → shop-categories.json (árbol de categorías sin las vacías, para
+ *     las páginas on-demand; Fase S)
  * Fuente: astro-docs (integrations-reference: astro:config:done `config.build.server`,
  * astro:build:done `dir` = salida del cliente; comprobado en astro 7.3.5 integrations/hooks.js).
  * @returns {import("astro").AstroIntegration}
@@ -80,7 +83,8 @@ const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal
 function privateBuildManifests() {
   const MANIFESTS = [
     { from: "buscar/tarjetas.json", to: "card-images.json" },
-    { from: "ofertas/paginas.json", to: "offer-pages.json" },
+    { from: "listados/paginas.json", to: "listing-pages.json" },
+    { from: "listados/categorias.json", to: "shop-categories.json" },
   ];
   /** @type {URL | undefined} */
   let serverDir;
@@ -100,7 +104,7 @@ function privateBuildManifests() {
           await rename(from, to);
           // Carpeta vacía (p. ej. dist/client/buscar/, /buscar/ es on-demand): fuera
           const folder = new URL("./", from);
-          if (!(await readdir(folder)).length) await rmdir(folder);
+          if (existsSync(folder) && !(await readdir(folder)).length) await rmdir(folder);
           logger.info(`${m.from} → ${fileURLToPath(to)} (no público)`);
         }
       },
@@ -117,7 +121,10 @@ export default defineConfig({
   integrations: [
     svelte(),
     sitemap({
-      filter: (page) => !LEGAL_PATHS.some((p) => page.endsWith(p)) && !page.includes("/buscar/"),
+      filter: (page) =>
+        !LEGAL_PATHS.some((p) => page.endsWith(p)) &&
+        !page.includes("/buscar/") &&
+        !page.includes("/listados/"),
     }),
     privateBuildManifests(),
   ],

@@ -5,8 +5,6 @@ import {
   getProductPricing,
   isVariantInStock,
   metaDescription,
-  productsInCategory,
-  sliceRange,
   type StoreProduct,
   type StoreVariant,
   variantWasAmount,
@@ -38,41 +36,33 @@ describe("isVariantInStock", () => {
 });
 
 describe("getProductPricing", () => {
-  // 001 y 002 están en la Price List de prueba (−20 %, seed-mock-ofertas): precio rebajado.
+  // Fixtures de catalog:mock (Fase S): -013 tiene «S / Azul» agotada; -018 es variante única.
   it("precio mínimo con IVA, rango y stock por variante", () => {
-    const p = getProductPricing(byHandle("mock-camiseta-clasico-001"));
-    expect(p.fromAmount).toBe(3.95);
+    const p = getProductPricing(byHandle("mock-collar-sport-013"));
+    expect(p.fromAmount).toBe(15.95);
     expect(p.currencyCode).toBe("eur");
     expect(p.hasPriceRange).toBe(true);
     expect(p.inStock).toBe(true);
-    expect(p.variants.filter((v) => !v.inStock).map((v) => v.title)).toEqual(["S", "L"]);
+    expect(p.variants.filter((v) => !v.inStock).map((v) => v.title)).toEqual(["S / Azul"]);
   });
 
   it("variante única: sin rango", () => {
-    const p = getProductPricing(byHandle("mock-taza-esencial-002"));
+    const p = getProductPricing(byHandle("mock-clicker-esencial-018"));
     expect(p.hasPriceRange).toBe(false);
-    expect(p.fromAmount).toBe(33.55);
+    expect(p.fromAmount).toBe(6.9);
+  });
+
+  it("todas las variantes agotadas → producto agotado", () => {
+    expect(getProductPricing(byHandle("mock-cama-eco-030")).inStock).toBe(false);
   });
 
   it("sin precios calculados (catálogo de build)", () => {
-    const p = getProductPricing({ ...byHandle("mock-taza-esencial-002"), variants: [] });
+    const p = getProductPricing({ ...byHandle("mock-clicker-esencial-018"), variants: [] });
     expect(p).toMatchObject({ fromAmount: null, currencyCode: null, inStock: false });
   });
 });
 
 describe("utilidades de listado", () => {
-  it("sliceRange pagina como offset/limit", () => {
-    expect(sliceRange([1, 2, 3, 4, 5], 1, 2)).toEqual([2, 3]);
-    expect(sliceRange([1, 2, 3], 5, 2)).toEqual([]);
-  });
-
-  it("productsInCategory filtra por id de categoría", () => {
-    const ropa = catalog[0]!.categories![0]!.id;
-    const res = productsInCategory(catalog, ropa);
-    expect(res.length).toBeGreaterThan(0);
-    expect(res.every((p) => p.categories?.some((c) => c.id === ropa))).toBe(true);
-  });
-
   it("metaDescription recorta sin partir palabras", () => {
     expect(metaDescription("  hola   mundo ")).toBe("hola mundo");
     const out = metaDescription("palabra ".repeat(40), 30);
@@ -118,13 +108,13 @@ describe("ofertas (Price List sale)", () => {
     expect(pricing.discountPercent).toBe(20);
   });
 
-  it("fixtures: producto en oferta (Price List sale de prueba)", () => {
-    const pricing = getProductPricing(byHandle("mock-camiseta-clasico-001"));
-    expect(pricing).toMatchObject({ fromAmount: 3.95, wasAmount: 4.95, discountPercent: 20 });
+  it("fixtures: producto en oferta (Price List sale de catalog:import)", () => {
+    const pricing = getProductPricing(byHandle("mock-lata-confort-005"));
+    expect(pricing).toMatchObject({ fromAmount: 8.95, wasAmount: 10.95, discountPercent: 18 });
   });
 
   it("sin oferta: null", () => {
-    const pricing = getProductPricing(byHandle("mock-sudadera-artesano-006"));
+    const pricing = getProductPricing(byHandle("mock-clicker-esencial-018"));
     expect(pricing.wasAmount).toBeNull();
     expect(pricing.discountPercent).toBeNull();
   });
