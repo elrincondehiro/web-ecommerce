@@ -8,6 +8,7 @@ import {
 } from "@medusajs/framework/utils";
 import { DRY_MATTER_FIELDS, dryMatter } from "../lib/dry-matter";
 import { bulkMinimumAmount, bulkRule } from "../lib/granel";
+import { isDiscontinued } from "../lib/descatalogado";
 
 /**
  * Índice de búsqueda de productos (fase 7-1), servido por Meilisearch (decisión D1 = A).
@@ -221,6 +222,9 @@ const fields = search.define({
     .facetable({ types: ["stats"] })
     .retrievable(),
   in_stock: search.boolean().filterable().facetable().retrievable(),
+  // Descatalogado (Fase E): `POST /store/search` lo excluye siempre (filtro del storefront
+  // `discontinued != true`; también casa con documentos sin el campo).
+  discontinued: search.boolean().filterable().retrievable(false),
   // % sobre materia seca (S-2): filtros de rango de /buscar/ (stats → mínimo/máximo).
   proteina_ms: search
     .float()
@@ -284,6 +288,7 @@ const source = {
         option_values: toOptionValues(p.options),
         ...(price ? { min_price_eur: price.min, max_price_eur: price.max } : {}),
         in_stock: stock.get(p.id) ?? false,
+        discontinued: isDiscontinued(p.metadata),
         ...Object.fromEntries(
           Object.entries(DRY_MATTER_FIELDS)
             .map(([field, key]) => [field, dryMatter(p.metadata, key)] as const)

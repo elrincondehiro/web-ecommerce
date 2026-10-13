@@ -23,7 +23,7 @@ const ROOT = fileURLToPath(new URL("../dist/client/", import.meta.url));
 const ZERO_JS = [
   /^index\.html$/,
   /^productos\//,
-  /^categorias\//,
+  /^categoria\//,
   /^producto\//,
   /^404\.html$/,
   /^(condiciones|privacidad|cookies|aviso-legal)\//,

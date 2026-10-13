@@ -155,7 +155,7 @@ test.describe("sin JS", () => {
   test("granel: la tarjeta lleva a la ficha («Elegir cantidad») con «Desde» y €/kg", async ({
     page,
   }) => {
-    await page.goto("/categorias/snacks-perro/");
+    await page.goto("/categoria/snacks-perro/");
     const card = page
       .locator("main article")
       .filter({ has: page.getByRole("link", { name: "Elegir cantidad de Premios Plus" }) });

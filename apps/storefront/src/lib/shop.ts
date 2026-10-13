@@ -1,4 +1,4 @@
-// Catálogo de la TIENDA (Fase S, S-1), solo servidor: árbol de categorías sin las vacías y los
+// Catálogo de la TIENDA (Fase S, S-1; sin descatalogados, Fase E), solo servidor: árbol de categorías sin las vacías y los
 // listados (categorías con su subárbol, /productos/, /ofertas/, carrusel de la home) con sus
 // claves de LiveSync (lib/listing-pages.ts, D-S1).
 // - Build: se calcula del catálogo del build (memorizado) → páginas, menú, sitemap y los dos
@@ -18,7 +18,12 @@ import {
   type StoreCategory,
 } from "./categories";
 import { listingPagesManifest, LISTING_PAGES_MANIFEST } from "./listing-pages";
-import { getAllProducts, getCategoryList, getCollectionByHandle, getSaleProducts } from "./medusa";
+import {
+  getCategoryList,
+  getCollectionByHandle,
+  getListedProducts,
+  getSaleProducts,
+} from "./medusa";
 
 export const SHOP_CATEGORIES_MANIFEST = "shop-categories.json";
 
@@ -28,7 +33,7 @@ let runtimeTree: Promise<CategoryTree> | undefined;
 /** Árbol de la tienda: solo categorías con productos en su subárbol (build y `astro dev`). */
 function computeShopTree(): Promise<CategoryTree> {
   return (buildTree ??= (async () => {
-    const [list, products] = await Promise.all([getCategoryList(), getAllProducts()]);
+    const [list, products] = await Promise.all([getCategoryList(), getListedProducts()]);
     return pruneEmpty(buildCategoryTree(list), products);
   })());
 }
@@ -67,7 +72,7 @@ export function shopCategoriesManifest(tree: CategoryTree): Record<string, Store
 
 /** Productos de una categoría y de sus descendientes (orden del catálogo, sin duplicados). */
 export async function getCategoryProducts(node: CategoryNode): Promise<StoreProduct[]> {
-  return productsInSubtree(await getAllProducts(), node);
+  return productsInSubtree(await getListedProducts(), node);
 }
 
 /** Productos del carrusel de la home: Collection de content/home.yaml, hasta `maximo`. */
@@ -75,7 +80,7 @@ export async function getFeaturedProducts(): Promise<StoreProduct[]> {
   const home = (await getEntry("home", "home"))!.data;
   const collection = await getCollectionByHandle(home.destacados.coleccion);
   if (!collection) return [];
-  return (await getAllProducts())
+  return (await getListedProducts())
     .filter((p) => p.collection_id === collection.id)
     .slice(0, home.destacados.maximo);
 }
@@ -84,7 +89,7 @@ export async function getFeaturedProducts(): Promise<StoreProduct[]> {
 export async function buildListingManifest(): Promise<Record<string, string[]>> {
   const [tree, products, sale, featured] = await Promise.all([
     computeShopTree(),
-    getAllProducts(),
+    getListedProducts(),
     getSaleProducts(),
     getFeaturedProducts(),
   ]);

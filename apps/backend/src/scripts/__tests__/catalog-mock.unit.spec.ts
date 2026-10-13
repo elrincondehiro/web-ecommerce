@@ -43,5 +43,16 @@ describe("catalog:mock", () => {
     expect(bulk.every((p) => p.status === "published")).toBe(true);
     expect(products.some((p) => p.variants.some((v) => typeof v.netG === "number"))).toBe(true);
     expect(products.some((p) => typeof p.analytics.proteina_pct === "number")).toBe(true);
+    // Descatalogados (Fase E): el sustituto es otro producto de la misma hoja
+    const gone = products.filter((p) => p.discontinued);
+    expect(gone.length).toBe(mock.discontinued);
+    expect(gone.length).toBeGreaterThan(0);
+    const byHandle = new Map(products.map((p) => [p.handle, p]));
+    for (const p of gone) {
+      const r = byHandle.get(p.replacement!)!;
+      expect(r.discontinued).toBeUndefined();
+      expect(r.categories).toEqual(p.categories);
+    }
+    expect(byHandle.get("mock-guiso-eco-046")?.replacement).toBe("mock-guiso-eco-007");
   });
 });

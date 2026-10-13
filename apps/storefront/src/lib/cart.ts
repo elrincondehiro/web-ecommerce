@@ -45,6 +45,7 @@ export const NOTICES = {
   expired: "Tu carrito ha caducado. Vuelve a añadir los productos.",
   invalid: "Revisa la cantidad (entre 1 y 99; a granel, de paso en paso).",
   minimum: "No llega al mínimo de este producto a granel.",
+  discontinued: "Este producto está descatalogado y ya no se puede comprar.",
   maximum: `El máximo de un producto a granel es ${formatGrams(BULK_MAX_G)} por pedido.`,
   error: "No se ha podido actualizar el carrito. Inténtalo de nuevo.",
 } as const;
@@ -70,7 +71,7 @@ export interface CartResult {
 }
 
 /** Tipos de error de la Store API relevantes para el carrito (ver fase4.md §3). */
-export type CartErrorKind = "stock" | "minimum" | "cart_invalid" | "error";
+export type CartErrorKind = "stock" | "minimum" | "discontinued" | "cart_invalid" | "error";
 
 /**
  * Clasifica un error de @medusajs/js-sdk (FetchError: `status` + `message`; el SDK no expone
@@ -79,7 +80,8 @@ export type CartErrorKind = "stock" | "minimum" | "cart_invalid" | "error";
  *   404 "Cart with id '…' not found"         (GET /store/carts/:id)        → cart_invalid
  *   404 "Cart id not found: …"                (POST …/line-items[/:id])     → cart_invalid
  *   400 "Cart … is already completed."                                      → cart_invalid
- *   400 "El mínimo de este producto a granel es …" (hook granel-minimo)     → minimum
+ *   400 "El mínimo de este producto a granel es …" (hook validar-carrito)   → minimum
+ *   400 "Este producto está descatalogado …"         (hook validar-carrito)   → discontinued
  *   DELETE …/line-items/:id con carrito inexistente → 500 unknown_error (se trata como "error";
  *   la action remove lo comprueba con un GET del carrito).
  */
@@ -89,6 +91,7 @@ export function classifyCartError(err: unknown): CartErrorKind {
   if (/required inventory|insufficient_inventory/i.test(message)) return "stock";
   if (/already completed/i.test(message)) return "cart_invalid";
   if (/mínimo de este producto a granel/i.test(message)) return "minimum";
+  if (/descatalogado/i.test(message)) return "discontinued";
   if (status === 404 && /^cart (with id|id not found)/i.test(message)) return "cart_invalid";
   return "error";
 }

@@ -149,6 +149,8 @@ export const MOCK_HEADER = [
   "humedad_pct",
   "analitico:Calcio",
   "granel",
+  "descatalogado",
+  "sustituto",
   "opcion:Talla",
   "opcion:Color",
   "opcion:Peso",
@@ -295,6 +297,7 @@ export interface MockCatalog {
   bulk: number;
   sale: number;
   featured: number;
+  discontinued: number;
 }
 
 /**
@@ -302,6 +305,7 @@ export interface MockCatalog {
  * Reglas (por índice global i = 1…count, sufijo `-NNN` del handle):
  *   - oferta (−20 %): i % 12 === 5 · agotado entero: i % 23 === 7 · primera variante agotada: i % 9 === 4
  *   - destacados: i % 25 === 1 (y con stock) · granel: 1 de cada 3 productos de snacks
+ *   - descatalogado (Fase E): i % 50 === 46, con sustituto = el primer producto de su hoja
  */
 export function buildMockCatalog(categories: CategorySheet[], count: number): MockCatalog {
   const leaves = leafCategories(categories);
@@ -310,8 +314,9 @@ export function buildMockCatalog(categories: CategorySheet[], count: number): Mo
     (l) => Array(PROFILES[l.handle]?.weight ?? 1).fill(l) as CategorySheet[],
   );
   const perLeaf = new Map<string, number>();
+  const firstOfLeaf = new Map<string, string>();
   const rows: Row[] = [];
-  const stats = { products: 0, variants: 0, bulk: 0, sale: 0, featured: 0 };
+  const stats = { products: 0, variants: 0, bulk: 0, sale: 0, featured: 0, discontinued: 0 };
 
   for (let i = 1; i <= count; i++) {
     const leaf = slots[(i - 1) % slots.length]!;
@@ -323,6 +328,9 @@ export function buildMockCatalog(categories: CategorySheet[], count: number): Mo
     const title = `${noun} ${adj}`;
     const num = String(i).padStart(3, "0");
     const handle = `mock-${slug(title)}-${num}`;
+    const replacement = firstOfLeaf.get(leaf.handle);
+    if (!replacement) firstOfLeaf.set(leaf.handle, handle);
+    const discontinued = i % 50 === 46 && Boolean(replacement);
     const skuBase = `MOCK-${num}`;
     const bulk = profile.kind === "snack" && k % 3 === 2;
     const soldOut = i % 23 === 7;
@@ -345,10 +353,12 @@ export function buildMockCatalog(categories: CategorySheet[], count: number): Mo
       coleccion: featured ? "destacados" : "",
       estado: "publicado",
       marca: i % 3 ? "Hiro" : "Rincón",
+      ...(discontinued ? { descatalogado: "sí", sustituto: replacement } : {}),
       ...analyticsFor(profile.kind, i),
     };
     stats.products++;
     if (featured) stats.featured++;
+    if (discontinued) stats.discontinued++;
 
     if (bulk) {
       const priceKg = [18, 20, 24][i % 3]!;

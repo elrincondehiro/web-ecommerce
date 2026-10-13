@@ -55,7 +55,7 @@ describe("buildCategoryTree", () => {
     const n = tree.byHandle.get("piensos")!;
     expect(n.path.map((p) => p.handle)).toEqual(["perro", "alimentacion", "piensos"]);
     expect(n.depth).toBe(2);
-    expect(categoryHref(n)).toBe("/categorias/piensos/");
+    expect(categoryHref(n)).toBe("/categoria/piensos/");
   });
   it("`all` en preorden (padre antes que hijas)", () => {
     expect(tree.all.map((n) => n.handle)).toEqual([

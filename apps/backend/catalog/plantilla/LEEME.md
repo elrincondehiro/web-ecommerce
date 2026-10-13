@@ -22,7 +22,7 @@ pnpm --filter backend images:import catalog/mi-carga/fotos
 - **Celda vacía = no tocar**. Al actualizar, lo vacío conserva lo que ya hay en la tienda. Un guion `-` **borra** el valor.
 - **Todo o nada**: se valida todo antes de escribir. Si hay un solo error, no se carga nada y sale un informe por fila y columna (`productos.csv:14 [precio] …`).
 - **Se puede repetir**: categorías y productos se actualizan por `handle` y las variantes por `sku`. Volver a cargar la misma hoja no cambia nada. Lo que está en la tienda y no en la hoja **se ignora**: no se borra.
-- **handle**: identificador en la URL (`/producto/collar-nylon/`). Va en minúsculas, con números y guiones. No lo cambies después: sería otro producto. Es **único en toda la tienda**: dos subcategorías «Juguetes» (perro y gato) necesitan `juguetes-perro` y `juguetes-gato`.
+- **handle**: identificador en la URL (`/producto/collar-nylon/`, `/categoria/pienso-perro/`). Va en minúsculas, con números y guiones. **No lo cambies después**: sería otro producto y la URL antigua daría 404. Si es imprescindible, cámbialo en el Admin y añade la redirección en `apps/storefront/src/lib/redirects.mjs` (Fase E). Para retirar un producto, no lo borres: [descatalógalo](#descatalogar-un-producto). Es **único en toda la tienda**: dos subcategorías «Juguetes» (perro y gato) necesitan `juguetes-perro` y `juguetes-gato`.
 
 ## categorias.csv
 
@@ -47,20 +47,22 @@ Una fila por categoría.
 
 ### Datos del producto (primera fila)
 
-| Columna       | Obligatoria | Ejemplo                | Notas                                                                                   |
-| ------------- | ----------- | ---------------------- | --------------------------------------------------------------------------------------- |
-| `handle`      | sí          | `collar-nylon`         | En todas las filas del producto.                                                        |
-| `titulo`      | al crear    | `Collar de nailon`     | Empieza en mayúscula: la tienda ordena distinguiendo mayúsculas (aviso si no).          |
-| `subtitulo`   | no          | `Hebilla rápida`       |                                                                                         |
-| `descripcion` | no          |                        | Admite saltos de línea (entre comillas, como hace Excel).                               |
-| `categorias`  | no          | `collares-perro`       | Handles separados por `\|`. Si tiene valor, **sustituye** las actuales. `-` = ninguna.  |
-| `etiquetas`   | no          | `novedad\|reflectante` | Separadas por `\|`. Las que no existan se crean. Sustituye las actuales. `-` = ninguna. |
-| `iva`         | no          | `reducido`             | `general` (21 %), `reducido` (10 %), `superreducido` (4 %). Por defecto, general.       |
-| `coleccion`   | no          | `destacados`           | Handle de una colección creada en el Admin. `-` = quitarla.                             |
-| `estado`      | no          | `publicado`            | `publicado` / `borrador`. Por defecto `publicado`.                                      |
-| `material`    | no          | `Nailon`               |                                                                                         |
-| `marca`       | no          | `Hiro`                 | Se guarda en `metadata.marca`.                                                          |
-| `granel`      | no          | `sí`                   | Producto a granel: ver [Granel](#granel).                                               |
+| Columna         | Obligatoria | Ejemplo                | Notas                                                                                   |
+| --------------- | ----------- | ---------------------- | --------------------------------------------------------------------------------------- |
+| `handle`        | sí          | `collar-nylon`         | En todas las filas del producto.                                                        |
+| `titulo`        | al crear    | `Collar de nailon`     | Empieza en mayúscula: la tienda ordena distinguiendo mayúsculas (aviso si no).          |
+| `subtitulo`     | no          | `Hebilla rápida`       |                                                                                         |
+| `descripcion`   | no          |                        | Admite saltos de línea (entre comillas, como hace Excel).                               |
+| `categorias`    | no          | `collares-perro`       | Handles separados por `\|`. Si tiene valor, **sustituye** las actuales. `-` = ninguna.  |
+| `etiquetas`     | no          | `novedad\|reflectante` | Separadas por `\|`. Las que no existan se crean. Sustituye las actuales. `-` = ninguna. |
+| `iva`           | no          | `reducido`             | `general` (21 %), `reducido` (10 %), `superreducido` (4 %). Por defecto, general.       |
+| `coleccion`     | no          | `destacados`           | Handle de una colección creada en el Admin. `-` = quitarla.                             |
+| `estado`        | no          | `publicado`            | `publicado` / `borrador`. Por defecto `publicado`.                                      |
+| `material`      | no          | `Nailon`               |                                                                                         |
+| `marca`         | no          | `Hiro`                 | Se guarda en `metadata.marca`.                                                          |
+| `granel`        | no          | `sí`                   | Producto a granel: ver [Granel](#granel).                                               |
+| `descatalogado` | no          | `sí`                   | `sí` / `no`. Ver [Descatalogar un producto](#descatalogar-un-producto).                 |
+| `sustituto`     | no          | `collar-nylon-2`       | Handle del producto que lo sustituye. `-` = quitarlo.                                   |
 
 ### Componentes analíticos (primera fila)
 
@@ -138,6 +140,17 @@ Para snacks, premios o pienso que el cliente compra **al peso**. No se vende al 
 - Se guardan `metadata.granel` (producto) y `metadata.paso_g` / `metadata.min_g` (variante): es lo que leerá el storefront.
 
 - **En la tienda** (Fase S, S-3): la tarjeta y la ficha muestran «Desde» con el precio del mínimo (100 g a 20 €/kg = 2,00 €) y debajo «20,00 €/kg · mínimo 100 g». En la ficha el cliente elige los **gramos** (− / + de paso en paso, a mano cualquier múltiplo del paso, o los accesos 100 g / 250 g / 500 g / 1 kg) hasta un máximo de 5 kg por línea, y ve «Quedan 2,4 kg». El carrito, el pedido y los emails dicen «250 g · 20,00 €/kg». El filtro y el orden por precio de la búsqueda usan también el precio del mínimo. El máximo, el total en vivo y el «Quedan» se configuran en `CATALOG_FEATURES` (storefront, `src/lib/constants.ts`).
+
+## Descatalogar un producto
+
+Un producto que ya no se vende **no se borra ni se pasa a borrador**: su URL tiene visitas, enlaces y posición en Google. Se marca `descatalogado` = `sí` (Fase E):
+
+- La ficha sigue en `/producto/<handle>/` con el aviso «Este producto está descatalogado», sin botón de compra, con `noindex` y un enlace al `sustituto` (si lo hay), a su categoría o a `/productos/`.
+- Sale de categorías, `/productos/`, ofertas, carrusel de la home, búsqueda, sugerencias y sitemap.
+- Medusa no deja añadirlo al carrito (400 «Este producto está descatalogado y ya no se puede comprar.»). Los carritos que ya lo tenían pueden pagarlo: si no quieres, quita el stock.
+- `sustituto`: handle de otro producto de esta hoja o de la tienda; no puede ser él mismo. Se guardan `metadata.descatalogado` y `metadata.sustituto`.
+- Volver a venderlo: `descatalogado` = `no`.
+- El cambio llega a la búsqueda al momento y a las páginas en el siguiente build.
 
 ## Fotos
 

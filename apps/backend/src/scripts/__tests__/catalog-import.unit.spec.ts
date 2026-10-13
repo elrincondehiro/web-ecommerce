@@ -481,3 +481,55 @@ describe("plan", () => {
     });
   });
 });
+
+describe("descatalogado y sustituto (Fase E)", () => {
+  const refs = {
+    salesChannelId: "sc",
+    shippingProfileId: "sp",
+    categoryIds: {},
+    collectionIds: {},
+    tagIds: {},
+    typeIds: {},
+  } as unknown as Parameters<typeof productCreateInput>[1];
+  const read = (rows: string[]) =>
+    readProducts(csv(["handle,descatalogado,sustituto,sku,precio", ...rows]));
+
+  it("lee sí/no, el sustituto y «-» para borrarlo", () => {
+    const { products, errors } = read([
+      'viejo,sí,nuevo,V-1,"9,95"',
+      'otro,no,-,O-1,"9,95"',
+      'nuevo,,,N-1,"9,95"',
+    ]);
+    expect(errors).toEqual([]);
+    expect(products.map((p) => [p.discontinued, p.replacement])).toEqual([
+      [true, "nuevo"],
+      [false, null],
+      [undefined, undefined],
+    ]);
+    expect(productCreateInput(products[0]!, refs).metadata).toMatchObject({
+      descatalogado: true,
+      sustituto: "nuevo",
+    });
+    expect(productCreateInput(products[1]!, refs).metadata).toMatchObject({
+      descatalogado: "",
+      sustituto: "",
+    });
+  });
+
+  it("valores no válidos y sustituto inexistente o propio", () => {
+    expect(read(['viejo,quizá,Nuevo,V-1,"9,95"']).errors.map((e) => e.column)).toEqual([
+      "descatalogado",
+      "sustituto",
+    ]);
+    expect(read(['viejo,sí,viejo,V-1,"9,95"']).errors[0]?.message).toMatch(/propio sustituto/);
+    const { products } = read(['viejo,sí,no-existe,V-1,"9,95"']);
+    const plan = planCatalog({ categories: [], products }, emptyDb());
+    expect(plan.errors.map((e) => e.column)).toContain("sustituto");
+    // Existe en Medusa (fuera de la hoja): vale
+    const ok = planCatalog(
+      { categories: [], products },
+      emptyDb({ replacementHandles: ["no-existe"] }),
+    );
+    expect(ok.errors.map((e) => e.column)).not.toContain("sustituto");
+  });
+});

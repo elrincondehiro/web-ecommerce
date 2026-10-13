@@ -119,7 +119,7 @@ describe("buildSearchQueries", () => {
   it("sin filtros: una consulta, sin typo_tolerance, orden por título", () => {
     const [main, ...rest] = buildSearchQueries(parse(""));
     expect(rest).toHaveLength(0);
-    expect(main!.filters).toEqual({});
+    expect(main!.filters).toEqual({ $and: [{ discontinued: { $ne: true } }] });
     expect(main!.pagination).toEqual({ skip: 0, take: 24, order: { title: "ASC" } });
     expect(JSON.stringify(main)).not.toContain("typo_tolerance");
     expect(main!.search_options.disjunctive_facets).toBe(true);
@@ -127,7 +127,7 @@ describe("buildSearchQueries", () => {
 
   it("con texto y relevancia no fija orden", () => {
     const [main] = buildSearchQueries(parse("q=lampara&pagina=2"));
-    expect(main!.filters).toEqual({ q: "lampara" });
+    expect(main!.filters).toEqual({ q: "lampara", $and: [{ discontinued: { $ne: true } }] });
     expect(main!.pagination).toEqual({ skip: 24, take: 24 });
   });
 
@@ -139,6 +139,7 @@ describe("buildSearchQueries", () => {
     );
     expect(main!.filters).toEqual({
       $and: [
+        { discontinued: { $ne: true } },
         { category_tree_handles: { $in: ["ropa"] } },
         { option_values: { $in: ["Color:Rojo"] } },
         { option_values: { $in: ["Talla:L", "Talla:M"] } },
@@ -162,7 +163,11 @@ describe("materia seca en la consulta (S-2)", () => {
     const p = parse("proteina_min=30&grasa_max=12");
     const [main] = buildSearchQueries(p);
     expect(main!.filters).toEqual({
-      $and: [{ proteina_ms: { $gte: 30 } }, { grasa_ms: { $lte: 12 } }],
+      $and: [
+        { discontinued: { $ne: true } },
+        { proteina_ms: { $gte: 30 } },
+        { grasa_ms: { $lte: 12 } },
+      ],
     });
     const chips = activeFilters(p);
     expect(chips.map((c) => c.label)).toEqual(["Proteína s.m.: ≥ 30 %", "Grasa s.m.: ≤ 12 %"]);

@@ -13,7 +13,7 @@ import {
   STOREFRONT_MAX_PRODUCTS,
 } from "astro:env/server";
 import { CardCache } from "./card-cache";
-import type { StoreProduct } from "./catalog";
+import { isDiscontinued, type StoreProduct } from "./catalog";
 import type { RawSearchResult, SearchQueryBody } from "./search";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
@@ -27,8 +27,9 @@ export interface StoreRegionRef {
 
 const COUNTRY_CODE = "es";
 const ORDER = "title";
+// `updated_at`: `lastmod` del sitemap (Fase E).
 const CATALOG_FIELDS =
-  "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,*images,*categories,*options,*options.values,*tags";
+  "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,updated_at,*images,*categories,*options,*options.values,*tags";
 const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity`;
 const CATEGORY_FIELDS = "id,name,handle,description,rank,parent_category_id";
 const PAGE = 100;
@@ -97,9 +98,17 @@ export async function getCategoryList(): Promise<StoreCategory[]> {
   return out;
 }
 
-/** Todo el catálogo con precio y stock (build, getStaticPaths). Paginado contra la API. */
+/**
+ * Todo el catálogo con precio y stock (build, getStaticPaths). Paginado contra la API. Incluye
+ * los descatalogados (Fase E): solo para las fichas; los listados usan `getListedProducts`.
+ */
 export function getAllProducts(): Promise<StoreProduct[]> {
   return (catalogPromise ??= loadCatalog());
+}
+
+/** Catálogo de los LISTADOS (categorías, /productos/, ofertas, home, sitemap): sin descatalogados. */
+export async function getListedProducts(): Promise<StoreProduct[]> {
+  return (await getAllProducts()).filter((p) => !isDiscontinued(p));
 }
 
 // Memo de módulo: el catálogo se descarga UNA vez por build y lo reutilizan home, listados,
@@ -136,7 +145,7 @@ export async function getCollectionByHandle(handle: string): Promise<StoreCollec
 
 /** Productos de una Collection, del catálogo del build (mismo orden: título). */
 export async function getCollectionProducts(collectionId: string): Promise<StoreProduct[]> {
-  return (await getAllProducts()).filter((p) => p.collection_id === collectionId);
+  return (await getListedProducts()).filter((p) => p.collection_id === collectionId);
 }
 
 /**
@@ -162,7 +171,7 @@ async function loadSaleProductIds(): Promise<string[]> {
 
 /** Productos en oferta del catálogo del build (build de /ofertas/ y del banner de la home). */
 export async function getSaleProducts(): Promise<StoreProduct[]> {
-  const [ids, all] = await Promise.all([getSaleProductIds(), getAllProducts()]);
+  const [ids, all] = await Promise.all([getSaleProductIds(), getListedProducts()]);
   const set = new Set(ids);
   return all.filter((p) => set.has(p.id));
 }

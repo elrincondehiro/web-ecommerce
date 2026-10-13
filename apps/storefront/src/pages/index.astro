@@ -7,7 +7,7 @@
 import { Picture } from "astro:assets";
 import { getEntry } from "astro:content";
 import { buttonVariants } from "$lib/components/ui/button";
-import { getAllProducts, getSaleProductIds } from "$lib/medusa";
+import { getListedProducts, getSaleProductIds } from "$lib/medusa";
 import { productsInSubtree } from "$lib/categories";
 import { listingPageKey } from "$lib/listing-pages";
 import { getFeaturedProducts, getShopTree } from "$lib/shop";
@@ -22,7 +22,7 @@ import { CAROUSEL_CARD_SIZES, CATEGORY_CARD_SIZES } from "$lib/images";
 
 const home = (await getEntry("home", "home"))!.data;
 const [products, tree, featured, saleIds] = await Promise.all([
-  getAllProducts(),
+  getListedProducts(),
   getShopTree(true),
   getFeaturedProducts(),
   getSaleProductIds(),
@@ -85,7 +85,7 @@ const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
         {categoryCards.map((c) => (
           <li>
             <a
-              href={`/categorias/${c.handle}/`}
+              href={`/categoria/${c.handle}/`}
               class="group flex flex-col overflow-hidden rounded-md border-2 border-line bg-card shadow-sm transition-[translate,box-shadow] hover:translate-x-px hover:translate-y-px hover:shadow-xs"
             >
               <ProductImage src={c.image} alt="" sizes={CATEGORY_CARD_SIZES} />

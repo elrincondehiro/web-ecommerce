@@ -230,6 +230,51 @@ medusaIntegrationTestRunner({
       expect((await update(0)).status).toBe(200);
     });
 
+    it("descatalogado: metadata, sustituto y el carrito no deja añadirlo (Fase E)", async () => {
+      await run();
+      // Segunda carga con una hoja mínima (solo lo que cambia; lo demás no se toca)
+      const file = path.join(dir, "productos.csv");
+      const sheet = (flag: string, replacement: string) =>
+        writeFile(
+          file,
+          `handle,descatalogado,sustituto,sku,precio\nguia-cachorro,${flag},${replacement},LIB-GUIA-CACH,"14,90"\n`,
+        );
+      await sheet("sí", "collar-nylon");
+      await run();
+      const guia = await product("guia-cachorro");
+      expect(guia?.status).toBe("published");
+      expect(guia?.metadata).toMatchObject({ descatalogado: true, sustituto: "collar-nylon" });
+
+      const [key] = await container.resolve(Modules.API_KEY).listApiKeys({ type: "publishable" });
+      const headers = { "x-publishable-api-key": key!.token };
+      const [region] = await container.resolve(Modules.REGION).listRegions({});
+      const cart = (await api.post("/store/carts", { region_id: region!.id }, { headers })).data
+        .cart;
+      const variantId = (
+        await api.get(`/store/products?handle=guia-cachorro&fields=variants.id`, { headers })
+      ).data.products[0].variants[0].id;
+      const res = await api
+        .post(
+          `/store/carts/${cart.id}/line-items`,
+          { variant_id: variantId, quantity: 1 },
+          { headers },
+        )
+        .catch((e: { response: { status: number; data: { message: string } } }) => e.response);
+      expect(res.status).toBe(400);
+      expect(res.data.message).toBe("Este producto está descatalogado y ya no se puede comprar.");
+
+      // Sustituto que no existe: error de la hoja
+      await sheet("sí", "no-existe");
+      await expect(run()).rejects.toThrow(/errores en las hojas/);
+
+      // Volver a catalogarlo («no») y borrar el sustituto («-»)
+      await sheet("no", "-");
+      await run();
+      const back = await product("guia-cachorro");
+      expect(back?.metadata?.descatalogado).toBeUndefined();
+      expect(back?.metadata?.sustituto).toBeUndefined();
+    });
+
     it("una hoja con errores no escribe nada", async () => {
       const file = path.join(dir, "productos.csv");
       await writeFile(file, (await readFile(file, "utf8")).replace("pienso-perro,", "no-existe,"));

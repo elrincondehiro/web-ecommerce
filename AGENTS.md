@@ -266,7 +266,7 @@ git push -u origin feat/carrito-server-island    # origin empuja a Gitea y GitHu
 - Workflows solo para Gitea: condición `if: ${{ github.server_url != 'https://github.com' }}` (p. ej. `renovate.yml`).
 - SSH con ssh-agent: el usuario carga la clave con caducidad (~8 h). Si `git push` falla por clave, **no** pidas la passphrase ni la guardes; pide al usuario que ejecute `ssh-add ~/.ssh/id_ed25519`.
 
-- `ci.yml` (PR): `pnpm install --frozen-lockfile` → `lint` → `typecheck` → `test` → `build` → comprobación de presupuesto de JS → Lighthouse CI.
+- `ci.yml`: `pnpm install --frozen-lockfile` → `lint` → `typecheck` → `test` → `build` → comprobación de presupuesto de JS (`quality`), tests HTTP del backend (`integration`), `pnpm audit` (`audit`) y Lighthouse CI (`lighthouse`). Reparto (Fase E): **Gitea** solo en `pull_request` y sin `lighthouse`; **GitHub** en el push de cualquier rama (push mirror) y de `main`, con los cuatro. Un job nuevo lleva el mismo `if:` que `quality` (o el de `lighthouse` si solo debe correr en GitHub).
 - `images.yml`:
   - push a `main` → imágenes `:sha-<7>` y `:main`.
   - tag `vX.Y.Z` → imágenes `:X.Y.Z`, `:X.Y`, `:latest` (versión desplegable).

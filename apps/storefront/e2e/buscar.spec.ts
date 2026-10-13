@@ -133,7 +133,7 @@ test("proteína sobre materia seca (S-2): rango, chip y quitar", async ({ page, 
 });
 
 test("botón Filtrar de una categoría estática → /buscar/ con la categoría", async ({ page }) => {
-  await page.goto("/categorias/ropa-perro/");
+  await page.goto("/categoria/ropa-perro/");
   await page.getByRole("button", { name: "Filtrar" }).click();
   await page.locator("#filtros input[value='Color:Azul']").check();
   await page.locator("#filtros").getByRole("button", { name: "Aplicar filtros" }).click();

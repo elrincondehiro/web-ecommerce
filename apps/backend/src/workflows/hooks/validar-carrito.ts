@@ -6,24 +6,38 @@ import {
   updateLineItemInCartWorkflow,
 } from "@medusajs/medusa/core-flows";
 import { bulkMinimumError, bulkRule } from "../../lib/granel";
+import { DISCONTINUED_MESSAGE, isDiscontinued } from "../../lib/descatalogado";
 
 /**
- * Granel: la cantidad total de una variante en el carrito × `paso_g` no puede quedar por debajo
+ * Validaciones del carrito con los hooks `validate` oficiales. Medusa admite UN solo handler por
+ * hook (docs: workflow-hooks «A hook can have only one handler»), así que van todas aquí:
+ * - Descatalogados (Fase E): no se pueden añadir (sí cambiar la cantidad o quitar una línea que ya
+ *   estaba en el carrito).
+ * - Granel (S-3): la cantidad total de una variante en el carrito × `paso_g` no puede quedar por debajo
  * de `min_g` (metadata de la variante, la escribe `catalog:import`). Hooks `validate` oficiales:
  * se ejecutan antes de tocar el carrito, así que un error lo deja como estaba.
  */
 type Quantities = Map<string, number>;
 
-async function check(container: MedusaContainer, quantities: Quantities) {
+async function check(
+  container: MedusaContainer,
+  quantities: Quantities,
+  adding: ReadonlySet<string> = new Set(),
+) {
   const ids = [...quantities.keys()];
   if (!ids.length) return;
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
   const { data } = await query.graph({
     entity: "product_variant",
-    fields: ["id", "metadata"],
+    fields: ["id", "metadata", "product.metadata"],
     filters: { id: ids },
   });
   for (const v of data) {
+    const product = (v as { product?: { metadata?: Record<string, unknown> | null } | null })
+      .product;
+    if (adding.has(v.id) && isDiscontinued(product?.metadata)) {
+      throw new MedusaError(MedusaError.Types.NOT_ALLOWED, DISCONTINUED_MESSAGE);
+    }
     const rule = bulkRule(v.metadata as Record<string, unknown> | null);
     if (!rule) continue;
     const message = bulkMinimumError(rule, quantities.get(v.id) ?? 0);
@@ -47,6 +61,7 @@ addToCartWorkflow.hooks.validate(async ({ input }, { container }) => {
   for (const item of (input.items ?? []) as CartItem[])
     add(quantities, item.variant_id, item.quantity);
   if (!quantities.size) return;
+  const adding = new Set(quantities.keys());
   // Añadir una variante que ya está en el carrito suma a su línea (el carrito del hook no trae
   // las líneas: se leen aquí)
   const query = (container as MedusaContainer).resolve(ContainerRegistrationKeys.QUERY);
@@ -56,7 +71,7 @@ addToCartWorkflow.hooks.validate(async ({ input }, { container }) => {
     filters: { cart_id: input.cart_id, variant_id: [...quantities.keys()] },
   });
   for (const item of items as CartItem[]) add(quantities, item.variant_id, item.quantity);
-  await check(container, quantities);
+  await check(container, quantities, adding);
 });
 
 updateLineItemInCartWorkflow.hooks.validate(async ({ input, cart }, { container }) => {
@@ -78,5 +93,5 @@ createCartWorkflow.hooks.validate(async ({ input }, { container }) => {
   const quantities: Quantities = new Map();
   for (const item of (input.items ?? []) as CartItem[])
     add(quantities, item.variant_id, item.quantity);
-  await check(container, quantities);
+  await check(container, quantities, new Set(quantities.keys()));
 });

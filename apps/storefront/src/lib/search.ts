@@ -310,8 +310,14 @@ export function optionGroups(opcion: string[]): Map<string, string[]> {
   return groups;
 }
 
+/**
+ * Descatalogados fuera de la búsqueda (Fase E): `$ne` también casa con documentos SIN el campo
+ * (índice anterior), tanto en Meilisearch (`!=`) como en el proveedor PostgreSQL de Medusa.
+ */
+export const LISTED_FILTER: Filter = { discontinued: { $ne: true } };
+
 function filtersFor(p: SearchParams, skipOptionGroup?: string): Filter {
-  const and: Filter[] = [];
+  const and: Filter[] = [LISTED_FILTER];
   if (p.categoria.length) and.push({ [CATEGORY_FIELD]: { $in: p.categoria } });
   if (p.etiqueta.length) and.push({ tags: { $in: p.etiqueta } });
   for (const [title, values] of optionGroups(p.opcion)) {

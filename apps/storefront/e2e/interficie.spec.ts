@@ -91,7 +91,8 @@ test.describe("sin JS", () => {
   });
 
   test("los manifiestos de listados no son públicos", async ({ page }) => {
-    for (const path of ["/listados/paginas.json", "/listados/categorias.json"]) {
+    const paths = ["/listados/paginas.json", "/listados/categorias.json", "/listados/sitemap.json"];
+    for (const path of paths) {
       expect((await page.request.get(path)).status()).toBe(404);
     }
   });
@@ -112,7 +113,7 @@ test.describe("sin JS", () => {
   });
 
   test("tarjetas con €/kg; productos sin contenido neto, sin él", async ({ page }) => {
-    await page.goto("/categorias/piensos-perro/");
+    await page.goto("/categoria/piensos-perro/");
     await expect(page.locator("main article [data-unit]").first()).toHaveText(/€\/kg$/);
     await page.goto("/producto/mock-clicker-esencial-018/");
     await expect(page.locator("main [data-unit]")).toHaveCount(0);
@@ -120,7 +121,7 @@ test.describe("sin JS", () => {
   });
 
   test("subcategorías: el padre agrega a sus hijas; migas con la cadena", async ({ page }) => {
-    await page.goto("/categorias/perro/");
+    await page.goto("/categoria/perro/");
     const subs = page.getByRole("navigation", { name: "Subcategorías de Perro" });
     await expect(subs.getByRole("link", { name: "Alimentación" })).toBeVisible();
     await expect(page.locator("main article").first()).toBeVisible();
@@ -129,15 +130,38 @@ test.describe("sin JS", () => {
       .getByRole("navigation", { name: "Subcategorías de Alimentación" })
       .getByRole("link", { name: "Piensos" })
       .click();
-    await expect(page).toHaveURL(/\/categorias\/piensos-perro\/$/);
+    await expect(page).toHaveURL(/\/categoria\/piensos-perro\/$/);
     const crumbs = page.getByRole("navigation", { name: /migas/i });
     await expect(crumbs.getByRole("link", { name: "Perro" })).toHaveAttribute(
       "href",
-      "/categorias/perro/",
+      "/categoria/perro/",
     );
     await expect(crumbs.getByRole("link", { name: "Alimentación" })).toBeVisible();
     // Hoja: sin subcategorías
     await expect(page.getByRole("navigation", { name: /^Subcategorías/ })).toHaveCount(0);
+  });
+
+  test("descatalogado (Fase E): ficha con aviso y sustituto, fuera de listados y sitemap", async ({
+    page,
+  }) => {
+    // catalog:mock: mock-guiso-eco-046 descatalogado, sustituto mock-guiso-eco-007
+    await page.goto("/producto/mock-guiso-eco-046/");
+    await expect(page.getByText("Este producto está descatalogado", { exact: true })).toBeVisible();
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+    await expect(page.getByRole("button", { name: /^Añadir/ })).toHaveCount(0);
+    await page.getByRole("link", { name: /^Ver Guiso Eco/ }).click();
+    await expect(page).toHaveURL(/\/producto\/mock-guiso-eco-007\/$/);
+    await page.goto("/categoria/comida-cocinada-perro/");
+    await expect(page.locator('main a[href="/producto/mock-guiso-eco-046/"]')).toHaveCount(0);
+    const sitemap = await (await page.request.get("/sitemap-0.xml")).text();
+    expect(sitemap).not.toContain("mock-guiso-eco-046");
+    expect(sitemap).toMatch(/<loc>[^<]*\/producto\/mock-guiso-eco-007\/<\/loc><lastmod>/);
+  });
+
+  test("redirección 301 de /categorias/ a /categoria/ (Fase E)", async ({ page }) => {
+    const res = await page.request.get("/categorias/piensos-perro/", { maxRedirects: 0 });
+    expect(res.status()).toBe(301);
+    expect(res.headers().location).toMatch(/\/categoria\/piensos-perro\/$/);
   });
 
   test("/sobre-nosotros/ y pie con contacto, redes y pagos", async ({ page }) => {

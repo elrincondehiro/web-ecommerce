@@ -9,6 +9,7 @@
 # categorias: handles de categorias.csv separados por | (la subcategoría más concreta) · etiquetas: separadas por | · iva: general / reducido (10 %) / superreducido (4 %) · coleccion: handle de una colección del Admin.
 # estado: publicado / borrador (por defecto publicado) · peso_g: peso de envío en gramos (con envase) · medidas en milímetros. Celda vacía = no tocar; un guion - = borrar el valor.
 "# ANALÍTICOS (producto, % tal cual, 0–100): proteina_pct · grasa_pct · fibra_pct · cenizas_pct · humedad_pct (sin humedad no hay filtro sobre materia seca). Otros: columna analitico:Nombre con texto libre (1,2 %)."
+# descatalogado: sí / no (la ficha sigue con aviso y noindex; sale de listados, búsqueda y sitemap) · sustituto: handle del producto que lo reemplaza. Columnas opcionales: añádelas si las usas.
 "# CONTENIDO NETO (variante, para el precio por kilo o litro): neto_g (gramos) O neto_ml (mililitros), no los dos."
 "# GRANEL: granel = sí y, en vez de precio/precio_oferta/stock, paso_g (se vende de paso en paso: 5, 10, 25… g) · min_g (mínimo por pedido, múltiplo del paso; vacío = el paso) · precio_kg · precio_oferta_kg · stock_g (gramos, solo al crear)."
 #   El precio de un paso (precio_kg × paso_g / 1000) debe salir en céntimos exactos: dry-run propone alternativas si no.

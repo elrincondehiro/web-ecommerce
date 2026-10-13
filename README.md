@@ -158,7 +158,7 @@ web-ecommerce/
 
 ## 4. Versiones fijadas
 
-**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 05-oct-2026 (fase 7, ramas `feat/fase7-1-busqueda` y `feat/fase7-2-sugerencias`, con el PR #23 de Renovate integrado).
+**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 13-oct-2026 (cierre de la Fase S; sin cambios de dependencias desde la Fase C).
 
 Política:
 
@@ -509,7 +509,7 @@ pnpm --filter storefront test:e2e                      # Playwright (fase 4): in
 pnpm --filter storefront fixtures:update               # regenera src/lib/__fixtures__ desde Medusa
 ```
 
-- HTML estático para home, `/productos/`, `/categorias/<handle>/` y `/producto/<handle>/`. El precio y el stock se escriben en el build y una **server island** invisible (`LiveSync`) los corrige (fase 6).
+- HTML estático para home, `/productos/`, `/categoria/<handle>/` y `/producto/<handle>/`. El precio y el stock se escriben en el build y una **server island** invisible (`LiveSync`) los corrige (fase 6).
 - Imágenes de producto optimizadas en build con `<Picture>` (AVIF/WebP, 1:1) desde el bucket (`IMAGE_BASE_URL`). El primer build tarda unos 30 min con 1000 productos × 4 fotos; después son unos 20 s ([fase6.md](./docs/fases/fase6.md)).
 - **Carrito** (fase 4): cookie `cart_id` httpOnly, Astro Actions que funcionan sin JS (POST → 303 a la página de origen), contador en server island, `/carrito/` on-demand con 0 JS y un único script de mejora progresiva (fetch, toasts, flyout en escritorio) de ~1 KB gzip ([fase4.md](./docs/fases/fase4.md)).
 - **Checkout** (fase 5): `/checkout/` on-demand en una página (datos → envío → pago). Datos y envío funcionan sin JS. El pago usa el Payment Element de Stripe (script de ~2 KB gzip + Stripe.js), solo autoriza y la captura se hace desde el Admin. Confirmación en `/pedido/<id>/` ([fase5.md](./docs/fases/fase5.md)).
@@ -569,12 +569,12 @@ feat/*, fix/*, chore/*  ──PR──▶  CI (lint · typecheck · test · buil
 
 - **Ramas**: `feat/<descripcion-corta>`, `fix/…`, `chore/…`, `docs/…`. Nunca commits directos a `main`.
 - **PR y merge en Gitea**; GitHub recibe `main` por push mirror (ver §7.3).
-- **Checks obligatorios**: jobs `quality`, `integration`, `audit` y `lighthouse` de `ci.yml` (Gitea y GitHub).
+- **Checks obligatorios**: en Gitea, `quality`, `integration` y `audit`; en GitHub, esos tres y `lighthouse` (reparto de la Fase E, ver `ci.yml`).
 - **Renovate**: `renovate.yml` en Gitea Actions con el bot `renovate-bot`: lunes 04:00 UTC, manual, y **al marcar una casilla del Dependency Dashboard** (evento `issues: edited`). Abre PRs que pasan por el mismo CI y se re-basan solos si `main` avanza.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) (`feat(storefront): …`).
 - **Versionado**: SemVer. Release = `git tag -a v1.2.3 -m "v1.2.3" && git push origin v1.2.3`.
 - **Workflows** (`.github/workflows/`):
-  - `ci.yml` — en `pull_request` y push a `main`: `quality` (`pnpm install --frozen-lockfile`, lint, formato, build, typecheck, test, presupuesto de JS), `integration` (tests HTTP del backend con Postgres/Redis), `audit` (`pnpm audit --prod`) y `lighthouse` (Lighthouse CI móvil sobre el storefront de fixtures). Detalle en [fase10.md](./docs/fases/fase10.md) §4.6.
+  - `ci.yml` — **Gitea** solo en `pull_request` (`quality`, `integration`, `audit`); **GitHub** en el push de cualquier rama (llega por el push mirror) y de `main`, con los cuatro jobs. `lighthouse` solo corre en GitHub ([faseE-urls-correas.md](./docs/fases/faseE-urls-correas.md) §E-0). Jobs: `quality` (`pnpm install --frozen-lockfile`, lint, formato, build, typecheck, test, presupuesto de JS), `integration` (tests HTTP del backend con Postgres/Redis), `audit` (`pnpm audit --prod`) y `lighthouse` (Lighthouse CI móvil sobre el storefront de fixtures). Detalle en [fase10.md](./docs/fases/fase10.md) §4.6.
   - `images.yml` — en `push` a `main`, tags `v*.*.*` y a mano: build con Buildx y push usando `docker/metadata-action`, una imagen detrás de otra:
     ```yaml
     tags: |
@@ -684,7 +684,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | Auditoría previa a la fase 10          | [auditoria-pre-fase10.md](./docs/fases/auditoria-pre-fase10.md)                                  | ✅     |
 | 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | ✅     |
 | C Importador de catálogo (CSV)         | [faseC-catalogo.md](./docs/fases/faseC-catalogo.md)                                              | ✅     |
-| S Catálogo en el storefront            | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | 🚧     |
+| S Catálogo en el storefront            | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | ✅     |
+| E URL, descatalogados y especiales     | [faseE-urls-correas.md](./docs/fases/faseE-urls-correas.md)                                      | 🚧     |
 | 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

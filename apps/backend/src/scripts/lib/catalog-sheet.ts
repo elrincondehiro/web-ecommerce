@@ -88,6 +88,13 @@ export interface ProductSheet {
   extraAnalytics: Record<string, string | null>;
   /** Producto a granel (todas sus variantes). */
   bulk?: boolean;
+  /**
+   * Descatalogado (Fase E): sigue publicado (su URL no da 404) pero sale de listados, búsqueda y
+   * sitemap, y no se puede comprar. `undefined` = no tocar.
+   */
+  discontinued?: boolean;
+  /** Handle del producto que lo sustituye (enlace en su ficha): `null` = borrar. */
+  replacement?: Text;
   /** Títulos de las opciones del producto, en el orden de las columnas. */
   options: string[];
   variants: VariantSheet[];
@@ -123,6 +130,8 @@ const PRODUCT_COLUMNS = [
   "marca",
   ...ANALYTIC_COLUMNS,
   "granel",
+  "descatalogado",
+  "sustituto",
   "sku",
   "ean",
   "precio",
@@ -155,6 +164,8 @@ const PRODUCT_LEVEL: ProductColumn[] = [
   "marca",
   ...ANALYTIC_COLUMNS,
   "granel",
+  "descatalogado",
+  "sustituto",
 ];
 /** Columnas de variante que heredan el valor de la fila de arriba (mismo producto). */
 type Inherited =
@@ -561,6 +572,19 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
       if (granel) {
         if (granel in BOOL) p.bulk = BOOL[granel];
         else err("granel", "Valores válidos: sí / no.");
+      }
+      const descatalogado = fold(cell("descatalogado"));
+      if (descatalogado) {
+        if (descatalogado in BOOL) p.discontinued = BOOL[descatalogado];
+        else err("descatalogado", "Valores válidos: sí / no.");
+      }
+      if (has("sustituto")) {
+        const sustituto = text(cell("sustituto"));
+        if (sustituto && !HANDLE_RE.test(sustituto)) {
+          err("sustituto", `Handle de producto no válido: «${sustituto}».`);
+        } else if (sustituto === handle) {
+          err("sustituto", "Un producto no puede ser su propio sustituto.");
+        } else if (sustituto !== undefined) p.replacement = sustituto;
       }
 
       // Componentes analíticos (% sobre producto tal cual)

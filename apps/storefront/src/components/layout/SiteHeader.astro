@@ -32,7 +32,7 @@ const current = Astro.url.pathname;
 const q = current === SEARCH_PATH ? (Astro.url.searchParams.get("q") ?? "") : "";
 const inShop =
   current.startsWith("/productos/") ||
-  current.startsWith("/categorias/") ||
+  current.startsWith("/categoria/") ||
   current.startsWith("/producto/");
 const allLink = { href: "/productos/", name: "Todos los productos" };
 const shopGroups = tree.roots.map((r) => ({

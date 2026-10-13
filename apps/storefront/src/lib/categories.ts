@@ -129,7 +129,7 @@ export function deepestCategory(
   return best;
 }
 
-export const categoryHref = (n: Pick<CategoryNode, "handle">) => `/categorias/${n.handle}/`;
+export const categoryHref = (n: Pick<CategoryNode, "handle">) => `/categoria/${n.handle}/`;
 
 /**
  * { handle → nombre } de todo el árbol (chips de filtros y sugerencias, sin contexto). Un nombre

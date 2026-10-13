@@ -13,6 +13,21 @@ import {
 export type StoreProduct = HttpTypes.StoreProduct;
 export type StoreVariant = HttpTypes.StoreProductVariant;
 
+/**
+ * Descatalogado (Fase E, opción i; `catalog:import`, columna `descatalogado`): la ficha se sigue
+ * generando (aviso, `noindex`, enlace al sustituto o a su categoría, sin botón de compra) pero no
+ * sale en listados, búsqueda ni sitemap. El backend tampoco deja añadirlo al carrito.
+ */
+export function isDiscontinued(product: Pick<StoreProduct, "metadata">): boolean {
+  return product.metadata?.["descatalogado"] === true;
+}
+
+/** Handle del producto que sustituye a uno descatalogado, o null. */
+export function replacementHandle(product: Pick<StoreProduct, "metadata">): string | null {
+  const h = product.metadata?.["sustituto"];
+  return typeof h === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(h) ? h : null;
+}
+
 /** Precio por unidad de medida (RD 3423/2000): €/kg (contenido neto en g) o €/l (en ml). */
 export interface UnitPrice {
   amount: number;

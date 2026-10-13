@@ -288,6 +288,20 @@ medusaIntegrationTestRunner({
         );
         expect(hit?.document.min_price_eur).toBe(200);
       });
+
+      it("descatalogado (Fase E): fuera con el filtro del storefront `discontinued $ne true`", async () => {
+        const listed = { $and: [{ discontinued: { $ne: true } }] };
+        const handles = async () => (await search(listed)).map((h) => h.document.handle);
+        // Sin la marca, el filtro lo incluye
+        await eventually(handles, (h) => h.includes(published.handle));
+        await updateProductsWorkflow(container).run({
+          input: { selector: { id: published.id }, update: { metadata: { descatalogado: true } } },
+        });
+        const after = await eventually(handles, (h) => !h.includes(published.handle));
+        expect(after).not.toContain(published.handle);
+        // Sin filtro sigue indexado (la ficha existe; solo se oculta de la búsqueda)
+        expect((await search({})).map((h) => h.document.handle)).toContain(published.handle);
+      });
     });
   },
 });

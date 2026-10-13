@@ -7,9 +7,10 @@ import svelte from "@astrojs/svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, envField, fontProviders } from "astro/config";
 import { existsSync, readFileSync } from "node:fs";
-import { mkdir, readdir, rename, rmdir } from "node:fs/promises";
+import { mkdir, readdir, rename, rm, rmdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
+import { astroRedirects } from "./src/lib/redirects.mjs";
 
 // `site` se necesita al cargar la config (sitemap, canonical), antes de que exista astro:env.
 // Prioridad: variable de entorno > apps/storefront/.env > dominio de producción. `||` y no `??`:
@@ -112,19 +113,59 @@ function privateBuildManifests() {
   };
 }
 
+/**
+ * Datos del sitemap (Fase E): `lastmod` de las fichas y fichas fuera del sitemap (descatalogadas).
+ * Los escribe el endpoint prerenderizado `listados/sitemap.json` (src/pages/listados/sitemap.json.ts).
+ * Esta integración va ANTES de `sitemap()` en la lista: los hooks `astro:build:done` corren en
+ * orden, así que el JSON se lee antes de que @astrojs/sitemap llame a `serialize`. Luego se borra
+ * (no es público). Fuente: astro-docs (integrations-reference: orden de los hooks;
+ * integrations-guide/sitemap#serialize) + @astrojs/sitemap 3.7.4 dist/index.js.
+ */
+/** @type {{ lastmod: Record<string, string>; exclude: Set<string> }} */
+const sitemapInfo = { lastmod: {}, exclude: new Set() };
+/** @returns {import("astro").AstroIntegration} */
+function sitemapData() {
+  return {
+    name: "sitemap-data",
+    hooks: {
+      "astro:build:done": async ({ dir }) => {
+        const file = new URL("listados/sitemap.json", dir);
+        if (!existsSync(file)) return;
+        const data = JSON.parse(readFileSync(file, "utf8"));
+        sitemapInfo.lastmod = data.lastmod ?? {};
+        sitemapInfo.exclude = new Set(data.exclude ?? []);
+        await rm(file);
+      },
+    },
+  };
+}
+
+/** @param {string} url */
+const sitemapPath = (url) => new URL(url).pathname;
+
 export default defineConfig({
   site: SITE_URL || "https://elrincondehiro.com",
   // Estático por defecto; las server islands y rutas on-demand las sirve el adapter.
   adapter: node({ mode: "standalone" }),
   trailingSlash: "always",
-  // Sitemap sin páginas legales provisionales (noindex hasta tener el texto definitivo, fase 5).
+  // Redirecciones 301 (Fase E): src/lib/redirects.mjs. El build falla si el mapa no es válido.
+  redirects: astroRedirects(),
+  // Sitemap sin páginas legales provisionales (noindex hasta tener el texto definitivo, fase 5),
+  // sin fichas descatalogadas y con `lastmod` en las fichas (Fase E, `sitemapData`).
   integrations: [
     svelte(),
+    sitemapData(),
     sitemap({
       filter: (page) =>
         !LEGAL_PATHS.some((p) => page.endsWith(p)) &&
         !page.includes("/buscar/") &&
         !page.includes("/listados/"),
+      serialize: (item) => {
+        const path = sitemapPath(item.url);
+        if (sitemapInfo.exclude.has(path)) return undefined;
+        const lastmod = sitemapInfo.lastmod[path];
+        return lastmod ? { ...item, lastmod } : item;
+      },
     }),
     privateBuildManifests(),
   ],

@@ -100,12 +100,19 @@ describe("classifyCartError", () => {
     expect(classifyCartError(new Error("fetch failed"))).toBe("error");
     expect(classifyCartError("x")).toBe("error");
   });
-  it("mínimo de granel (hook granel-minimo del backend)", () => {
+  it("mínimo de granel (hook validar-carrito del backend)", () => {
     expect(
       classifyCartError(
         new FetchError("El mínimo de este producto a granel es 100 g (20 unidades de 5 g).", 400),
       ),
     ).toBe("minimum");
+  });
+  it("descatalogado (hook validar-carrito del backend, Fase E)", () => {
+    expect(
+      classifyCartError(
+        new FetchError("Este producto está descatalogado y ya no se puede comprar.", 400),
+      ),
+    ).toBe("discontinued");
   });
 });
 
@@ -126,6 +133,7 @@ describe("itemCount y avisos", () => {
       "expired",
       "invalid",
       "minimum",
+      "discontinued",
       "maximum",
       "error",
     ]);

@@ -26,8 +26,8 @@ module.exports = {
         `${BASE}/`,
         `${BASE}/productos/`,
         // Fase S: categoría padre (agrega subcategorías, chips de hijas) y una hoja
-        `${BASE}/categorias/perro/`,
-        `${BASE}/categorias/piensos-perro/`,
+        `${BASE}/categoria/perro/`,
+        `${BASE}/categoria/piensos-perro/`,
         `${BASE}/producto/${PRODUCT}/`,
         // S-2: ficha con €/kg por variante y tabla de componentes analíticos
         `${BASE}/producto/mock-pienso-premium-001/`,

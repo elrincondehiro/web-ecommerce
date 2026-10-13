@@ -19,7 +19,7 @@ describe("normalizeSuggestQuery", () => {
 describe("buildSuggestQuery", () => {
   it("6 productos, solo id/título/handle y la faceta de categorías", () => {
     const body = buildSuggestQuery("bufn");
-    expect(body.filters).toEqual({ q: "bufn" });
+    expect(body.filters).toEqual({ q: "bufn", $and: [{ discontinued: { $ne: true } }] });
     expect(body.pagination).toEqual({ skip: 0, take: 6 });
     expect(body.fields).toEqual(["id", "title", "handle"]);
     expect(body.search_options).toEqual({ facets: ["category_handles"] });

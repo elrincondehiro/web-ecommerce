@@ -163,6 +163,21 @@ async function loadSnapshot(
     for (const p of data as Row[]) dbProducts.push(toDbProduct(p));
   }
 
+  // Sustitutos de productos descatalogados (Fase E) que no están en la hoja
+  const sheetHandles = new Set(products.map((p) => p.handle));
+  const wanted = [
+    ...new Set(products.flatMap((p) => (p.replacement ? [p.replacement] : []))),
+  ].filter((h) => !sheetHandles.has(h));
+  const replacementHandles: string[] = [];
+  for (const part of chunks(wanted)) {
+    const { data } = await query.graph({
+      entity: "product",
+      fields: ["handle"],
+      filters: { handle: part },
+    });
+    for (const p of data as Row[]) replacementHandles.push(p.handle as string);
+  }
+
   const skuOwners: Record<string, string> = {};
   const eanOwners: CatalogSnapshot["eanOwners"] = {};
   const skus = products.flatMap((p) => p.variants.map((v) => v.sku));
@@ -202,6 +217,7 @@ async function loadSnapshot(
     options: options.map(toDbOption),
     types: types.map((t) => t.value),
     products: dbProducts,
+    replacementHandles,
     skuOwners,
     eanOwners,
   };

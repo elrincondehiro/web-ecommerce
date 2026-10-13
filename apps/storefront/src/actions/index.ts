@@ -99,7 +99,8 @@ export const server = {
             return { code: "added", count: itemCount(cart), title: titleOf(cart, variant_id) };
           } catch (err) {
             const kind = classifyCartError(err);
-            if (kind === "stock" || kind === "minimum") return { code: kind, count: null };
+            if (kind === "stock" || kind === "minimum" || kind === "discontinued")
+              return { code: kind, count: null };
             if (kind === "cart_invalid" && attempt === 0) {
               clearCartId(ctx);
               cartId = null;
@@ -148,7 +149,8 @@ export const server = {
           return { code: "updated", count: itemCount(cart) };
         } catch (err) {
           const kind = classifyCartError(err);
-          if (kind === "stock" || kind === "minimum") return { code: kind, count: null };
+          if (kind === "stock" || kind === "minimum" || kind === "discontinued")
+            return { code: kind, count: null };
           if (kind === "cart_invalid") {
             clearCartId(ctx);
             return { code: "expired", count: 0 };

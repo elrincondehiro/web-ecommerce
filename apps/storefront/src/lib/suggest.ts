@@ -5,7 +5,7 @@
 // Meilisearch busca por PREFIJO la última palabra ("bufan" → "bufanda") y tolera erratas desde
 // 5 letras ("jersei" → "jersey"; con menos, solo prefijo: es la configuración por defecto).
 import type { RawSearchResult, SearchQueryBody } from "./search";
-import { SEARCH_PATH } from "./search";
+import { LISTED_FILTER, SEARCH_PATH } from "./search";
 
 export const SUGGEST_PATH = "/buscar/sugerencias/";
 export const SUGGEST_MIN = 2;
@@ -30,7 +30,7 @@ export function buildSuggestQuery(q: string): SearchQueryBody {
   return {
     entity: "product",
     fields: ["id", "title", "handle"],
-    filters: { q },
+    filters: { q, $and: [LISTED_FILTER] },
     pagination: { skip: 0, take: PRODUCTS },
     search_options: { facets: ["category_handles"] },
   };

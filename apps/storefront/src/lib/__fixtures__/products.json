@@ -3887,7 +3887,9 @@
       "grasa_pct": 6,
       "cenizas_pct": 2.5,
       "humedad_pct": 71,
-      "proteina_pct": 10
+      "proteina_pct": 10,
+      "descatalogado": true,
+      "sustituto": "mock-guiso-eco-007"
     },
     "variants": [
       {

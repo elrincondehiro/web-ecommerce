@@ -5,9 +5,11 @@ import {
   discountPercent,
   dryMatter,
   getProductPricing,
+  isDiscontinued,
   isVariantInStock,
   metaDescription,
   minimumNote,
+  replacementHandle,
   type StoreProduct,
   type StoreVariant,
   unitPrice,
@@ -226,5 +228,16 @@ describe("ofertas (Price List sale)", () => {
     const pricing = getProductPricing(byHandle("mock-clicker-esencial-018"));
     expect(pricing.wasAmount).toBeNull();
     expect(pricing.discountPercent).toBeNull();
+  });
+});
+
+describe("descatalogado (Fase E)", () => {
+  it("solo con metadata.descatalogado = true; sustituto con handle válido", () => {
+    expect(isDiscontinued({ metadata: { descatalogado: true } })).toBe(true);
+    expect(isDiscontinued({ metadata: { descatalogado: "sí" } })).toBe(false);
+    expect(isDiscontinued({ metadata: null })).toBe(false);
+    expect(replacementHandle({ metadata: { sustituto: "collar-nylon" } })).toBe("collar-nylon");
+    expect(replacementHandle({ metadata: { sustituto: "../x" } })).toBeNull();
+    expect(replacementHandle({ metadata: {} })).toBeNull();
   });
 });

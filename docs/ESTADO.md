@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 13-oct-2026 · **Fase S en curso**: S-1 (#45) y S-2 (#46) mergeadas; **S-3 hecha** (granel en el storefront, rama `feat/storefront-granel`, pendiente de PR). **Siguiente: cerrar la Fase S** (doc de fase §4–§6, README §4 y §13), handover en **§6.8**. Después, fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 13-oct-2026 · **Fase S cerrada** (S-1 #45, S-2 #46, S-3 #47). **Fase E en curso** (`feat/fase-e`): E-0 (CI Gitea/GitHub) y E-1 (URL, descatalogados, redirecciones, sitemap) hechas; **E-2 correa a medida** espera las respuestas del usuario. Estado en **§6.10**. Después, fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -26,7 +26,8 @@
 | Auditoría previa a la fase 10               | ✅     | [auditoria-pre-fase10.md](./fases/auditoria-pre-fase10.md)           |
 | 10 CD + imágenes Docker                     | ✅     | [fase10.md](./fases/fase10.md)                                       |
 | C Importador de catálogo (CSV)              | ✅     | [faseC-catalogo.md](./fases/faseC-catalogo.md)                       |
-| S Catálogo en el storefront                 | 🚧     | [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) |
+| S Catálogo en el storefront                 | ✅     | [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) |
+| E URL, descatalogados y especiales          | 🚧     | [faseE-urls-correas.md](./fases/faseE-urls-correas.md)               |
 
 Roadmap completo y tiempos: README §13.
 
@@ -55,7 +56,7 @@ Roadmap completo y tiempos: README §13.
   - **`integration`**: tests HTTP del backend con Postgres/Redis de `services:` (hosts `*-localhost` y `SWC_NATIVE_BINDING_CACHE`, ver fase10.md §4.6).
   - **`audit`**: `pnpm audit --prod` (nivel y excepciones en `pnpm-workspace.yaml` → `audit`).
   - **`lighthouse`**: `@lhci/cli` móvil sobre fixtures detrás de un proxy brotli; referencia = notas de GitHub (100 en todo salvo SEO de `/carrito/`, `noindex`).
-  - Los cuatro son checks obligatorios en Gitea y GitHub.
+  - **Reparto (Fase E)**: Gitea solo en `pull_request` y sin `lighthouse` (checks obligatorios: los otros tres); GitHub en el push de cualquier rama (llega por el push mirror) y de `main`, con los cuatro.
 - **Imágenes** (`images.yml`, solo GitHub → GHCR, públicas): `ghcr.io/elrincondehiro/ecommerce-backend` (`sha-<7>`, `main`; en tag `X.Y.Z`, `X.Y`, `latest`) y `ecommerce-storefront` con sufijo `-fixtures` (no desplegable hasta la fase 11).
 - **Producción** (fase 10-1): `docker/compose.prod.yml` + Caddyfile mínimo, probado en local desde cero (`compose.prod.local.yml`, `.env.prod.local`).
 - **Limpieza de carritos** (fase 10-4): job `delete-stale-carts` en el worker, borrado **suave** de carritos sin cliente inactivos > `CART_CLEANUP_DAYS` (5 en pruebas, 30 por defecto).
@@ -159,7 +160,8 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - **Mejoras del storefront** (PR #41, `58d2ee0`):
   - `DEV_ALLOWED_HOSTS` (solo dev, se fija en el build): hosts extra en `security.allowedDomains` para entrar desde el móvil por la IP de la LAN. Sin esto, por `http://<IP>` los formularios daban «Cross-site POST form submissions are forbidden» (el navegador no envía `Sec-Fetch-Site` fuera de https/localhost y Astro, sin la IP en la lista, toma la URL como `localhost`). `checkOrigin` sigue activo.
   - Cuenta en móvil: la página desbordaba en horizontal (~420 px) y el panel del carrito se abría fuera de la pantalla. El menú de la cuenta estiraba la columna implícita del grid → `grid-cols-1` + `min-w-0` en `AccountLayout.astro`; e2e a 320 px en `cuenta.spec.ts`.
-- **Fase C (importador de catálogo): cerrada** (PR #42, `2233ae8`) → §6.6 y [faseC-catalogo.md](./fases/faseC-catalogo.md). **Siguiente**: Fase S → §6.8; después, fase 11 → §6.5.
+- **Fase C (importador de catálogo): cerrada** (PR #42, `2233ae8`) → §6.6 y [faseC-catalogo.md](./fases/faseC-catalogo.md).
+- **Fase S (catálogo en el storefront): cerrada** → §6.8 y [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md): subcategorías + manifiesto de LiveSync (S-1), €/kg/l + analíticos + filtros sobre materia seca (S-2), granel en gramos (S-3). Interruptores en `CATALOG_FEATURES` (`apps/storefront/src/lib/constants.ts`). **Siguiente**: Fase E → §6.9; después, fase 11 → §6.5.
 - **Aviso de fuentes en Firefox** (de Inter): resuelto en I-Marca. Con Baloo 2 + Nunito Sans, Firefox y Chromium usan la precarga del 400 sin avisos (comprobado con Playwright).
 - **Precio/stock**: todo precio o stock nuevo sigue el patrón _build + corrección por server island_ (modo C, AGENTS §3.2).
 - **Pendientes de la fase 6**:
@@ -275,7 +277,7 @@ Recursos de las runners: el build del backend llega a ~3,7 GB de pico en el LXC 
 - Celda vacía = no tocar; `-` = borrar. Etiquetas y categorías con valor sustituyen a las actuales.
 - Ofertas en la Price List `sale` «Catálogo — ofertas», que gestiona el importador.
 - **Analíticos** (`proteina_pct`, `grasa_pct`, `fibra_pct`, `cenizas_pct`, `humedad_pct` y `analitico:<Nombre>`) en la metadata del producto; **contenido neto** (`neto_g`/`neto_ml`) en la de la variante.
-- **Granel** (`granel`, `paso_g`, `min_g`, `precio_kg`, `precio_oferta_kg`, `stock_g`): la unidad de venta es un paso de gramos; el inventario va en gramos (artículo propio, `required_quantity = paso_g`) y el mínimo lo valida Medusa en el carrito (`src/workflows/hooks/granel-minimo.ts`). **Listo en Medusa; el storefront aún no lo muestra** (productos a granel en borrador hasta esa fase).
+- **Granel** (`granel`, `paso_g`, `min_g`, `precio_kg`, `precio_oferta_kg`, `stock_g`): la unidad de venta es un paso de gramos; el inventario va en gramos (artículo propio, `required_quantity = paso_g`) y el mínimo lo valida Medusa en el carrito (`src/workflows/hooks/validar-carrito.ts`; se llamaba `granel-minimo.ts` hasta la Fase E). **Listo en Medusa; el storefront aún no lo muestra** (productos a granel en borrador hasta esa fase).
 - **Fotos**: `images:import` como siempre, por producto (`handle_01.jpg`…) desde una carpeta local.
 - Las cargas reales van en `apps/backend/catalog/<carpeta>`, fuera de git (solo se versiona `plantilla/`).
 - En la BD local quedan 3 productos de una prueba con la plantilla antigua (`camiseta-basica`, `proteina-whey`, `taza-logo`) y 3 subcategorías (`camisetas`, `sudaderas`, `suplementos`). La plantilla actual (collar, pienso, alas a granel, taza, libro) **no** se ha cargado en dev, solo el dry-run.
@@ -298,7 +300,7 @@ Plan estudiado el 11-oct-2026 y aparcado por el usuario (no es necesario ahora):
 
 ## 6.8 Handover → Fase S (catálogo en el storefront)
 
-Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md). **S-1 hecha** (detalle en su §2: `category_tree_handles`, `lib/categories.ts`, `lib/shop.ts`, manifiestos `listing-pages.json` + `shop-categories.json`, catálogo mock `catalog:mock`). **S-2 hecha** (§2 del doc de fase: `proteina_ms`/`grasa_ms`, `unitPrice`, `AnalyticsTable`, interruptores `CATALOG_FEATURES`). **S-3 hecha** (§2: `lib/bulk.ts`, campo de gramos y accesos rápidos, «Quedan», líneas «250 g · 20,00 €/kg» en carrito, pedido y emails, `min_price_eur` del mínimo; interruptores `bulkLiveTotal`, `bulkStockLeft`, `bulkMaxG`). Queda cerrar la fase. **No empezar nada nuevo sin plan aprobado** (REGLA Nº 1).
+Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md). **S-1 hecha** (detalle en su §2: `category_tree_handles`, `lib/categories.ts`, `lib/shop.ts`, manifiestos `listing-pages.json` + `shop-categories.json`, catálogo mock `catalog:mock`). **S-2 hecha** (§2 del doc de fase: `proteina_ms`/`grasa_ms`, `unitPrice`, `AnalyticsTable`, interruptores `CATALOG_FEATURES`). **S-3 hecha** (§2: `lib/bulk.ts`, campo de gramos y accesos rápidos, «Quedan», líneas «250 g · 20,00 €/kg» en carrito, pedido y emails, `min_price_eur` del mínimo; interruptores `bulkLiveTotal`, `bulkStockLeft`, `bulkMaxG`). **Fase cerrada** (13-oct-2026); pendientes en su §7.
 
 **Situación al cerrar la Fase C (11-oct-2026)**:
 
@@ -316,6 +318,82 @@ Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md
 - Coste: 0 B de JS de cliente; respuesta de la island igual (~1,2 KB gzip); JSON en `dist/server` (~140 KB con 1000 productos, ~700 KB con 5000) en memoria del servidor Astro; Medusa consulta por ids (igual o más barato); infra sin cambios. HTML de un build anterior → clave desconocida → «{}» (se queda lo del build).
 - **Descartada** la «ventana ancha» (offset−K, limit+2K): +~0,5 KB gzip y +40 % de trabajo en Medusa en cada vista, y falla sin avisar al pasar de K cambios.
 - Que un producto NUEVO aparezca en los listados depende del **rebuild** (webhook, fase 13), no del manifiesto.
+
+## 6.9 Handover → Fase E (estructura de URL + productos especiales)
+
+> Nombre provisional «Fase E». El usuario dará los detalles al empezar. **Nada de código sin plan aprobado** (REGLA Nº 1). Al empezar, crear `docs/fases/faseE-<nombre>.md` desde [PLANTILLA.md](./fases/PLANTILLA.md).
+
+Dos trabajos:
+
+1. **Análisis de la estructura de handles/URL** de la tienda y del **futuro blog**. Es un análisis con propuesta: decidir antes de escribir código y antes de producción (fase 11), porque cambiar URL después obliga a poner 301 y se pierde SEO.
+2. **Páginas o plantillas, estáticas a poder ser, para «productos especiales»**: una página que hace de «constructor» del producto, donde el cliente lo configura. Detalles, en la sesión nueva.
+
+**Cómo están hoy las URL** (`apps/storefront/src/pages/`, `trailingSlash: "always"`, `site` = `SITE_URL`):
+
+- Catálogo: `/producto/<handle>/` y `/categorias/<handle>/` (en la Fase E pasa a `/categoria/<handle>/`, §6.10) (planas, todas las profundidades; `categoryHref` en `lib/categories.ts`). También `/productos/`, `/ofertas/`, `/buscar/`, con paginación `[...page]` → `/productos/2/`.
+- Contenido: `/sobre-nosotros/` (Content Collection `paginas`, Markdown en `src/content/paginas/`) y las legales (`/aviso-legal/`, `/privacidad/`, `/cookies/`, `/condiciones/`; `noindex` y fuera del sitemap).
+- Transaccional, on-demand: `/carrito/`, `/checkout/`, `/pedido/<id>/` y `/cuenta/*`.
+- Internos: `/listados/*.json` (se mueven a `dist/server`, no son públicos), `/buscar/parcial|sugerencias|tarjetas.json`, `/carrito/parcial|flyout` y `/health`.
+- Handles: los fija la hoja (Fase C, `apps/backend/catalog/plantilla/LEEME.md`).
+  - Minúsculas, números y guiones; **únicos en toda la tienda** (subcategorías con sufijo: `juguetes-perro`).
+  - «No lo cambies después»: hoy **no hay redirecciones**, ni en `astro.config` ni en el Caddyfile.
+- Sitemap: `@astrojs/sitemap`, que filtra las legales, `/buscar/` y `/listados/`.
+- Sin blog. Content Collections actuales: `anuncios`, `home`, `tienda`, `paginas` (`src/content.config.ts`).
+
+**Preguntas para el análisis** (orientativas):
+
+- ¿`/categorias/<handle>/` plano o jerárquico (`/perro/alimentacion/pienso/`)? ¿Singular o plural, con prefijo o sin él?
+- ¿Blog en `/blog/<slug>/`, con categorías o etiquetas propias? ¿Enlaces cruzados con productos y categorías?
+- ¿Dónde se gestiona el blog? Content Collections (Markdown en el repo, rebuild por cada post) o un CMS. El contenido comercial sigue en Medusa (I-Interficie).
+- Redirecciones 301 para handles cambiados o productos retirados: ¿`redirects` de Astro, Caddy o Cloudflare? ¿Qué pasa con un producto despublicado (404 o 410, redirección a su categoría)?
+- Colisiones entre handles de producto, categoría, páginas y posts si alguna vez comparten espacio.
+
+**Productos especiales: puntos de partida y restricciones**:
+
+- Hay que respetar el árbol de decisión de AGENTS §3.1 y los presupuestos de §3.4:
+  - página estática;
+  - precio y stock con LiveSync (AGENTS §3.2);
+  - `<form>` + Astro Action que funcione sin JS;
+  - JS solo justificado, y si hace falta, en `CartClient`/`SiteClient` o con una excepción aprobada.
+- Ya existen y se pueden reutilizar:
+  - ficha `producto/[handle].astro` (`BuyBox`, `AddToCart`, `QuantityField`, `Price`, `AnalyticsTable`);
+  - opciones o variantes de Medusa;
+  - `variant.metadata` / `product.metadata`, que el importador ya rellena;
+  - granel como ejemplo de «regla en la metadata de la variante y validación en el servidor» (`lib/bulk.ts`, `apps/backend/src/lib/granel.ts` + hook `validar-carrito`).
+- ⚠️ El **tipo de producto** de Medusa ya se usa para el IVA (`iva-reducido` / `iva-superreducido`, `seed.ts` + reglas del Tax Module). Para marcar «especial» hará falta otra cosa: metadata (p. ej. `plantilla`), etiqueta, colección o categoría. Decidirlo en el plan.
+- Lo que el cliente configure (texto, combinación de piezas…):
+  - si cambia el precio, tiene que ser una variante o validarse en el **backend** (workflow o hook), nunca precio desde el formulario;
+  - si va en `line_item.metadata`, recordar que el cliente puede escribirla por la Store API (decisión de S-3): validar en el servidor y no fiarse de ella para nada de importes.
+- Revisar cómo llega la configuración al pedido, a los emails (`packages/emails`) y al Admin. El Admin aún muestra el granel en pasos (Fase S §7).
+
+**Documentación que consultar** (REGLA Nº 1):
+
+- astro-docs: rutas, `getStaticPaths`, `redirects`, Content Collections y loaders, sitemap, Actions;
+- context7 `/medusajs/medusa`: product types y tags, metadata, line item metadata, workflows y hooks de carrito;
+- cloudflare-docs: redirecciones masivas (Bulk Redirects), si se plantea hacerlas en el borde.
+
+**Estado al cerrar la Fase S**:
+
+- **Ramas:** `main` (`7e633de` + S-3 cuando se mergee). PR de S-3: `feat/storefront-granel`; PR de cierre: `docs/cierre-fase-s`.
+- **BD local:** 300 productos mock, con el granel publicado.
+- **Docker:** limpio. Imágenes antiguas y volúmenes anónimos borrados. Pendiente de que decida el usuario: volúmenes `tienda-dev_*` (proyecto anterior), imágenes `*:prodlocal` / `:local` / `:fixtures` y la caché de build.
+
+## 6.10 Fase E en curso
+
+Doc: [faseE-urls-correas.md](./fases/faseE-urls-correas.md). Rama `feat/fase-e`, creada sobre `docs/cierre-fase-s` rebasada en `main` (`3a42fa8`, S-3 #47). **Sin push**.
+
+- **E-0 ✅ CI**: el reparto Gitea/GitHub está en §2. Tarea manual del usuario: quitar `lighthouse` de los checks obligatorios en Gitea.
+- **E-1 ✅ URL**:
+  - `/categoria/<handle>/`, con 301 desde `/categorias/…`;
+  - redirecciones en `apps/storefront/src/lib/redirects.mjs`, validadas en el build;
+  - **descatalogado**, que se marca con las columnas `descatalogado` y `sustituto` de la hoja. La ficha sigue, con aviso y `noindex`. El producto sale de listados, búsqueda y sitemap, y Medusa no deja añadirlo al carrito;
+  - sitemap con `lastmod`;
+  - test de reglas de URL, con reservados `blog`, `ca`, `eu` y `gl`.
+
+  Hook del carrito: `validar-carrito.ts`. Índice de búsqueda: `product_v3`.
+
+- **BD local**: catálogo mock reimportado, con 6 descatalogados (p. ej. `mock-guiso-eco-046` → `mock-guiso-eco-007`), y `db:migrate` ya hecho.
+- **E-2 ⏳ correa a medida**: diseño en el doc de fase §3.3; preguntas abiertas en su §7. Hay que esperar las respuestas del usuario y presentar un plan antes de escribir código.
 
 ## 7. Pendientes conocidos
 

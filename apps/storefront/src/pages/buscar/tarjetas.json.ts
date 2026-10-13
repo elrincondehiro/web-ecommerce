@@ -6,7 +6,7 @@
 // getImage) y el código de astro 7.3.5 (components/Picture.astro, assets/utils/hash.js).
 import type { APIRoute } from "astro";
 import { getImage } from "astro:assets";
-import { getAllProducts } from "$lib/medusa";
+import { getListedProducts } from "$lib/medusa";
 import { IMAGE_FALLBACK_FORMAT, IMAGE_FORMATS, IMAGE_PRESETS, type CardImage } from "$lib/images";
 
 export const prerender = true;
@@ -33,7 +33,7 @@ async function cardImage(src: string): Promise<CardImage> {
 
 export const GET: APIRoute = async () => {
   const entries: [string, CardImage][] = [];
-  for (const p of await getAllProducts()) {
+  for (const p of await getListedProducts()) {
     const src = p.thumbnail ?? p.images?.[0]?.url;
     if (src) entries.push([p.id, await cardImage(src)]);
   }

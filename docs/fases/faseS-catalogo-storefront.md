@@ -1,7 +1,7 @@
 # Fase S — Catálogo en el storefront (subcategorías, €/kg, analíticos, granel)
 
-> **Estado:** 🚧 en curso — S-1 mergeada (#45), S-2 mergeada (#46), S-3 hecha (rama `feat/storefront-granel`)
-> **Rama/PR:** `feat/storefront-subcategorias` (y siguientes, una por entrega) · PR #…
+> **Estado:** ✅ cerrada (13-oct-2026) — S-1 (#45), S-2 (#46), S-3 (`feat/storefront-granel`), cierre `docs/cierre-fase-s`
+> **Rama/PR:** `feat/storefront-subcategorias`, `feat/storefront-precio-unitario`, `feat/storefront-granel` (una por entrega)
 > **Anterior:** [Fase C — Importador de catálogo](./faseC-catalogo.md) · **Siguiente:** fase 11 (producción, [ESTADO §6.5](../ESTADO.md))
 
 Mostrar en el storefront lo que la [Fase C](./faseC-catalogo.md) ya carga en Medusa. Contrato de datos en [`apps/backend/catalog/plantilla/LEEME.md`](../../apps/backend/catalog/plantilla/LEEME.md) y [ESTADO §6.8](../ESTADO.md).
@@ -162,29 +162,54 @@ Propuesta de entregas (el orden y el corte se acuerdan con el usuario al planifi
 
 ## 4. Cómo usarlo
 
-(al cerrar)
+- **Categorías**: se crean con el importador (Fase C, `padre` = handle del padre). Las vacías no salen. Un cambio en el árbol o en los productos necesita **rebuild** del storefront: hasta entonces, los listados solo corrigen precio y stock (LiveSync).
+- **€/kg / €/l**: `neto_g` o `neto_ml` en la variante (columna de la hoja).
+- **Analíticos**: columnas `proteina_pct`… y `analitico:<Nombre>`. Con `humedad_pct`, se ve la columna de materia seca y el producto entra en los filtros.
+- **Granel**: `granel = sí`, más `paso_g`, `min_g`, `precio_kg` (y `precio_oferta_kg`) y `stock_g`. El importador lo convierte a precio por paso, con inventario en gramos. Contrato completo en `apps/backend/catalog/plantilla/LEEME.md`.
+- **Interruptores** en `apps/storefront/src/lib/constants.ts` (`CATALOG_FEATURES`; cambiar = rebuild):
+  - `unitPriceInCards`, `dryMatterColumn`, `dryMatterFilters` (S-2);
+  - `bulkLiveTotal`, `bulkStockLeft`, `bulkMaxG` (S-3).
+- **Producción**: si ya hubiera productos a granel indexados antes de S-3, hay que reindexarlos para que el precio del índice sea el del mínimo. Basta con reimportarlos o con `POST /admin/search-indexes/:id/reindex`. El `definition_hash` no cambia, así que `db:migrate` no lo hace.
 
 ## 5. Cómo testear esta fase
 
 ```bash
-# (al cerrar) — como mínimo:
-pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && STOREFRONT_DATA=fixtures pnpm build
-pnpm --filter storefront check:budget
-pnpm --filter storefront test:e2e
+pnpm infra:up
+pnpm --filter backend exec medusa db:migrate          # índice product_v2
+pnpm --filter backend catalog:mock                    # catalog/mock/productos.csv (300 productos)
+pnpm --filter backend catalog:import catalog/mock
+pnpm --filter backend stock:mock                      # repone stock (granel en tramos de 250 g)
+
+pnpm lint && pnpm format:check && pnpm typecheck && pnpm test
+pnpm --filter backend test:integration:http
+STOREFRONT_DATA=fixtures pnpm --filter storefront build && pnpm --filter storefront check:budget
+
+# e2e (backend en marcha + build real + Stripe CLI para el checkout):
+pnpm --filter backend dev &                           # pararlo por PID al acabar
+pnpm infra:stripe
+pnpm --filter storefront build && pnpm --filter storefront test:e2e
 ```
 
-Datos de prueba: cargar la plantilla (`apps/backend/catalog/plantilla`) y la hoja real del usuario (`catalog/mi-carga/categorias.csv`) en dev con `catalog:import`; los fixtures de CI (`STOREFRONT_DATA=fixtures`) necesitarán categorías anidadas y productos con `neto_g`, analíticos y granel.
+Páginas de referencia (mock):
+
+- `/categorias/alimentacion-perro/` (padre) y `/categorias/pienso-perro/` (hija);
+- `/producto/mock-pienso-premium-001/`: €/kg y analíticos;
+- `/producto/mock-premios-plus-010/`: granel;
+- `/buscar/?proteina_min=30`.
+
+Fixtures de CI: `set -a; . ./.env; set +a; node scripts/update-fixtures.mjs` en `apps/storefront`, con el mock cargado.
 
 ## 6. Criterio de salida
 
-- [ ] Presupuestos de AGENTS §3.4 sin excepciones nuevas (o aprobadas y anotadas allí).
-- [ ] Lighthouse móvil ≥ 95 / 95 / 100 en categorías (padre e hija) y ficha.
+- [x] Presupuestos de AGENTS §3.4 sin excepciones nuevas. `CartClient`, de 1030 a 1310 B (≤ 2 KB), anotado allí.
+- [x] Lighthouse móvil ≥ 95 / 95 / 100 en categorías (padre e hija) y ficha: 7 URL en `lighthouserc.cjs`, con un pienso y la ficha a granel.
 - [x] e2e con JS desactivado para el granel (añadir al carrito con gramos).
-- [ ] README §4 sincronizado; ESTADO.md y README §13 actualizados.
+- [x] README §4 sincronizado (la fase no cambia dependencias); ESTADO.md y README §13 actualizados.
 
 ## 7. Pendientes / riesgos
 
-- **Antes de planificar, consultar** (REGLA Nº 1): astro-docs (server islands y props, `getStaticPaths`/`paginate`, sitemap, endpoints prerenderizados); context7 `/medusajs/medusa` (`product_category` con `parent_category`/`category_children`, filtro `category_id` con descendientes, `include_descendants_tree`); meilisearch-docs (filtros numéricos/rangos); svelte solo si hiciera falta una isla (preferible que no).
+- Admin de Medusa: la cantidad de una línea a granel se ve en **pasos** (50 = 250 g). Pendiente: una extensión de Admin o un aviso en la plantilla del albarán.
+- El máximo de 5 kg solo lo aplica el storefront. Por la Store API directa se podría pedir más: el stock sigue protegido.
 - Si una categoría **cambia de padre**, el Search Module solo reindexa sus productos directos: los de sus subcategorías conservan los ancestros viejos en `category_tree_handles` hasta que se reimporten (o se reconstruya el índice).
 - `/store/products` no ordena las variantes por `variant_rank` (todas a 0): en el panel «Talla» sale S, L, M. Queda como issue.
 - Granel: si se cambia `min_g` de una variante, las líneas ya en carritos siguen valiendo; el hook del backend lo comprueba al tocar la línea. Ofertas de granel: el tachado del carrito es por kilo (`compare_at_unit_price` × 1000 / paso).

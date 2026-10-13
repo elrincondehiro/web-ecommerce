@@ -102,6 +102,8 @@ export interface CatalogSnapshot {
   types: string[];
   /** Productos de la hoja que ya existen. */
   products: DbProduct[];
+  /** Handles de `sustituto` que ya existen en Medusa (los que no están en la hoja). */
+  replacementHandles?: string[];
   /** SKU y EAN de la hoja que ya usa alguna variante → handle de su producto. */
   skuOwners: Record<string, string>;
   eanOwners: Record<string, { sku: string | null; handle: string }>;
@@ -116,6 +118,8 @@ export const BRAND_KEY = "marca";
 /** Claves de metadata (contrato con el storefront; ver LEEME.md). */
 export const META = {
   bulk: "granel",
+  discontinued: "descatalogado",
+  replacement: "sustituto",
   stepG: "paso_g",
   minG: "min_g",
   netG: "neto_g",
@@ -306,6 +310,7 @@ export function planCatalog(
   plan.tags = [...newTags.values()];
 
   // ── Productos ────────────────────────────────────────────────────────────
+  const sheetHandles = new Set(sheets.products.map((p) => p.handle));
   for (const p of sheets.products) {
     const e = (line: number, column: string | undefined, message: string) =>
       errors.push(issue(files.products, line, column, message));
@@ -316,6 +321,13 @@ export function planCatalog(
       if (!knownCategory(c)) {
         e(p.line, "categorias", `No existe la categoría «${c}».${suggest(c)}`);
       }
+    }
+    if (
+      p.replacement &&
+      !sheetHandles.has(p.replacement) &&
+      !(db.replacementHandles ?? []).includes(p.replacement)
+    ) {
+      e(p.line, "sustituto", `No existe el producto «${p.replacement}».`);
     }
     if (p.collection && !db.collections.includes(p.collection)) {
       e(p.line, "coleccion", `No existe la colección «${p.collection}» (créala en el Admin).`);
@@ -388,13 +400,12 @@ export function planCatalog(
     if (textChanged(p.description, existing.description)) changes.push("descripción");
     if (textChanged(p.material, existing.material)) changes.push("material");
     if (textChanged(p.brand, existing.brand)) changes.push("marca");
-    if (
-      Object.keys(productMetadata(p)).some((k) =>
-        metaChanged(productMetadata(p)[k], existing.metadata[k]),
-      )
-    ) {
-      changes.push("analíticos");
-    }
+    const meta = productMetadata(p);
+    const changedKeys = Object.keys(meta).filter((k) => metaChanged(meta[k], existing.metadata[k]));
+    const own = [META.discontinued, META.replacement] as string[];
+    if (changedKeys.includes(META.discontinued)) changes.push("descatalogado");
+    if (changedKeys.includes(META.replacement)) changes.push("sustituto");
+    if (changedKeys.some((k) => !own.includes(k))) changes.push("analíticos");
     if (p.status && p.status !== existing.status) changes.push("estado");
     if (p.iva && IVA_TYPE[p.iva] !== existing.type) changes.push("iva");
     if (p.collection !== undefined && (p.collection ?? null) !== existing.collection) {
@@ -504,7 +515,7 @@ export function planCatalog(
 const metaChanged = (sheet: unknown, db: unknown) =>
   sheet === "" ? db !== undefined && db !== null : sheet !== db;
 
-/** Metadata del producto que escribe la hoja: analíticos, extras y granel ("" = borrar). */
+/** Metadata del producto que escribe la hoja: analíticos, extras, granel, descatalogado ("" = borrar). */
 export function productMetadata(p: ProductSheet): Record<string, unknown> {
   const meta: Record<string, unknown> = {};
   for (const c of ANALYTIC_COLUMNS) {
@@ -515,6 +526,8 @@ export function productMetadata(p: ProductSheet): Record<string, unknown> {
     meta[`${ANALYTIC_PREFIX}${title}`] = v ?? "";
   }
   if (p.bulk !== undefined) meta[META.bulk] = p.bulk ? true : "";
+  if (p.discontinued !== undefined) meta[META.discontinued] = p.discontinued ? true : "";
+  if (p.replacement !== undefined) meta[META.replacement] = p.replacement ?? "";
   if (p.brand !== undefined) meta[BRAND_KEY] = p.brand ?? "";
   return meta;
 }

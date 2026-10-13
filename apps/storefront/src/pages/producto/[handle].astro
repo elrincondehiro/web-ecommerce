@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
-import { metaDescription } from "$lib/catalog";
+import { isDiscontinued, metaDescription, replacementHandle } from "$lib/catalog";
+import { buttonVariants } from "$lib/components/ui/button";
 import { categoryHref, deepestCategory } from "$lib/categories";
 import { getAllProducts } from "$lib/medusa";
 import { getShopTree } from "$lib/shop";
@@ -12,13 +13,21 @@ import BuyBox from "../../components/BuyBox.astro";
 import ProductGallery from "../../components/ProductGallery.astro";
 import LiveSync from "../../components/LiveSync.astro";
 
+// Todas las fichas, también las descatalogadas (Fase E, opción i): su URL sigue respondiendo.
 export const getStaticPaths = (async () => {
   const products = await getAllProducts();
-  return products.map((product) => ({ params: { handle: product.handle }, props: { product } }));
+  const titles = new Map(products.map((p) => [p.handle, p.title]));
+  return products.map((product) => {
+    const handle = isDiscontinued(product) ? replacementHandle(product) : null;
+    const replacement =
+      handle && titles.has(handle) ? { handle, title: titles.get(handle)! } : null;
+    return { params: { handle: product.handle }, props: { product, replacement } };
+  });
 }) satisfies GetStaticPaths;
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
-const { product } = Astro.props as Props;
+const { product, replacement } = Astro.props as Props;
+const discontinued = isDiscontinued(product);
 // Migas: cadena completa de la categoría más concreta del producto (Fase S)
 const category = deepestCategory(await getShopTree(true), product);
 const crumbs = [
@@ -34,6 +43,12 @@ const gallery = (product.images ?? [])
 if (!gallery.length && product.thumbnail) gallery.push(product.thumbnail);
 const image = gallery[0] ?? null;
 const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
+// Descatalogado: enlace al sustituto o, si no hay, a su categoría (o al catálogo)
+const onward = replacement
+  ? { href: `/producto/${replacement.handle}/`, text: `Ver ${replacement.title}` }
+  : category
+    ? { href: categoryHref(category), text: `Ver más en ${category.name}` }
+    : { href: "/productos/", text: "Ver todos los productos" };
 ---
 
 <BaseLayout
@@ -41,10 +56,15 @@ const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 
   description={metaDescription(product.description) || product.title}
   type="product"
   image={image ?? undefined}
-  jsonLd={[
-    breadcrumbJsonLd(crumbs, Astro.site!),
-    productJsonLd(product, Astro.site!, image ?? undefined),
-  ]}
+  noindex={discontinued}
+  jsonLd={
+    discontinued
+      ? [breadcrumbJsonLd(crumbs, Astro.site!)]
+      : [
+          breadcrumbJsonLd(crumbs, Astro.site!),
+          productJsonLd(product, Astro.site!, image ?? undefined),
+        ]
+  }
 >
   <Breadcrumbs items={crumbs} />
   <div class="grid gap-8 md:grid-cols-2">
@@ -55,7 +75,17 @@ const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 
         {product.subtitle && <p class="text-muted-foreground">{product.subtitle}</p>}
       </div>
 
-      <BuyBox product={product} />
+      {discontinued ? (
+        <div class="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted p-4">
+          <p class="font-semibold">Este producto está descatalogado</p>
+          <p class="text-sm text-muted-foreground">Ya no lo vendemos.</p>
+          <a href={onward.href} class={buttonVariants({ variant: "default" })}>
+            {onward.text}
+          </a>
+        </div>
+      ) : (
+        <BuyBox product={product} />
+      )}
 
       {options.length > 0 && (
         <dl class="grid gap-2 text-sm">
@@ -80,5 +110,5 @@ const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 
       <AnalyticsTable product={product} />
     </div>
   </div>
-  <LiveSync productId={product.id} />
+  {!discontinued && <LiveSync productId={product.id} />}
 </BaseLayout>
