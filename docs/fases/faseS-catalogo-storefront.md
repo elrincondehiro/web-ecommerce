@@ -1,6 +1,6 @@
 # Fase S — Catálogo en el storefront (subcategorías, €/kg, analíticos, granel)
 
-> **Estado:** 🚧 en curso — S-1 hecha (pendiente de PR), S-2 y S-3 planificadas
+> **Estado:** 🚧 en curso — S-1 mergeada (#45), S-2 hecha (rama `feat/storefront-precio-unitario`), S-3 planificada
 > **Rama/PR:** `feat/storefront-subcategorias` (y siguientes, una por entrega) · PR #…
 > **Anterior:** [Fase C — Importador de catálogo](./faseC-catalogo.md) · **Siguiente:** fase 11 (producción, [ESTADO §6.5](../ESTADO.md))
 
@@ -18,10 +18,11 @@ Propuesta de entregas (el orden y el corte se acuerdan con el usuario al planifi
   - [x] Filtro de categoría de `/buscar/` por niveles sobre el campo nuevo `category_tree_handles` del índice.
   - [x] **D-S1**: LiveSync por **manifiesto de páginas** en categorías, `/productos/`, `/ofertas/` y carrusel de la home.
   - [x] `sitemap` con las nuevas páginas.
-- [ ] **S-2 Precio por kilo/litro y analíticos**
-  - [ ] €/kg con `variant.metadata.neto_g` o €/l con `neto_ml` en ficha (y ¿tarjeta?) (RD 3423/2000; confirmar con la gestoría). Sigue el patrón de precio de LiveSync (AGENTS §3.2).
-  - [ ] Tabla de componentes analíticos en la ficha (`product.metadata`).
-  - [ ] Filtros por % **sobre materia seca** (`x / (100 − humedad)`, calculado al indexar en `src/search/product.ts`; `medusa db:migrate` reconstruye el índice).
+- [x] **S-2 Precio por kilo/litro y analíticos**
+  - [x] €/kg con `variant.metadata.neto_g` o €/l con `neto_ml` en ficha y tarjeta (RD 3423/2000; siempre que haya contenido neto). Con LiveSync (AGENTS §3.2).
+  - [x] Tabla de componentes analíticos en la ficha (`product.metadata`), tal cual y sobre materia seca.
+  - [x] Filtros de **proteína y grasa sobre materia seca** (mínimo/máximo), calculados al indexar en `src/search/product.ts`.
+  - [x] Interruptores en `src/lib/constants.ts` → `CATALOG_FEATURES` (€/kg en tarjetas, columna de materia seca, filtros).
 - [ ] **S-3 Granel**
   - [ ] Ficha: selector de gramos (múltiplos de `paso_g` desde `min_g`) que envía `quantity = gramos / paso`; sin JS, `<select>`/`<input type=number step>` en el `<form>` de siempre.
   - [ ] Precio por kilo y total en gramos en una línea («250 g · 5,00 €») en tarjeta, ficha, panel, `/carrito/`, checkout, pedido y emails (`packages/emails`).
@@ -54,6 +55,38 @@ Propuesta de entregas (el orden y el corte se acuerdan con el usuario al planifi
 - Las sugerencias siguen usando `category_handles` (la categoría directa: la más concreta).
 - Fixtures de CI: `mock-*-001…048` publicados (47) con el árbol completo; `update-fixtures.mjs` ya no usa el regex `BASE`.
 
+### S-2 (rama `feat/storefront-precio-unitario`)
+
+**Backend.** El índice `product` tiene dos campos nuevos, `proteina_ms` y `grasa_ms` (`float`, filtrables, faceta `stats`, no recuperables). Se calculan al indexar con `dryMatter()` (`src/lib/dry-matter.ts`, con test unitario): `x / (100 − humedad) × 100`, con un decimal. Sin humedad válida, el producto no tiene el campo y no entra en el filtro. La fuente pide `metadata`. `db:migrate` reconstruye el índice (`product_v2`). Test de integración: rango sobre materia seca.
+
+**Storefront.**
+
+- `lib/catalog.ts`:
+  - `unitPrice()` (€/kg o €/l a céntimos, desde `neto_g` / `neto_ml`); `getProductPricing` devuelve `unitPrice` por variante y la de la variante más barata;
+  - `analyticRows()` y `dryMatter()`, el mismo cálculo que en el backend.
+- `Price.astro`: prop `unit` → línea «10,65 €/kg» con `data-unit`.
+  - Ficha: en cada fila de variante, o junto al precio si solo hay una.
+  - Tarjeta: el de la variante del «Desde».
+- LiveSync: sexto valor de la tupla (€/kg) y `["unit",5]` en el aplicador; el JS inline de la ficha pasa de 1120 B a 1127 B gzip.
+- `AnalyticsTable.astro` (ficha, estático): «Tal cual» y «Materia seca», después los `analitico:X`.
+- `/buscar/`:
+  - parámetros `proteina_min|max` y `grasa_min|max` (0–100, un decimal, en la URL canónica);
+  - filtros `$gte` / `$lte`, facetas `stats`, chips «Proteína s.m.: ≥ 40 %»;
+  - panel con dos rangos (con `aria-label` propio: «Proteína mínima, % sobre materia seca»).
+- En las categorías estáticas los rangos se calculan en el build, como el precio.
+- `CARD_FIELDS` pasa a `*variants`: la Store API 2.21.2 descarta sin error `variants.metadata` suelto (no está en `allowedStoreProductExtraFields`). Mismo tiempo medido (~65 ms con 24 productos).
+- Fixtures regenerados con la metadata. e2e:
+  - ficha de pienso (€/kg y tabla);
+  - tarjetas con €/kg y un producto sin contenido neto;
+  - filtro de proteína sin JS.
+- Lighthouse incluye la ficha de un pienso.
+
+**Interruptores** (`src/lib/constants.ts`, `CATALOG_FEATURES`; cambiar = rebuild):
+
+- `unitPriceInCards`: €/kg en las tarjetas (la ficha lo muestra siempre);
+- `dryMatterColumn`: columna «Materia seca» de la tabla;
+- `dryMatterFilters`: filtros de materia seca en `/buscar/` y «Filtrar». Con `false`, los parámetros de la URL se ignoran: canónica sin ellos, 301.
+
 ## 3. Decisiones tomadas
 
 | Decisión                                                                                         | Motivo                                                                                                                                                                                                                                                                  | Fuente consultada                                                                                                                             |
@@ -62,6 +95,9 @@ Propuesta de entregas (el orden y el corte se acuerdan con el usuario al planifi
 | Categorías vacías (sin productos en su subárbol): sin página, ni menú, ni home, ni sitemap       | Decisión del usuario; `/store/products?category_id` no incluye descendientes en 2.21.2 → se calcula en el storefront                                                                                                                                                    | `api/store/products/middlewares.js` 2.21.2                                                                                                    |
 | Filtro «Categoría» por niveles; elegir hija + padre → filtra la hija                             | Con 37 categorías la lista plana sería inmanejable; dentro del grupo los valores van con OR y el padre ya incluye a la hija                                                                                                                                             | —                                                                                                                                             |
 | Árbol de la tienda en `dist/server/shop-categories.json`                                         | Las páginas on-demand (carrito, `/buscar/`) muestran el mismo menú que las estáticas sin consultar a Medusa en cada petición                                                                                                                                            | astro-docs (endpoints estáticos)                                                                                                              |
+| €/kg en ficha y tarjeta, siempre que haya contenido neto                                         | Decisión del usuario (S-2): RD 3423/2000 pide el precio unitario donde se anuncia el precio; sin aplicar las exenciones (≤ 50 g…). Desactivable en tarjetas                                                                                                             | —                                                                                                                                             |
+| Materia seca calculada al indexar (no guardada en Medusa)                                        | El dato de la hoja es el de la etiqueta; el cálculo es fijo y barato. Filtros solo de proteína y grasa (decisión del usuario)                                                                                                                                           | context7 `/medusajs/medusa` (`search.float`, facetas `stats`, `$gte`/`$lte`); meilisearch-docs (comparaciones, `facetStats`)                  |
+| `CARD_FIELDS` con `*variants`                                                                    | `variants.metadata` no está entre los campos permitidos de la Store API 2.21.2 (`api/store/products/query-config.js`) y se descarta sin error                                                                                                                           | código instalado de `@medusajs/medusa` 2.21.2                                                                                                 |
 | **D-S1**: manifiesto de páginas para LiveSync en todos los listados; descartada la ventana ancha | Análisis en [ESTADO §6.8](../ESTADO.md): correcto aunque Medusa cambie sin rebuild, 0 B de JS de cliente, ~140 KB por 1000 productos en `dist/server`; la island deja de repetir la consulta del build (imprescindible con subcategorías y con el orden de ESTADO §6.7) | `LiveSyncData.astro`, `live-sync.ts`, `listing-pages.ts`, `build-manifest.ts`; astro-docs (props de server islands > 2048 B → POST sin caché) |
 
 ## 4. Cómo usarlo

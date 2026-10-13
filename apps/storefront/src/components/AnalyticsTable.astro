@@ -1,0 +1,65 @@
+---
+// Componentes analíticos de la ficha (Fase S, S-2). HTML estático (0 JS): los datos son del
+// catálogo (product.metadata, catalog:import) y solo cambian con un rebuild.
+// - Columnas: «Tal cual» (como la etiqueta) y «Materia seca» (x / (100 − humedad), mismo cálculo
+//   que el filtro de /buscar/). La de materia seca solo sale si hay humedad y está activada
+//   (CATALOG_FEATURES.dryMatterColumn).
+// - Después de los fijos, los `analitico:<Nombre>` (texto libre, sin materia seca).
+import { analyticRows, type StoreProduct } from "$lib/catalog";
+import { CATALOG_FEATURES } from "$lib/constants";
+import { formatPercent } from "$lib/format";
+
+interface Props {
+  product: Pick<StoreProduct, "metadata">;
+}
+const rows = analyticRows(Astro.props.product);
+const dry = CATALOG_FEATURES.dryMatterColumn && rows.some((r) => r.dryMatter !== null);
+const show = (v: number | string) => (typeof v === "number" ? formatPercent(v) : v);
+---
+
+{rows.length > 0 && (
+  <section aria-labelledby="analiticos">
+    <h2 id="analiticos" class="mb-2 font-semibold">
+      Componentes analíticos
+    </h2>
+    <table class="w-full max-w-sm text-sm tabular-nums">
+      <caption class="sr-only">
+        Componentes analíticos{dry ? ", tal cual y sobre materia seca" : ""}
+      </caption>
+      <thead class="text-left text-muted-foreground">
+        <tr>
+          <th scope="col" class="py-1 font-normal">
+            Componente
+          </th>
+          <th scope="col" class="py-1 text-right font-normal">
+            Tal cual
+          </th>
+          {dry && (
+            <th scope="col" class="py-1 text-right font-normal">
+              Materia seca
+            </th>
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr class="border-t">
+            <th scope="row" class="py-1.5 font-medium">
+              {r.label}
+            </th>
+            <td class="py-1.5 text-right">{show(r.value)}</td>
+            {dry && (
+              <td class="py-1.5 text-right">
+                {r.dryMatter !== null ? (
+                  formatPercent(r.dryMatter)
+                ) : (
+                  <span aria-label="sin dato">—</span>
+                )}
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+)}

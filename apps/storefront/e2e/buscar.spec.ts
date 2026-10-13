@@ -95,7 +95,7 @@ test("precio, disponibilidad, orden y paginación", async ({ page, isMobile }) =
   await panel.getByRole("checkbox", { name: "Solo disponibles" }).click();
   await expect(page).toHaveURL(/\/buscar\/\?disponible=1#f-disponible$/);
   panel = await filters(page, isMobile);
-  await panel.getByLabel("Máximo").fill("20");
+  await panel.getByLabel("Precio máximo").fill("20");
   await panel.getByRole("button", { name: "Ver resultados" }).click();
   await expect(page).toHaveURL(/\/buscar\/\?precio_max=20&disponible=1#resultados$/);
 
@@ -115,6 +115,21 @@ test("precio, disponibilidad, orden y paginación", async ({ page, isMobile }) =
   await page.getByRole("link", { name: "Siguiente" }).click();
   await expect(page).toHaveURL(/categoria=perro&pagina=2$/);
   await expect(page.getByText(/Página 2 de \d+/)).toBeVisible();
+});
+
+test("proteína sobre materia seca (S-2): rango, chip y quitar", async ({ page, isMobile }) => {
+  await page.goto("/buscar/?categoria=alimentacion-perro");
+  const total = Number((await status(page).textContent())!.match(/\d+/)![0]);
+  const panel = await filters(page, isMobile);
+  await panel.getByLabel("Proteína mínima, % sobre materia seca").fill("40");
+  await panel.getByRole("button", { name: "Ver resultados" }).click();
+  await expect(page).toHaveURL(/categoria=alimentacion-perro&proteina_min=40#resultados$/);
+  const filtered = Number((await status(page).textContent())!.match(/\d+/)![0]);
+  expect(filtered).toBeGreaterThan(0);
+  expect(filtered).toBeLessThan(total);
+  const chip = page.getByRole("link", { name: "Quitar filtro Proteína s.m.: ≥ 40 %" });
+  await chip.click();
+  await expect(page).toHaveURL(/\/buscar\/\?categoria=alimentacion-perro$/);
 });
 
 test("botón Filtrar de una categoría estática → /buscar/ con la categoría", async ({ page }) => {
@@ -209,7 +224,7 @@ test.describe("con JS (modelo híbrido: en el sitio)", () => {
     await page.getByLabel("Ordenar por").selectOption("precio-asc");
     await expect(page).toHaveURL(/categoria=perro&orden=precio-asc$/);
     const panel = await filters(page, isMobile);
-    await panel.getByLabel("Máximo").fill("30");
+    await panel.getByLabel("Precio máximo").fill("30");
     await panel.getByRole("button", { name: "Ver resultados" }).click();
     // precio vacío (mínimo) se omite; la URL es la canónica
     await expect(page).toHaveURL(/categoria=perro&precio_max=30&orden=precio-asc$/);

@@ -16,3 +16,13 @@ export function formatPrice(amount: number, currencyCode: string): string {
 export function formatDiscount(percent: number): string {
   return `\u2212${percent}\u202f%`;
 }
+
+/** Precio por unidad de medida: «12,65 €/kg» (RD 3423/2000). */
+export function formatUnitPrice(amount: number, currencyCode: string, unit: "kg" | "l"): string {
+  return `${formatPrice(amount, currencyCode)}/${unit}`;
+}
+
+/** Porcentaje con coma decimal y espacio fino: «27,5 %». */
+export function formatPercent(value: number): string {
+  return `${value.toLocaleString("es-ES", { maximumFractionDigits: 1 })}\u202f%`;
+}

@@ -1,9 +1,11 @@
 ---
 // Tarjeta de producto (HTML estático, 0 JS). Precio y stock vienen del BUILD y llevan marcas
 // data-* para que <LiveSync> los corrija (lib/live-sync.ts):
-//   data-pid + data-stock (stock) · data-price / data-price-from (precio).
+//   data-pid + data-stock (stock) · data-price / data-price-from (precio) · data-unit (€/kg,
+//   S-2: el de la variante del precio mostrado; se desactiva con CATALOG_FEATURES).
 import { Badge } from "$lib/components/ui/badge";
 import { getProductPricing, type StoreProduct } from "$lib/catalog";
+import { CATALOG_FEATURES } from "$lib/constants";
 import Price from "./Price.astro";
 import type { CardImage } from "$lib/images";
 import { buttonVariants } from "$lib/components/ui/button";
@@ -75,6 +77,7 @@ const single = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
           wasAmount={pricing.wasAmount}
           discountPercent={pricing.discountPercent}
           from={pricing.hasPriceRange}
+          unit={CATALOG_FEATURES.unitPriceInCards ? pricing.unitPrice : null}
         />
       )}
     </p>

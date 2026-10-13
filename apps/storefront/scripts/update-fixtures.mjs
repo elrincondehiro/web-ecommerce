@@ -54,7 +54,7 @@ const query = new URLSearchParams({
   region_id: region.id,
   country_code: "es",
   fields:
-    "id,handle,title,subtitle,description,thumbnail,collection_id,*images,*categories,*options,*options.values,*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity",
+    "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,*images,*categories,*options,*options.values,*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity",
 });
 for (const id of ids) query.append("id[]", id);
 const { products: base } = await get(`/store/products?${query}`);

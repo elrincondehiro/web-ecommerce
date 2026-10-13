@@ -5,7 +5,7 @@
 // `queries` ≤ 20, `take` ≤ 100) y @medusajs/search 2.21.2 (utils/index.js: las facetas
 // disyuntivas quitan TODOS los filtros del campo facetado). Ver docs/fases/fase7.md §2.3.
 import { z } from "astro/zod";
-import { PAGE_SIZE } from "./constants";
+import { CATALOG_FEATURES, PAGE_SIZE } from "./constants";
 
 export const SEARCH_PATH = "/buscar/";
 
@@ -33,11 +33,26 @@ export interface SearchParams {
   precioMin: number | null;
   precioMax: number | null;
   disponible: boolean;
+  /** % sobre materia seca (S-2): { proteina: {min, max}, grasa: … }; null = sin límite. */
+  ms: Record<DryMatterKey, Range>;
   orden: Sort;
   pagina: number;
 }
 
 export type MultiKey = "categoria" | "etiqueta" | "opcion";
+
+/**
+ * Filtros de rango sobre MATERIA SECA (Fase S, S-2): parámetro de URL → campo del índice
+ * (backend `src/search/product.ts`, `lib/dry-matter.ts`). Orden fijo = orden de la URL y del panel.
+ */
+export const DRY_MATTER = [
+  { key: "proteina", field: "proteina_ms", label: "Proteína" },
+  { key: "grasa", field: "grasa_ms", label: "Grasa" },
+] as const;
+export type DryMatterKey = (typeof DRY_MATTER)[number]["key"];
+export type Range = { min: number | null; max: number | null };
+/** Los rangos activos (vacío si CATALOG_FEATURES.dryMatterFilters = false). */
+export const dryMatterFilters = () => (CATALOG_FEATURES.dryMatterFilters ? DRY_MATTER : []);
 
 // eslint-disable-next-line no-control-regex -- se quitan caracteres de control a propósito
 const CONTROL = /[\u0000-\u001f\u007f]/g;
@@ -52,6 +67,7 @@ const optionSchema = z
   .max(MAX_VALUE_LENGTH)
   .refine((v) => /^[^:]+:.+$/.test(v));
 const priceSchema = z.coerce.number().min(0).max(1_000_000);
+const percentSchema = z.coerce.number().min(0).max(100);
 const pageSchema = z.coerce.number().int().min(1).max(MAX_PAGE);
 
 /** Valores válidos, sin repetir y ORDENADOS (misma URL canónica para el mismo filtro). */
@@ -68,6 +84,18 @@ function price(raw: string | null): number | null {
   if (raw === null || raw.trim() === "") return null;
   const parsed = priceSchema.safeParse(raw.replace(",", "."));
   return parsed.success ? Math.round(parsed.data * 100) / 100 : null;
+}
+
+/** % con un decimal (0–100); inválido → null. */
+function percent(raw: string | null): number | null {
+  if (raw === null || raw.trim() === "") return null;
+  const parsed = percentSchema.safeParse(raw.replace(",", "."));
+  return parsed.success ? Math.round(parsed.data * 10) / 10 : null;
+}
+
+/** Rango [min, max] ordenado (si vienen al revés, se intercambian). */
+function range(min: number | null, max: number | null): Range {
+  return min !== null && max !== null && min > max ? { min: max, max: min } : { min, max };
 }
 
 /** Lee y normaliza los parámetros de `/buscar/`. Lo desconocido o inválido se descarta. */
@@ -87,6 +115,14 @@ export function parseSearchParams(search: URLSearchParams): SearchParams {
     precioMin,
     precioMax,
     disponible: search.get("disponible") === "1",
+    ms: Object.fromEntries(
+      DRY_MATTER.map(({ key }) => [
+        key,
+        CATALOG_FEATURES.dryMatterFilters
+          ? range(percent(search.get(`${key}_min`)), percent(search.get(`${key}_max`)))
+          : { min: null, max: null },
+      ]),
+    ) as Record<DryMatterKey, Range>,
     orden: (SORTS as readonly string[]).includes(orden ?? "") ? (orden as Sort) : "relevancia",
     pagina: pagina.success ? pagina.data : 1,
   };
@@ -102,6 +138,10 @@ export function toSearchString(p: SearchParams): string {
   if (p.precioMin !== null) s.set("precio_min", String(p.precioMin));
   if (p.precioMax !== null) s.set("precio_max", String(p.precioMax));
   if (p.disponible) s.set("disponible", "1");
+  for (const { key } of DRY_MATTER) {
+    if (p.ms[key].min !== null) s.set(`${key}_min`, String(p.ms[key].min));
+    if (p.ms[key].max !== null) s.set(`${key}_max`, String(p.ms[key].max));
+  }
   if (p.orden !== "relevancia") s.set("orden", p.orden);
   if (p.pagina > 1) s.set("pagina", String(p.pagina));
   return s.toString();
@@ -164,8 +204,20 @@ export function activeFilters(
   if (p.disponible) {
     out.push({ label: "Disponible", href: searchUrl(reset({ ...p, disponible: false }), path) });
   }
+  for (const { key, label } of DRY_MATTER) {
+    const r = p.ms[key];
+    if (r.min === null && r.max === null) continue;
+    out.push({
+      label: `${label} s.m.: ${percentLabel(r.min, r.max)}`,
+      href: searchUrl(reset({ ...p, ms: { ...p.ms, [key]: { min: null, max: null } } }), path),
+    });
+  }
   return out;
 }
+
+/** Nº de rangos de materia seca con algún límite. */
+const msCount = (p: SearchParams) =>
+  DRY_MATTER.filter(({ key }) => p.ms[key].min !== null || p.ms[key].max !== null).length;
 
 /** Quitar todos los filtros (se mantienen el texto, el orden y los filtros fijos). */
 export function clearFiltersUrl(p: SearchParams, path?: string, fixed: FixedFilters = {}): string {
@@ -190,7 +242,8 @@ export function hasFilters(p: SearchParams, fixed: FixedFilters = {}): boolean {
     categorias + p.etiqueta.length + p.opcion.length > 0 ||
     p.precioMin !== null ||
     p.precioMax !== null ||
-    p.disponible
+    p.disponible ||
+    msCount(p) > 0
   );
 }
 
@@ -201,13 +254,21 @@ export function selectedCount(p: SearchParams, fixed: FixedFilters = {}): number
     p.opcion.length +
     p.categoria.filter((c) => c !== fixed.categoria).length +
     (p.precioMin !== null || p.precioMax !== null ? 1 : 0) +
-    (p.disponible ? 1 : 0)
+    (p.disponible ? 1 : 0) +
+    msCount(p)
   );
 }
 
 export function splitOption(v: string): { title: string; value: string } {
   const i = v.indexOf(":");
   return { title: v.slice(0, i), value: v.slice(i + 1) };
+}
+
+function percentLabel(min: number | null, max: number | null): string {
+  const f = (n: number) => `${n.toLocaleString("es-ES", { maximumFractionDigits: 1 })} %`;
+  if (min !== null && max !== null) return `${f(min)} – ${f(max)}`;
+  if (min !== null) return `≥ ${f(min)}`;
+  return `≤ ${f(max!)}`;
 }
 
 function priceLabel(min: number | null, max: number | null): string {
@@ -260,6 +321,17 @@ function filtersFor(p: SearchParams, skipOptionGroup?: string): Filter {
   if (p.precioMin !== null) and.push({ max_price_eur: { $gte: p.precioMin } });
   if (p.precioMax !== null) and.push({ min_price_eur: { $lte: p.precioMax } });
   if (p.disponible) and.push({ in_stock: true });
+  for (const { key, field } of dryMatterFilters()) {
+    const r = p.ms[key];
+    if (r.min !== null || r.max !== null) {
+      and.push({
+        [field]: {
+          ...(r.min !== null ? { $gte: r.min } : {}),
+          ...(r.max !== null ? { $lte: r.max } : {}),
+        },
+      });
+    }
+  }
   return { ...(p.q ? { q: p.q } : {}), ...(and.length ? { $and: and } : {}) };
 }
 
@@ -294,7 +366,14 @@ export function buildSearchQueries(p: SearchParams, take = PAGE_SIZE): SearchQue
       take,
       ...(orderFor(p) ? { order: orderFor(p)! } : {}),
     },
-    search_options: { facets: [...FACET_FIELDS, PRICE_FACET], disjunctive_facets: true },
+    search_options: {
+      facets: [
+        ...FACET_FIELDS,
+        PRICE_FACET,
+        ...dryMatterFilters().map(({ field }) => ({ field, type: "stats" })),
+      ],
+      disjunctive_facets: true,
+    },
   };
   const groups = [...optionGroups(p.opcion).keys()];
   const perGroup = groups.length > 1 ? groups : [];
@@ -337,6 +416,8 @@ export interface SearchOutcome {
     opcion: FacetValue[];
     disponible: number;
     price: { min: number; max: number } | null;
+    /** Mínimo/máximo de materia seca en los resultados (null = ningún producto con el dato). */
+    ms: Partial<Record<DryMatterKey, { min: number; max: number }>>;
   };
 }
 
@@ -357,6 +438,12 @@ export function parseSearchResults(p: SearchParams, results: RawSearchResult[]):
     });
   }
   const stats = facets.min_price_eur;
+  const ms: SearchOutcome["facets"]["ms"] = {};
+  for (const { key, field } of dryMatterFilters()) {
+    const f = facets[field];
+    if (typeof f?.min === "number" && typeof f.max === "number")
+      ms[key] = { min: f.min, max: f.max };
+  }
   return {
     ids: (main?.hits ?? []).map((h) => h.id),
     total: main?.metadata?.count ?? 0,
@@ -369,6 +456,7 @@ export function parseSearchResults(p: SearchParams, results: RawSearchResult[]):
         typeof stats?.min === "number" && typeof stats.max === "number"
           ? { min: stats.min, max: stats.max }
           : null,
+      ms,
     },
   };
 }

@@ -5,6 +5,9 @@
     "title": "Abrigo Esencial",
     "subtitle": "Ropa",
     "description": "Abrigo Esencial: producto de prueba generado para desarrollo (Ropa).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32PYGSEZW883A05FGP6",
@@ -419,6 +422,9 @@
     "title": "Abrigo Natural",
     "subtitle": "Ropa",
     "description": "Abrigo Natural: producto de prueba generado para desarrollo (Ropa).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32NMR60MBWD15ST82TM",
@@ -821,6 +827,9 @@
     "title": "Aceite de salmón Original",
     "subtitle": "Suplementos",
     "description": "Aceite de salmón Original: producto de prueba generado para desarrollo (Suplementos).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32K63KX3Q5PE2FMCMKD",
@@ -907,6 +916,9 @@
     "title": "Alfombra olfativa Original",
     "subtitle": "Estimulación mental",
     "description": "Alfombra olfativa Original: producto de prueba generado para desarrollo (Estimulación mental).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EE2W9C1Z3RQVTXH3H0",
@@ -990,6 +1002,9 @@
     "title": "Botiquín Natural",
     "subtitle": "Primeros auxilios",
     "description": "Botiquín Natural: producto de prueba generado para desarrollo (Primeros auxilios).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EEYA4YEA2XWNC83X67",
@@ -1073,6 +1088,9 @@
     "title": "Cama Confort",
     "subtitle": "Camas y sofás",
     "description": "Cama Confort: producto de prueba generado para desarrollo (Camas y sofás).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EFQMKYFR19S44HN6NB",
@@ -1264,6 +1282,9 @@
     "title": "Cama Eco",
     "subtitle": "Camas y sofás",
     "description": "Cama Eco: producto de prueba generado para desarrollo (Camas y sofás).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EF5J6HX86XVW5C3DSF",
@@ -1449,6 +1470,9 @@
     "title": "Cama gato Confort",
     "subtitle": "Descanso",
     "description": "Cama gato Confort: producto de prueba generado para desarrollo (Descanso).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EGA4Z5P5NFXHZYVVWF",
@@ -1634,6 +1658,9 @@
     "title": "Cama refrescante Eco",
     "subtitle": "Camas refrescantes",
     "description": "Cama refrescante Eco: producto de prueba generado para desarrollo (Camas refrescantes).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EFCPTPZM7EX1XBYCTY",
@@ -1819,6 +1846,9 @@
     "title": "Caña Esencial",
     "subtitle": "Juguetes",
     "description": "Caña Esencial: producto de prueba generado para desarrollo (Juguetes).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EG2KS9S68ZZ8RK1A76",
@@ -1902,6 +1932,9 @@
     "title": "Champú Plus",
     "subtitle": "Para la ducha",
     "description": "Champú Plus: producto de prueba generado para desarrollo (Para la ducha).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32QWDXA0TGXZJYMS4RZ",
@@ -2043,6 +2076,9 @@
     "title": "Champú gato Original",
     "subtitle": "Higiene y cuidados",
     "description": "Champú gato Original: producto de prueba generado para desarrollo (Higiene y cuidados).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EG33Q88XQ1GWC26NS5",
@@ -2184,6 +2220,9 @@
     "title": "Clicker Esencial",
     "subtitle": "Entrenamiento",
     "description": "Clicker Esencial: producto de prueba generado para desarrollo (Entrenamiento).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32PAQQ4A2PHPM2M3ZAM",
@@ -2226,7 +2265,7 @@
           "original_amount_with_tax": 6.9,
           "original_amount_without_tax": 5.702479338842975
         },
-        "inventory_quantity": 11
+        "inventory_quantity": 9
       }
     ],
     "images": [],
@@ -2267,6 +2306,9 @@
     "title": "Collar Natural",
     "subtitle": "Paseo",
     "description": "Collar Natural: producto de prueba generado para desarrollo (Paseo).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32MCHKVM1MHXWFJEHKB",
@@ -2669,6 +2711,9 @@
     "title": "Collar Plus",
     "subtitle": "Paseo",
     "description": "Collar Plus: producto de prueba generado para desarrollo (Paseo).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32KW7V0BE6S8EQVXKN5",
@@ -3071,6 +3116,9 @@
     "title": "Collar Sport",
     "subtitle": "Paseo",
     "description": "Collar Sport: producto de prueba generado para desarrollo (Paseo).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32KMFDB1XXBR9X70REN",
@@ -3473,6 +3521,9 @@
     "title": "Collar antiparasitario Confort",
     "subtitle": "Antiparasitarios",
     "description": "Collar antiparasitario Confort: producto de prueba generado para desarrollo (Antiparasitarios).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EDAZ094J0D5JJ3K5PJ",
@@ -3556,6 +3607,9 @@
     "title": "Comedero Original",
     "subtitle": "Comederos y bebederos",
     "description": "Comedero Original: producto de prueba generado para desarrollo (Comederos y bebederos).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32PZAG4X4E0C2YG9NNG",
@@ -3741,6 +3795,9 @@
     "title": "Empapadores Eco",
     "subtitle": "Empapadores y toallitas",
     "description": "Empapadores Eco: producto de prueba generado para desarrollo (Empapadores y toallitas).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EEV2WGN1NJMX87SNW8",
@@ -3824,6 +3881,14 @@
     "title": "Guiso Eco",
     "subtitle": "Comida cocinada",
     "description": "Guiso Eco: producto de prueba generado para desarrollo (Comida cocinada).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 0.5,
+      "grasa_pct": 5,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 77,
+      "proteina_pct": 11
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32JN4YP4SV74ZTP9W5Z",
@@ -3965,6 +4030,14 @@
     "title": "Guiso Eco",
     "subtitle": "Comida cocinada",
     "description": "Guiso Eco: producto de prueba generado para desarrollo (Comida cocinada).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 0.5,
+      "grasa_pct": 6,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 71,
+      "proteina_pct": 10
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3PZTGTFS4EGWQEM623K",
@@ -4106,6 +4179,9 @@
     "title": "Guía Eco",
     "subtitle": "Libros",
     "description": "Guía Eco: producto de prueba generado para desarrollo (Libros).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EGJ4DQRJ62EMR52K8N",
@@ -4241,6 +4317,14 @@
     "title": "Lata Confort",
     "subtitle": "Comida húmeda",
     "description": "Lata Confort: producto de prueba generado para desarrollo (Comida húmeda).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 0.5,
+      "grasa_pct": 7,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 75,
+      "proteina_pct": 9
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32HVTNZFRFACTPASDD2",
@@ -4386,6 +4470,14 @@
     "title": "Lata Eco",
     "subtitle": "Comida húmeda",
     "description": "Lata Eco: producto de prueba generado para desarrollo (Comida húmeda).",
+    "metadata": {
+      "marca": "Rincón",
+      "fibra_pct": 0.5,
+      "grasa_pct": 6,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 76,
+      "proteina_pct": 10
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32J8JXX0RGXNY797F8Z",
@@ -4527,6 +4619,14 @@
     "title": "Lata Natural",
     "subtitle": "Comida húmeda",
     "description": "Lata Natural: producto de prueba generado para desarrollo (Comida húmeda).",
+    "metadata": {
+      "marca": "Rincón",
+      "fibra_pct": 0.5,
+      "grasa_pct": 7,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 70,
+      "proteina_pct": 9
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3PY6D3RJRRRSR688VW0",
@@ -4668,6 +4768,14 @@
     "title": "Lata Sport",
     "subtitle": "Comida húmeda",
     "description": "Lata Sport: producto de prueba generado para desarrollo (Comida húmeda).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 0.5,
+      "grasa_pct": 4,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 78,
+      "proteina_pct": 8
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3PY3QAHPEGR38QZPYTJ",
@@ -4809,6 +4917,9 @@
     "title": "Limpiador ótico Sport",
     "subtitle": "Ojos, oídos, piel y patas",
     "description": "Limpiador ótico Sport: producto de prueba generado para desarrollo (Ojos, oídos, piel y patas).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EE9D7E9Q8GJ6K79SK4",
@@ -4950,6 +5061,14 @@
     "title": "Menú BARF Plus",
     "subtitle": "Dieta BARF",
     "description": "Menú BARF Plus: producto de prueba generado para desarrollo (Dieta BARF).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 0.5,
+      "grasa_pct": 5,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 77,
+      "proteina_pct": 11
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3PYAVZ6CJ7NNGZWRZ9F",
@@ -5091,6 +5210,14 @@
     "title": "Menú BARF Plus",
     "subtitle": "Dieta BARF",
     "description": "Menú BARF Plus: producto de prueba generado para desarrollo (Dieta BARF).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 0.5,
+      "grasa_pct": 4,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 74,
+      "proteina_pct": 8
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32HVTWCNBKMGMN3ETYN",
@@ -5232,6 +5359,9 @@
     "title": "Mordedor Premium",
     "subtitle": "Motivadores",
     "description": "Mordedor Premium: producto de prueba generado para desarrollo (Motivadores).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EEH1QX7H826J3FHY1B",
@@ -5315,6 +5445,9 @@
     "title": "Pelota Plus",
     "subtitle": "Más juguetes",
     "description": "Pelota Plus: producto de prueba generado para desarrollo (Más juguetes).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EEFCJF1BEYJP3E4R6T",
@@ -5399,6 +5532,9 @@
     "subtitle": "Peluches",
     "description": "Peluche Esencial: producto de prueba generado para desarrollo (Peluches).",
     "collection_id": "pcol_01M4S09P9K0QWERGS9PCD86EKD",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EESMTEMRV7Z6RJ9HHC",
@@ -5584,6 +5720,15 @@
     "title": "Pienso Confort",
     "subtitle": "Piensos",
     "description": "Pienso Confort: producto de prueba generado para desarrollo (Piensos).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 4.5,
+      "grasa_pct": 18,
+      "cenizas_pct": 7.5,
+      "humedad_pct": 10,
+      "proteina_pct": 32,
+      "analitico:Calcio": "1,5 %"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3PXJZEHGPDX1CKBB2YF",
@@ -5729,6 +5874,15 @@
     "title": "Pienso Confort",
     "subtitle": "Piensos",
     "description": "Pienso Confort: producto de prueba generado para desarrollo (Piensos).",
+    "metadata": {
+      "marca": "Rincón",
+      "fibra_pct": 2.5,
+      "grasa_pct": 12,
+      "cenizas_pct": 9.5,
+      "humedad_pct": 8,
+      "proteina_pct": 27,
+      "analitico:Calcio": "1,3 %"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32H9KKKZZ8Q2T8YFVM6",
@@ -5870,6 +6024,15 @@
     "title": "Pienso Eco",
     "subtitle": "Piensos",
     "description": "Pienso Eco: producto de prueba generado para desarrollo (Piensos).",
+    "metadata": {
+      "marca": "Rincón",
+      "fibra_pct": 2.5,
+      "grasa_pct": 12,
+      "cenizas_pct": 8.5,
+      "humedad_pct": 8,
+      "proteina_pct": 33,
+      "analitico:Calcio": "1,0 %"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3PYMEV3V04FDF3PHTFD",
@@ -6011,6 +6174,15 @@
     "title": "Pienso Original",
     "subtitle": "Piensos",
     "description": "Pienso Original: producto de prueba generado para desarrollo (Piensos).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 4.5,
+      "grasa_pct": 18,
+      "cenizas_pct": 8.5,
+      "humedad_pct": 10,
+      "proteina_pct": 26,
+      "analitico:Calcio": "1,2 %"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32H9NF0GF3CXZYDX3QQ",
@@ -6152,6 +6324,15 @@
     "title": "Pienso Original",
     "subtitle": "Piensos",
     "description": "Pienso Original: producto de prueba generado para desarrollo (Piensos).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 3.5,
+      "grasa_pct": 15,
+      "cenizas_pct": 6.5,
+      "humedad_pct": 9,
+      "proteina_pct": 31,
+      "analitico:Calcio": "1,4 %"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EHDHRPFQZME5MD3WGX",
@@ -6294,6 +6475,15 @@
     "subtitle": "Piensos",
     "description": "Pienso Premium: producto de prueba generado para desarrollo (Piensos).",
     "collection_id": "pcol_01M4S09P9K0QWERGS9PCD86EKD",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 3.5,
+      "grasa_pct": 15,
+      "cenizas_pct": 7.5,
+      "humedad_pct": 9,
+      "proteina_pct": 25,
+      "analitico:Calcio": "1,1 %"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32GENGM4ZKNX8899ACS",
@@ -6435,6 +6625,15 @@
     "title": "Pienso gato Esencial",
     "subtitle": "Alimentación",
     "description": "Pienso gato Esencial: producto de prueba generado para desarrollo (Alimentación).",
+    "metadata": {
+      "marca": "Rincón",
+      "fibra_pct": 2.5,
+      "grasa_pct": 12,
+      "cenizas_pct": 7.5,
+      "humedad_pct": 8,
+      "proteina_pct": 24,
+      "analitico:Calcio": "1,3 %"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EGQEY932W3TT7MR83X",
@@ -6576,6 +6775,15 @@
     "title": "Pienso gato Natural",
     "subtitle": "Alimentación",
     "description": "Pienso gato Natural: producto de prueba generado para desarrollo (Alimentación).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 4.5,
+      "grasa_pct": 18,
+      "cenizas_pct": 6.5,
+      "humedad_pct": 10,
+      "proteina_pct": 34,
+      "analitico:Calcio": "1,2 %"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EFE5EKV3538BD1CJ4W",
@@ -6717,6 +6925,12 @@
     "title": "Premios Esencial",
     "subtitle": "Snacks y masticación",
     "description": "Premios Esencial: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "metadata": {
+      "marca": "Rincón",
+      "grasa_pct": 9,
+      "humedad_pct": 10,
+      "proteina_pct": 49
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32JV9D3T1KDE9EHCRQY",
@@ -6911,6 +7125,12 @@
     "title": "Premios Esencial",
     "subtitle": "Snacks y masticación",
     "description": "Premios Esencial: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "metadata": {
+      "marca": "Hiro",
+      "grasa_pct": 19,
+      "humedad_pct": 13,
+      "proteina_pct": 56
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3PZ16KRPBXJGYZGGB66",
@@ -7105,6 +7325,12 @@
     "title": "Premios Natural",
     "subtitle": "Snacks y masticación",
     "description": "Premios Natural: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "metadata": {
+      "marca": "Hiro",
+      "grasa_pct": 19,
+      "humedad_pct": 9,
+      "proteina_pct": 48
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32J2EHMAMZRSAW45S3J",
@@ -7246,6 +7472,12 @@
     "title": "Premios Plus",
     "subtitle": "Snacks y masticación",
     "description": "Premios Plus: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "metadata": {
+      "marca": "Rincón",
+      "grasa_pct": 9,
+      "humedad_pct": 14,
+      "proteina_pct": 57
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3PZDQ88PK8NZM0WK7TV",
@@ -7387,6 +7619,9 @@
     "title": "Rascador Plus",
     "subtitle": "Accesorios",
     "description": "Rascador Plus: producto de prueba generado para desarrollo (Accesorios).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EG75RVRTNKPX72614N",
@@ -7470,6 +7705,9 @@
     "title": "Taza Sport",
     "subtitle": "Accesorios",
     "description": "Taza Sport: producto de prueba generado para desarrollo (Accesorios).",
+    "metadata": {
+      "marca": "Hiro"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R3EGMWY6RG3PZ98646VM",
@@ -7553,6 +7791,9 @@
     "title": "Transportín Eco",
     "subtitle": "Viaje",
     "description": "Transportín Eco: producto de prueba generado para desarrollo (Viaje).",
+    "metadata": {
+      "marca": "Rincón"
+    },
     "variants": [
       {
         "id": "variant_01M4S0R32NSK0K3C1JW02VGX76",

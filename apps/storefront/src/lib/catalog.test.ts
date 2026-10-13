@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import products from "./__fixtures__/products.json";
 import {
+  analyticRows,
   discountPercent,
+  dryMatter,
   getProductPricing,
   isVariantInStock,
   metaDescription,
   type StoreProduct,
   type StoreVariant,
+  unitPrice,
   variantWasAmount,
 } from "./catalog";
 
@@ -59,6 +62,58 @@ describe("getProductPricing", () => {
   it("sin precios calculados (catálogo de build)", () => {
     const p = getProductPricing({ ...byHandle("mock-clicker-esencial-018"), variants: [] });
     expect(p).toMatchObject({ fromAmount: null, currencyCode: null, inStock: false });
+  });
+});
+
+describe("precio por unidad (S-2)", () => {
+  const v = (amount: number, metadata: Record<string, unknown>) =>
+    ({
+      id: "v",
+      metadata,
+      calculated_price: { calculated_amount_with_tax: amount, currency_code: "eur" },
+    }) as unknown as StoreVariant;
+  it("€/kg con neto_g y €/l con neto_ml, a céntimos", () => {
+    expect(unitPrice(31.95, v(31.95, { neto_g: 3000 }))).toEqual({ amount: 10.65, unit: "kg" });
+    expect(unitPrice(13.9, v(13.9, { neto_ml: 250 }))).toEqual({ amount: 55.6, unit: "l" });
+  });
+  it("sin contenido neto válido o sin precio → null", () => {
+    expect(unitPrice(5, v(5, {}))).toBeNull();
+    expect(unitPrice(5, v(5, { neto_g: 0 }))).toBeNull();
+    expect(unitPrice(5, v(5, { neto_g: "3000" }))).toBeNull();
+    expect(unitPrice(null, v(5, { neto_g: 3000 }))).toBeNull();
+  });
+  it("fixtures: el producto anuncia el €/kg de su variante más barata", () => {
+    const p = getProductPricing(byHandle("mock-pienso-premium-001"));
+    expect(p.unitPrice).toEqual({ amount: 10.65, unit: "kg" });
+    expect(p.variants.every((x) => x.unitPrice?.unit === "kg")).toBe(true);
+    expect(getProductPricing(byHandle("mock-clicker-esencial-018")).unitPrice).toBeNull();
+  });
+});
+
+describe("componentes analíticos (S-2)", () => {
+  it("fijos en orden, materia seca con humedad, y después los analitico:X", () => {
+    const rows = analyticRows({
+      metadata: {
+        humedad_pct: 9,
+        "analitico:Calcio": "1,1 %",
+        proteina_pct: 25,
+        grasa_pct: 15,
+        marca: "Hiro",
+      },
+    });
+    expect(rows).toEqual([
+      { label: "Proteína bruta", value: 25, dryMatter: 27.5 },
+      { label: "Grasa bruta", value: 15, dryMatter: 16.5 },
+      { label: "Humedad", value: 9, dryMatter: null },
+      { label: "Calcio", value: "1,1 %", dryMatter: null },
+    ]);
+  });
+  it("sin humedad: sin materia seca; sin datos: sin filas", () => {
+    expect(analyticRows({ metadata: { proteina_pct: 50 } })[0]?.dryMatter).toBeNull();
+    expect(analyticRows({ metadata: { marca: "Hiro" } })).toEqual([]);
+    expect(analyticRows({})).toEqual([]);
+    expect(dryMatter(9, 75)).toBe(36);
+    expect(dryMatter(9, 100)).toBeNull();
   });
 });
 

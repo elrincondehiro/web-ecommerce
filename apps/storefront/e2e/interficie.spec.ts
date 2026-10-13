@@ -96,6 +96,29 @@ test.describe("sin JS", () => {
     }
   });
 
+  test("ficha de pienso (S-2): €/kg por variante y componentes analíticos", async ({ page }) => {
+    await page.goto("/producto/mock-pienso-premium-001/");
+    const rows = page.locator("main tr.variant-row");
+    await expect(rows).toHaveCount(2);
+    for (const row of await rows.all()) {
+      await expect(row.locator("[data-unit]")).toHaveText(/^\d+,\d{2}\s€\/kg$/);
+    }
+    const table = page.getByRole("table", { name: /Componentes analíticos/ });
+    await expect(table.getByRole("columnheader", { name: "Materia seca" })).toBeVisible();
+    const protein = table.getByRole("row", { name: /Proteína bruta/ });
+    await expect(protein).toContainText("25\u202f%");
+    await expect(protein).toContainText("27,5\u202f%"); // 25 / (100 − 9)
+    await expect(table.getByRole("row", { name: /Calcio/ })).toContainText("1,1 %");
+  });
+
+  test("tarjetas con €/kg; productos sin contenido neto, sin él", async ({ page }) => {
+    await page.goto("/categorias/piensos-perro/");
+    await expect(page.locator("main article [data-unit]").first()).toHaveText(/€\/kg$/);
+    await page.goto("/producto/mock-clicker-esencial-018/");
+    await expect(page.locator("main [data-unit]")).toHaveCount(0);
+    await expect(page.getByRole("table", { name: /Componentes analíticos/ })).toHaveCount(0);
+  });
+
   test("subcategorías: el padre agrega a sus hijas; migas con la cadena", async ({ page }) => {
     await page.goto("/categorias/perro/");
     const subs = page.getByRole("navigation", { name: "Subcategorías de Perro" });

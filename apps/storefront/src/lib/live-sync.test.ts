@@ -21,8 +21,14 @@ const onSale = (id: string, amount: number, was: number) => ({
   },
 });
 
+const kilo = (id: string, amount: number, grams: number) => ({
+  ...variant(id, amount, 5),
+  metadata: { neto_g: grams },
+});
+
 const products = [
   { id: "prod_A", variants: [variant("variant_1", 19, 3), variant("variant_2", 25, 0)] },
+  { id: "prod_K", variants: [kilo("variant_k", 30, 3000)] },
   { id: "prod_B", variants: [variant("variant_3", 9.5, 0)] },
   { id: "prod_S", variants: [onSale("variant_s", 8, 10)] },
 ] as unknown as StoreProduct[];
@@ -34,6 +40,8 @@ describe("liveEntries", () => {
       ["prod_A", "product", true, true],
       ["variant_1", "variant", true, null],
       ["variant_2", "variant", false, null],
+      ["prod_K", "product", true, false],
+      ["variant_k", "variant", true, null],
       ["prod_B", "product", false, false],
       ["variant_3", "variant", false, null],
       ["prod_S", "product", true, false],
@@ -65,6 +73,19 @@ describe("liveData", () => {
     expect(data["prod_S"]?.slice(3)).toEqual([expect.stringMatching(/^10,00/), "\u221220\u202f%"]);
   });
 
+  it("€/kg (S-2) en v[5]; sin oferta, v[3] y v[4] a 0", () => {
+    const data = JSON.parse(liveData(liveEntries(products))) as Record<string, unknown[]>;
+    expect(data["prod_K"]).toEqual([
+      expect.stringMatching(/^30,00/),
+      0,
+      1,
+      0,
+      0,
+      "10,00\u00a0€/kg",
+    ]);
+    expect(data["variant_k"]?.[5]).toBe("10,00\u00a0€/kg");
+  });
+
   it("escapa '<' y '&' (va dentro de un <template>)", () => {
     const out = liveData([
       { id: "prod_A", level: "product", inStock: true, price: "<b>&amp;", range: true },
@@ -91,6 +112,7 @@ function fakeDom(json: string | null) {
   const was = el({ was: "prod_S" }, "1,00 €");
   const off = el({ off: "prod_S" }, "−1 %");
   const wasBoxA = el({ wasBox: "prod_A" });
+  const unit = el({ unit: "prod_K" }, "9,00 €/kg");
   const all: Record<string, unknown[]> = {
     "[data-pid]": [card, row],
     "[data-price]": [price],
@@ -98,6 +120,7 @@ function fakeDom(json: string | null) {
     "[data-was-box]": [wasBox, wasBoxA],
     "[data-was]": [was],
     "[data-off]": [off],
+    "[data-unit]": [unit],
   };
   let observer: { cb: () => void; disconnected: boolean } | null = null;
   const parent = {
@@ -127,6 +150,7 @@ function fakeDom(json: string | null) {
     wasBoxA,
     was,
     off,
+    unit,
     parent,
     run,
     observer: () => observer,
@@ -153,6 +177,12 @@ describe("LIVE_SYNC_APPLY", () => {
     expect(dom.was.textContent).toMatch(/^10,00\s€$/);
     expect(dom.off.textContent).toBe("\u221220\u202f%");
     expect(dom.wasBoxA.hidden).toBe(true);
+  });
+
+  it("actualiza el precio por kilo/litro (S-2)", () => {
+    const dom = fakeDom(json);
+    dom.run();
+    expect(dom.unit.textContent).toBe("10,00\u00a0€/kg");
   });
 
   it("espera al <template> con un MutationObserver y se desconecta", () => {

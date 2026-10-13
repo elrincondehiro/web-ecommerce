@@ -236,9 +236,32 @@ medusaIntegrationTestRunner({
         expect((await inTree("piensos-perro-t")).map((h) => h.document.handle)).toContain(
           published.handle,
         );
-        // category_handles sigue siendo solo la categoría directa
+        // category_handles sigue siendo solo la categoría directa (S-1)
         const direct = await search({ $and: [{ category_handles: { $in: ["perro-t"] } }] });
         expect(direct.map((h) => h.document.handle)).not.toContain(published.handle);
+      });
+
+      it("proteina_ms / grasa_ms: rango sobre materia seca (S-2)", async () => {
+        // 25 % de proteína con 9 % de humedad → 27,5 % s.m.; grasa 15 % → 16,5 % s.m.
+        await updateProductsWorkflow(container).run({
+          input: {
+            selector: { id: published.id },
+            update: { metadata: { proteina_pct: 25, grasa_pct: 15, humedad_pct: 9 } },
+          },
+        });
+        const range = (field: string, $gte: number, $lte: number) =>
+          search({ $and: [{ [field]: { $gte, $lte } }] });
+        const hits = await eventually(
+          () => range("proteina_ms", 27, 28),
+          (h) => h.some((x) => x.document.handle === published.handle),
+        );
+        expect(hits.map((h) => h.document.handle)).toContain(published.handle);
+        expect((await range("proteina_ms", 28, 100)).map((h) => h.document.handle)).not.toContain(
+          published.handle,
+        );
+        expect((await range("grasa_ms", 16, 17)).map((h) => h.document.handle)).toContain(
+          published.handle,
+        );
       });
     });
   },

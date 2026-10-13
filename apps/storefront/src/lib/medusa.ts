@@ -28,7 +28,7 @@ export interface StoreRegionRef {
 const COUNTRY_CODE = "es";
 const ORDER = "title";
 const CATALOG_FIELDS =
-  "id,handle,title,subtitle,description,thumbnail,collection_id,*images,*categories,*options,*options.values,*tags";
+  "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,*images,*categories,*options,*options.values,*tags";
 const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity`;
 const CATEGORY_FIELDS = "id,name,handle,description,rank,parent_category_id";
 const PAGE = 100;
@@ -360,12 +360,14 @@ export async function searchProducts(queries: SearchQueryBody[]): Promise<RawSea
 }
 
 /**
- * Solo lo que pinta <ProductCard> (medido en dev: ~117 ms con PRICED_FIELDS → ~75 ms; lo caro
- * es `inventory_quantity`, que se mantiene: stock fresco).
+ * Solo lo que pinta <ProductCard>. `*variants` (S-2) en vez de `variants.id,…`: el €/kg necesita
+ * `variants.metadata` (contenido neto) y la Store API 2.21.2 no lo admite suelto (no está en
+ * `allowedStoreProductExtraFields`, api/store/products/query-config.js: se descarta sin error).
+ * Medido en dev con 24 productos: ~65 ms igual que antes (+25 KB de JSON entre servidores);
+ * con PRICED_FIELDS eran ~117 ms. Lo caro es `inventory_quantity` (stock fresco: se mantiene).
  */
 const CARD_FIELDS =
-  "id,handle,title,subtitle,thumbnail,variants.id,variants.title,variants.manage_inventory," +
-  "variants.allow_backorder,*variants.calculated_price,+variants.inventory_quantity";
+  "id,handle,title,subtitle,thumbnail,*variants,*variants.calculated_price,+variants.inventory_quantity";
 
 async function fetchCards(ids: string[]): Promise<StoreProduct[]> {
   const region = await getRegionES();

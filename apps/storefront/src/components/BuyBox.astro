@@ -3,6 +3,8 @@
 // <LiveSync productId> los corrige en runtime (data-pid/data-price/data-vstock, lib/live-sync.ts).
 // Añadir al carrito (fase 4): <AddToCart> con la variante (hidden si hay una; radios en la tabla
 // si hay varias) y la cantidad. Los radios de variantes agotadas se ocultan con data-if-vstock.
+// Precio por kilo/litro (S-2, RD 3423/2000): junto al precio con una variante; con varias, en
+// cada fila de la tabla (el «Desde» no lo lleva: sería el de otra variante).
 import { Badge } from "$lib/components/ui/badge";
 import AddToCart from "./AddToCart.astro";
 import { discountPercent, getProductPricing, type StoreProduct } from "$lib/catalog";
@@ -35,6 +37,7 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
         discountPercent={pricing.discountPercent}
         from={pricing.hasPriceRange}
         size="lg"
+        unit={multi ? null : pricing.unitPrice}
       />
       <span class="text-sm text-muted-foreground">IVA incluido</span>
     </p>
@@ -107,6 +110,7 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
                         discountPercent={
                           v.wasAmount !== null ? discountPercent(v.amount, v.wasAmount) : null
                         }
+                        unit={v.unitPrice}
                       />
                     ) : (
                       "—"

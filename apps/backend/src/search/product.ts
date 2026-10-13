@@ -6,6 +6,7 @@ import {
   QueryContext,
   search,
 } from "@medusajs/framework/utils";
+import { DRY_MATTER_FIELDS, dryMatter } from "../lib/dry-matter";
 
 /**
  * Índice de búsqueda de productos (fase 7-1), servido por Meilisearch (decisión D1 = A).
@@ -56,6 +57,7 @@ type ProductRow = {
   categories?:
     ({ name?: string | null; handle?: string | null; mpath?: string | null } | null)[] | null;
   tags?: ({ value?: string | null } | null)[] | null;
+  metadata?: Record<string, unknown> | null;
   options?:
     | ({ title?: string | null; values?: ({ value?: string | null } | null)[] | null } | null)[]
     | null;
@@ -207,6 +209,17 @@ const fields = search.define({
     .facetable({ types: ["stats"] })
     .retrievable(),
   in_stock: search.boolean().filterable().facetable().retrievable(),
+  // % sobre materia seca (S-2): filtros de rango de /buscar/ (stats → mínimo/máximo).
+  proteina_ms: search
+    .float()
+    .filterable()
+    .facetable({ types: ["stats"] })
+    .retrievable(false),
+  grasa_ms: search
+    .float()
+    .filterable()
+    .facetable({ types: ["stats"] })
+    .retrievable(false),
 });
 
 const source = {
@@ -227,6 +240,7 @@ const source = {
     "categories.handle",
     "categories.mpath",
     "tags.value",
+    "metadata",
     "options.title",
     "options.values.value",
   ],
@@ -258,6 +272,11 @@ const source = {
         option_values: toOptionValues(p.options),
         ...(price ? { min_price_eur: price.min, max_price_eur: price.max } : {}),
         in_stock: stock.get(p.id) ?? false,
+        ...Object.fromEntries(
+          Object.entries(DRY_MATTER_FIELDS)
+            .map(([field, key]) => [field, dryMatter(p.metadata, key)] as const)
+            .filter(([, v]) => v !== undefined),
+        ),
       };
     });
   },

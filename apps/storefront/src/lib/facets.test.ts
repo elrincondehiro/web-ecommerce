@@ -10,10 +10,12 @@ const product = (
     options?: Record<string, string[]>;
     prices?: number[];
     stock?: number;
+    metadata?: Record<string, unknown>;
   },
 ) =>
   ({
     id,
+    metadata: o.metadata ?? {},
     categories: o.cat ? [{ id: `c-${o.cat}`, handle: o.cat }] : [],
     tags: (o.tags ?? []).map((value) => ({ value })),
     options: Object.entries(o.options ?? {}).map(([title, values]) => ({
@@ -98,6 +100,25 @@ describe("buildListingFacets", () => {
     const f = buildListingFacets([product("x", { prices: [3] }), product("y", { prices: [3] })]);
     expect(f.price).toBeNull();
     expect(f.stockFilter).toBe(false);
+  });
+});
+
+describe("materia seca (S-2)", () => {
+  it("rango entero de proteína/grasa s.m. entre los productos con humedad", () => {
+    const f = buildListingFacets([
+      product("p", { metadata: { proteina_pct: 25, grasa_pct: 15, humedad_pct: 9 } }), // 27,5 · 16,5
+      product("l", { metadata: { proteina_pct: 9, grasa_pct: 7, humedad_pct: 75 } }), // 36 · 28
+      product("s", { metadata: { proteina_pct: 50 } }), // sin humedad: no cuenta
+      product("x", {}),
+    ]);
+    expect(f.ms).toEqual({ proteina: { min: 27, max: 36 }, grasa: { min: 16, max: 28 } });
+  });
+  it("un solo producto con el dato → sin filtro en los listados", () => {
+    const f = buildListingFacets([
+      product("p", { metadata: { proteina_pct: 25, humedad_pct: 9 } }),
+      product("x", {}),
+    ]);
+    expect(f.ms).toEqual({});
   });
 });
 

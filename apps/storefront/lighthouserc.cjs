@@ -29,6 +29,8 @@ module.exports = {
         `${BASE}/categorias/perro/`,
         `${BASE}/categorias/piensos-perro/`,
         `${BASE}/producto/${PRODUCT}/`,
+        // S-2: ficha con €/kg por variante y tabla de componentes analíticos
+        `${BASE}/producto/mock-pienso-premium-001/`,
         `${BASE}/carrito/`,
       ],
       numberOfRuns: 3,

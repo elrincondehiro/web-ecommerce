@@ -3,8 +3,8 @@
 // se ofrece si lo comparten ≥ MIN_PRODUCTS productos (evita valores sueltos tipo "Formato" de
 // un solo producto). En /buscar/ las mismas facetas llegan del motor con recuentos en vivo.
 // Funciones PURAS (Vitest).
-import { getProductPricing, type StoreProduct } from "./catalog";
-import type { FacetValue } from "./search";
+import { dryMatter, getProductPricing, type StoreProduct } from "./catalog";
+import { dryMatterFilters, type DryMatterKey, type FacetValue } from "./search";
 
 export const MIN_PRODUCTS = 2;
 
@@ -21,7 +21,16 @@ export interface ListingFacets {
   price: { min: number; max: number } | null;
   /** Hay productos con y sin stock: el filtro "Disponible" tiene sentido. */
   stockFilter: boolean;
+  /** % sobre materia seca (S-2): rango entero por componente; sin clave = sin filtro. */
+  ms: Partial<Record<DryMatterKey, { min: number; max: number }>>;
 }
+
+/** Rango entero que contiene [lo, hi]; null si no hay ≥ 2 valores distintos. */
+const intRange = (lo: number, hi: number) =>
+  Number.isFinite(lo) && hi > lo ? { min: Math.floor(lo), max: Math.ceil(hi) } : null;
+
+/** Clave de metadata de cada filtro (contrato de catalog:import). */
+const MS_META: Record<DryMatterKey, string> = { proteina: "proteina_pct", grasa: "grasa_pct" };
 
 const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
 
@@ -63,8 +72,19 @@ export function buildListingFacets(
   let lo = Infinity;
   let hi = -Infinity;
   let inStock = 0;
+  const msLo: Partial<Record<DryMatterKey, number>> = {};
+  const msHi: Partial<Record<DryMatterKey, number>> = {};
 
   for (const p of products) {
+    const meta = p.metadata ?? {};
+    const moisture = typeof meta.humedad_pct === "number" ? meta.humedad_pct : null;
+    for (const { key } of dryMatterFilters()) {
+      const v = meta[MS_META[key]];
+      const ms = typeof v === "number" ? dryMatter(v, moisture) : null;
+      if (ms === null) continue;
+      msLo[key] = Math.min(msLo[key] ?? Infinity, ms);
+      msHi[key] = Math.max(msHi[key] ?? -Infinity, ms);
+    }
     const handles = opts.categoryHandles
       ? opts.categoryHandles(p)
       : (p.categories ?? []).map((c) => c?.handle).filter((h): h is string => Boolean(h));
@@ -113,8 +133,13 @@ export function buildListingFacets(
 
   return {
     groups,
-    price: Number.isFinite(lo) && hi > lo ? { min: Math.floor(lo), max: Math.ceil(hi) } : null,
+    price: intRange(lo, hi),
     stockFilter: inStock > 0 && inStock < products.length,
+    ms: Object.fromEntries(
+      dryMatterFilters()
+        .map(({ key }) => [key, intRange(msLo[key] ?? Infinity, msHi[key] ?? -Infinity)] as const)
+        .filter(([, r]) => r !== null),
+    ),
   };
 }
 
@@ -126,6 +151,7 @@ export function facetsFromSearch(
     opcion: FacetValue[];
     disponible: number;
     price: { min: number; max: number } | null;
+    ms?: Partial<Record<DryMatterKey, { min: number; max: number }>>;
   },
   opts: {
     categories: Map<string, string>;
@@ -176,5 +202,12 @@ export function facetsFromSearch(
       : null,
     stockFilter:
       Boolean(opts.disponible) || (facets.disponible > 0 && facets.disponible < opts.total),
+    // Con un solo valor también se ofrece (en /buscar/ puede venir de un filtro ya aplicado)
+    ms: Object.fromEntries(
+      Object.entries(facets.ms ?? {}).map(([k, r]) => [
+        k,
+        { min: Math.floor(r.min), max: Math.max(Math.ceil(r.max), Math.floor(r.min) + 1) },
+      ]),
+    ),
   };
 }

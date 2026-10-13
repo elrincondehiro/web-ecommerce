@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 12-oct-2026 · **Fase S en curso: S-1 hecha** (subcategorías + manifiesto de LiveSync, rama `feat/storefront-subcategorias`, pendiente de PR). **Siguiente: S-2** (€/kg, analíticos) y S-3 (granel), handover en **§6.8**. Después, fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 12-oct-2026 · **Fase S en curso**: S-1 mergeada (#45); **S-2 hecha** (€/kg, analíticos y filtros sobre materia seca, rama `feat/storefront-precio-unitario`, pendiente de PR). **Siguiente: S-3** (granel), handover en **§6.8**. Después, fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -298,7 +298,7 @@ Plan estudiado el 11-oct-2026 y aparcado por el usuario (no es necesario ahora):
 
 ## 6.8 Handover → Fase S (catálogo en el storefront)
 
-Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md). **S-1 hecha** (detalle en su §2: `category_tree_handles`, `lib/categories.ts`, `lib/shop.ts`, manifiestos `listing-pages.json` + `shop-categories.json`, catálogo mock `catalog:mock`). Quedan S-2 y S-3. **No empezar sin plan aprobado** (REGLA Nº 1).
+Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md). **S-1 hecha** (detalle en su §2: `category_tree_handles`, `lib/categories.ts`, `lib/shop.ts`, manifiestos `listing-pages.json` + `shop-categories.json`, catálogo mock `catalog:mock`). **S-2 hecha** (§2 del doc de fase: `proteina_ms`/`grasa_ms`, `unitPrice`, `AnalyticsTable`, interruptores `CATALOG_FEATURES`). Queda S-3. **No empezar sin plan aprobado** (REGLA Nº 1).
 
 **Situación al cerrar la Fase C (11-oct-2026)**:
 

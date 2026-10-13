@@ -76,7 +76,7 @@ Para piensos, latas y snacks. Porcentajes **tal cual** (como en la etiqueta), de
 
 - Aviso si los componentes suman más de 100.
 - **Otros componentes** solo para mostrar en la ficha: una columna `analitico:Nombre` con texto libre (`analitico:Calcio` → `1,2 %`, `analitico:Omega 3` → `0,8 %`). Se guardan como `metadata["analitico:Calcio"]`.
-- Los filtros de la tienda (proteína sobre materia seca, etc.) llegan con una fase posterior del storefront: los datos ya quedan cargados.
+- En la tienda (Fase S, S-2): la ficha muestra una tabla con todos los componentes, **tal cual** y **sobre materia seca** (`x / (100 − humedad)`; los `analitico:X`, solo tal cual). En `/buscar/` se puede filtrar por **proteína y grasa sobre materia seca** (mínimo y máximo). Sin `humedad_pct`, el producto no aparece en esos filtros.
 
 ### Opciones (prefijo `opcion:`)
 
@@ -100,8 +100,8 @@ Para piensos, latas y snacks. Porcentajes **tal cual** (como en la etiqueta), de
 | `largo_mm`      | no           | `300`           | sí     | Milímetros.                                                                                 |
 | `ancho_mm`      | no           | `250`           | sí     | Milímetros.                                                                                 |
 | `alto_mm`       | no           | `20`            | sí     | Milímetros.                                                                                 |
-| `neto_g`        | no           | `3000`          | sí     | **Contenido neto** en gramos (3 kg de pienso → `3000`). Para el precio por kilo.            |
-| `neto_ml`       | no           | `350`           | sí     | Contenido neto en mililitros (champús, lociones). Para el precio por litro. Uno de los dos. |
+| `neto_g`        | no           | `3000`          | sí     | **Contenido neto** en gramos (3 kg de pienso → `3000`). Precio por kilo en ficha y tarjeta. |
+| `neto_ml`       | no           | `350`           | sí     | Contenido neto en mililitros (champús, lociones). Precio por litro. Uno de los dos.         |
 
 **Herencia**: en las columnas que heredan, una celda vacía coge el valor de la **fila de arriba del mismo producto** (nunca del producto anterior). Ejemplo:
 

@@ -8,6 +8,7 @@ import {
   parseSearchParams,
   parseSearchResults,
   searchUrl,
+  selectedCount,
   toSearchString,
   toggleUrl,
 } from "./search";
@@ -24,9 +25,17 @@ describe("parseSearchParams", () => {
       precioMin: null,
       precioMax: null,
       disponible: false,
+      ms: { proteina: { min: null, max: null }, grasa: { min: null, max: null } },
       orden: "relevancia",
       pagina: 1,
     });
+  });
+
+  it("materia seca (S-2): % de 0 a 100 con un decimal, min/max ordenados y URL canónica", () => {
+    const p = parse("grasa_max=10,25&proteina_min=40&proteina_max=30&grasa_min=-2");
+    expect(p.ms).toEqual({ proteina: { min: 30, max: 40 }, grasa: { min: null, max: 10.3 } });
+    expect(toSearchString(p)).toBe("proteina_min=30&proteina_max=40&grasa_max=10.3");
+    expect(parse("proteina_min=120").ms.proteina.min).toBeNull();
   });
 
   it("normaliza: ordena, quita repetidos y descarta lo inválido", () => {
@@ -139,11 +148,34 @@ describe("buildSearchQueries", () => {
       ],
     });
     expect(main!.pagination.order).toEqual({ min_price_eur: "ASC" });
+    expect(main!.search_options.facets).toContainEqual({ field: "proteina_ms", type: "stats" });
     // Una consulta extra por grupo de opciones, sin el propio grupo
     expect(rest).toHaveLength(2);
     expect(JSON.stringify(rest[0]!.filters)).not.toContain("Color:Rojo");
     expect(JSON.stringify(rest[0]!.filters)).toContain("Talla:M");
     expect(rest[1]!.pagination).toEqual({ skip: 0, take: 0 });
+  });
+});
+
+describe("materia seca en la consulta (S-2)", () => {
+  it("rango sobre proteina_ms / grasa_ms; chip y recuento", () => {
+    const p = parse("proteina_min=30&grasa_max=12");
+    const [main] = buildSearchQueries(p);
+    expect(main!.filters).toEqual({
+      $and: [{ proteina_ms: { $gte: 30 } }, { grasa_ms: { $lte: 12 } }],
+    });
+    const chips = activeFilters(p);
+    expect(chips.map((c) => c.label)).toEqual(["Proteína s.m.: ≥ 30 %", "Grasa s.m.: ≤ 12 %"]);
+    expect(chips[0]!.href).toBe("/buscar/?grasa_max=12");
+    expect(selectedCount(p)).toBe(2);
+    expect(hasFilters(p)).toBe(true);
+  });
+
+  it("stats de materia seca en la respuesta", () => {
+    const out = parseSearchResults(parse(""), [
+      { hits: [], metadata: { count: 0 }, facets: { proteina_ms: { min: 22.5, max: 61 } } },
+    ]);
+    expect(out.facets.ms).toEqual({ proteina: { min: 22.5, max: 61 } });
   });
 });
 
