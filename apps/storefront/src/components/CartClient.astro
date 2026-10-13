@@ -9,6 +9,9 @@
 //     inerte). El icono lo abre; se cierra con ✕, Escape o pulsando fuera (light dismiss; ese
 //     clic lo anula SiteClient, 3.1). Lateral derecho a toda altura (móvil: 88 %). HTML del partial
 //     /carrito/flyout/. Al añadir: el panel solo se abre en escritorio; en móvil, el toast.
+//   - Granel (S-3, CATALOG_FEATURES.bulkLiveTotal): «Total: 5,00 €» junto al campo de gramos
+//     ([data-bulk-total]) = gramos × €/kg del [data-unit] de la página (el de la variante elegida
+//     si hay varias). Envío con el botón pulsado (accesos rápidos: name="preset").
 // Sin JS no se carga nada de esto: el icono es un enlace a /carrito/ y los formularios hacen
 // POST → 303 con el aviso en CSS (:target).
 ---
@@ -95,7 +98,33 @@
     }
   }
 
-  const send = (e: Event) => {
+  const eur = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
+  function bulkTotal(form: HTMLFormElement) {
+    const out = form.querySelector<HTMLElement>("[data-bulk-total]");
+    const g = form.querySelector<HTMLInputElement>("input[name=grams]");
+    if (!out || !g) return;
+    const key =
+      out.dataset.bulkTotal ||
+      form.querySelector<HTMLInputElement>("input[name=variant_id]:checked")?.value;
+    const kg = parseFloat(
+      (document.querySelector(`[data-unit="${key}"]`)?.textContent ?? "")
+        .replace(/[^\d,]/g, "")
+        .replace(",", "."),
+    );
+    out.textContent =
+      kg && g.value && g.checkValidity()
+        ? `Total: ${eur.format(Math.round((+g.value * kg) / 10) / 100)}`
+        : "";
+  }
+  addEventListener("input", (e) => {
+    const form = (e.target as HTMLInputElement).form;
+    if (form?.matches("form[data-cart-form]")) bulkTotal(form);
+  });
+  for (const form of document.querySelectorAll<HTMLFormElement>("form[data-cart-form]")) {
+    bulkTotal(form);
+  }
+
+  const send = (e: SubmitEvent) => {
     const form = e.target as HTMLFormElement;
     // "Quitar" en el panel (Fase D, 5.4): fetch y se vuelve a pedir el panel.
     if (form.matches("#cart-flyout form[data-cart-remove]")) {
@@ -122,7 +151,7 @@
     if (button) button.disabled = true;
     fetch(form.action, {
       method: "POST",
-      body: new FormData(form),
+      body: new FormData(form, e.submitter),
       headers: { Accept: "application/json" },
     })
       .then((r) => r.json() as Promise<{ code: string; count: number | null; msg: string }>)

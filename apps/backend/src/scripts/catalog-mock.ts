@@ -32,7 +32,7 @@ export default async function catalogMock({ container, args }: ExecArgs) {
   await writeFile(path.join(DIR, PRODUCTS_FILE), mock.csv, "utf8");
   logger.info(
     `catalog/mock/${PRODUCTS_FILE}: ${mock.products} productos (${mock.variants} variantes), ` +
-      `${mock.sale} en oferta, ${mock.featured} destacados, ${mock.bulk} a granel (borrador). ` +
+      `${mock.sale} en oferta, ${mock.featured} destacados, ${mock.bulk} a granel. ` +
       "Siguiente: catalog:import catalog/mock",
   );
 }

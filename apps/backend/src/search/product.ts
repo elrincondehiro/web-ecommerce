@@ -7,6 +7,7 @@ import {
   search,
 } from "@medusajs/framework/utils";
 import { DRY_MATTER_FIELDS, dryMatter } from "../lib/dry-matter";
+import { bulkMinimumAmount, bulkRule } from "../lib/granel";
 
 /**
  * Índice de búsqueda de productos (fase 7-1), servido por Meilisearch (decisión D1 = A).
@@ -34,6 +35,7 @@ type IngestionContext = Parameters<NonNullable<Parameters<typeof graphSeed>[0]["
 type Query = IngestionContext["container"]["query"];
 
 type PricedVariant = {
+  metadata?: Record<string, unknown> | null;
   calculated_price?: { calculated_amount?: number | null } | null;
 };
 
@@ -116,18 +118,28 @@ async function loadCategoryTrees(rows: ProductRow[], { container }: IngestionCon
   return trees;
 }
 
+/**
+ * Precio mínimo y máximo en EUR por producto. Granel (S-3): Medusa guarda el precio de un paso
+ * (0,10 € por 5 g); para filtrar y ordenar se usa el del mínimo (`min_g`), el mismo «Desde» que
+ * enseña el storefront (lib/catalog.ts).
+ */
 async function loadEurPrices(ids: string[], { container }: IngestionContext) {
   const prices = new Map<string, { min?: number; max?: number }>();
   if (!ids.length) return prices;
   const { data } = await container.query.graph({
     entity: "product",
-    fields: ["id", "variants.calculated_price.calculated_amount"],
+    fields: ["id", "variants.metadata", "variants.calculated_price.calculated_amount"],
     filters: { id: ids },
     context: { variants: { calculated_price: QueryContext({ currency_code: "eur" }) } },
   });
   for (const product of data as { id: string; variants?: PricedVariant[] | null }[]) {
     const amounts = (product.variants ?? [])
-      .map((v) => v?.calculated_price?.calculated_amount)
+      .map((v) => {
+        const amount = v?.calculated_price?.calculated_amount;
+        if (typeof amount !== "number") return undefined;
+        const rule = bulkRule(v?.metadata);
+        return rule ? bulkMinimumAmount(rule, amount) : amount;
+      })
       .filter((a): a is number => typeof a === "number");
     if (amounts.length) {
       prices.set(product.id, { min: Math.min(...amounts), max: Math.max(...amounts) });

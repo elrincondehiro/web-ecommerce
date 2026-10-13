@@ -2,6 +2,7 @@
 // Detalle de un pedido de la cuenta (fase 9). GET /store/orders/:id NO comprueba el dueño en
 // Medusa 2.21.2 (cualquiera con el id lo lee): aquí solo se muestra si `customer_id` es el del
 // cliente con sesión; si no, 404 (no se revela que existe). 0 JS.
+import { lineQuantityLabel } from "$lib/bulk";
 import { buttonVariants } from "$lib/components/ui/button";
 import { ORDERS_PATH, orderStatusLabel } from "$lib/account";
 import { requireCustomer } from "$lib/account-page";
@@ -50,7 +51,7 @@ const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: 
         {(order.items ?? []).map((item) => (
           <li class="flex justify-between gap-4 py-2">
             <span>
-              <span class="tabular-nums">{item.quantity} ×</span>{" "}
+              <span class="tabular-nums">{lineQuantityLabel(item)}</span>{" "}
               {item.product_handle ? (
                 <a href={`/producto/${item.product_handle}/`} class="underline underline-offset-4">
                   {item.product_title}

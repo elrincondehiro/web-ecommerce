@@ -1,5 +1,14 @@
 // Funciones puras sobre productos de la Store API (sin I/O): testeables con Vitest.
 import type { HttpTypes } from "@medusajs/types";
+import {
+  bulkInStock,
+  bulkRule,
+  formatGrams,
+  kgPrice,
+  minUnits,
+  unitsAmount,
+  type BulkRule,
+} from "./bulk";
 
 export type StoreProduct = HttpTypes.StoreProduct;
 export type StoreVariant = HttpTypes.StoreProductVariant;
@@ -10,22 +19,33 @@ export interface UnitPrice {
   unit: "kg" | "l";
 }
 
+/** Variante a granel (S-3): regla, €/kg y stock en gramos. */
+export interface BulkInfo extends BulkRule {
+  /** Precio de un paso (el de Medusa): el total es pasos × esto. */
+  stepAmount: number;
+  /** Gramos disponibles (pasos × paso), o null si no gestiona inventario o admite backorder. */
+  stockG: number | null;
+}
+
 export interface VariantAvailability {
   id: string;
   title: string;
+  /** Precio con IVA; en granel, el del mínimo (`min_g`), que es lo mínimo que se paga. */
   amount: number | null;
   /** Precio por kilo o litro de `amount`, o null sin contenido neto. */
   unitPrice: UnitPrice | null;
   /** Precio anterior (base) si `amount` es una rebaja de una Price List `sale`; si no, null. */
   wasAmount: number | null;
   inStock: boolean;
+  /** Solo variantes a granel; null en las de unidades. */
+  bulk: BulkInfo | null;
 }
 
 export interface ProductPricing {
   /** Precio mínimo con impuestos entre variantes con precio. */
   fromAmount: number | null;
   currencyCode: string | null;
-  /** true si las variantes tienen precios distintos ("Desde …"). */
+  /** true si las variantes tienen precios distintos o hay granel ("Desde …"). */
   hasPriceRange: boolean;
   /** Precio anterior de la variante de `fromAmount` si está rebajada (oferta); si no, null. */
   wasAmount: number | null;
@@ -34,6 +54,8 @@ export interface ProductPricing {
   /** Precio por kilo/litro de la variante de `fromAmount`, o null. */
   unitPrice: UnitPrice | null;
   inStock: boolean;
+  /** Alguna variante es a granel (la ficha pide gramos; la tarjeta enlaza a la ficha). */
+  isBulk: boolean;
   variants: VariantAvailability[];
 }
 
@@ -93,8 +115,35 @@ export function discountPercent(now: number, was: number): number {
   return Math.floor(((was - now) / was) * 100 + 1e-9);
 }
 
+/**
+ * Precio, €/kg y stock de una variante a granel (S-3). Medusa guarda el precio de un PASO y el
+ * stock en pasos (`inventory_quantity` = gramos disponibles / paso, por `required_quantity`).
+ * Se anuncia el precio del mínimo («Desde 2,00 €» por 100 g) y el €/kg.
+ */
+function bulkVariant(v: StoreVariant, rule: BulkRule): VariantAvailability {
+  const step = variantAmount(v);
+  const wasStep = variantWasAmount(v);
+  const n = minUnits(rule);
+  const units = v.inventory_quantity ?? 0;
+  const unlimited = v.manage_inventory === false || Boolean(v.allow_backorder);
+  return {
+    id: v.id,
+    title: v.title ?? "",
+    amount: step === null ? null : unitsAmount(step, n),
+    unitPrice: step === null ? null : { amount: kgPrice(step, rule), unit: "kg" },
+    wasAmount: wasStep === null ? null : unitsAmount(wasStep, n),
+    inStock: unlimited || bulkInStock(units, rule),
+    bulk:
+      step === null
+        ? null
+        : { ...rule, stepAmount: step, stockG: unlimited ? null : units * rule.stepG },
+  };
+}
+
 export function getProductPricing(product: StoreProduct): ProductPricing {
-  const variants = (product.variants ?? []).map((v) => {
+  const variants = (product.variants ?? []).map((v): VariantAvailability => {
+    const rule = bulkRule(v.metadata);
+    if (rule) return bulkVariant(v, rule);
     const amount = variantAmount(v);
     return {
       id: v.id,
@@ -103,8 +152,10 @@ export function getProductPricing(product: StoreProduct): ProductPricing {
       unitPrice: unitPrice(amount, v),
       wasAmount: variantWasAmount(v),
       inStock: isVariantInStock(v),
+      bulk: null,
     };
   });
+  const isBulk = variants.some((v) => v.bulk !== null);
   const amounts = variants.map((v) => v.amount).filter((a): a is number => a !== null);
   const fromAmount = amounts.length ? Math.min(...amounts) : null;
   const currencyCode =
@@ -116,14 +167,21 @@ export function getProductPricing(product: StoreProduct): ProductPricing {
   return {
     fromAmount,
     currencyCode,
-    hasPriceRange: new Set(amounts).size > 1,
+    hasPriceRange: isBulk || new Set(amounts).size > 1,
     wasAmount,
     discountPercent:
       wasAmount !== null && fromAmount !== null ? discountPercent(fromAmount, wasAmount) : null,
     unitPrice: cheapest?.unitPrice ?? null,
     inStock: variants.some((v) => v.inStock),
+    isBulk,
     variants,
   };
+}
+
+/** «mínimo 100 g» del precio «Desde» de un producto a granel (variante más barata), o null. */
+export function minimumNote(pricing: ProductPricing): string | null {
+  const v = pricing.variants.find((x) => x.bulk && x.amount === pricing.fromAmount);
+  return v?.bulk ? `mínimo ${formatGrams(v.bulk.minG)}` : null;
 }
 
 /** Descripción corta para meta description (≤ 160 caracteres, sin cortar palabras). */

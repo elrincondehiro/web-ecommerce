@@ -9,7 +9,7 @@
  *
  * Incluye lo que necesita el storefront de la Fase S: opciones globales (Talla, Color, Peso…),
  * ofertas (`precio_oferta`), Collection `destacados`, agotados, contenido neto (`neto_g` /
- * `neto_ml`), componentes analíticos y productos a granel (en `borrador` hasta S-3).
+ * `neto_ml`), componentes analíticos y productos a granel (publicados desde la Fase S, S-3).
  * IVA orientativo (solo pruebas): alimentación reducido, libros superreducido, resto general.
  */
 import type { CategorySheet } from "./catalog-sheet";
@@ -301,7 +301,7 @@ export interface MockCatalog {
  * `productos.csv` con `count` productos mock en las hojas de `categories`.
  * Reglas (por índice global i = 1…count, sufijo `-NNN` del handle):
  *   - oferta (−20 %): i % 12 === 5 · agotado entero: i % 23 === 7 · primera variante agotada: i % 9 === 4
- *   - destacados: i % 25 === 1 (y con stock) · granel (borrador): 1 de cada 3 productos de snacks
+ *   - destacados: i % 25 === 1 (y con stock) · granel: 1 de cada 3 productos de snacks
  */
 export function buildMockCatalog(categories: CategorySheet[], count: number): MockCatalog {
   const leaves = leafCategories(categories);
@@ -343,7 +343,7 @@ export function buildMockCatalog(categories: CategorySheet[], count: number): Mo
       etiquetas: tagsFor(profile.kind, leaf.handle, i).join("|"),
       iva,
       coleccion: featured ? "destacados" : "",
-      estado: bulk ? "borrador" : "publicado",
+      estado: "publicado",
       marca: i % 3 ? "Hiro" : "Rincón",
       ...analyticsFor(profile.kind, i),
     };

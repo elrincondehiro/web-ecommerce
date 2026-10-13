@@ -7,6 +7,7 @@ import {
   getProductPricing,
   isVariantInStock,
   metaDescription,
+  minimumNote,
   type StoreProduct,
   type StoreVariant,
   unitPrice,
@@ -87,6 +88,59 @@ describe("precio por unidad (S-2)", () => {
     expect(p.unitPrice).toEqual({ amount: 10.65, unit: "kg" });
     expect(p.variants.every((x) => x.unitPrice?.unit === "kg")).toBe(true);
     expect(getProductPricing(byHandle("mock-clicker-esencial-018")).unitPrice).toBeNull();
+  });
+});
+
+describe("granel (S-3)", () => {
+  const bulkVariant = (qty: number, extra: Record<string, unknown> = {}) =>
+    ({
+      id: "vg",
+      title: "Única",
+      manage_inventory: true,
+      allow_backorder: false,
+      inventory_quantity: qty,
+      metadata: { paso_g: 5, min_g: 100 },
+      calculated_price: { calculated_amount_with_tax: 0.1, currency_code: "eur" },
+      ...extra,
+    }) as unknown as StoreVariant;
+  const product = (v: StoreVariant) => ({ id: "p", variants: [v] }) as unknown as StoreProduct;
+
+  it("«Desde» el precio del mínimo, €/kg y stock en gramos", () => {
+    const p = getProductPricing(product(bulkVariant(480)));
+    expect(p.isBulk).toBe(true);
+    expect(p.fromAmount).toBe(2);
+    expect(p.hasPriceRange).toBe(true);
+    expect(p.unitPrice).toEqual({ amount: 20, unit: "kg" });
+    expect(p.variants[0]?.bulk).toEqual({ stepG: 5, minG: 100, stepAmount: 0.1, stockG: 2400 });
+    expect(p.inStock).toBe(true);
+    expect(minimumNote(p)).toBe("mínimo 100\u00a0g");
+  });
+
+  it("agotado si no llega al mínimo; sin gestión de inventario, siempre", () => {
+    expect(getProductPricing(product(bulkVariant(19))).inStock).toBe(false);
+    const free = getProductPricing(product(bulkVariant(0, { manage_inventory: false })));
+    expect(free.inStock).toBe(true);
+    expect(free.variants[0]?.bulk?.stockG).toBeNull();
+  });
+
+  it("oferta: precio anterior del mínimo", () => {
+    const sale = bulkVariant(480, {
+      calculated_price: {
+        calculated_amount_with_tax: 0.09,
+        original_amount_with_tax: 0.1,
+        currency_code: "eur",
+        calculated_price: { price_list_type: "sale" },
+      },
+    });
+    const p = getProductPricing(product(sale));
+    expect([p.fromAmount, p.wasAmount, p.discountPercent]).toEqual([1.8, 2, 10]);
+    expect(p.unitPrice).toEqual({ amount: 18, unit: "kg" });
+  });
+
+  it("productos normales: sin granel", () => {
+    const p = getProductPricing(byHandle("mock-clicker-esencial-018"));
+    expect(p.isBulk).toBe(false);
+    expect(minimumNote(p)).toBeNull();
   });
 });
 

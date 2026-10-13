@@ -17,6 +17,11 @@ export function bulkRule(metadata: Record<string, unknown> | null | undefined): 
   return { stepG, minG: positiveInt(metadata?.min_g) ?? stepG };
 }
 
+/** Precio del mínimo (pasos del mínimo × precio de un paso), en céntimos exactos. */
+export function bulkMinimumAmount(rule: BulkRule, stepAmount: number): number {
+  return Math.round(stepAmount * 100 * Math.ceil(rule.minG / rule.stepG)) / 100;
+}
+
 const grams = (g: number) =>
   g >= 1000 && g % 100 === 0 ? `${String(g / 1000).replace(".", ",")} kg` : `${g} g`;
 

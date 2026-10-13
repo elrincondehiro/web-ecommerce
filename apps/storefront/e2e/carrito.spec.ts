@@ -7,6 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 const SINGLE = "/producto/mock-clicker-esencial-018/"; // 1 variante, con stock (< 99)
 const MULTI = "/producto/mock-champu-plus-020/"; // 2 variantes con stock
 const SALE = "/producto/mock-lata-confort-005/"; // en oferta (precio_oferta del CSV)
+const BULK = "/producto/mock-premios-plus-010/"; // granel (S-3): paso 5 g, mínimo 100 g, 20 €/kg
 /** Productos de 1 variante con stock para llenar el panel. */
 const EXTRA = [
   "/producto/mock-pelota-plus-028/",
@@ -15,6 +16,8 @@ const EXTRA = [
 ];
 
 const addButton = (page: Page) => page.getByRole("button", { name: /^Añadir .* al carrito$/ });
+const addBulk = (page: Page) =>
+  page.getByRole("button", { name: "Añadir Premios Plus al carrito", exact: true });
 const cartCount = (page: Page) => page.locator("header [data-cart-count]");
 
 test.describe("sin JS", () => {
@@ -93,6 +96,73 @@ test.describe("sin JS", () => {
     await expect(page).toHaveURL(new RegExp(`${SINGLE}#carrito-stock$`));
     await expect(page.locator("#carrito-stock")).toHaveText("No hay stock suficiente");
     await expect(page.locator("#carrito-added")).toBeHidden();
+  });
+
+  test("granel (S-3): gramos en la ficha, acceso rápido y edición en gramos en el carrito", async ({
+    page,
+  }) => {
+    await page.goto(BULK);
+    await expect(page.locator("main")).toContainText("20,00 €/kg · mínimo 100 g");
+    await expect(page.locator("main")).toContainText(/Quedan \d+(,\d)?\skg/);
+    const grams = page.getByLabel("Cantidad (g)");
+    await expect(grams).toHaveValue("100");
+    await grams.fill("250");
+    await addBulk(page).click();
+    await expect(page).toHaveURL(new RegExp(`${BULK}#carrito-added$`));
+    // Acceso rápido: añade 100 g más, sin tocar el campo
+    await page.getByRole("button", { name: "Añadir 100 g de Premios Plus al carrito" }).click();
+    await expect(page).toHaveURL(new RegExp(`${BULK}#carrito-added$`));
+
+    await page.goto("/carrito/");
+    // Una línea a granel cuenta 1 artículo
+    await expect(cartCount(page)).toHaveText("1");
+    const line = page.locator("li").filter({ hasText: "Premios Plus" });
+    await expect(line).toContainText(/350\sg\s·\s?20,00\s€\/kg/);
+    await expect(line).toContainText("7,00 €");
+    await page.getByLabel("Cantidad (g)").fill("500");
+    await page.getByRole("button", { name: "Actualizar" }).click();
+    await expect(page).toHaveURL(/\/carrito\/#carrito-updated$/);
+    await expect(line).toContainText("10,00 €");
+    // Por debajo del mínimo: aviso y la línea no cambia
+    await page.getByLabel("Cantidad (g)").fill("50");
+    await page.getByRole("button", { name: "Actualizar" }).click();
+    await expect(page).toHaveURL(/\/carrito\/#carrito-minimum$/);
+    await expect(page.locator("#carrito-minimum")).toBeVisible();
+    await expect(page.getByLabel("Cantidad (g)")).toHaveValue("500");
+  });
+
+  test("granel: por debajo del mínimo, no múltiplo del paso y por encima del máximo", async ({
+    page,
+  }) => {
+    const grams = page.getByLabel("Cantidad (g)");
+    for (const [value, code] of [
+      ["95", "minimum"],
+      ["252", "invalid"],
+      ["5005", "maximum"],
+    ] as const) {
+      await page.goto(BULK);
+      // Sin la validación del navegador (min/max/step), para probar la del servidor
+      await page.locator("form[data-cart-form]").evaluate((f) => f.setAttribute("novalidate", ""));
+      await grams.fill(value);
+      await addBulk(page).click();
+      await expect(page).toHaveURL(new RegExp(`${BULK}#carrito-${code}$`));
+    }
+    await expect(page.locator("#carrito-maximum")).toHaveText(
+      "El máximo de un producto a granel es 5 kg por pedido.",
+    );
+  });
+
+  test("granel: la tarjeta lleva a la ficha («Elegir cantidad») con «Desde» y €/kg", async ({
+    page,
+  }) => {
+    await page.goto("/categorias/snacks-perro/");
+    const card = page
+      .locator("main article")
+      .filter({ has: page.getByRole("link", { name: "Elegir cantidad de Premios Plus" }) });
+    await expect(card).toContainText("Desde");
+    await expect(card).toContainText("20,00 €/kg · mínimo 100 g");
+    await expect(card.getByRole("link", { name: "Elegir cantidad de Premios Plus" })).toBeVisible();
+    await expect(card.getByRole("button", { name: /^Añadir/ })).toHaveCount(0);
   });
 });
 
@@ -224,6 +294,35 @@ test.describe("con JS", () => {
     await expect(page.getByText("Tu carrito está vacío.")).toBeVisible();
     await expect(cartCount(page)).toBeHidden();
     expect(navigated).toBe(false);
+  });
+
+  test("granel: − / + de paso en paso, total en vivo y aviso de mínimo como toast", async ({
+    page,
+  }) => {
+    await page.goto(BULK);
+    await expect(cartCount(page)).toBeHidden();
+    const grams = page.getByLabel("Cantidad (g)");
+    const total = page.locator("[data-bulk-total]");
+    await expect(total).toHaveText("Total: 2,00 €");
+    await page.getByRole("button", { name: "5 g más de Premios Plus" }).click();
+    await expect(grams).toHaveValue("105");
+    await expect(total).toHaveText("Total: 2,10 €");
+    await grams.fill("250");
+    await expect(total).toHaveText("Total: 5,00 €");
+    await addBulk(page).click();
+    await expect(cartCount(page)).toHaveText("1");
+    await expect(page.locator(".toast")).toContainText("Añadido: Premios Plus");
+    // Acceso rápido con JS (el botón pulsado viaja en el fetch). En escritorio el panel se ha
+    // abierto: un clic fuera solo lo cerraría (3.1), así que se cierra antes.
+    const flyout = page.locator("#cart-flyout");
+    if (await flyout.isVisible()) await page.keyboard.press("Escape");
+    await expect(flyout).toBeHidden();
+    await page.getByRole("button", { name: "Añadir 1 kg de Premios Plus al carrito" }).click();
+    await expect(page.locator(".toast").nth(1)).toContainText("Añadido: Premios Plus");
+    await page.goto("/carrito/");
+    await expect(page.locator("li").filter({ hasText: "Premios Plus" })).toContainText(
+      /1,25\skg\s·\s?20,00\s€\/kg/,
+    );
   });
 
   test("error de stock como toast de alerta", async ({ page }) => {

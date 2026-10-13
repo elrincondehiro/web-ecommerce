@@ -1,5 +1,6 @@
 ---
 // Mis pedidos (fase 9): listado paginado (Medusa filtra por el cliente del token). 0 JS.
+import { itemCount } from "$lib/cart";
 import { ORDERS_PATH, accountOrderPath, orderStatusLabel } from "$lib/account";
 import { accountPage, requireCustomer } from "$lib/account-page";
 import { formatPrice } from "$lib/format";
@@ -21,8 +22,7 @@ const { orders, count } = await listCustomerOrders(session.token, {
 });
 const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" });
-const units = (o: (typeof orders)[number]) =>
-  (o.items ?? []).reduce((n, i) => n + (i.quantity ?? 0), 0);
+const units = (o: (typeof orders)[number]) => itemCount(o);
 const pageUrl = (n: number) => (n === 1 ? ORDERS_PATH : `${ORDERS_PATH}?pagina=${n}`);
 ---
 

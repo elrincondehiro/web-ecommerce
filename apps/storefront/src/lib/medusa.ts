@@ -181,14 +181,20 @@ export async function getPricedProductsFresh(ids: string[]): Promise<StoreProduc
 // ── Carrito (runtime: actions, /carrito/, island del contador). Fase 4. ─────────────────────
 // Importes en unidad principal y con IVA incluido (item_total, unit_price…). Ver fase4.md §3.
 
-/** Campos mínimos para contar artículos (contador de la cabecera, respuesta de las actions). */
+/**
+ * Campos mínimos para contar artículos (contador de la cabecera, respuesta de las actions).
+ * `*items.variant` (S-3): su metadata dice si la línea es a granel (cuenta 1, se muestra en
+ * gramos; lib/bulk.ts). La Store API 2.21.2 no admite `items.variant.metadata` suelto (lo
+ * descarta sin error); medido en dev: ~15 → ~18 ms.
+ */
 export const CART_COUNT_FIELDS =
-  "id,completed_at,items.id,items.quantity,items.variant_id,items.product_title";
+  "id,completed_at,items.id,items.quantity,items.variant_id,items.product_title,*items.variant";
 /** Campos de la página /carrito/ y del flyout. */
 export const CART_FULL_FIELDS =
   "id,completed_at,currency_code,item_total,item_subtotal,item_tax_total," +
   "items.id,items.quantity,items.product_title,items.variant_title,items.product_handle," +
-  "items.thumbnail,items.unit_price,items.compare_at_unit_price,items.total,items.variant_id";
+  "items.thumbnail,items.unit_price,items.compare_at_unit_price,items.total,items.variant_id," +
+  "*items.variant";
 
 function cartSdk(): Medusa {
   if (useFixtures) throw new Error("El carrito no está disponible con STOREFRONT_DATA=fixtures.");
@@ -228,6 +234,18 @@ export async function addLineItem(
     { fields: CART_COUNT_FIELDS },
   );
   return cart;
+}
+
+/**
+ * Metadata de una variante (S-3: regla de granel, `paso_g` / `min_g`). Solo variantes de
+ * productos publicados del canal de la publishable key (si no, 404). El js-sdk 2.21.2 no tiene
+ * método para `GET /store/product-variants/:id` → `client.fetch`.
+ */
+export async function getVariantMetadata(id: string): Promise<Record<string, unknown> | null> {
+  const { variant } = await cartSdk().client.fetch<{
+    variant: { metadata?: Record<string, unknown> | null };
+  }>(`/store/product-variants/${id}`, { query: { fields: "id,metadata" } });
+  return variant.metadata ?? null;
 }
 
 export async function updateLineItem(
@@ -323,7 +341,8 @@ export async function completeCart(cartId: string): Promise<CompleteResult> {
 export const ORDER_FIELDS =
   "id,display_id,email,created_at,currency_code,total,subtotal,tax_total,shipping_total," +
   "item_total,payment_status,*shipping_address,shipping_methods.name,shipping_methods.amount," +
-  "items.id,items.quantity,items.product_title,items.variant_title,items.unit_price,items.total";
+  "items.id,items.quantity,items.product_title,items.variant_title,items.unit_price,items.total," +
+  "*items.variant";
 
 export async function retrieveOrder(id: string): Promise<StoreOrder> {
   const { order } = await cartSdk().store.order.retrieve(id, { fields: ORDER_FIELDS });
@@ -526,7 +545,7 @@ export async function transferCart(token: string, cartId: string): Promise<void>
 
 const ORDER_LIST_FIELDS =
   "id,display_id,status,created_at,currency_code,total,payment_status,fulfillment_status," +
-  "items.id,items.quantity";
+  "items.id,items.quantity,*items.variant";
 
 /** Pedidos del cliente (Medusa filtra por el `actor_id` del token), del más reciente al más antiguo. */
 export async function listCustomerOrders(

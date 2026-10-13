@@ -22,3 +22,9 @@ export function formatDate(iso: string): string {
 export function formatRate(rate: number): string {
   return `${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 }).format(rate)} %`;
 }
+
+/** Gramos legibles: 250 → "250 g", 1000 → "1 kg", 2450 → "2,45 kg". */
+export function formatGrams(grams: number): string {
+  if (grams < 1000) return `${grams} g`;
+  return `${new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(grams / 1000)} kg`;
+}

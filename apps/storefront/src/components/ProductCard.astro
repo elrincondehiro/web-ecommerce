@@ -2,9 +2,10 @@
 // Tarjeta de producto (HTML estático, 0 JS). Precio y stock vienen del BUILD y llevan marcas
 // data-* para que <LiveSync> los corrija (lib/live-sync.ts):
 //   data-pid + data-stock (stock) · data-price / data-price-from (precio) · data-unit (€/kg,
-//   S-2: el de la variante del precio mostrado; se desactiva con CATALOG_FEATURES).
+//   S-2: el de la variante del precio mostrado; se desactiva con CATALOG_FEATURES; en granel,
+//   S-3, se muestra siempre: el «Desde» del mínimo sin €/kg confundiría).
 import { Badge } from "$lib/components/ui/badge";
-import { getProductPricing, type StoreProduct } from "$lib/catalog";
+import { getProductPricing, minimumNote, type StoreProduct } from "$lib/catalog";
 import { CATALOG_FEATURES } from "$lib/constants";
 import Price from "./Price.astro";
 import type { CardImage } from "$lib/images";
@@ -31,7 +32,10 @@ const href = `/producto/${product.handle}/`;
 const pricing = getProductPricing(product);
 const image = product.thumbnail ?? product.images?.[0]?.url ?? null;
 // Añadir desde el listado solo con UNA variante; con varias → ficha para elegir (fase 4).
-const single = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
+// Granel (S-3): siempre a la ficha (se eligen los gramos); precio «Desde» del mínimo y €/kg.
+const single = pricing.variants.length === 1 && !pricing.isBulk ? pricing.variants[0] : undefined;
+const chooseLabel = pricing.isBulk ? "Elegir cantidad" : "Elegir opciones";
+const bulkNote = minimumNote(pricing);
 ---
 
 <article
@@ -77,7 +81,8 @@ const single = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
           wasAmount={pricing.wasAmount}
           discountPercent={pricing.discountPercent}
           from={pricing.hasPriceRange}
-          unit={CATALOG_FEATURES.unitPriceInCards ? pricing.unitPrice : null}
+          unit={CATALOG_FEATURES.unitPriceInCards || pricing.isBulk ? pricing.unitPrice : null}
+          unitNote={bulkNote}
         />
       )}
     </p>
@@ -98,10 +103,10 @@ const single = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
           <a
             href={href}
             class={buttonVariants({ size: "sm" })}
-            aria-label={`Elegir opciones de ${product.title}`}
+            aria-label={`${chooseLabel} de ${product.title}`}
             data-if-stock="in"
           >
-            Elegir opciones
+            {chooseLabel}
           </a>
           {/* Todas las variantes agotadas: mismo botón que AddToCart (data-stock lo corrige LiveSync). */}
           <button

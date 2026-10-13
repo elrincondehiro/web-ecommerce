@@ -5,8 +5,15 @@
 // - variantId: producto de una sola variante (input hidden). Si no se pasa, el formulario debe
 //   contener radios name="variant_id" (slot "before", tabla de variantes de la ficha).
 // - El botón respeta data-stock del contenedor más cercano (data-if-stock, corregido por LiveSync).
+// - Granel (S-3, `bulk`): campo de GRAMOS (`grams`; − / + de paso en paso, a mano cualquier
+//   múltiplo del paso) y accesos rápidos (100 g, 250 g, 500 g, 1 kg): botones de envío con
+//   `name="preset"` que añaden esa cantidad directamente (igual con y sin JS). La action valida
+//   paso, mínimo y máximo con la regla de la variante (servidor). Con `bulkLiveTotal`, el total
+//   en vivo lo calcula CartClient con el €/kg de la página ([data-unit], corregido por LiveSync).
 import { buttonVariants } from "$lib/components/ui/button";
+import { BULK_MAX_G, formatGrams, quickGrams, type BulkRule } from "$lib/bulk";
 import { MAX_QUANTITY, actionUrl } from "$lib/cart";
+import { CATALOG_FEATURES } from "$lib/constants";
 import QuantityField from "./QuantityField.astro";
 
 interface Props {
@@ -18,6 +25,10 @@ interface Props {
   productTitle: string;
   size?: "sm" | "default" | "lg";
   class?: string;
+  /** Granel: regla común de las variantes (paso y mínimo) para el campo de gramos. */
+  bulk?: BulkRule | null | undefined;
+  /** Granel: id de la clave de LiveSync cuyo [data-unit] tiene el €/kg (vacío = variante elegida). */
+  unitKey?: string | undefined;
 }
 const {
   variantId,
@@ -26,8 +37,11 @@ const {
   productTitle,
   size = "default",
   class: className = "",
+  bulk,
+  unitKey = "",
 } = Astro.props;
 const qtyId = `qty-${productId}`;
+const quick = bulk ? quickGrams(bulk) : [];
 ---
 
 <form method="post" action={actionUrl("cart.add")} data-cart-form class={className}>
@@ -39,16 +53,30 @@ const qtyId = `qty-${productId}`;
     {/* Agotado: sin cantidad (Fase D, 1.9); data-if-stock lo sigue LiveSync. */}
     <div class="flex flex-col gap-1" data-if-stock="in">
       <label for={qtyId} class="text-xs text-muted-foreground">
-        Cantidad
+        {bulk ? "Cantidad (g)" : "Cantidad"}
       </label>
-      <QuantityField
-        id={qtyId}
-        value={1}
-        min={1}
-        max={MAX_QUANTITY}
-        size={size}
-        label={productTitle}
-      />
+      {bulk ? (
+        <QuantityField
+          id={qtyId}
+          value={bulk.minG}
+          min={bulk.minG}
+          max={BULK_MAX_G}
+          step={bulk.stepG}
+          size={size}
+          label={productTitle}
+          name="grams"
+          unit={formatGrams(bulk.stepG)}
+        />
+      ) : (
+        <QuantityField
+          id={qtyId}
+          value={1}
+          min={1}
+          max={MAX_QUANTITY}
+          size={size}
+          label={productTitle}
+        />
+      )}
     </div>
     <button
       type="submit"
@@ -67,4 +95,32 @@ const qtyId = `qty-${productId}`;
       Agotado
     </button>
   </div>
+  {bulk && (
+    <div class="flex flex-col gap-2" data-if-stock="in">
+      {CATALOG_FEATURES.bulkLiveTotal && (
+        <p class="bulk-total text-sm tabular-nums" data-bulk-total={unitKey} aria-live="polite" />
+      )}
+      <p class="text-xs text-muted-foreground">
+        De {formatGrams(bulk.stepG)} en {formatGrams(bulk.stepG)} · mínimo {formatGrams(bulk.minG)}{" "}
+        · máximo {formatGrams(BULK_MAX_G)}
+      </p>
+      {quick.length > 0 && (
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs text-muted-foreground">Añadir directamente:</span>
+          {quick.map((g) => (
+            <button
+              type="submit"
+              name="preset"
+              value={g}
+              formnovalidate
+              class={buttonVariants({ size: "sm", variant: "outline" })}
+              aria-label={`Añadir ${formatGrams(g)} de ${productTitle} al carrito`}
+            >
+              {formatGrams(g)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )}
 </form>

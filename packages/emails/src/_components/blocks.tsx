@@ -1,5 +1,5 @@
 import { Column, Img, Row, Section, Text } from "react-email";
-import { formatMoney } from "../_lib/format";
+import { formatGrams, formatMoney } from "../_lib/format";
 import { color } from "../_lib/theme";
 import type { EmailAddress, EmailLineItem } from "../_lib/types";
 
@@ -47,7 +47,9 @@ export function LineItems({
             </Text>
             <Text style={{ color: color.mutedForeground, fontSize: 13, margin: "2px 0 0" }}>
               {item.variant ? `${item.variant} · ` : ""}
-              {item.quantity} × {showPrices ? formatMoney(item.unitPrice, currencyCode) : "ud."}
+              {item.bulk
+                ? `${formatGrams(item.bulk.grams)}${showPrices ? ` · ${formatMoney(item.bulk.pricePerKg, currencyCode)}/kg` : ""}`
+                : `${item.quantity} × ${showPrices ? formatMoney(item.unitPrice, currencyCode) : "ud."}`}
             </Text>
           </Column>
           {showPrices ? (

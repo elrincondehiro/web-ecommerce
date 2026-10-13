@@ -11,6 +11,7 @@ import {
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
   updateInventoryLevelsWorkflow,
+  updateProductVariantsWorkflow,
   updateProductsWorkflow,
 } from "@medusajs/medusa/core-flows";
 import { syncStockToSearch } from "../../src/lib/search-stock-sync";
@@ -22,7 +23,15 @@ import { syncStockToSearch } from "../../src/lib/search-stock-sync";
  */
 jest.setTimeout(120 * 1000);
 
-type Hit = { document: { id: string; handle?: string; title?: string; in_stock?: boolean } };
+type Hit = {
+  document: {
+    id: string;
+    handle?: string;
+    title?: string;
+    in_stock?: boolean;
+    min_price_eur?: number;
+  };
+};
 
 async function eventually<T>(fn: () => Promise<T>, ok: (v: T) => boolean, ms = 30_000) {
   const end = Date.now() + ms;
@@ -262,6 +271,22 @@ medusaIntegrationTestRunner({
         expect((await range("grasa_ms", 16, 17)).map((h) => h.document.handle)).toContain(
           published.handle,
         );
+      });
+
+      it("granel (S-3): min_price_eur es el precio del mínimo, no el de un paso", async () => {
+        // Precio de un paso: 10 € (el de la lámpara); paso 5 g, mínimo 100 g → 20 pasos = 200 €
+        await updateProductVariantsWorkflow(container).run({
+          input: {
+            selector: { product_id: published.id },
+            update: { metadata: { paso_g: 5, min_g: 100 } },
+          },
+        });
+        // product-variant.updated reindexa el producto (events de src/search/product.ts)
+        const hit = await eventually(
+          () => byHandle(published.handle),
+          (h) => h?.document.min_price_eur === 200,
+        );
+        expect(hit?.document.min_price_eur).toBe(200);
       });
     });
   },

@@ -1,5 +1,6 @@
 ---
 // Resumen del pedido en el checkout (fase 5): líneas, envío y total con IVA. HTML de servidor.
+import { lineQuantityLabel } from "$lib/bulk";
 import { formatPrice } from "$lib/format";
 import type { StoreCart } from "$lib/medusa";
 
@@ -22,7 +23,7 @@ const hasShipping = (cart.shipping_methods?.length ?? 0) > 0;
     {items.map((item) => (
       <li class="flex justify-between gap-4 py-2">
         <span class="min-w-0">
-          <span class="tabular-nums">{item.quantity} ×</span> {item.product_title}
+          <span class="tabular-nums">{lineQuantityLabel(item)}</span> {item.product_title}
           {item.variant_title && item.variant_title !== "Única" && (
             <span class="text-muted-foreground"> · {item.variant_title}</span>
           )}

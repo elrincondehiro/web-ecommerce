@@ -5,6 +5,7 @@ import {
   minutesUntil,
   orderTaxLines,
   resetUrl,
+  toEmailItem,
   toNumber,
   verifyUrl,
   type OrderLike,
@@ -123,6 +124,19 @@ describe("emails: datos de Medusa → props", () => {
       { number: "PK1", url: "https://correos.test/PK1" },
       { number: "PK2", url: null },
     ]);
+  });
+
+  it("granel (S-3): gramos y €/kg desde el paso de la variante; sin variante, unidades", () => {
+    const line = { product_title: "Alas", quantity: big(50), unit_price: 0.1, total: big(5) };
+    expect(
+      toEmailItem({ ...line, variant: { metadata: { paso_g: 5, min_g: 100 } } }),
+    ).toMatchObject({ quantity: 50, bulk: { grams: 250, pricePerKg: 20 } });
+    // Envío parcial: los gramos de lo enviado
+    expect(toEmailItem({ ...line, variant: { metadata: { paso_g: 5 } } }, 20).bulk).toEqual({
+      grams: 100,
+      pricePerKg: 20,
+    });
+    expect(toEmailItem({ ...line, variant: null }).bulk).toBeNull();
   });
 
   it("enlaces: sin barra final y assets por defecto = storefront", () => {

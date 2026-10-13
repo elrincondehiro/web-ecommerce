@@ -31,6 +31,8 @@ module.exports = {
         `${BASE}/producto/${PRODUCT}/`,
         // S-2: ficha con €/kg por variante y tabla de componentes analíticos
         `${BASE}/producto/mock-pienso-premium-001/`,
+        // S-3: ficha a granel (campo de gramos, accesos rápidos, «Quedan»)
+        `${BASE}/producto/mock-premios-plus-010/`,
         `${BASE}/carrito/`,
       ],
       numberOfRuns: 3,

@@ -137,7 +137,7 @@ Para snacks, premios o pienso que el cliente compra **al peso**. No se vende al 
 - Reponer stock: en el Admin, en el artículo de inventario del SKU, **en gramos**.
 - Se guardan `metadata.granel` (producto) y `metadata.paso_g` / `metadata.min_g` (variante): es lo que leerá el storefront.
 
-> ⚠️ **El storefront aún no está preparado para el granel**: hoy mostraría el precio de un paso (0,10 €) y un selector de unidades. La ficha con selector de gramos, el precio por kilo y el total en gramos en el carrito llegan con una fase posterior del storefront. Hasta entonces, deja los productos a granel en `borrador`.
+- **En la tienda** (Fase S, S-3): la tarjeta y la ficha muestran «Desde» con el precio del mínimo (100 g a 20 €/kg = 2,00 €) y debajo «20,00 €/kg · mínimo 100 g». En la ficha el cliente elige los **gramos** (− / + de paso en paso, a mano cualquier múltiplo del paso, o los accesos 100 g / 250 g / 500 g / 1 kg) hasta un máximo de 5 kg por línea, y ve «Quedan 2,4 kg». El carrito, el pedido y los emails dicen «250 g · 20,00 €/kg». El filtro y el orden por precio de la búsqueda usan también el precio del mínimo. El máximo, el total en vivo y el «Quedan» se configuran en `CATALOG_FEATURES` (storefront, `src/lib/constants.ts`).
 
 ## Fotos
 

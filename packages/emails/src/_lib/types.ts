@@ -22,4 +22,9 @@ export type EmailLineItem = {
   total: number;
   /** URL absoluta de la miniatura (opcional). */
   thumbnail?: string | null;
+  /**
+   * Granel (Fase S, S-3): la cantidad son gramos y el precio, por kilo («250 g · 20,00 €/kg»).
+   * Sin esto, «2 × 4,95 €».
+   */
+  bulk?: { grams: number; pricePerKg: number } | null;
 };

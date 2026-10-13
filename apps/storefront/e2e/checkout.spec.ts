@@ -5,10 +5,17 @@
 import { expect, test, type FrameLocator, type Page } from "@playwright/test";
 
 const PRODUCT = "/producto/mock-clicker-esencial-018/";
+const BULK = "/producto/mock-premios-plus-010/"; // granel (S-3): paso 5 g, 20 €/kg
+const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 
-async function addAndGoToCheckout(page: Page) {
-  await page.goto(PRODUCT);
-  await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
+async function addAndGoToCheckout(page: Page, bulkGrams?: string) {
+  await page.goto(bulkGrams ? BULK : PRODUCT);
+  if (bulkGrams) {
+    await page.getByLabel("Cantidad (g)").fill(bulkGrams);
+    await page.getByRole("button", { name: "Añadir Premios Plus al carrito", exact: true }).click();
+  } else {
+    await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
+  }
   // Con JS: toast + contador; sin JS: 303 a la ficha con #carrito-added.
   await expect(page.locator("#carrito-added:target, .toast").first()).toBeVisible();
   await page.goto("/carrito/");
@@ -80,9 +87,9 @@ test.describe("con JS (Stripe test)", () => {
   const stripeFrame = (page: Page): FrameLocator =>
     page.locator('#pago-element iframe[name^="__privateStripeFrame"]').first().contentFrame();
 
-  async function toPayment(page: Page) {
-    await addAndGoToCheckout(page);
-    await fillAddress(page);
+  async function toPayment(page: Page, bulkGrams?: string, email?: string) {
+    await addAndGoToCheckout(page, bulkGrams);
+    await fillAddress(page, email ? { Email: email } : {});
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Continuar al pago" }).click();
     await expect(page).toHaveURL(/\/checkout\/#pago$/);
@@ -116,6 +123,32 @@ test.describe("con JS (Stripe test)", () => {
     await expect(other.getByText("Hemos recibido tu pedido.")).toBeVisible();
     await expect(other.getByText("Calle Mayor 1")).toHaveCount(0);
     await other.close();
+  });
+
+  test("granel (S-3): resumen, confirmación y email en gramos y €/kg", async ({ page }) => {
+    const email = `granel-${Date.now()}@example.com`;
+    await toPayment(page, "250", email);
+    const grams = /250\sg\s·\s?Premios Plus/;
+    await expect(page.locator("#resumen-titulo + ul")).toContainText(grams);
+    await fillCard(page, "4242 4242 4242 4242");
+    await page.getByRole("button", { name: /^Pagar y realizar pedido/ }).click();
+    await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 30_000 });
+    await expect(page.locator("#pedido-lineas + ul")).toContainText(grams);
+    await expect(page.locator("#pedido-lineas + ul")).toContainText("5,00 €");
+    // Email de confirmación (Mailpit, EMAIL_TRANSPORT=smtp): gramos y €/kg, no «50 ×»
+    let text = "";
+    for (let i = 0; i < 40 && !text; i++) {
+      const res = await page.request.get(
+        `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+      );
+      const { messages } = (await res.json()) as { messages: { ID: string }[] };
+      if (messages[0]) {
+        const msg = await page.request.get(`${MAILPIT}/api/v1/message/${messages[0].ID}`);
+        text = ((await msg.json()) as { Text: string }).Text;
+      } else await page.waitForTimeout(500);
+    }
+    expect(text).toMatch(/250 g · 20,00\s€\/kg/);
+    expect(text).not.toMatch(/50 ×/);
   });
 
   test("tarjeta rechazada: aviso y se puede reintentar", async ({ page }) => {

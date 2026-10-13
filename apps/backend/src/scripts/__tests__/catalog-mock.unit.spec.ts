@@ -40,7 +40,7 @@ describe("catalog:mock", () => {
     expect(mock.featured).toBeGreaterThanOrEqual(8);
     expect(mock.bulk).toBeGreaterThan(0);
     const bulk = products.filter((p) => p.bulk);
-    expect(bulk.every((p) => p.status === "draft")).toBe(true);
+    expect(bulk.every((p) => p.status === "published")).toBe(true);
     expect(products.some((p) => p.variants.some((v) => typeof v.netG === "number"))).toBe(true);
     expect(products.some((p) => typeof p.analytics.proteina_pct === "number")).toBe(true);
   });

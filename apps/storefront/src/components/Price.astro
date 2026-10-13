@@ -23,8 +23,24 @@ interface Props {
   size?: "sm" | "lg";
   /** Precio por kilo/litro (RD 3423/2000), en una línea propia debajo. null/omitido: nada. */
   unit?: UnitPrice | null | undefined;
+  /** Granel en el carrito (S-3): el importe ya es por kilo («20,00 €/kg», también el anterior). */
+  per?: "kg" | undefined;
+  /** Texto fijo tras el €/kg (granel: «mínimo 100 g»). */
+  unitNote?: string | null | undefined;
 }
-const { id, amount, currency, wasAmount, discountPercent, from, size = "sm", unit } = Astro.props;
+const {
+  id,
+  amount,
+  currency,
+  wasAmount,
+  discountPercent,
+  from,
+  size = "sm",
+  unit,
+  per,
+  unitNote,
+} = Astro.props;
+const suffix = per ? `/${per}` : "";
 const onSale = wasAmount !== null && discountPercent !== null;
 ---
 
@@ -45,6 +61,7 @@ const onSale = wasAmount !== null && discountPercent !== null;
   )}
   <span class="price__now font-semibold" data-price={id}>
     {formatPrice(amount, currency)}
+    {suffix}
   </span>
   {(id !== undefined || onSale) && (
     <span
@@ -54,7 +71,7 @@ const onSale = wasAmount !== null && discountPercent !== null;
     >
       <span class="sr-only">Precio anterior:</span>
       <del class="text-[0.8em] font-normal text-muted-foreground" data-was={id}>
-        {onSale ? formatPrice(wasAmount, currency) : ""}
+        {onSale ? `${formatPrice(wasAmount, currency)}${suffix}` : ""}
       </del>
       <span
         class="self-center rounded-full bg-accent px-1.5 text-[0.7em] leading-5 font-bold text-accent-foreground"
@@ -65,8 +82,9 @@ const onSale = wasAmount !== null && discountPercent !== null;
     </span>
   )}
   {unit && (
-    <span class="basis-full text-xs font-normal text-muted-foreground" data-unit={id}>
-      {formatUnitPrice(unit.amount, currency, unit.unit)}
+    <span class="basis-full text-xs font-normal text-muted-foreground">
+      <span data-unit={id}>{formatUnitPrice(unit.amount, currency, unit.unit)}</span>
+      {unitNote && ` · ${unitNote}`}
     </span>
   )}
 </span>

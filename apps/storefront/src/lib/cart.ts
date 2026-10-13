@@ -3,6 +3,8 @@
 // Patrón (fase 4): cookie httpOnly `cart_id` + Astro Actions con formularios (sin JS) y
 // POST/Redirect/GET con aviso por fragmento (`#carrito-<código>`, visible con :target).
 
+import { BULK_MAX_G, formatGrams, lineRule, type LineLike } from "./bulk";
+
 export const CART_COOKIE = "cart_id";
 /** Ruta on-demand que recibe los POST de los formularios (las páginas estáticas no pueden). */
 export const CART_PATH = "/carrito/";
@@ -41,7 +43,9 @@ export const NOTICES = {
   removed: "Producto eliminado del carrito",
   stock: "No hay stock suficiente",
   expired: "Tu carrito ha caducado. Vuelve a añadir los productos.",
-  invalid: "Revisa la cantidad (entre 1 y 99).",
+  invalid: "Revisa la cantidad (entre 1 y 99; a granel, de paso en paso).",
+  minimum: "No llega al mínimo de este producto a granel.",
+  maximum: `El máximo de un producto a granel es ${formatGrams(BULK_MAX_G)} por pedido.`,
   error: "No se ha podido actualizar el carrito. Inténtalo de nuevo.",
 } as const;
 
@@ -49,7 +53,7 @@ export type NoticeCode = keyof typeof NOTICES;
 export const NOTICE_CODES = Object.keys(NOTICES) as NoticeCode[];
 
 export function isErrorNotice(code: NoticeCode): boolean {
-  return code === "stock" || code === "expired" || code === "invalid" || code === "error";
+  return code !== "added" && code !== "updated" && code !== "removed";
 }
 
 /** Mensaje para el toast (con JS); para "added" incluye el producto si se conoce. */
@@ -66,7 +70,7 @@ export interface CartResult {
 }
 
 /** Tipos de error de la Store API relevantes para el carrito (ver fase4.md §3). */
-export type CartErrorKind = "stock" | "cart_invalid" | "error";
+export type CartErrorKind = "stock" | "minimum" | "cart_invalid" | "error";
 
 /**
  * Clasifica un error de @medusajs/js-sdk (FetchError: `status` + `message`; el SDK no expone
@@ -75,6 +79,7 @@ export type CartErrorKind = "stock" | "cart_invalid" | "error";
  *   404 "Cart with id '…' not found"         (GET /store/carts/:id)        → cart_invalid
  *   404 "Cart id not found: …"                (POST …/line-items[/:id])     → cart_invalid
  *   400 "Cart … is already completed."                                      → cart_invalid
+ *   400 "El mínimo de este producto a granel es …" (hook granel-minimo)     → minimum
  *   DELETE …/line-items/:id con carrito inexistente → 500 unknown_error (se trata como "error";
  *   la action remove lo comprueba con un GET del carrito).
  */
@@ -83,13 +88,17 @@ export function classifyCartError(err: unknown): CartErrorKind {
   const message = err instanceof Error ? err.message : "";
   if (/required inventory|insufficient_inventory/i.test(message)) return "stock";
   if (/already completed/i.test(message)) return "cart_invalid";
+  if (/mínimo de este producto a granel/i.test(message)) return "minimum";
   if (status === 404 && /^cart (with id|id not found)/i.test(message)) return "cart_invalid";
   return "error";
 }
 
-/** Nº de artículos (suma de cantidades) de un carrito. */
-export function itemCount(cart: { items?: { quantity?: number | null }[] | null } | null): number {
-  return (cart?.items ?? []).reduce((n, i) => n + (i.quantity ?? 0), 0);
+/**
+ * Nº de artículos de un carrito o pedido: suma de cantidades, salvo las líneas a granel (S-3),
+ * que cuentan 1 (su cantidad son pasos de 5 g, no artículos).
+ */
+export function itemCount(cart: { items?: LineLike[] | null } | null | undefined): number {
+  return (cart?.items ?? []).reduce((n, i) => n + (lineRule(i) ? 1 : (i.quantity ?? 0)), 0);
 }
 
 const ORIGIN = "http://local.invalid";

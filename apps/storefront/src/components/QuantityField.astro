@@ -4,6 +4,10 @@
 // flechas nativas (CSS .qty) y en táctil no se abre el teclado (inputmode="none"; con ratón
 // se sigue pudiendo escribir). Los botones respetan min/max y lanzan "input" + "change" (el
 // carrito se actualiza solo al cambiar, bloque 5).
+// Granel (S-3): `name="grams"` y `step` = paso en gramos (− / + van de paso en paso; a mano se
+// puede escribir cualquier múltiplo del paso); `unit` da el nombre de los botones («5 g»). Sin
+// `data-qty` en el contenedor: SiteClient no le quita el teclado en táctil (cantidades grandes
+// se escriben a mano).
 interface Props {
   id: string;
   value: number;
@@ -12,38 +16,56 @@ interface Props {
   size?: "sm" | "default" | "lg";
   /** Nombre accesible de los botones (p. ej. el producto). */
   label: string;
+  name?: "quantity" | "grams";
+  step?: number;
+  /** Lo que suma o resta cada botón, para su nombre accesible (por defecto «Una unidad»). */
+  unit?: string;
 }
-const { id, value, min, max, size = "default", label } = Astro.props;
+const {
+  id,
+  value,
+  min,
+  max,
+  size = "default",
+  label,
+  name = "quantity",
+  step,
+  unit = "Una unidad",
+} = Astro.props;
 const h = size === "sm" ? "h-8" : size === "lg" ? "h-10" : "h-9";
 const btn = `${h} w-8 shrink-0 font-bold hover:bg-muted disabled:opacity-40`;
 ---
 
-<div class="qty flex rounded-md border-2 border-line bg-background" data-qty>
+<div
+  class="qty flex rounded-md border-2 border-line bg-background"
+  data-qty={name === "quantity" ? "" : undefined}
+>
   <button
     type="button"
     class={`${btn} border-r-2 border-line`}
     data-qty-step="-1"
-    aria-label={`Una unidad menos de ${label}`}
+    aria-label={`${unit} menos de ${label}`}
     aria-controls={id}
   >
     −
   </button>
   <input
     id={id}
-    name="quantity"
+    name={name}
     type="number"
     inputmode="numeric"
     min={min}
     max={max}
+    step={step}
     value={value}
     required
-    class={`${h} w-12 min-w-0 bg-transparent px-1 text-center text-sm tabular-nums`}
+    class={`${h} ${name === "grams" ? "w-16" : "w-12"} min-w-0 bg-transparent px-1 text-center text-sm tabular-nums`}
   />
   <button
     type="button"
     class={`${btn} border-l-2 border-line`}
     data-qty-step="1"
-    aria-label={`Una unidad más de ${label}`}
+    aria-label={`${unit} más de ${label}`}
     aria-controls={id}
   >
     +

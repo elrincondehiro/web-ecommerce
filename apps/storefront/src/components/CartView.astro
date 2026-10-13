@@ -10,8 +10,11 @@
 // Ofertas (5.1): `compare_at_unit_price` de la línea (Medusa lo rellena con Price Lists sale;
 // con IVA, como unit_price: is_tax_inclusive) → precio anterior tachado + descuento.
 // Miniaturas: <Image> en runtime (/_image, origen permitido en image.remotePatterns).
+// Granel (S-3, lib/bulk.ts): la línea dice «250 g · 20,00 €/kg» (Medusa: pasos × precio de un
+// paso) y la cantidad se edita en gramos (`grams`, 0 = quitar); cuenta 1 en «Artículos».
 import { Image } from "astro:assets";
 import { buttonVariants } from "$lib/components/ui/button";
+import { BULK_MAX_G, formatGrams, kgPrice, lineGrams, lineRule } from "$lib/bulk";
 import { CART_PATH, MAX_QUANTITY, actionUrl, itemCount } from "$lib/cart";
 import { discountPercent } from "$lib/catalog";
 import { formatPrice } from "$lib/format";
@@ -50,9 +53,14 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
           const href = item.product_handle ? `/producto/${item.product_handle}/` : undefined;
           const qtyId = `qty-${item.id}`;
           const name = item.product_title ?? "producto";
-          const unit = item.unit_price ?? 0;
-          const was = item.compare_at_unit_price ?? null;
-          const onSale = was !== null && was > unit;
+          const rule = lineRule(item);
+          const grams = lineGrams(item);
+          const step = item.unit_price ?? 0;
+          const wasStep = item.compare_at_unit_price ?? null;
+          const onSale = wasStep !== null && wasStep > step;
+          // Granel: precios por kilo; unidades: por unidad
+          const unit = rule ? kgPrice(step, rule) : step;
+          const was = rule && wasStep !== null ? kgPrice(wasStep, rule) : wasStep;
           const ThumbTag = href ? "a" : "span";
           return (
             <li class="flex gap-4 py-4">
@@ -92,12 +100,17 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
                   <p class="text-sm text-muted-foreground">{item.variant_title}</p>
                 )}
                 <p class="flex flex-wrap items-baseline gap-x-1 text-sm text-muted-foreground tabular-nums">
-                  {!isPage && <span>{item.quantity} ×</span>}
+                  {grams !== null ? (
+                    <span>{formatGrams(grams)} ·</span>
+                  ) : (
+                    !isPage && <span>{item.quantity} ×</span>
+                  )}
                   <Price
                     amount={unit}
                     currency={currency}
                     wasAmount={onSale ? was : null}
-                    discountPercent={onSale ? discountPercent(unit, was) : null}
+                    discountPercent={onSale && was !== null ? discountPercent(unit, was) : null}
+                    per={rule ? "kg" : undefined}
                   />
                 </p>
                 {!isPage && (
@@ -125,16 +138,30 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
                       <input type="hidden" name="line_id" value={item.id} />
                       <div class="flex flex-col gap-1">
                         <label for={qtyId} class="text-xs text-muted-foreground">
-                          Cantidad
+                          {rule ? "Cantidad (g)" : "Cantidad"}
                         </label>
-                        <QuantityField
-                          id={qtyId}
-                          value={item.quantity}
-                          min={0}
-                          max={MAX_QUANTITY}
-                          size="sm"
-                          label={name}
-                        />
+                        {rule && grams !== null ? (
+                          <QuantityField
+                            id={qtyId}
+                            value={grams}
+                            min={0}
+                            max={BULK_MAX_G}
+                            step={rule.stepG}
+                            size="sm"
+                            label={name}
+                            name="grams"
+                            unit={formatGrams(rule.stepG)}
+                          />
+                        ) : (
+                          <QuantityField
+                            id={qtyId}
+                            value={item.quantity}
+                            min={0}
+                            max={MAX_QUANTITY}
+                            size="sm"
+                            label={name}
+                          />
+                        )}
                       </div>
                       <button
                         type="submit"

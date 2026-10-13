@@ -173,15 +173,6 @@ medusaIntegrationTestRunner({
     });
 
     it("granel: artículo en gramos, disponibilidad por pasos y mínimo en el carrito", async () => {
-      // En la plantilla va en borrador (el storefront aún no lo muestra): aquí se publica
-      const file = path.join(dir, "productos.csv");
-      await writeFile(
-        file,
-        (await readFile(file, "utf8")).replace(
-          "natural,general,,borrador",
-          "natural,general,,publicado",
-        ),
-      );
       await run();
       const alas = await product("alas-pollo-deshidratadas");
       const v = alas!.variants![0]!;

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { decodeUtf8, parseCsv } from "../lib/csv";
 import { parsePrice, readCategories, readProducts, stepPrice } from "../lib/catalog-sheet";
-import { bulkMinimumError, bulkRule } from "../../lib/granel";
+import { bulkMinimumAmount, bulkMinimumError, bulkRule } from "../../lib/granel";
 import {
   planCatalog,
   productCreateInput,
@@ -241,6 +241,9 @@ describe("analíticos, neto y granel", () => {
     expect(bulkMinimumError({ stepG: 1, minG: 1000 }, 3)).toBe(
       "El mínimo de este producto a granel es 1 kg.",
     );
+    // Precio del mínimo (índice de búsqueda, S-3): 20 pasos de 0,10 €; 5 de 0,07 € (110 g / 25 g)
+    expect(bulkMinimumAmount(rule, 0.1)).toBe(2);
+    expect(bulkMinimumAmount({ stepG: 25, minG: 110 }, 0.07)).toBe(0.35);
   });
 
   it("categorías: padre escrito con el nombre → sugiere el handle", () => {

@@ -86,6 +86,23 @@ describe("liveData", () => {
     expect(data["variant_k"]?.[5]).toBe("10,00\u00a0€/kg");
   });
 
+  it("granel (S-3): precio del mínimo, €/kg y «Quedan» en v[6] de la variante", () => {
+    const bulk = [
+      {
+        id: "prod_G",
+        variants: [
+          {
+            ...variant("variant_g", 0.1, 496), // 496 pasos de 5 g = 2480 g
+            metadata: { paso_g: 5, min_g: 100 },
+          },
+        ],
+      },
+    ] as unknown as StoreProduct[];
+    const data = JSON.parse(liveData(liveEntries(bulk))) as Record<string, unknown[]>;
+    expect(data["prod_G"]).toEqual([expect.stringMatching(/^2,00/), 1, 1, 0, 0, "20,00\u00a0€/kg"]);
+    expect(data["variant_g"]?.[6]).toBe("Quedan 2,4\u00a0kg");
+  });
+
   it("escapa '<' y '&' (va dentro de un <template>)", () => {
     const out = liveData([
       { id: "prod_A", level: "product", inStock: true, price: "<b>&amp;", range: true },
@@ -113,6 +130,7 @@ function fakeDom(json: string | null) {
   const off = el({ off: "prod_S" }, "−1 %");
   const wasBoxA = el({ wasBox: "prod_A" });
   const unit = el({ unit: "prod_K" }, "9,00 €/kg");
+  const left = el({ left: "variant_g" }, "Quedan 9 kg");
   const all: Record<string, unknown[]> = {
     "[data-pid]": [card, row],
     "[data-price]": [price],
@@ -121,6 +139,7 @@ function fakeDom(json: string | null) {
     "[data-was]": [was],
     "[data-off]": [off],
     "[data-unit]": [unit],
+    "[data-left]": [left],
   };
   let observer: { cb: () => void; disconnected: boolean } | null = null;
   const parent = {
@@ -151,6 +170,7 @@ function fakeDom(json: string | null) {
     was,
     off,
     unit,
+    left,
     parent,
     run,
     observer: () => observer,
@@ -183,6 +203,12 @@ describe("LIVE_SYNC_APPLY", () => {
     const dom = fakeDom(json);
     dom.run();
     expect(dom.unit.textContent).toBe("10,00\u00a0€/kg");
+  });
+
+  it("actualiza «Quedan» del granel (S-3)", () => {
+    const dom = fakeDom(JSON.stringify({ variant_g: ["2,00 €", 0, 1, 0, 0, 0, "Quedan 2,4 kg"] }));
+    dom.run();
+    expect(dom.left.textContent).toBe("Quedan 2,4 kg");
   });
 
   it("espera al <template> con un MutationObserver y se desconecta", () => {

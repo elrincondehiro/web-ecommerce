@@ -8,6 +8,7 @@ import {
   type TaxableLine,
   type TrackingInfo,
 } from "emails";
+import { bulkRule } from "./granel";
 
 /**
  * Datos de Medusa → props de las plantillas de `packages/emails` (fase 8). Funciones puras para
@@ -37,6 +38,8 @@ export const ORDER_EMAIL_FIELDS = [
   "items.total",
   "items.tax_total",
   "items.thumbnail",
+  // Granel (S-3): la regla está en la variante (paso_g); sin variante, la línea va en unidades.
+  "items.variant.metadata",
   "items.tax_lines.rate",
   "shipping_methods.name",
   "shipping_methods.total",
@@ -78,6 +81,7 @@ type ItemLike = {
   tax_total?: Numeric;
   thumbnail?: string | null;
   tax_lines?: TaxLineLike[] | null;
+  variant?: { metadata?: Record<string, unknown> | null } | null;
 };
 
 type ShippingMethodLike = {
@@ -150,6 +154,7 @@ export function toEmailItem(item: ItemLike, quantity?: number): EmailLineItem {
   const unitPrice = toNumber(item.unit_price);
   const fullQty = toNumber(item.quantity);
   const qty = quantity ?? fullQty;
+  const rule = bulkRule(item.variant?.metadata);
   return {
     title: item.product_title || item.title || "Producto",
     variant: variantLabel(item.variant_title),
@@ -161,6 +166,13 @@ export function toEmailItem(item: ItemLike, quantity?: number): EmailLineItem {
         ? toNumber(item.total)
         : (toNumber(item.total) * qty) / fullQty,
     thumbnail: item.thumbnail?.startsWith("http") ? item.thumbnail : null,
+    // Granel (S-3): cantidad = pasos de `paso_g` → gramos y €/kg (precio de un paso × 1000 / paso)
+    bulk: rule
+      ? {
+          grams: qty * rule.stepG,
+          pricePerKg: Math.round(((unitPrice * 1000) / rule.stepG) * 100) / 100,
+        }
+      : null,
   };
 }
 

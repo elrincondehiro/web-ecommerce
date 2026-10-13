@@ -2265,7 +2265,7 @@
           "original_amount_with_tax": 6.9,
           "original_amount_without_tax": 5.702479338842975
         },
-        "inventory_quantity": 9
+        "inventory_quantity": 7
       }
     ],
     "images": [],
@@ -3876,155 +3876,6 @@
     ]
   },
   {
-    "id": "prod_01M4S0R2XV5EMGC974NJYX22CZ",
-    "handle": "mock-guiso-eco-007",
-    "title": "Guiso Eco",
-    "subtitle": "Comida cocinada",
-    "description": "Guiso Eco: producto de prueba generado para desarrollo (Comida cocinada).",
-    "metadata": {
-      "marca": "Hiro",
-      "fibra_pct": 0.5,
-      "grasa_pct": 5,
-      "cenizas_pct": 2.5,
-      "humedad_pct": 77,
-      "proteina_pct": 11
-    },
-    "variants": [
-      {
-        "id": "variant_01M4S0R32JN4YP4SV74ZTP9W5Z",
-        "title": "400 g",
-        "sku": "MOCK-007-1",
-        "allow_backorder": false,
-        "manage_inventory": true,
-        "weight": 470,
-        "metadata": {
-          "neto_g": 400
-        },
-        "variant_rank": 0,
-        "product_id": "prod_01M4S0R2XV5EMGC974NJYX22CZ",
-        "options": [
-          {
-            "id": "optval_01M4S0R2V06PFDEVARDZ5XEEA5",
-            "value": "400 g",
-            "rank": 2,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-            "option": {
-              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-              "title": "Peso",
-              "is_exclusive": false
-            }
-          }
-        ],
-        "calculated_price": {
-          "id": "pset_01M4S0R35X17EDBRN0X7PYXRC8",
-          "is_calculated_price_price_list": false,
-          "is_calculated_price_tax_inclusive": true,
-          "calculated_amount": 9.95,
-          "is_original_price_price_list": false,
-          "is_original_price_tax_inclusive": true,
-          "original_amount": 9.95,
-          "currency_code": "eur",
-          "calculated_price": {
-            "id": "price_01M4S0R35XT3Z1WSFYTHD9Z0AY"
-          },
-          "original_price": {
-            "id": "price_01M4S0R35XT3Z1WSFYTHD9Z0AY"
-          },
-          "calculated_amount_with_tax": 9.95,
-          "calculated_amount_without_tax": 8.223140495867769,
-          "original_amount_with_tax": 9.95,
-          "original_amount_without_tax": 8.223140495867769
-        },
-        "inventory_quantity": 0
-      },
-      {
-        "id": "variant_01M4S0R32JNY9NVB9TG2NYRA71",
-        "title": "800 g",
-        "sku": "MOCK-007-2",
-        "allow_backorder": false,
-        "manage_inventory": true,
-        "weight": 890,
-        "metadata": {
-          "neto_g": 800
-        },
-        "variant_rank": 0,
-        "product_id": "prod_01M4S0R2XV5EMGC974NJYX22CZ",
-        "options": [
-          {
-            "id": "optval_01M4S0R2V0VTDQQCA6M4676CX5",
-            "value": "800 g",
-            "rank": 3,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-            "option": {
-              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-              "title": "Peso",
-              "is_exclusive": false
-            }
-          }
-        ],
-        "calculated_price": {
-          "id": "pset_01M4S0R35X0HPQAA6EFVPY8QKA",
-          "is_calculated_price_price_list": false,
-          "is_calculated_price_tax_inclusive": true,
-          "calculated_amount": 14.95,
-          "is_original_price_price_list": false,
-          "is_original_price_tax_inclusive": true,
-          "original_amount": 14.95,
-          "currency_code": "eur",
-          "calculated_price": {
-            "id": "price_01M4S0R35X3NT8RCAG2BJ66RWG"
-          },
-          "original_price": {
-            "id": "price_01M4S0R35X3NT8RCAG2BJ66RWG"
-          },
-          "calculated_amount_with_tax": 14.95,
-          "calculated_amount_without_tax": 12.355371900826446,
-          "original_amount_with_tax": 14.95,
-          "original_amount_without_tax": 12.355371900826446
-        },
-        "inventory_quantity": 0
-      }
-    ],
-    "images": [],
-    "categories": [
-      {
-        "id": "pcat_01M4S0R2SRXW6P1JFR5P3PMTTQ",
-        "name": "Comida cocinada",
-        "description": "Comida cocinada para perros",
-        "handle": "comida-cocinada-perro",
-        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SRXW6P1JFR5P3PMTTQ",
-        "is_active": true,
-        "is_internal": false,
-        "rank": 3,
-        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
-        "parent_category": {
-          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
-        }
-      }
-    ],
-    "options": [
-      {
-        "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-        "title": "Peso",
-        "is_exclusive": false,
-        "values": [
-          {
-            "id": "optval_01M4S0R2V06PFDEVARDZ5XEEA5",
-            "value": "400 g",
-            "rank": 2,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
-          },
-          {
-            "id": "optval_01M4S0R2V0VTDQQCA6M4676CX5",
-            "value": "800 g",
-            "rank": 3,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
-          }
-        ]
-      }
-    ]
-  },
-  {
     "id": "prod_01M4S0R3KJ81ACKR43WCBWW2SQ",
     "handle": "mock-guiso-eco-046",
     "title": "Guiso Eco",
@@ -4132,6 +3983,155 @@
           "original_amount_without_tax": 14.793388429752065
         },
         "inventory_quantity": 10
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M4S0R2SRXW6P1JFR5P3PMTTQ",
+        "name": "Comida cocinada",
+        "description": "Comida cocinada para perros",
+        "handle": "comida-cocinada-perro",
+        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SRXW6P1JFR5P3PMTTQ",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 3,
+        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
+        "parent_category": {
+          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+        }
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+        "title": "Peso",
+        "is_exclusive": false,
+        "values": [
+          {
+            "id": "optval_01M4S0R2V06PFDEVARDZ5XEEA5",
+            "value": "400 g",
+            "rank": 2,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
+          },
+          {
+            "id": "optval_01M4S0R2V0VTDQQCA6M4676CX5",
+            "value": "800 g",
+            "rank": 3,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M4S0R2XV5EMGC974NJYX22CZ",
+    "handle": "mock-guiso-eco-007",
+    "title": "Guiso Eco",
+    "subtitle": "Comida cocinada",
+    "description": "Guiso Eco: producto de prueba generado para desarrollo (Comida cocinada).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 0.5,
+      "grasa_pct": 5,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 77,
+      "proteina_pct": 11
+    },
+    "variants": [
+      {
+        "id": "variant_01M4S0R32JN4YP4SV74ZTP9W5Z",
+        "title": "400 g",
+        "sku": "MOCK-007-1",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "weight": 470,
+        "metadata": {
+          "neto_g": 400
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R2XV5EMGC974NJYX22CZ",
+        "options": [
+          {
+            "id": "optval_01M4S0R2V06PFDEVARDZ5XEEA5",
+            "value": "400 g",
+            "rank": 2,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+            "option": {
+              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+              "title": "Peso",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R35X17EDBRN0X7PYXRC8",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 9.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 9.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R35XT3Z1WSFYTHD9Z0AY"
+          },
+          "original_price": {
+            "id": "price_01M4S0R35XT3Z1WSFYTHD9Z0AY"
+          },
+          "calculated_amount_with_tax": 9.95,
+          "calculated_amount_without_tax": 8.223140495867769,
+          "original_amount_with_tax": 9.95,
+          "original_amount_without_tax": 8.223140495867769
+        },
+        "inventory_quantity": 0
+      },
+      {
+        "id": "variant_01M4S0R32JNY9NVB9TG2NYRA71",
+        "title": "800 g",
+        "sku": "MOCK-007-2",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "weight": 890,
+        "metadata": {
+          "neto_g": 800
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R2XV5EMGC974NJYX22CZ",
+        "options": [
+          {
+            "id": "optval_01M4S0R2V0VTDQQCA6M4676CX5",
+            "value": "800 g",
+            "rank": 3,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+            "option": {
+              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+              "title": "Peso",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R35X0HPQAA6EFVPY8QKA",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 14.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 14.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R35X3NT8RCAG2BJ66RWG"
+          },
+          "original_price": {
+            "id": "price_01M4S0R35X3NT8RCAG2BJ66RWG"
+          },
+          "calculated_amount_with_tax": 14.95,
+          "calculated_amount_without_tax": 12.355371900826446,
+          "original_amount_with_tax": 14.95,
+          "original_amount_without_tax": 12.355371900826446
+        },
+        "inventory_quantity": 0
       }
     ],
     "images": [],
@@ -5056,155 +5056,6 @@
     ]
   },
   {
-    "id": "prod_01M4S0R3KJPE53QGMVKQ1ZQGY5",
-    "handle": "mock-menu-barf-plus-043",
-    "title": "Menú BARF Plus",
-    "subtitle": "Dieta BARF",
-    "description": "Menú BARF Plus: producto de prueba generado para desarrollo (Dieta BARF).",
-    "metadata": {
-      "marca": "Hiro",
-      "fibra_pct": 0.5,
-      "grasa_pct": 5,
-      "cenizas_pct": 2.5,
-      "humedad_pct": 77,
-      "proteina_pct": 11
-    },
-    "variants": [
-      {
-        "id": "variant_01M4S0R3PYAVZ6CJ7NNGZWRZ9F",
-        "title": "400 g",
-        "sku": "MOCK-043-1",
-        "allow_backorder": false,
-        "manage_inventory": true,
-        "weight": 470,
-        "metadata": {
-          "neto_g": 400
-        },
-        "variant_rank": 0,
-        "product_id": "prod_01M4S0R3KJPE53QGMVKQ1ZQGY5",
-        "options": [
-          {
-            "id": "optval_01M4S0R2V06PFDEVARDZ5XEEA5",
-            "value": "400 g",
-            "rank": 2,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-            "option": {
-              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-              "title": "Peso",
-              "is_exclusive": false
-            }
-          }
-        ],
-        "calculated_price": {
-          "id": "pset_01M4S0R3SVQ54WBK6JMXS9QBQH",
-          "is_calculated_price_price_list": false,
-          "is_calculated_price_tax_inclusive": true,
-          "calculated_amount": 8.95,
-          "is_original_price_price_list": false,
-          "is_original_price_tax_inclusive": true,
-          "original_amount": 8.95,
-          "currency_code": "eur",
-          "calculated_price": {
-            "id": "price_01M4S0R3SV55YM81T795RXP8KZ"
-          },
-          "original_price": {
-            "id": "price_01M4S0R3SV55YM81T795RXP8KZ"
-          },
-          "calculated_amount_with_tax": 8.95,
-          "calculated_amount_without_tax": 7.396694214876033,
-          "original_amount_with_tax": 8.95,
-          "original_amount_without_tax": 7.396694214876033
-        },
-        "inventory_quantity": 26
-      },
-      {
-        "id": "variant_01M4S0R3PY4MJK51H00GXV499K",
-        "title": "800 g",
-        "sku": "MOCK-043-2",
-        "allow_backorder": false,
-        "manage_inventory": true,
-        "weight": 890,
-        "metadata": {
-          "neto_g": 800
-        },
-        "variant_rank": 0,
-        "product_id": "prod_01M4S0R3KJPE53QGMVKQ1ZQGY5",
-        "options": [
-          {
-            "id": "optval_01M4S0R2V0VTDQQCA6M4676CX5",
-            "value": "800 g",
-            "rank": 3,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-            "option": {
-              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-              "title": "Peso",
-              "is_exclusive": false
-            }
-          }
-        ],
-        "calculated_price": {
-          "id": "pset_01M4S0R3SVTD0ZVZPX88X7N73Z",
-          "is_calculated_price_price_list": false,
-          "is_calculated_price_tax_inclusive": true,
-          "calculated_amount": 12.95,
-          "is_original_price_price_list": false,
-          "is_original_price_tax_inclusive": true,
-          "original_amount": 12.95,
-          "currency_code": "eur",
-          "calculated_price": {
-            "id": "price_01M4S0R3SVCDCZC4A6TCHPVPTX"
-          },
-          "original_price": {
-            "id": "price_01M4S0R3SVCDCZC4A6TCHPVPTX"
-          },
-          "calculated_amount_with_tax": 12.95,
-          "calculated_amount_without_tax": 10.702479338842975,
-          "original_amount_with_tax": 12.95,
-          "original_amount_without_tax": 10.702479338842975
-        },
-        "inventory_quantity": 29
-      }
-    ],
-    "images": [],
-    "categories": [
-      {
-        "id": "pcat_01M4S0R2SQJG1EFX548E1NAF4Q",
-        "name": "Dieta BARF",
-        "description": "Dieta BARF, cruda para perros",
-        "handle": "barf-perro",
-        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SQJG1EFX548E1NAF4Q",
-        "is_active": true,
-        "is_internal": false,
-        "rank": 1,
-        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
-        "parent_category": {
-          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
-        }
-      }
-    ],
-    "options": [
-      {
-        "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-        "title": "Peso",
-        "is_exclusive": false,
-        "values": [
-          {
-            "id": "optval_01M4S0R2V06PFDEVARDZ5XEEA5",
-            "value": "400 g",
-            "rank": 2,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
-          },
-          {
-            "id": "optval_01M4S0R2V0VTDQQCA6M4676CX5",
-            "value": "800 g",
-            "rank": 3,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
-          }
-        ]
-      }
-    ]
-  },
-  {
     "id": "prod_01M4S0R2XTV3CCR8XE4AGNR545",
     "handle": "mock-menu-barf-plus-004",
     "title": "Menú BARF Plus",
@@ -5312,6 +5163,155 @@
           "original_amount_without_tax": 8.181818181818182
         },
         "inventory_quantity": 36
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M4S0R2SQJG1EFX548E1NAF4Q",
+        "name": "Dieta BARF",
+        "description": "Dieta BARF, cruda para perros",
+        "handle": "barf-perro",
+        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SQJG1EFX548E1NAF4Q",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 1,
+        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
+        "parent_category": {
+          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+        }
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+        "title": "Peso",
+        "is_exclusive": false,
+        "values": [
+          {
+            "id": "optval_01M4S0R2V06PFDEVARDZ5XEEA5",
+            "value": "400 g",
+            "rank": 2,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
+          },
+          {
+            "id": "optval_01M4S0R2V0VTDQQCA6M4676CX5",
+            "value": "800 g",
+            "rank": 3,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M4S0R3KJPE53QGMVKQ1ZQGY5",
+    "handle": "mock-menu-barf-plus-043",
+    "title": "Menú BARF Plus",
+    "subtitle": "Dieta BARF",
+    "description": "Menú BARF Plus: producto de prueba generado para desarrollo (Dieta BARF).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 0.5,
+      "grasa_pct": 5,
+      "cenizas_pct": 2.5,
+      "humedad_pct": 77,
+      "proteina_pct": 11
+    },
+    "variants": [
+      {
+        "id": "variant_01M4S0R3PYAVZ6CJ7NNGZWRZ9F",
+        "title": "400 g",
+        "sku": "MOCK-043-1",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "weight": 470,
+        "metadata": {
+          "neto_g": 400
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R3KJPE53QGMVKQ1ZQGY5",
+        "options": [
+          {
+            "id": "optval_01M4S0R2V06PFDEVARDZ5XEEA5",
+            "value": "400 g",
+            "rank": 2,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+            "option": {
+              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+              "title": "Peso",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R3SVQ54WBK6JMXS9QBQH",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 8.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 8.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R3SV55YM81T795RXP8KZ"
+          },
+          "original_price": {
+            "id": "price_01M4S0R3SV55YM81T795RXP8KZ"
+          },
+          "calculated_amount_with_tax": 8.95,
+          "calculated_amount_without_tax": 7.396694214876033,
+          "original_amount_with_tax": 8.95,
+          "original_amount_without_tax": 7.396694214876033
+        },
+        "inventory_quantity": 26
+      },
+      {
+        "id": "variant_01M4S0R3PY4MJK51H00GXV499K",
+        "title": "800 g",
+        "sku": "MOCK-043-2",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "weight": 890,
+        "metadata": {
+          "neto_g": 800
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R3KJPE53QGMVKQ1ZQGY5",
+        "options": [
+          {
+            "id": "optval_01M4S0R2V0VTDQQCA6M4676CX5",
+            "value": "800 g",
+            "rank": 3,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+            "option": {
+              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+              "title": "Peso",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R3SVTD0ZVZPX88X7N73Z",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 12.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 12.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R3SVCDCZC4A6TCHPVPTX"
+          },
+          "original_price": {
+            "id": "price_01M4S0R3SVCDCZC4A6TCHPVPTX"
+          },
+          "calculated_amount_with_tax": 12.95,
+          "calculated_amount_without_tax": 10.702479338842975,
+          "original_amount_with_tax": 12.95,
+          "original_amount_without_tax": 10.702479338842975
+        },
+        "inventory_quantity": 29
       }
     ],
     "images": [],
@@ -5715,6 +5715,156 @@
     ]
   },
   {
+    "id": "prod_01M4S0R2XT9T26C0WRBRNNANC7",
+    "handle": "mock-pienso-confort-003",
+    "title": "Pienso Confort",
+    "subtitle": "Piensos",
+    "description": "Pienso Confort: producto de prueba generado para desarrollo (Piensos).",
+    "metadata": {
+      "marca": "Rincón",
+      "fibra_pct": 2.5,
+      "grasa_pct": 12,
+      "cenizas_pct": 9.5,
+      "humedad_pct": 8,
+      "proteina_pct": 27,
+      "analitico:Calcio": "1,3 %"
+    },
+    "variants": [
+      {
+        "id": "variant_01M4S0R32H9KKKZZ8Q2T8YFVM6",
+        "title": "3 kg",
+        "sku": "MOCK-003-1",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "weight": 3200,
+        "metadata": {
+          "neto_g": 3000
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R2XT9T26C0WRBRNNANC7",
+        "options": [
+          {
+            "id": "optval_01M4S0R2V0YF4K7H7A03XGP2N3",
+            "value": "3 kg",
+            "rank": 0,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+            "option": {
+              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+              "title": "Peso",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R35WT1TTYYQ4QJYCXB2E",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 27.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 27.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R35WHXCE3DTFA65SV2KY"
+          },
+          "original_price": {
+            "id": "price_01M4S0R35WHXCE3DTFA65SV2KY"
+          },
+          "calculated_amount_with_tax": 27.95,
+          "calculated_amount_without_tax": 23.09917355371901,
+          "original_amount_with_tax": 27.95,
+          "original_amount_without_tax": 23.09917355371901
+        },
+        "inventory_quantity": 26
+      },
+      {
+        "id": "variant_01M4S0R32H1HM33WWBH9KZSS8G",
+        "title": "12 kg",
+        "sku": "MOCK-003-2",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "weight": 12650,
+        "metadata": {
+          "neto_g": 12000
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R2XT9T26C0WRBRNNANC7",
+        "options": [
+          {
+            "id": "optval_01M4S0R2V0W4YQV82WSFZ4ZQDN",
+            "value": "12 kg",
+            "rank": 1,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+            "option": {
+              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+              "title": "Peso",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R35WMCY4NHDX9ZN0YHMY",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 72.95,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 72.95,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R35WFE74843JKGFMXRHD"
+          },
+          "original_price": {
+            "id": "price_01M4S0R35WFE74843JKGFMXRHD"
+          },
+          "calculated_amount_with_tax": 72.95,
+          "calculated_amount_without_tax": 60.289256198347104,
+          "original_amount_with_tax": 72.95,
+          "original_amount_without_tax": 60.289256198347104
+        },
+        "inventory_quantity": 29
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M4S0R2SPH3449N028X5BYD3G",
+        "name": "Piensos",
+        "description": "Piensos para perros",
+        "handle": "piensos-perro",
+        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SPH3449N028X5BYD3G",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 0,
+        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
+        "parent_category": {
+          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+        }
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+        "title": "Peso",
+        "is_exclusive": false,
+        "values": [
+          {
+            "id": "optval_01M4S0R2V0YF4K7H7A03XGP2N3",
+            "value": "3 kg",
+            "rank": 0,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
+          },
+          {
+            "id": "optval_01M4S0R2V0W4YQV82WSFZ4ZQDN",
+            "value": "12 kg",
+            "rank": 1,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "prod_01M4S0R3KJXAXXX33RTFTJPR62",
     "handle": "mock-pienso-confort-041",
     "title": "Pienso Confort",
@@ -5827,156 +5977,6 @@
           "original_amount_without_tax": 64.42148760330579
         },
         "inventory_quantity": 15
-      }
-    ],
-    "images": [],
-    "categories": [
-      {
-        "id": "pcat_01M4S0R2SPH3449N028X5BYD3G",
-        "name": "Piensos",
-        "description": "Piensos para perros",
-        "handle": "piensos-perro",
-        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SPH3449N028X5BYD3G",
-        "is_active": true,
-        "is_internal": false,
-        "rank": 0,
-        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
-        "parent_category": {
-          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
-        }
-      }
-    ],
-    "options": [
-      {
-        "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-        "title": "Peso",
-        "is_exclusive": false,
-        "values": [
-          {
-            "id": "optval_01M4S0R2V0YF4K7H7A03XGP2N3",
-            "value": "3 kg",
-            "rank": 0,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
-          },
-          {
-            "id": "optval_01M4S0R2V0W4YQV82WSFZ4ZQDN",
-            "value": "12 kg",
-            "rank": 1,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "prod_01M4S0R2XT9T26C0WRBRNNANC7",
-    "handle": "mock-pienso-confort-003",
-    "title": "Pienso Confort",
-    "subtitle": "Piensos",
-    "description": "Pienso Confort: producto de prueba generado para desarrollo (Piensos).",
-    "metadata": {
-      "marca": "Rincón",
-      "fibra_pct": 2.5,
-      "grasa_pct": 12,
-      "cenizas_pct": 9.5,
-      "humedad_pct": 8,
-      "proteina_pct": 27,
-      "analitico:Calcio": "1,3 %"
-    },
-    "variants": [
-      {
-        "id": "variant_01M4S0R32H9KKKZZ8Q2T8YFVM6",
-        "title": "3 kg",
-        "sku": "MOCK-003-1",
-        "allow_backorder": false,
-        "manage_inventory": true,
-        "weight": 3200,
-        "metadata": {
-          "neto_g": 3000
-        },
-        "variant_rank": 0,
-        "product_id": "prod_01M4S0R2XT9T26C0WRBRNNANC7",
-        "options": [
-          {
-            "id": "optval_01M4S0R2V0YF4K7H7A03XGP2N3",
-            "value": "3 kg",
-            "rank": 0,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-            "option": {
-              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-              "title": "Peso",
-              "is_exclusive": false
-            }
-          }
-        ],
-        "calculated_price": {
-          "id": "pset_01M4S0R35WT1TTYYQ4QJYCXB2E",
-          "is_calculated_price_price_list": false,
-          "is_calculated_price_tax_inclusive": true,
-          "calculated_amount": 27.95,
-          "is_original_price_price_list": false,
-          "is_original_price_tax_inclusive": true,
-          "original_amount": 27.95,
-          "currency_code": "eur",
-          "calculated_price": {
-            "id": "price_01M4S0R35WHXCE3DTFA65SV2KY"
-          },
-          "original_price": {
-            "id": "price_01M4S0R35WHXCE3DTFA65SV2KY"
-          },
-          "calculated_amount_with_tax": 27.95,
-          "calculated_amount_without_tax": 23.09917355371901,
-          "original_amount_with_tax": 27.95,
-          "original_amount_without_tax": 23.09917355371901
-        },
-        "inventory_quantity": 26
-      },
-      {
-        "id": "variant_01M4S0R32H1HM33WWBH9KZSS8G",
-        "title": "12 kg",
-        "sku": "MOCK-003-2",
-        "allow_backorder": false,
-        "manage_inventory": true,
-        "weight": 12650,
-        "metadata": {
-          "neto_g": 12000
-        },
-        "variant_rank": 0,
-        "product_id": "prod_01M4S0R2XT9T26C0WRBRNNANC7",
-        "options": [
-          {
-            "id": "optval_01M4S0R2V0W4YQV82WSFZ4ZQDN",
-            "value": "12 kg",
-            "rank": 1,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-            "option": {
-              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-              "title": "Peso",
-              "is_exclusive": false
-            }
-          }
-        ],
-        "calculated_price": {
-          "id": "pset_01M4S0R35WMCY4NHDX9ZN0YHMY",
-          "is_calculated_price_price_list": false,
-          "is_calculated_price_tax_inclusive": true,
-          "calculated_amount": 72.95,
-          "is_original_price_price_list": false,
-          "is_original_price_tax_inclusive": true,
-          "original_amount": 72.95,
-          "currency_code": "eur",
-          "calculated_price": {
-            "id": "price_01M4S0R35WFE74843JKGFMXRHD"
-          },
-          "original_price": {
-            "id": "price_01M4S0R35WFE74843JKGFMXRHD"
-          },
-          "calculated_amount_with_tax": 72.95,
-          "calculated_amount_without_tax": 60.289256198347104,
-          "original_amount_with_tax": 72.95,
-          "original_amount_without_tax": 60.289256198347104
-        },
-        "inventory_quantity": 29
       }
     ],
     "images": [],
@@ -6169,156 +6169,6 @@
     ]
   },
   {
-    "id": "prod_01M4S0R2XTSFRXW5HB1X4Y95YW",
-    "handle": "mock-pienso-original-002",
-    "title": "Pienso Original",
-    "subtitle": "Piensos",
-    "description": "Pienso Original: producto de prueba generado para desarrollo (Piensos).",
-    "metadata": {
-      "marca": "Hiro",
-      "fibra_pct": 4.5,
-      "grasa_pct": 18,
-      "cenizas_pct": 8.5,
-      "humedad_pct": 10,
-      "proteina_pct": 26,
-      "analitico:Calcio": "1,2 %"
-    },
-    "variants": [
-      {
-        "id": "variant_01M4S0R32H9NF0GF3CXZYDX3QQ",
-        "title": "3 kg",
-        "sku": "MOCK-002-1",
-        "allow_backorder": false,
-        "manage_inventory": true,
-        "weight": 3200,
-        "metadata": {
-          "neto_g": 3000
-        },
-        "variant_rank": 0,
-        "product_id": "prod_01M4S0R2XTSFRXW5HB1X4Y95YW",
-        "options": [
-          {
-            "id": "optval_01M4S0R2V0YF4K7H7A03XGP2N3",
-            "value": "3 kg",
-            "rank": 0,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-            "option": {
-              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-              "title": "Peso",
-              "is_exclusive": false
-            }
-          }
-        ],
-        "calculated_price": {
-          "id": "pset_01M4S0R35WE0ZWPV0TPHWHC4QM",
-          "is_calculated_price_price_list": false,
-          "is_calculated_price_tax_inclusive": true,
-          "calculated_amount": 29.9,
-          "is_original_price_price_list": false,
-          "is_original_price_tax_inclusive": true,
-          "original_amount": 29.9,
-          "currency_code": "eur",
-          "calculated_price": {
-            "id": "price_01M4S0R35W9YEEGYH22H409RKH"
-          },
-          "original_price": {
-            "id": "price_01M4S0R35W9YEEGYH22H409RKH"
-          },
-          "calculated_amount_with_tax": 29.9,
-          "calculated_amount_without_tax": 24.710743801652892,
-          "original_amount_with_tax": 29.9,
-          "original_amount_without_tax": 24.710743801652892
-        },
-        "inventory_quantity": 19
-      },
-      {
-        "id": "variant_01M4S0R32HMJB7RX2E9HB1G5PY",
-        "title": "12 kg",
-        "sku": "MOCK-002-2",
-        "allow_backorder": false,
-        "manage_inventory": true,
-        "weight": 12650,
-        "metadata": {
-          "neto_g": 12000
-        },
-        "variant_rank": 0,
-        "product_id": "prod_01M4S0R2XTSFRXW5HB1X4Y95YW",
-        "options": [
-          {
-            "id": "optval_01M4S0R2V0W4YQV82WSFZ4ZQDN",
-            "value": "12 kg",
-            "rank": 1,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-            "option": {
-              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-              "title": "Peso",
-              "is_exclusive": false
-            }
-          }
-        ],
-        "calculated_price": {
-          "id": "pset_01M4S0R35WAF5VKGDRHT12ED3S",
-          "is_calculated_price_price_list": false,
-          "is_calculated_price_tax_inclusive": true,
-          "calculated_amount": 74.9,
-          "is_original_price_price_list": false,
-          "is_original_price_tax_inclusive": true,
-          "original_amount": 74.9,
-          "currency_code": "eur",
-          "calculated_price": {
-            "id": "price_01M4S0R35W2744P84PAKGMNNFH"
-          },
-          "original_price": {
-            "id": "price_01M4S0R35W2744P84PAKGMNNFH"
-          },
-          "calculated_amount_with_tax": 74.9,
-          "calculated_amount_without_tax": 61.900826446280995,
-          "original_amount_with_tax": 74.9,
-          "original_amount_without_tax": 61.900826446280995
-        },
-        "inventory_quantity": 22
-      }
-    ],
-    "images": [],
-    "categories": [
-      {
-        "id": "pcat_01M4S0R2SPH3449N028X5BYD3G",
-        "name": "Piensos",
-        "description": "Piensos para perros",
-        "handle": "piensos-perro",
-        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SPH3449N028X5BYD3G",
-        "is_active": true,
-        "is_internal": false,
-        "rank": 0,
-        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
-        "parent_category": {
-          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
-        }
-      }
-    ],
-    "options": [
-      {
-        "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
-        "title": "Peso",
-        "is_exclusive": false,
-        "values": [
-          {
-            "id": "optval_01M4S0R2V0YF4K7H7A03XGP2N3",
-            "value": "3 kg",
-            "rank": 0,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
-          },
-          {
-            "id": "optval_01M4S0R2V0W4YQV82WSFZ4ZQDN",
-            "value": "12 kg",
-            "rank": 1,
-            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
-          }
-        ]
-      }
-    ]
-  },
-  {
     "id": "prod_01M4S0R3BARA0J7N53W2DQKK97",
     "handle": "mock-pienso-original-040",
     "title": "Pienso Original",
@@ -6427,6 +6277,156 @@
           "original_amount_without_tax": 58.59504132231405
         },
         "inventory_quantity": 8
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M4S0R2SPH3449N028X5BYD3G",
+        "name": "Piensos",
+        "description": "Piensos para perros",
+        "handle": "piensos-perro",
+        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SPH3449N028X5BYD3G",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 0,
+        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
+        "parent_category": {
+          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+        }
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+        "title": "Peso",
+        "is_exclusive": false,
+        "values": [
+          {
+            "id": "optval_01M4S0R2V0YF4K7H7A03XGP2N3",
+            "value": "3 kg",
+            "rank": 0,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
+          },
+          {
+            "id": "optval_01M4S0R2V0W4YQV82WSFZ4ZQDN",
+            "value": "12 kg",
+            "rank": 1,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M4S0R2XTSFRXW5HB1X4Y95YW",
+    "handle": "mock-pienso-original-002",
+    "title": "Pienso Original",
+    "subtitle": "Piensos",
+    "description": "Pienso Original: producto de prueba generado para desarrollo (Piensos).",
+    "metadata": {
+      "marca": "Hiro",
+      "fibra_pct": 4.5,
+      "grasa_pct": 18,
+      "cenizas_pct": 8.5,
+      "humedad_pct": 10,
+      "proteina_pct": 26,
+      "analitico:Calcio": "1,2 %"
+    },
+    "variants": [
+      {
+        "id": "variant_01M4S0R32H9NF0GF3CXZYDX3QQ",
+        "title": "3 kg",
+        "sku": "MOCK-002-1",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "weight": 3200,
+        "metadata": {
+          "neto_g": 3000
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R2XTSFRXW5HB1X4Y95YW",
+        "options": [
+          {
+            "id": "optval_01M4S0R2V0YF4K7H7A03XGP2N3",
+            "value": "3 kg",
+            "rank": 0,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+            "option": {
+              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+              "title": "Peso",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R35WE0ZWPV0TPHWHC4QM",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 29.9,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 29.9,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R35W9YEEGYH22H409RKH"
+          },
+          "original_price": {
+            "id": "price_01M4S0R35W9YEEGYH22H409RKH"
+          },
+          "calculated_amount_with_tax": 29.9,
+          "calculated_amount_without_tax": 24.710743801652892,
+          "original_amount_with_tax": 29.9,
+          "original_amount_without_tax": 24.710743801652892
+        },
+        "inventory_quantity": 19
+      },
+      {
+        "id": "variant_01M4S0R32HMJB7RX2E9HB1G5PY",
+        "title": "12 kg",
+        "sku": "MOCK-002-2",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "weight": 12650,
+        "metadata": {
+          "neto_g": 12000
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R2XTSFRXW5HB1X4Y95YW",
+        "options": [
+          {
+            "id": "optval_01M4S0R2V0W4YQV82WSFZ4ZQDN",
+            "value": "12 kg",
+            "rank": 1,
+            "option_id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+            "option": {
+              "id": "opt_01M4S0R2V12WDM8QD06RAEFGZT",
+              "title": "Peso",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R35WAF5VKGDRHT12ED3S",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 74.9,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 74.9,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R35W2744P84PAKGMNNFH"
+          },
+          "original_price": {
+            "id": "price_01M4S0R35W2744P84PAKGMNNFH"
+          },
+          "calculated_amount_with_tax": 74.9,
+          "calculated_amount_without_tax": 61.900826446280995,
+          "original_amount_with_tax": 74.9,
+          "original_amount_without_tax": 61.900826446280995
+        },
+        "inventory_quantity": 22
       }
     ],
     "images": [],
@@ -7461,6 +7461,99 @@
             "value": "Ternera",
             "rank": 1,
             "option_id": "opt_01M4S0R2V135639DA2BAEVPYWP"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M4S0R2XVB0Y6Y47HNA197RW2",
+    "handle": "mock-premios-plus-010",
+    "title": "Premios Plus",
+    "subtitle": "Snacks y masticación",
+    "description": "Premios Plus: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "metadata": {
+      "marca": "Hiro",
+      "granel": true,
+      "grasa_pct": 12,
+      "humedad_pct": 11,
+      "proteina_pct": 50
+    },
+    "variants": [
+      {
+        "id": "variant_01M4S0R32KCT9BY58DPS89PE52",
+        "title": "Única",
+        "sku": "MOCK-010-GR",
+        "allow_backorder": false,
+        "manage_inventory": true,
+        "metadata": {
+          "min_g": 100,
+          "paso_g": 5
+        },
+        "variant_rank": 0,
+        "product_id": "prod_01M4S0R2XVB0Y6Y47HNA197RW2",
+        "options": [
+          {
+            "id": "optval_01M4S0R2XYBPNE9V5VAY2X35NH",
+            "value": "Única",
+            "option_id": "opt_01M4S0R2XVYTGHERMJB7XKEWZ7",
+            "option": {
+              "id": "opt_01M4S0R2XVYTGHERMJB7XKEWZ7",
+              "title": "Formato",
+              "is_exclusive": true
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M4S0R35YJBHPECVV4N6W0VTY",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 0.1,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 0.1,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M4S0R35YNYP2NCSD64T1GK8H"
+          },
+          "original_price": {
+            "id": "price_01M4S0R35YNYP2NCSD64T1GK8H"
+          },
+          "calculated_amount_with_tax": 0.1,
+          "calculated_amount_without_tax": 0.08264462809917356,
+          "original_amount_with_tax": 0.1,
+          "original_amount_without_tax": 0.08264462809917356
+        },
+        "inventory_quantity": 480
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M4S0R2SSTWHSRPQZ1KGCC5VM",
+        "name": "Snacks y masticación",
+        "description": "Snacks y masticación para perros",
+        "handle": "snacks-perro",
+        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SSTWHSRPQZ1KGCC5VM",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 4,
+        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
+        "parent_category": {
+          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+        }
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M4S0R2XVYTGHERMJB7XKEWZ7",
+        "title": "Formato",
+        "is_exclusive": true,
+        "values": [
+          {
+            "id": "optval_01M4S0R2XYBPNE9V5VAY2X35NH",
+            "value": "Única",
+            "option_id": "opt_01M4S0R2XVYTGHERMJB7XKEWZ7"
           }
         ]
       }

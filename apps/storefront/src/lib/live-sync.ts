@@ -8,14 +8,23 @@
 //   - precio → actualiza el texto de [data-price="<id>"] y el "Desde" ([data-price-from="<id>"]);
 //   - oferta (I-Interficie) → muestra/oculta [data-was-box="<id>"] (precio tachado y descuento)
 //     y actualiza [data-was="<id>"] (precio anterior) y [data-off="<id>"] ("−20 %");
-//   - precio por kilo/litro (Fase S, S-2) → actualiza [data-unit="<id>"] ("12,65 €/kg").
+//   - precio por kilo/litro (Fase S, S-2) → actualiza [data-unit="<id>"] ("12,65 €/kg");
+//   - granel (S-3) → actualiza [data-left="<variante>"] ("Quedan 2,4 kg", CATALOG_FEATURES).
 // Marcado esperado (ver ProductCard.astro / BuyBox.astro):
 //   <article data-pid="prod_…" data-stock="in|out"> … <span data-if-stock="out">Agotado</span>
 //   <tr data-pid="variant_…" data-vstock="in|out"> … <span data-if-vstock="in">Disponible</span>
 //   <span data-price-from="prod_…">Desde</span> <span data-price="prod_…">4,95 €</span>
 //   <span data-was-box="prod_…" hidden><del data-was="prod_…">5,95 €</del>
 //     <span data-off="prod_…">−20 %</span></span>
-import { discountPercent, getProductPricing, type StoreProduct, type UnitPrice } from "./catalog";
+import {
+  discountPercent,
+  getProductPricing,
+  type StoreProduct,
+  type UnitPrice,
+  type VariantAvailability,
+} from "./catalog";
+import { formatStockGrams } from "./bulk";
+import { CATALOG_FEATURES } from "./constants";
 import { formatDiscount, formatPrice, formatUnitPrice } from "./format";
 
 const SAFE_ID = /^[A-Za-z0-9_-]+$/;
@@ -35,6 +44,16 @@ export interface LiveEntry {
   off?: string | null;
   /** Precio por kilo/litro formateado ("12,65 €/kg"), o null. */
   unit?: string | null;
+  /** Solo variantes a granel: stock que queda ("Quedan 2,4 kg"), o null. */
+  left?: string | null;
+}
+
+/** «Quedan 2,4 kg» de una variante a granel con stock limitado (o null). */
+export function stockLeftText(v: VariantAvailability): string | null {
+  if (!CATALOG_FEATURES.bulkStockLeft || !v.bulk || v.bulk.stockG === null || !v.inStock) {
+    return null;
+  }
+  return `Quedan ${formatStockGrams(v.bulk.stockG)}`;
 }
 
 export function liveEntries(products: StoreProduct[]): LiveEntry[] {
@@ -67,6 +86,7 @@ export function liveEntries(products: StoreProduct[]): LiveEntry[] {
         was: fmt(v.wasAmount),
         off: off(v.amount, v.wasAmount),
         unit: unit(v.unitPrice),
+        left: stockLeftText(v),
       });
     }
   }
@@ -74,9 +94,9 @@ export function liveEntries(products: StoreProduct[]): LiveEntry[] {
 }
 
 /**
- * Datos de la island: id → [precio | null, rango 0|1, stock 0|1, anterior?, descuento?, €/kg?],
- * seguro dentro de HTML. La tupla se corta tras el último dato: sin oferta ni €/kg queda en 3
- * (v[3] vacío = sin oferta); con €/kg y sin oferta, v[3] y v[4] van a 0.
+ * Datos de la island: id → [precio | null, rango 0|1, stock 0|1, anterior?, descuento?, €/kg?,
+ * quedan?], seguro dentro de HTML. La tupla se corta tras el último dato: sin oferta ni €/kg
+ * queda en 3 (v[3] vacío = sin oferta); los huecos anteriores a un dato van a 0.
  */
 export function liveData(entries: LiveEntry[]): string {
   type Tuple = (string | number | null)[];
@@ -84,8 +104,9 @@ export function liveData(entries: LiveEntry[]): string {
   for (const e of entries) {
     const t: Tuple = [e.price, e.range ? 1 : 0, e.inStock ? 1 : 0];
     const sale = e.was && e.off;
-    if (sale || e.unit) t.push(sale ? e.was! : 0, sale ? e.off! : 0);
-    if (e.unit) t.push(e.unit);
+    if (sale || e.unit || e.left) t.push(sale ? e.was! : 0, sale ? e.off! : 0);
+    if (e.unit || e.left) t.push(e.unit ?? 0);
+    if (e.left) t.push(e.left);
     map[e.id] = t;
   }
   return JSON.stringify(map).replace(/</g, "\\u003c").replace(/&/g, "\\u0026");
@@ -108,6 +129,6 @@ export const LIVE_SYNC_APPLY =
   "if(v)e.hidden=!v[1]}" +
   'for(const e of d.querySelectorAll("[data-was-box]")){const v=m[e.dataset.wasBox];' +
   "if(v)e.hidden=!v[3]}" +
-  'for(const[k,i]of[["was",3],["off",4],["unit",5]])for(const e of d.querySelectorAll("[data-"+k+"]")){' +
+  'for(const[k,i]of[["was",3],["off",4],["unit",5],["left",6]])for(const e of d.querySelectorAll("[data-"+k+"]")){' +
   "const v=m[e.dataset[k]];if(v&&v[i])e.textContent=v[i]}return 1};" +
   "a()||new MutationObserver((_,o)=>a()&&o.disconnect()).observe(p,{childList:true})}";

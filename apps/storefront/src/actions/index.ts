@@ -10,6 +10,7 @@ import type { ActionAPIContext } from "astro:actions";
 import { defineAction } from "astro:actions";
 import { COOKIE_SECURE } from "astro:env/server";
 import { z } from "astro/zod";
+import { bulkRule, checkGrams, lineRule } from "$lib/bulk";
 import {
   CART_COOKIE,
   ID_PATTERN,
@@ -24,6 +25,7 @@ import {
   addLineItem,
   createCart,
   deleteLineItem,
+  getVariantMetadata,
   retrieveCart,
   updateLineItem,
   type StoreCart,
@@ -33,6 +35,11 @@ import { checkout } from "./checkout";
 
 const id = z.string().regex(ID_PATTERN);
 const quantity = z.number().int().min(1).max(MAX_QUANTITY);
+/**
+ * Granel (S-3): gramos del campo o de un acceso rápido (`preset`). Vacío → null. El tope de zod
+ * es solo de cordura: paso, mínimo y máximo (BULK_MAX_G → aviso «maximum») los mira checkGrams.
+ */
+const grams = z.number().int().min(0).max(1_000_000).nullish();
 
 function getCartId(ctx: ActionAPIContext): string | null {
   const value = ctx.cookies.get(CART_COOKIE)?.value;
@@ -62,23 +69,37 @@ export const server = {
   cart: {
     add: defineAction({
       accept: "form",
-      input: z.object({ variant_id: id, quantity: quantity.default(1) }),
-      handler: async ({ variant_id, quantity }, ctx): Promise<CartResult> => {
+      input: z.object({ variant_id: id, quantity: quantity.default(1), grams, preset: grams }),
+      handler: async ({ variant_id, quantity, grams, preset }, ctx): Promise<CartResult> => {
         // Hasta 2 intentos: si la cookie apunta a un carrito inexistente o completado, se crea
         // otro y se reintenta una vez.
         let cartId = getCartId(ctx);
+        const wanted = preset ?? grams;
         for (let attempt = 0; attempt < 2; attempt++) {
           try {
+            let units = quantity;
+            if (wanted != null) {
+              // Granel (S-3): el paso y el mínimo salen de la variante (servidor), no del form.
+              const rule = bulkRule(await getVariantMetadata(variant_id));
+              if (!rule) return { code: "invalid", count: null };
+              const current = cartId ? await retrieveCart(cartId).catch(() => null) : null;
+              const already = (current?.completed_at ? [] : (current?.items ?? []))
+                .filter((i) => i.variant_id === variant_id)
+                .reduce((g, i) => g + (i.quantity ?? 0) * rule.stepG, 0);
+              const check = checkGrams(wanted, rule, already);
+              if (!check.ok) return { code: check.code, count: null };
+              units = check.units;
+            }
             if (!cartId) {
               // Con sesión, el carrito nace ya asociado al cliente (fase 9).
               cartId = (await createCart(undefined, ctx.locals.customerToken)).id;
               setCartId(ctx, cartId);
             }
-            const cart = await addLineItem(cartId, variant_id, quantity);
+            const cart = await addLineItem(cartId, variant_id, units);
             return { code: "added", count: itemCount(cart), title: titleOf(cart, variant_id) };
           } catch (err) {
             const kind = classifyCartError(err);
-            if (kind === "stock") return { code: "stock", count: null };
+            if (kind === "stock" || kind === "minimum") return { code: kind, count: null };
             if (kind === "cart_invalid" && attempt === 0) {
               clearCartId(ctx);
               cartId = null;
@@ -94,12 +115,31 @@ export const server = {
 
     update: defineAction({
       accept: "form",
-      // quantity 0 = quitar la línea
-      input: z.object({ line_id: id, quantity: z.number().int().min(0).max(MAX_QUANTITY) }),
-      handler: async ({ line_id, quantity }, ctx): Promise<CartResult> => {
+      // quantity (o grams, granel) 0 = quitar la línea
+      input: z
+        .object({
+          line_id: id,
+          quantity: z.number().int().min(0).max(MAX_QUANTITY).nullish(),
+          grams,
+        })
+        .refine((v) => v.quantity != null || v.grams != null),
+      handler: async ({ line_id, quantity: qty, grams }, ctx): Promise<CartResult> => {
         const cartId = getCartId(ctx);
         if (!cartId) return { code: "expired", count: 0 };
         try {
+          let quantity = qty ?? 0;
+          if (grams != null) {
+            // Granel (S-3): la regla es la de la variante de la línea (servidor).
+            const line = (await retrieveCart(cartId)).items?.find((i) => i.id === line_id);
+            const rule = line ? lineRule(line) : null;
+            if (!rule) return { code: "invalid", count: null };
+            if (grams === 0) quantity = 0;
+            else {
+              const check = checkGrams(grams, rule);
+              if (!check.ok) return { code: check.code, count: null };
+              quantity = check.units;
+            }
+          }
           if (quantity === 0) {
             const cart = await deleteLineItem(cartId, line_id);
             return { code: "removed", count: itemCount(cart) };
@@ -108,7 +148,7 @@ export const server = {
           return { code: "updated", count: itemCount(cart) };
         } catch (err) {
           const kind = classifyCartError(err);
-          if (kind === "stock") return { code: "stock", count: null };
+          if (kind === "stock" || kind === "minimum") return { code: kind, count: null };
           if (kind === "cart_invalid") {
             clearCartId(ctx);
             return { code: "expired", count: 0 };

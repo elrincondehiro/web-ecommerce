@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 12-oct-2026 · **Fase S en curso**: S-1 mergeada (#45); **S-2 hecha** (€/kg, analíticos y filtros sobre materia seca, rama `feat/storefront-precio-unitario`, pendiente de PR). **Siguiente: S-3** (granel), handover en **§6.8**. Después, fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 13-oct-2026 · **Fase S en curso**: S-1 (#45) y S-2 (#46) mergeadas; **S-3 hecha** (granel en el storefront, rama `feat/storefront-granel`, pendiente de PR). **Siguiente: cerrar la Fase S** (doc de fase §4–§6, README §4 y §13), handover en **§6.8**. Después, fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -46,7 +46,7 @@ Roadmap completo y tiempos: README §13.
   - `MEDUSA_WORKER_MODE` shared/server/worker; `DISABLE_MEDUSA_ADMIN`.
   - Telemetría OFF: `MEDUSA_DISABLE_TELEMETRY=true` + `allowBuilds` de `@medusajs/telemetry` a false.
   - Seed **España**: EUR **IVA incluido**, IVA **21 %** por defecto; **10 %** y **4 %** vía tipo de producto `iva-reducido` / `iva-superreducido`; un solo canal "Tienda online"; envíos 4,95 / 9,95 €; publishable key (sale en el log del seed).
-  - **Catálogo mock** (Fase S): `catalog:mock [N=300]` genera `catalog/mock/productos.csv` sobre el árbol real (`catalog/mock/categorias.csv`, 37 categorías) y se carga con `catalog:import catalog/mock`. En la BD local: **300 productos** (728 variantes, 4 fotos de picsum cada uno), 25 en oferta, 11 en `destacados`, 8 a granel en borrador. Los `seed:mock*` antiguos están archivados (`src/scripts/OBSOLETOS.md`).
+  - **Catálogo mock** (Fase S): `catalog:mock [N=300]` genera `catalog/mock/productos.csv` sobre el árbol real (`catalog/mock/categorias.csv`, 37 categorías) y se carga con `catalog:import catalog/mock`. En la BD local: **300 productos** (728 variantes, 4 fotos de picsum cada uno), 25 en oferta, 11 en `destacados`, 8 a granel publicados (S-3; p. ej. `mock-premios-plus-010`). `stock:mock` repone también el granel (en tramos de 250 g). Los `seed:mock*` antiguos están archivados (`src/scripts/OBSOLETOS.md`).
   - **Búsqueda** (fase 7): Search Module con el proveedor Meilisearch (`@rokmohar/medusa-plugin-meilisearch`), índice `product` en `src/search/product.ts` y `POST /store/search` permitido en `src/api/middlewares.ts`. Sin `MEILISEARCH_HOST` (tests, CI) se usa el proveedor PostgreSQL de Medusa.
   - **Ficheros**: `file-s3` contra SeaweedFS (R2 en producción), activo solo si existe `S3_BUCKET`. Fotos por lotes con `images:import <carpeta>` (`handle_XX.jpg`) y fotos mock con `images:mock` (`.cache/mock-images`, 1,5 GB, ignorado por git).
   - Importes de Medusa v2 en **unidad principal** (4.95 = 4,95 €).
@@ -298,7 +298,7 @@ Plan estudiado el 11-oct-2026 y aparcado por el usuario (no es necesario ahora):
 
 ## 6.8 Handover → Fase S (catálogo en el storefront)
 
-Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md). **S-1 hecha** (detalle en su §2: `category_tree_handles`, `lib/categories.ts`, `lib/shop.ts`, manifiestos `listing-pages.json` + `shop-categories.json`, catálogo mock `catalog:mock`). **S-2 hecha** (§2 del doc de fase: `proteina_ms`/`grasa_ms`, `unitPrice`, `AnalyticsTable`, interruptores `CATALOG_FEATURES`). Queda S-3. **No empezar sin plan aprobado** (REGLA Nº 1).
+Doc de fase: [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md). **S-1 hecha** (detalle en su §2: `category_tree_handles`, `lib/categories.ts`, `lib/shop.ts`, manifiestos `listing-pages.json` + `shop-categories.json`, catálogo mock `catalog:mock`). **S-2 hecha** (§2 del doc de fase: `proteina_ms`/`grasa_ms`, `unitPrice`, `AnalyticsTable`, interruptores `CATALOG_FEATURES`). **S-3 hecha** (§2: `lib/bulk.ts`, campo de gramos y accesos rápidos, «Quedan», líneas «250 g · 20,00 €/kg» en carrito, pedido y emails, `min_price_eur` del mínimo; interruptores `bulkLiveTotal`, `bulkStockLeft`, `bulkMaxG`). Queda cerrar la fase. **No empezar nada nuevo sin plan aprobado** (REGLA Nº 1).
 
 **Situación al cerrar la Fase C (11-oct-2026)**:
 

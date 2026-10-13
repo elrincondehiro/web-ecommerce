@@ -10,6 +10,9 @@
  * libres. No toca reservas ni pedidos; los productos sin stock a propósito del seed (stocked 0)
  * se dejan igual. Usa `updateInventoryLevelsWorkflow` (core-flows 2.21.2), no SQL. El índice de
  * búsqueda (`in_stock`) lo actualiza el job `search-stock-sync` en ≤ 5 min.
+ * Granel (S-3): el inventario va en gramos (cada unidad gasta `required_quantity`, el paso);
+ * mínimo y objetivo se cuentan en tramos de 250 g (10 → 2,5 kg, 50 → 12,5 kg): los e2e añaden
+ * 1,25 kg a un carrito y cada pedido de checkout reserva 250 g.
  */
 import type { ExecArgs, UpdateInventoryLevelInput } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
@@ -25,7 +28,11 @@ export default async function stockMock({ container }: ExecArgs) {
 
   const { data: products } = await query.graph({
     entity: "product",
-    fields: ["handle", "variants.inventory_items.inventory.location_levels.*"],
+    fields: [
+      "handle",
+      "variants.inventory_items.required_quantity",
+      "variants.inventory_items.inventory.location_levels.*",
+    ],
     filters: { handle: { $like: "mock-%" } },
   });
 
@@ -33,15 +40,16 @@ export default async function stockMock({ container }: ExecArgs) {
   for (const p of products) {
     for (const v of p.variants ?? []) {
       for (const link of v?.inventory_items ?? []) {
+        const per = Number(link?.required_quantity ?? 1) > 1 ? 250 : 1; // granel: 250 g
         for (const l of link?.inventory?.location_levels ?? []) {
           if (!l || l.stocked_quantity === 0) continue; // sin stock a propósito (seed)
           const free = l.stocked_quantity - l.reserved_quantity;
-          if (free >= MIN) continue;
+          if (free >= MIN * per) continue;
           updates.push({
             id: l.id,
             inventory_item_id: l.inventory_item_id,
             location_id: l.location_id,
-            stocked_quantity: l.reserved_quantity + TARGET,
+            stocked_quantity: l.reserved_quantity + TARGET * per,
           });
         }
       }

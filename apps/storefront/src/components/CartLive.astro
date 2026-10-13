@@ -44,7 +44,7 @@
         `form[data-cart-${kind}]:has(input[name=line_id][value="${line}"])`,
       );
       (
-        f?.querySelector<HTMLElement>("input[name=quantity]") ??
+        f?.querySelector<HTMLElement>("input[type=number]") ??
         document.querySelector<HTMLElement>("[data-cart-view] a, [data-cart-view] button")
       )?.focus();
     } catch {

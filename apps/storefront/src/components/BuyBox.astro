@@ -5,9 +5,13 @@
 // si hay varias) y la cantidad. Los radios de variantes agotadas se ocultan con data-if-vstock.
 // Precio por kilo/litro (S-2, RD 3423/2000): junto al precio con una variante; con varias, en
 // cada fila de la tabla (el «Desde» no lo lleva: sería el de otra variante).
+// Granel (S-3): «Desde» = precio del mínimo, €/kg debajo, campo de gramos (AddToCart `bulk`) y,
+// con CATALOG_FEATURES.bulkStockLeft, «Quedan 2,4 kg» ([data-left], lo corrige LiveSync).
 import { Badge } from "$lib/components/ui/badge";
 import AddToCart from "./AddToCart.astro";
-import { discountPercent, getProductPricing, type StoreProduct } from "$lib/catalog";
+import { commonRule, formatGrams } from "$lib/bulk";
+import { discountPercent, getProductPricing, minimumNote, type StoreProduct } from "$lib/catalog";
+import { stockLeftText } from "$lib/live-sync";
 import Price from "./Price.astro";
 
 interface Props {
@@ -20,6 +24,12 @@ const currency = pricing.currencyCode;
 const back = `/producto/${product.handle}/`;
 // Preselección: la primera variante con stock (en el build) o, si no hay, la primera.
 const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants[0])?.id;
+const bulk = pricing.isBulk
+  ? commonRule(pricing.variants.flatMap((v) => (v.bulk ? [v.bulk] : [])))
+  : null;
+const single = multi ? undefined : pricing.variants[0];
+const bulkNote = minimumNote(pricing);
+const singleLeft = single ? stockLeftText(single) : null;
 ---
 
 {pricing.fromAmount != null && currency ? (
@@ -38,6 +48,7 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
         from={pricing.hasPriceRange}
         size="lg"
         unit={multi ? null : pricing.unitPrice}
+        unitNote={multi ? null : bulkNote}
       />
       <span class="text-sm text-muted-foreground">IVA incluido</span>
     </p>
@@ -48,6 +59,11 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
       <Badge variant="secondary" data-if-stock="out">
         Agotado
       </Badge>
+      {singleLeft && single && (
+        <span class="ml-2 text-sm text-muted-foreground" data-if-stock="in" data-left={single.id}>
+          {singleLeft}
+        </span>
+      )}
     </p>
     <AddToCart
       back={back}
@@ -56,6 +72,8 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
       variantId={multi ? undefined : pricing.variants[0]?.id}
       size="lg"
       class="flex flex-col gap-4"
+      bulk={bulk}
+      unitKey={multi ? "" : product.id}
     >
       {multi && (
         <fieldset slot="before">
@@ -111,13 +129,16 @@ const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants
                           v.wasAmount !== null ? discountPercent(v.amount, v.wasAmount) : null
                         }
                         unit={v.unitPrice}
+                        unitNote={v.bulk ? `mínimo ${formatGrams(v.bulk.minG)}` : null}
                       />
                     ) : (
                       "—"
                     )}
                   </td>
                   <td class="py-1.5">
-                    <span data-if-vstock="in">Disponible</span>
+                    <span data-if-vstock="in" data-left={stockLeftText(v) ? v.id : undefined}>
+                      {stockLeftText(v) ?? "Disponible"}
+                    </span>
                     <span class="text-muted-foreground" data-if-vstock="out">
                       Agotado
                     </span>

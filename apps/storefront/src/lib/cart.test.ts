@@ -100,6 +100,13 @@ describe("classifyCartError", () => {
     expect(classifyCartError(new Error("fetch failed"))).toBe("error");
     expect(classifyCartError("x")).toBe("error");
   });
+  it("mínimo de granel (hook granel-minimo del backend)", () => {
+    expect(
+      classifyCartError(
+        new FetchError("El mínimo de este producto a granel es 100 g (20 unidades de 5 g).", 400),
+      ),
+    ).toBe("minimum");
+  });
 });
 
 describe("itemCount y avisos", () => {
@@ -107,9 +114,20 @@ describe("itemCount y avisos", () => {
     expect(itemCount({ items: [{ quantity: 2 }, { quantity: 3 }] })).toBe(5);
     expect(itemCount(null)).toBe(0);
   });
+  it("una línea a granel cuenta 1 (S-3)", () => {
+    const bulk = { quantity: 50, variant: { metadata: { paso_g: 5, min_g: 100 } } };
+    expect(itemCount({ items: [bulk, { quantity: 2, variant: { metadata: {} } }] })).toBe(3);
+  });
   it("mensajes y errores", () => {
     expect(noticeMessage("added", "Camiseta")).toBe("Añadido: Camiseta");
     expect(noticeMessage("added")).toBe("Añadido al carrito");
-    expect(NOTICE_CODES.filter(isErrorNotice)).toEqual(["stock", "expired", "invalid", "error"]);
+    expect(NOTICE_CODES.filter(isErrorNotice)).toEqual([
+      "stock",
+      "expired",
+      "invalid",
+      "minimum",
+      "maximum",
+      "error",
+    ]);
   });
 });
