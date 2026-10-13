@@ -1,12 +1,12 @@
 # Fase E — Estructura de URL, descatalogados y productos especiales (correas)
 
-> **Estado:** 🚧 en curso: E-0 y E-1 hechas; E-2 (correas) pendiente de las respuestas del usuario
+> **Estado:** 🚧 en curso: E-0 revertida, E-1 hecha; E-2 (correas) pendiente de las respuestas del usuario
 > **Rama/PR:** `feat/fase-e` (sobre `docs/cierre-fase-s`) · PR #…
 > **Anterior:** [Fase S](./faseS-catalogo-storefront.md) · **Siguiente:** fase 11 (producción en Hetzner)
 
 ## 1. Objetivos
 
-- [x] **E-0 CI**: repartir los jobs entre Gitea y GitHub. Un PR tardaba 30–40 min en el runner del homelab (≈10 min en GitHub). Lighthouse, solo en GitHub.
+- [ ] ~~**E-0 CI**~~ (revertida, ver §2): repartir los jobs entre Gitea y GitHub. Un PR tardaba 30–40 min en el runner del homelab (≈10 min en GitHub). Lighthouse, solo en GitHub.
 - [x] **E-1 URL** (decidir antes de producción):
   - [x] `/categorias/<handle>/` → `/categoria/<handle>/`, con 301 desde la antigua.
   - [x] Productos retirados: **descatalogado** (ficha con aviso, `noindex`; fuera de listados, búsqueda y sitemap; Medusa no deja añadirlo).
@@ -18,7 +18,22 @@
 
 ## 2. Qué se ha hecho
 
-### E-0 — CI (`.github/workflows/ci.yml`)
+### E-0 — CI (`.github/workflows/ci.yml`) — ↩️ REVERTIDA
+
+> El reparto se mergeó en #48 y se deshizo en `fix/ci-revertir-reparto` (`ci.yml` vuelve a ser el de `3a42fa8`).
+>
+> **Problema**: en el push a `main` en Gitea (28.0.0), `quality` y `audit` se saltaban por el `if:`. `integration` y `lighthouse` (`needs: quality`) se quedaban en estado _Pending_ («Waiting for needed jobs»): la ejecución terminaba, pero el commit quedaba en naranja. GitHub iba bien.
+>
+> El usuario prefiere el CI completo y duplicado en Gitea a tener ese problema.
+>
+> **Alternativas descartadas por ahora:**
+>
+> - quitar los `needs`, con `capacity: 1` en el runner por la RAM;
+> - un workflow propio en `.gitea/workflows/`: si existe, Gitea ignora `.github/workflows`, y obliga a mantener dos ficheros.
+>
+> Fuente: código de Gitea v28.0.0 (`services/actions/run.go`, `job_emitter.go`, `commit_status.go`).
+>
+> Lo que sigue describe lo que se probó:
 
 - Disparadores: `pull_request` a `main` y `push` de **cualquier rama** (`"**"`, no tags).
 - `quality`, `integration` y `audit`: `if: github.server_url == 'https://github.com' || github.event_name == 'pull_request'`.
@@ -155,7 +170,7 @@ Resultado obtenido (13-oct-2026):
 
 ## 6. Criterio de salida
 
-- [x] E-0: CI repartido. Pendiente de verlo en el PR: en Gitea solo 3 checks y en GitHub 4 en el push.
+- [x] E-0: probada y revertida (CI como antes).
 - [x] E-1: URL, redirecciones, descatalogados, sitemap y reglas de URL, con tests unitarios, de integración y e2e.
 - [ ] E-2: correa a medida.
 - [ ] Al cerrar: sincronizar README §4, ESTADO.md y README §13.
@@ -164,7 +179,7 @@ Resultado obtenido (13-oct-2026):
 
 - **Orden de despliegue**: el backend va **antes** que el storefront. Si no, el filtro `discontinued` de la búsqueda apuntaría a un campo que no existe en el índice. En producción, `db:migrate` reconstruye el índice sin cortes (`product_v3`).
 - Los carritos que ya tenían un producto antes de descatalogarlo pueden pagarlo, porque el hook no valida al cambiar la cantidad ni al completar. Si no se quiere, basta con dejar su stock a 0.
-- Gitea: quitar `lighthouse` de los checks obligatorios (tarea manual del usuario).
+- Gitea: si se quitó `lighthouse` de los checks obligatorios, volver a ponerlo.
 - **E-2**: faltan las respuestas del usuario.
   - ¿Tiene que salir de un solo tramo de cuerda? ¿Un rollo abierto por color? ¿Se controlan los restos?
   - Fórmula de precio y medios metros.

@@ -569,12 +569,12 @@ feat/*, fix/*, chore/*  ──PR──▶  CI (lint · typecheck · test · buil
 
 - **Ramas**: `feat/<descripcion-corta>`, `fix/…`, `chore/…`, `docs/…`. Nunca commits directos a `main`.
 - **PR y merge en Gitea**; GitHub recibe `main` por push mirror (ver §7.3).
-- **Checks obligatorios**: en Gitea, `quality`, `integration` y `audit`; en GitHub, esos tres y `lighthouse` (reparto de la Fase E, ver `ci.yml`).
+- **Checks obligatorios**: jobs `quality`, `integration`, `audit` y `lighthouse` de `ci.yml` (Gitea y GitHub).
 - **Renovate**: `renovate.yml` en Gitea Actions con el bot `renovate-bot`: lunes 04:00 UTC, manual, y **al marcar una casilla del Dependency Dashboard** (evento `issues: edited`). Abre PRs que pasan por el mismo CI y se re-basan solos si `main` avanza.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) (`feat(storefront): …`).
 - **Versionado**: SemVer. Release = `git tag -a v1.2.3 -m "v1.2.3" && git push origin v1.2.3`.
 - **Workflows** (`.github/workflows/`):
-  - `ci.yml` — **Gitea** solo en `pull_request` (`quality`, `integration`, `audit`); **GitHub** en el push de cualquier rama (llega por el push mirror) y de `main`, con los cuatro jobs. `lighthouse` solo corre en GitHub ([faseE-urls-correas.md](./docs/fases/faseE-urls-correas.md) §E-0). Jobs: `quality` (`pnpm install --frozen-lockfile`, lint, formato, build, typecheck, test, presupuesto de JS), `integration` (tests HTTP del backend con Postgres/Redis), `audit` (`pnpm audit --prod`) y `lighthouse` (Lighthouse CI móvil sobre el storefront de fixtures). Detalle en [fase10.md](./docs/fases/fase10.md) §4.6.
+  - `ci.yml` — en `pull_request` y push a `main`: `quality` (`pnpm install --frozen-lockfile`, lint, formato, build, typecheck, test, presupuesto de JS), `integration` (tests HTTP del backend con Postgres/Redis), `audit` (`pnpm audit --prod`) y `lighthouse` (Lighthouse CI móvil sobre el storefront de fixtures). Detalle en [fase10.md](./docs/fases/fase10.md) §4.6.
   - `images.yml` — en `push` a `main`, tags `v*.*.*` y a mano: build con Buildx y push usando `docker/metadata-action`, una imagen detrás de otra:
     ```yaml
     tags: |

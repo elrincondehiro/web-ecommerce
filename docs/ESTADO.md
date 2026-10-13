@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 13-oct-2026 · **Fase S cerrada** (S-1 #45, S-2 #46, S-3 #47). **Fase E en curso** (`feat/fase-e`): E-0 (CI Gitea/GitHub) y E-1 (URL, descatalogados, redirecciones, sitemap) hechas; **E-2 correa a medida** espera las respuestas del usuario. Estado en **§6.10**. Después, fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 13-oct-2026 · **Fase S cerrada** (S-1 #45, S-2 #46, S-3 #47). **Fase E en curso** (`feat/fase-e`): E-0 (CI Gitea/GitHub, **revertido**) y E-1 (URL, descatalogados, redirecciones, sitemap) hechas; **E-2 correa a medida** espera las respuestas del usuario. Estado en **§6.10**. Después, fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -56,7 +56,7 @@ Roadmap completo y tiempos: README §13.
   - **`integration`**: tests HTTP del backend con Postgres/Redis de `services:` (hosts `*-localhost` y `SWC_NATIVE_BINDING_CACHE`, ver fase10.md §4.6).
   - **`audit`**: `pnpm audit --prod` (nivel y excepciones en `pnpm-workspace.yaml` → `audit`).
   - **`lighthouse`**: `@lhci/cli` móvil sobre fixtures detrás de un proxy brotli; referencia = notas de GitHub (100 en todo salvo SEO de `/carrito/`, `noindex`).
-  - **Reparto (Fase E)**: Gitea solo en `pull_request` y sin `lighthouse` (checks obligatorios: los otros tres); GitHub en el push de cualquier rama (llega por el push mirror) y de `main`, con los cuatro.
+  - Los cuatro son checks obligatorios en Gitea y GitHub. El reparto Gitea/GitHub de la Fase E (#48) se **revirtió**: en Gitea 28 dejaba `main` en naranja (faseE §E-0).
 - **Imágenes** (`images.yml`, solo GitHub → GHCR, públicas): `ghcr.io/elrincondehiro/ecommerce-backend` (`sha-<7>`, `main`; en tag `X.Y.Z`, `X.Y`, `latest`) y `ecommerce-storefront` con sufijo `-fixtures` (no desplegable hasta la fase 11).
 - **Producción** (fase 10-1): `docker/compose.prod.yml` + Caddyfile mínimo, probado en local desde cero (`compose.prod.local.yml`, `.env.prod.local`).
 - **Limpieza de carritos** (fase 10-4): job `delete-stale-carts` en el worker, borrado **suave** de carritos sin cliente inactivos > `CART_CLEANUP_DAYS` (5 en pruebas, 30 por defecto).
@@ -382,7 +382,7 @@ Dos trabajos:
 
 Doc: [faseE-urls-correas.md](./fases/faseE-urls-correas.md). Rama `feat/fase-e`, creada sobre `docs/cierre-fase-s` rebasada en `main` (`3a42fa8`, S-3 #47). **Sin push**.
 
-- **E-0 ✅ CI**: el reparto Gitea/GitHub está en §2. Tarea manual del usuario: quitar `lighthouse` de los checks obligatorios en Gitea.
+- **E-0 ↩️ CI revertido**: el reparto Gitea/GitHub entró en #48 y se deshizo en `fix/ci-revertir-reparto`. `ci.yml` vuelve a ser el de `3a42fa8`. Si se quitó `lighthouse` de los checks obligatorios de Gitea, hay que volver a ponerlo.
 - **E-1 ✅ URL**:
   - `/categoria/<handle>/`, con 301 desde `/categorias/…`;
   - redirecciones en `apps/storefront/src/lib/redirects.mjs`, validadas en el build;
