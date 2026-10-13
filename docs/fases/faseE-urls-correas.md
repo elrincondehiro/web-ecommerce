@@ -98,6 +98,32 @@
 - no hay pares de rutas en singular y plural;
 - las redirecciones son válidas y ninguna queda tapada por una página. Astro da prioridad a la ruta de fichero sin avisar.
 
+### Perf L-1 — LiveSync de listados solo con datos de tarjeta (`perf/livesync-tarjetas`)
+
+Mejora aparte, analizada al diseñar las correas.
+
+**Problema.** La island de los listados devolvía una entrada por producto **y otra por variante**, aunque las tarjetas solo usan las de producto. Además pedía a Medusa título, imagen y otros campos que no usa.
+
+**Cambio:**
+
+- `liveEntries(products, { variants })` (`lib/live-sync.ts`): `LiveSyncData` pasa `variants: false` con `pageKey` (listados) y `true` con `productId` (ficha).
+- `LIVE_FIELDS` / `fetchLive` (`lib/medusa.ts`): `id,*variants,*variants.calculated_price,+variants.inventory_quantity`.
+- El script del navegador (`LIVE_SYNC_APPLY`) **no cambia**, así que tampoco su hash de CSP.
+- `ProductCard` solo debe llevar marcas por producto (aviso en el componente).
+
+**Medido en local** (build real, 300 productos mock, 4 peticiones por página sin caché):
+
+| Página                     | Antes (bytes / gzip) | Después (bytes / gzip) | Tiempo     |
+| -------------------------- | -------------------- | ---------------------- | ---------- |
+| Home (carrusel)            | 2632 / 916           | 739 / 395              | ≈ igual    |
+| `/productos/`              | 5464 / 1624          | 1532 / 621             | 72 → 66 ms |
+| `/ofertas/`                | 7522 / 1856          | 2083 / 716             | ≈ igual    |
+| `/categoria/snacks-perro/` | 5658 / 1372          | 1807 / 633             | ≈ igual    |
+| Ficha (6 variantes)        | 261 / 189            | 261 / 189              | 47 → 32 ms |
+
+- Con 24 productos × 20 variantes (estimado), la respuesta pasa de ~40 KB a ~1,3 KB.
+- El tiempo en Medusa no cambia: lo marca `inventory_quantity`. Para eso está L-2 (ESTADO §7).
+
 ## 3. Decisiones tomadas
 
 ### 3.1 CI

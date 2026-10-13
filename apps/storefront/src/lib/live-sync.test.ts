@@ -58,6 +58,15 @@ describe("liveEntries", () => {
     expect(entries.find((e) => e.id === "prod_A")?.was).toBeNull();
   });
 
+  it("listados (perf L-1): sin variantes, solo las entradas de producto", () => {
+    const card = liveEntries(products, { variants: false });
+    expect(card.map((e) => e.id)).toEqual(["prod_A", "prod_K", "prod_B", "prod_S"]);
+    expect(card.every((e) => e.level === "product")).toBe(true);
+    // Mismos datos de producto que en la ficha (precio desde, rango, stock, oferta, €/kg)
+    const full = liveEntries(products).filter((e) => e.level === "product");
+    expect(card).toEqual(full);
+  });
+
   it("descarta ids que no son seguros", () => {
     const bad = [{ id: 'x"]{}', variants: [] }] as unknown as StoreProduct[];
     expect(liveEntries(bad)).toEqual([]);

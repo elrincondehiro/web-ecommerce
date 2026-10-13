@@ -176,6 +176,27 @@ export async function getSaleProducts(): Promise<StoreProduct[]> {
   return all.filter((p) => set.has(p.id));
 }
 
+/**
+ * Campos de la island de LiveSync (perf L-1): solo lo que usa `getProductPricing`. `*variants`
+ * y no `variants.id,…` porque el granel y el €/kg leen `variants.metadata`, que la Store API
+ * 2.21.2 no admite suelto (ver CARD_FIELDS). Sin título, imagen, categorías ni opciones.
+ * Medido en dev (24 productos, 144 variantes): 202 → 141 KB de JSON entre servidores; el tiempo
+ * lo marca `inventory_quantity` (~93 ms), que se mantiene: es el stock fresco.
+ */
+const LIVE_FIELDS = "id,*variants,*variants.calculated_price,+variants.inventory_quantity";
+
+async function fetchLive(ids: string[]): Promise<StoreProduct[]> {
+  const region = await getRegionES();
+  const { products } = await sdk().store.product.list({
+    id: ids,
+    limit: ids.length,
+    region_id: region.id,
+    country_code: COUNTRY_CODE,
+    fields: LIVE_FIELDS,
+  });
+  return products;
+}
+
 /** Productos con precio y stock actuales por id (island de los listados), en el orden de `ids`. */
 export async function getPricedProductsFresh(ids: string[]): Promise<StoreProduct[]> {
   if (!ids.length) return [];
@@ -183,7 +204,7 @@ export async function getPricedProductsFresh(ids: string[]): Promise<StoreProduc
     const all = await fixtures.products();
     return ids.map((id) => all.find((p) => p.id === id)).filter((p) => p !== undefined);
   }
-  const byId = new Map((await fetchCards(ids)).map((p) => [p.id, p]));
+  const byId = new Map((await fetchLive(ids)).map((p) => [p.id, p]));
   return ids.map((id) => byId.get(id)).filter((p): p is StoreProduct => Boolean(p));
 }
 
@@ -361,15 +382,7 @@ export async function retrieveOrder(id: string): Promise<StoreOrder> {
 /** Un producto con precio y stock por id (server island de la ficha). */
 export async function getPricedProduct(id: string): Promise<StoreProduct | null> {
   if (useFixtures) return (await fixtures.products()).find((p) => p.id === id) ?? null;
-  const region = await getRegionES();
-  const { products } = await sdk().store.product.list({
-    id: [id],
-    limit: 1,
-    region_id: region.id,
-    country_code: COUNTRY_CODE,
-    fields: PRICED_FIELDS,
-  });
-  return products[0] ?? null;
+  return (await fetchLive([id]))[0] ?? null;
 }
 
 // ── Búsqueda (runtime: /buscar/). Fase 7-1. ────────────────────────────────────────────────

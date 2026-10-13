@@ -10,6 +10,10 @@
 //     una oferta que termina tras el build. No se pasan los ids: irían cifrados en la URL y en
 //     el JS inline. Clave desconocida (HTML de otro build) → "{}" → se queda lo del build.
 //   - ficha: productId
+// Respuesta (perf L-1): en la ficha, producto + todas sus variantes; en los listados, SOLO las
+// entradas de producto (las tarjetas no tienen marcas por variante), así su tamaño depende del
+// número de tarjetas y no del de variantes. Medusa se consulta con los campos mínimos
+// (LIVE_FIELDS en lib/medusa.ts).
 // Sin fallback: si falla o no hay JS, se queda lo del build.
 import { liveData, liveEntries } from "$lib/live-sync";
 import { getPricedProduct, getPricedProductsFresh } from "$lib/medusa";
@@ -27,7 +31,7 @@ const products = productId
   : pageKey
     ? await getPricedProductsFresh(await listingIds(pageKey))
     : [];
-const entries = liveEntries(products);
+const entries = liveEntries(products, { variants: Boolean(productId) });
 // Caché compartida corta + SWR (AGENTS.md §3.3); `max-age=30` → el navegador la reutiliza al
 // volver atrás/adelante sin pedirla de nuevo.
 Astro.response.headers.set(

@@ -4,6 +4,8 @@
 //   data-pid + data-stock (stock) · data-price / data-price-from (precio) · data-unit (€/kg,
 //   S-2: el de la variante del precio mostrado; se desactiva con CATALOG_FEATURES; en granel,
 //   S-3, se muestra siempre: el «Desde» del mínimo sin €/kg confundiría).
+// ⚠️ Solo marcas POR PRODUCTO (product.id): en los listados LiveSync no envía las variantes
+// (perf L-1, LiveSyncData.astro). Una marca con el id de una variante no se corregiría.
 import { Badge } from "$lib/components/ui/badge";
 import { getProductPricing, minimumNote, type StoreProduct } from "$lib/catalog";
 import { CATALOG_FEATURES } from "$lib/constants";

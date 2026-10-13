@@ -397,6 +397,11 @@ Doc: [faseE-urls-correas.md](./fases/faseE-urls-correas.md). Rama `feat/fase-e`,
 
 ## 7. Pendientes conocidos
 
+- **LiveSync en listados** (perf L-1, `perf/livesync-tarjetas`):
+  - Hoy la island de los listados solo devuelve entradas por producto, y la de la ficha todas las variantes. Detalle en [faseE-urls-correas.md](./fases/faseE-urls-correas.md) §2.
+  - Medusa sigue calculando precio y stock de **todas** las variantes de la página: ~0,4 ms por variante + ~30 ms (24 × 20 ≈ 230 ms sin caché).
+  - **L-2 (aparcada)**: resumen por producto precalculado en el backend (caché Redis invalidada por eventos). Se activa si la island tarda **> 300 ms sin caché en producción**. Antes, consultar caching y eventos de Medusa (REGLA Nº 1).
+
 - **Carritos de «invitado con email»** (con pago de Stripe pendiente) y purgado definitivo de los borrados en suave: ver fase10.md §7.
 
 - **Fase 11 — Cloudflare**: regla de caché que **respete el origen** (no «Cache Everything» por encima de `no-store`); rate limiting de entrar/registro/recuperar/checkout.

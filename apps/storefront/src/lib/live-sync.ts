@@ -56,7 +56,19 @@ export function stockLeftText(v: VariantAvailability): string | null {
   return `Quedan ${formatStockGrams(v.bulk.stockG)}`;
 }
 
-export function liveEntries(products: StoreProduct[]): LiveEntry[] {
+export interface LiveEntriesOptions {
+  /**
+   * Entradas por variante (ficha: tabla de variantes, «Quedan», €/kg de la elegida). Los
+   * listados solo pintan tarjetas (`ProductCard`: marcas por producto), así que van sin ellas
+   * (`false`): la respuesta deja de crecer con el número de variantes (perf L-1).
+   */
+  variants?: boolean;
+}
+
+export function liveEntries(
+  products: StoreProduct[],
+  { variants = true }: LiveEntriesOptions = {},
+): LiveEntry[] {
   const out: LiveEntry[] = [];
   for (const product of products) {
     const pricing = getProductPricing(product);
@@ -77,6 +89,7 @@ export function liveEntries(products: StoreProduct[]): LiveEntry[] {
       off: off(pricing.fromAmount, pricing.wasAmount),
       unit: unit(pricing.unitPrice),
     });
+    if (!variants) continue;
     for (const v of pricing.variants) {
       out.push({
         id: v.id,
