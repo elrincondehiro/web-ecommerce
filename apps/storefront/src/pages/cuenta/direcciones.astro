@@ -47,7 +47,10 @@ const linkBtn = "text-sm underline underline-offset-4";
   {addresses.length > 0 && (
     <ul class="mb-8 grid gap-4 sm:grid-cols-2">
       {addresses.map((a) => (
-        <li id={`editar-${a.id}`} class="flex scroll-mt-4 flex-col gap-3 rounded-lg border p-4">
+        <li
+          id={`editar-${a.id}`}
+          class="flex scroll-mt-4 flex-col gap-3 rounded-md border-2 border-line bg-card shadow-sm p-4"
+        >
           {editing?.id === a.id ? (
             <>
               <h2 class="text-lg font-semibold">Editar dirección</h2>
@@ -119,7 +122,7 @@ const linkBtn = "text-sm underline underline-offset-4";
     <section
       id="nueva"
       aria-labelledby="nueva-titulo"
-      class="max-w-2xl scroll-mt-4 rounded-lg border p-4 sm:p-6"
+      class="max-w-2xl scroll-mt-4 rounded-md border-2 border-line bg-card shadow-sm p-4 sm:p-6"
     >
       <h2 id="nueva-titulo" class="mb-4 text-xl font-semibold">
         {addresses.length ? "Añadir otra dirección" : "Añade tu primera dirección"}

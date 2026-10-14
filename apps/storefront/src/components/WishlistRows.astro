@@ -1,0 +1,148 @@
+---
+// Filas de una lista de deseos (Fase L-1/L-1b), compartidas por /cuenta/deseos/ (del cliente:
+// con «Quitar») y /deseos/<token>/ (lista compartida, pública: sin «Quitar»). Precio y stock
+// FRESCOS (Store API). Cada entrada es un producto o una variante concreta («Variante: …»). Si
+// hay una variante concreta (la guardada o la única), cantidad − / + y «Añadir» (AddToCart,
+// también granel en gramos); si hay que elegir, «Elegir opciones» / «Elegir medida» (correa).
+// Descatalogado: aviso y enlace al sustituto. 0 JS propio.
+import { Image } from "astro:assets";
+import { buttonVariants } from "$lib/components/ui/button";
+import { getProductPricing, isDiscontinued, replacementHandle } from "$lib/catalog";
+import { isCorrea } from "$lib/correa";
+import type { StoreProduct } from "$lib/catalog";
+import { wishRows, wishlistActionUrl } from "$lib/wishlist";
+import AddToCart from "./AddToCart.astro";
+import Price from "./Price.astro";
+
+interface Props {
+  items: { id: string; product_id: string; variant_id: string | null }[];
+  products: StoreProduct[];
+  /** Ruta de vuelta de los formularios sin JS (la página actual). */
+  back: string;
+  /** Lista propia: con «Quitar». */
+  editable?: boolean;
+}
+const { items, products, back, editable = false } = Astro.props;
+const rows = wishRows(items, products).map((row) => {
+  const pricing = getProductPricing(row.product);
+  const saved = row.variantId ? pricing.variants.find((v) => v.id === row.variantId) : undefined;
+  const only = pricing.variants.length === 1 ? pricing.variants[0] : undefined;
+  const chosen = saved ?? only;
+  const discontinued = isDiscontinued(row.product);
+  return {
+    ...row,
+    href: `/producto/${row.product.handle}/`,
+    pricing,
+    chosen,
+    // Se puede añadir aquí si hay una variante concreta (no la correa: se configura en su ficha).
+    addable: !discontinued && !isCorrea(row.product) ? chosen : undefined,
+    discontinued,
+    replacement: discontinued ? replacementHandle(row.product) : null,
+    variantTitle:
+      saved && pricing.variants.length > 1 && saved.title && saved.title !== "Única"
+        ? saved.title
+        : null,
+    inStock: chosen?.inStock ?? pricing.inStock,
+  };
+});
+const thumb = 80;
+---
+
+<ul class="flex flex-col divide-y-2 divide-line rounded-md border-2 border-line bg-card shadow-sm">
+  {rows.map((r) => (
+    <li class="flex gap-4 p-4">
+      <a href={r.href} class="shrink-0" tabindex="-1" aria-hidden="true">
+        {r.product.thumbnail ? (
+          <Image
+            src={r.product.thumbnail}
+            alt=""
+            width={thumb}
+            height={thumb}
+            fit="cover"
+            format="webp"
+            loading="lazy"
+            decoding="async"
+            class="size-20 rounded-md border-2 border-line bg-muted object-cover shadow-xs"
+          />
+        ) : (
+          <span class="block size-20 rounded-md border-2 border-line bg-muted shadow-xs" />
+        )}
+      </a>
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
+        <p class="font-medium">
+          <a href={r.href} class="hover:underline">
+            {r.product.title}
+          </a>
+        </p>
+        {r.variantTitle && (
+          <p class="text-sm">
+            <span class="text-muted-foreground">Variante:</span>{" "}
+            <span class="font-semibold">{r.variantTitle}</span>
+          </p>
+        )}
+        {r.discontinued ? (
+          <p class="text-sm">
+            Descatalogado.
+            {r.replacement && (
+              <a
+                href={`/producto/${r.replacement}/`}
+                class="ml-1 font-medium underline underline-offset-4"
+              >
+                Ver el producto que lo sustituye
+              </a>
+            )}
+          </p>
+        ) : (
+          <p class="flex flex-wrap items-baseline gap-x-3 text-sm">
+            {r.pricing.currencyCode && (r.chosen?.amount ?? r.pricing.fromAmount) != null && (
+              <Price
+                amount={(r.chosen?.amount ?? r.pricing.fromAmount)!}
+                currency={r.pricing.currencyCode}
+                wasAmount={r.chosen ? r.chosen.wasAmount : r.pricing.wasAmount}
+                discountPercent={r.chosen ? null : r.pricing.discountPercent}
+                from={!r.chosen && r.pricing.hasPriceRange}
+                unit={r.chosen?.unitPrice ?? null}
+              />
+            )}
+            <span class:list={[!r.inStock && "text-muted-foreground"]}>
+              {r.inStock ? "En stock" : "Agotado"}
+            </span>
+          </p>
+        )}
+        <div class="flex flex-wrap items-end gap-2" data-stock={r.inStock ? "in" : "out"}>
+          {r.addable ? (
+            <AddToCart
+              variantId={r.addable.id}
+              back={back}
+              productId={r.itemId}
+              productTitle={
+                r.variantTitle ? `${r.product.title} (${r.variantTitle})` : r.product.title!
+              }
+              size="sm"
+              bulk={r.addable.bulk}
+            />
+          ) : (
+            !r.discontinued && (
+              <a href={r.href} class={buttonVariants({ size: "sm", variant: "outline" })}>
+                {isCorrea(r.product) ? "Elegir medida" : "Elegir opciones"}
+              </a>
+            )
+          )}
+          {editable && (
+            <form method="post" action={wishlistActionUrl("wishlist.remove")} class="ml-auto">
+              <input type="hidden" name="item_id" value={r.itemId} />
+              <input type="hidden" name="back" value={back} />
+              <button
+                type="submit"
+                class={buttonVariants({ size: "sm", variant: "ghost" })}
+                aria-label={`Quitar ${r.product.title}${r.variantTitle ? ` (${r.variantTitle})` : ""} de mi lista`}
+              >
+                Quitar
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </li>
+  ))}
+</ul>

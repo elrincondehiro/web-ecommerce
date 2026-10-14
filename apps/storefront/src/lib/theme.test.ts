@@ -84,6 +84,19 @@ describe.each([
   });
 });
 
+// ♥ rojo de la lista de deseos (Fase L-1) sobre su círculo (fondo de tarjeta): icono, contraste
+// no textual ≥ 3:1 (WCAG 1.4.11; el nombre accesible lo da el enlace).
+describe.each([
+  ["claro", light],
+  ["oscuro", dark],
+])("♥ --destructive sobre --card ≥ 3:1, modo %s", (_, tokens) => {
+  it("contraste", () => {
+    expect(
+      contrast(resolve(tokens, "destructive"), resolve(tokens, "card")),
+    ).toBeGreaterThanOrEqual(3);
+  });
+});
+
 it("el oscuro explícito y el del sistema son iguales", () => {
   expect(darkSystem).toEqual(darkExplicit);
 });

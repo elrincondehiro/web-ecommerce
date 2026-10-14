@@ -79,12 +79,15 @@ export const ACCOUNT_NOTICES = {
     "Hemos recibido tu solicitud. Eliminaremos tu cuenta y te escribiremos en un plazo máximo de un mes.",
   logged_out: "Has cerrado la sesión.",
   session_expired: "Tu sesión ha caducado. Vuelve a entrar.",
+  wish_login:
+    "Entra en tu cuenta para guardar productos en tu lista de deseos. Lo guardaremos al entrar.",
   error: "Ha ocurrido un error. Inténtalo de nuevo.",
 } as const;
 export type AccountNoticeCode = keyof typeof ACCOUNT_NOTICES;
 
 /** Avisos de éxito (verde); el resto se pintan como error. */
 const SUCCESS = new Set<AccountNoticeCode>([
+  "wish_login",
   "verify_sent",
   "verified",
   "recover_sent",

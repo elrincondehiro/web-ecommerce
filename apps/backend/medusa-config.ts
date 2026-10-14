@@ -207,6 +207,8 @@ module.exports = defineConfig({
     ...paymentModule,
     ...searchModule,
     ...notificationModule,
+    // Lista de deseos (Fase L-1, docs/fases/faseL-deseos-puntos.md §2).
+    { resolve: "./src/modules/wishlist" },
     {
       resolve: "@medusajs/medusa/caching",
       options: {

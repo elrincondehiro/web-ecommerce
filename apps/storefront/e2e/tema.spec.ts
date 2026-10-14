@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 // Selector de tema (I-Marca): sigue al sistema; el botón fija claro/oscuro y se recuerda.
+// Fase L-1: en escritorio, en la cabecera; en móvil (< lg), dentro del menú ☰.
 test.describe("con JS", () => {
   test.use({ javaScriptEnabled: true, colorScheme: "light" });
 
@@ -10,7 +11,11 @@ test.describe("con JS", () => {
     await page.goto("/");
     const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     const claro = await bg();
-    const btn = page.locator("[data-theme-toggle]");
+    const mobile = (page.viewportSize()?.width ?? 1280) < 1024;
+    if (mobile) await page.getByRole("button", { name: "Menú" }).click();
+    const btn = page.locator(
+      mobile ? "#menu-movil [data-theme-toggle]" : "header [data-theme-toggle]",
+    );
     await expect(btn).toBeVisible();
     await expect(btn).toHaveAccessibleName("Cambiar a modo oscuro");
     await btn.click();
@@ -30,7 +35,7 @@ test.describe("sin JS", () => {
 
   test("sigue al sistema y el botón queda oculto", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("[data-theme-toggle]")).toBeHidden();
+    for (const b of await page.locator("[data-theme-toggle]").all()) await expect(b).toBeHidden();
     const dark = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     expect(dark).toMatch(/^(oklch\(0\.3|rgb\(38)/);
   });

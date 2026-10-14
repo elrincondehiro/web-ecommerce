@@ -11,6 +11,7 @@
 import { Badge } from "$lib/components/ui/badge";
 import { buttonVariants } from "$lib/components/ui/button";
 import { actionUrl, MAX_QUANTITY } from "$lib/cart";
+import { BUY_FORM_ID } from "$lib/wishlist";
 import { getProductPricing, type StoreProduct } from "$lib/catalog";
 import { NOTES_MAX, correaLiveData, correaModel, exactRange } from "$lib/correa";
 import { formatPrice } from "$lib/format";
@@ -83,6 +84,7 @@ const sides = [
     data-cart-form
     data-correa={JSON.stringify(data)}
     class="flex flex-col gap-5"
+    id={BUY_FORM_ID}
   >
     <input type="hidden" name="back" value={back} />
     <input type="hidden" name="product_id" value={product.id} />

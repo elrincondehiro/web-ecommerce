@@ -1,0 +1,47 @@
+---
+// Server island (server:defer) del estado por usuario de la cabecera (fase 4 → Fase L-1):
+// número del carrito y, con sesión, el icono de cuenta relleno, el ♡ de la cabecera relleno si hay
+// algo guardado y los productos guardados (para pintar en rojo los ♡ de tarjetas y fichas). UNA
+// sola petición por página (antes solo el contador del carrito). Respuesta por usuario →
+// `private, no-store`. Fallback: CartCountBadge sin número (lo pone SiteHeader).
+// Los datos de la lista van en un <template data-wish-state> con JSON (inerte, compatible con la
+// CSP): los aplica CartClient (no se inyecta ningún <script> desde la island, AGENTS §3.2).
+// Formato: { a: 1 (sesión), p: ["prod_…"] (productos guardados sin variante),
+//   v: ["variant_…"] (variantes guardadas), n: nº de entradas }.
+import { CART_COOKIE, isValidId, itemCount } from "$lib/cart";
+import { listWishlist, retrieveCart } from "$lib/medusa";
+import { STOREFRONT_DATA } from "astro:env/server";
+import CartCountBadge from "../CartCountBadge.astro";
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+
+const fixtures = STOREFRONT_DATA === "fixtures";
+const cartId = Astro.cookies.get(CART_COOKIE)?.value;
+const token = Astro.locals.customerToken;
+
+const countP: Promise<number> =
+  !fixtures && isValidId(cartId)
+    ? retrieveCart(cartId).then(
+        (cart) => (cart.completed_at ? 0 : itemCount(cart)),
+        // Carrito inexistente o backend caído: sin número; la próxima action lo recrea.
+        () => 0,
+      )
+    : Promise.resolve(0);
+const wishP =
+  !fixtures && token
+    ? listWishlist(token).catch(() => null) // 401 (token caducado) o error: como sin sesión
+    : Promise.resolve(null);
+const [count, wish] = await Promise.all([countP, wishP]);
+
+const state = wish
+  ? JSON.stringify({
+      a: 1,
+      p: [...new Set(wish.filter((i) => !i.variant_id).map((i) => i.product_id))],
+      v: wish.flatMap((i) => (i.variant_id ? [i.variant_id] : [])),
+      n: wish.length,
+    })
+  : null;
+---
+
+<CartCountBadge count={count} />
+{state && <template data-wish-state set:html={state} />}

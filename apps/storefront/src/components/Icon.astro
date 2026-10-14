@@ -6,8 +6,10 @@ import { ICONS, type IconName } from "$lib/icons";
 interface Props {
   name: IconName;
   class?: string;
+  /** Atributos data-* (p. ej. data-if-auth, Fase L-1: el CSS elige qué icono se ve). */
+  [data: `data-${string}`]: unknown;
 }
-const { name, class: className = "size-6" } = Astro.props;
+const { name, class: className = "size-6", ...rest } = Astro.props;
 ---
 
 <svg
@@ -16,5 +18,6 @@ const { name, class: className = "size-6" } = Astro.props;
   fill="currentColor"
   aria-hidden="true"
   class={className}
+  {...rest}
   set:html={ICONS[name]}
 />

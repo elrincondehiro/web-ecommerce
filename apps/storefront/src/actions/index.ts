@@ -40,6 +40,7 @@ import {
 } from "$lib/medusa";
 import { account } from "./account";
 import { checkout } from "./checkout";
+import { wishlist } from "./wishlist";
 
 const id = z.string().regex(ID_PATTERN);
 const quantity = z.number().int().min(1).max(MAX_QUANTITY);
@@ -116,6 +117,7 @@ async function addWithRetry(
 export const server = {
   account,
   checkout,
+  wishlist,
   cart: {
     add: defineAction({
       accept: "form",

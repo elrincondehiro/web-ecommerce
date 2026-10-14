@@ -131,7 +131,10 @@ const currency = cart.currency_code ?? "eur";
     <ol class="flex flex-col gap-8">
       {/* ── 1. Datos y dirección ─────────────────────────────────────────────── */}
       <li id="datos" class="scroll-mt-4">
-        <section aria-labelledby="datos-titulo" class="rounded-lg border p-4 sm:p-6">
+        <section
+          aria-labelledby="datos-titulo"
+          class="rounded-md border-2 border-line bg-card shadow-sm p-4 sm:p-6"
+        >
           <h2 id="datos-titulo" class="mb-4 text-xl font-semibold">
             1. Datos y dirección de envío
           </h2>
@@ -145,7 +148,7 @@ const currency = cart.currency_code ?? "eur";
                       <a
                         href={`?direccion=${a.id}#datos`}
                         aria-current={proposed?.id === a.id ? "true" : undefined}
-                        class="block rounded-md border-2 border-line px-3 py-1.5 hover:bg-muted aria-[current=true]:border-primary aria-[current=true]:bg-muted"
+                        class="block rounded-md border-2 border-line bg-background px-3 py-1.5 hover:bg-muted aria-[current=true]:border-primary aria-[current=true]:bg-muted"
                       >
                         {a.address_name || a.address_1}
                       </a>
@@ -240,8 +243,9 @@ const currency = cart.currency_code ?? "eur";
         <section
           aria-labelledby="envio-titulo"
           class:list={[
-            "rounded-lg border p-4 sm:p-6",
-            !step1 && "border-dashed text-muted-foreground",
+            "rounded-md border-2 border-line p-4 sm:p-6",
+            // Paso pendiente: sin fondo ni sombra y con borde discontinuo (aún no disponible).
+            step1 ? "bg-card shadow-sm" : "border-dashed text-muted-foreground",
           ]}
         >
           <h2 id="envio-titulo" class="mb-4 text-xl font-semibold">
@@ -262,7 +266,7 @@ const currency = cart.currency_code ?? "eur";
               <fieldset class="flex flex-col gap-2">
                 <legend class="sr-only">Método de envío</legend>
                 {options.map((o, i) => (
-                  <label class="flex cursor-pointer items-center justify-between gap-4 rounded-md border-2 border-line p-3 has-checked:border-primary has-checked:bg-muted">
+                  <label class="flex cursor-pointer items-center justify-between gap-4 rounded-md border-2 border-line bg-background p-3 has-checked:border-primary has-checked:bg-muted">
                     <span class="flex items-center gap-3">
                       <input
                         type="radio"
@@ -294,8 +298,8 @@ const currency = cart.currency_code ?? "eur";
         <section
           aria-labelledby="pago-titulo"
           class:list={[
-            "rounded-lg border p-4 sm:p-6",
-            !step2 && "border-dashed text-muted-foreground",
+            "rounded-md border-2 border-line p-4 sm:p-6",
+            step2 ? "bg-card shadow-sm" : "border-dashed text-muted-foreground",
           ]}
         >
           <h2 id="pago-titulo" class="mb-4 text-xl font-semibold">

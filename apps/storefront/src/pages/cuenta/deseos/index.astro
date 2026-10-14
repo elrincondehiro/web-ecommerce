@@ -1,0 +1,101 @@
+---
+// Mi lista de deseos (Fase L-1): on-demand, `private, no-store`, 0 JS propio (AccountLayout:
+// SiteClient + CartClient, como el resto de la cuenta). Filas en WishlistRows (precio y stock
+// frescos, «Variante: …», cantidad y Añadir, «Quitar»: solo se quita desde aquí, decisión A).
+// Compartir (L-1b): «Crear enlace» (action wishlist.share) → enlace en un campo de solo lectura +
+// «Dejar de compartir» (wishlist.unshare). Con JS, CartClient añade «Copiar enlace» y, si el
+// navegador lo permite, «Compartir…» (Web Share); sin JS se copia del campo.
+// Recibe además los POST de `wishlist.*` desde las páginas estáticas (?_action=…, middleware).
+import { buttonVariants } from "$lib/components/ui/button";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { getWishlist, getWishlistProducts } from "$lib/medusa";
+import { WISHLIST_PATH, sharedWishlistPath, wishlistActionUrl } from "$lib/wishlist";
+import AccountLayout from "../../../components/account/AccountLayout.astro";
+import AccountNotice from "../../../components/account/AccountNotice.astro";
+import WishlistRows from "../../../components/WishlistRows.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+
+const { items, share_token } = await getWishlist(session.token);
+const products = await getWishlistProducts([...new Set(items.map((i) => i.product_id))]);
+const shareUrl = share_token ? new URL(sharedWishlistPath(share_token), Astro.site).href : null;
+const card = "rounded-md border-2 border-line bg-card p-4 shadow-sm sm:p-6";
+---
+
+<AccountLayout title="Mi lista de deseos">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Mi lista de deseos</h1>
+  <AccountNotice code={flash.code} />
+
+  {items.length === 0 ? (
+    <p class="text-muted-foreground">
+      Aún no has guardado ningún producto. Pulsa el corazón de un producto para guardarlo aquí.
+      <a href="/productos/" class="ml-1 underline underline-offset-4">
+        Ver productos
+      </a>
+    </p>
+  ) : (
+    <WishlistRows items={items} products={products} back={WISHLIST_PATH} editable />
+  )}
+
+  {(items.length > 0 || shareUrl) && (
+    <section aria-labelledby="compartir-titulo" class:list={[card, "mt-8 flex flex-col gap-3"]}>
+      <h2 id="compartir-titulo" class="text-xl font-semibold">
+        Compartir mi lista
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Cualquiera con el enlace verá los productos de tu lista, pero no tu nombre ni tu email.
+      </p>
+      {shareUrl ? (
+        <>
+          <label for="enlace-lista" class="text-sm font-medium">
+            Enlace de tu lista
+          </label>
+          <input
+            id="enlace-lista"
+            type="url"
+            readonly
+            value={shareUrl}
+            data-share-url
+            class="h-10 w-full rounded-md border-2 border-line bg-background px-3 text-sm"
+          />
+          <div class="flex flex-wrap items-center gap-2">
+            {/* Con JS (CartClient): copiar y Web Share; sin JS, ocultos (se copia del campo). */}
+            <button
+              type="button"
+              data-share-copy
+              hidden
+              class={buttonVariants({ variant: "default" })}
+            >
+              Copiar enlace
+            </button>
+            <button
+              type="button"
+              data-share-native
+              hidden
+              class={buttonVariants({ variant: "outline" })}
+            >
+              Compartir…
+            </button>
+            <form method="post" action={wishlistActionUrl("wishlist.unshare")} class="ml-auto">
+              <input type="hidden" name="back" value={WISHLIST_PATH} />
+              <button type="submit" class={buttonVariants({ variant: "ghost" })}>
+                Dejar de compartir
+              </button>
+            </form>
+          </div>
+        </>
+      ) : (
+        <form method="post" action={wishlistActionUrl("wishlist.share")}>
+          <input type="hidden" name="back" value={WISHLIST_PATH} />
+          <button type="submit" class={buttonVariants({ variant: "outline" })}>
+            Crear enlace para compartir
+          </button>
+        </form>
+      )}
+    </section>
+  )}
+</AccountLayout>

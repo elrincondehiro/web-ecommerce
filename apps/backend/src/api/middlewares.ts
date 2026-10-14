@@ -7,6 +7,7 @@ import {
 import { StoreDeletionRequestBody } from "./store/customers/me/deletion-request/route";
 import { StoreCorreasQuery } from "./store/correas/disponibilidad/route";
 import { StoreOfertasQuery } from "./store/ofertas/route";
+import { StoreAddWishlistItemBody } from "./store/customers/me/wishlist/items/route";
 
 /**
  * Fuente: docs.medusajs.com/llms-full.txt ("Store Search API Route").
@@ -37,6 +38,12 @@ export default defineMiddlewares({
       matcher: "/store/customers/me/deletion-request",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(StoreDeletionRequestBody)],
+    },
+    // Lista de deseos (Fase L-1). La autenticación la pone Medusa (`/store/customers/me*`).
+    {
+      matcher: "/store/customers/me/wishlist/items",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreAddWishlistItemBody)],
     },
   ],
 });

@@ -323,6 +323,23 @@
   display: none;
 }
 
+/*
+ * Lista de deseos (Fase L-1). Estado por usuario sobre HTML estático: lo marca CartClient con los
+ * datos de la island de la cabecera (HeaderState). Sin JS o sin sesión, todo como en el build.
+ *   - [data-wish-box][data-saved]: ese producto/variante está en la lista → en vez del botón ♡
+ *     (guardar) se ve el enlace ♥ rojo a /cuenta/deseos/ (no quita: decisión A).
+ *   - <html data-auth>: con sesión → icono de cuenta relleno. <html data-wish-any>: hay algo
+ *     guardado → ♡ de la cabecera relleno.
+ */
+[data-wish-box]:not([data-saved]) [data-if-saved],
+[data-wish-box][data-saved] [data-if-unsaved],
+:root:not([data-auth]) [data-if-auth],
+:root[data-auth] [data-if-anon],
+:root:not([data-wish-any]) [data-if-wish-any],
+:root[data-wish-any] [data-if-wish-none] {
+  display: none;
+}
+
 /* Contador: animación al cambiar (clase "bump" que pone el script del carrito). */
 .bump {
   animation: cart-bump 300ms ease-out;
@@ -354,16 +371,31 @@
   border-radius: var(--radius-md);
   padding: 0.625rem 0.75rem 0.625rem 1rem;
   font-size: 0.875rem;
-  background: var(--foreground);
-  color: var(--background);
+  /* Claro (L-1): fondo de tarjeta + borde y sombra de marca (con fondo oscuro, borde y sombra
+     del mismo color no se veían). Oscuro: como estaba (fondo claro sobre la página oscura). */
+  background: var(--card);
+  color: var(--card-foreground);
   border: 2px solid var(--line);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
   transition:
     opacity 200ms ease,
     translate 200ms ease;
   @starting-style {
     opacity: 0;
     translate: 0 0.5rem;
+  }
+}
+/* Oscuro: como antes de L-1 (fondo claro sobre la página oscura: ahí sí se ve). */
+[data-theme="dark"] .toast:not(.toast-error) {
+  background: var(--foreground);
+  color: var(--background);
+  box-shadow: var(--shadow);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .toast:not(.toast-error) {
+    background: var(--foreground);
+    color: var(--background);
+    box-shadow: var(--shadow);
   }
 }
 .toast-error {
@@ -731,8 +763,18 @@
   background: var(--background);
   transition: translate 200ms ease;
 }
+/* Al bajar (Fase L-1):
+   - Móvil: queda solo la búsqueda (2.ª fila) → se sube solo la 1.ª (py-2 + botones de 2,5 rem
+     = 3 rem). Idea del usuario: buscar siempre a mano.
+   - Escritorio (≥ lg): la cabecera NO se esconde (hay sitio; probado dejar solo la búsqueda y
+     el usuario prefirió fija). La barra de anuncios no es sticky: se va al bajar y vuelve arriba. */
 .site-header[data-hide] {
-  translate: 0 -100%;
+  translate: 0 -3rem;
+}
+@media (min-width: 64rem) {
+  .site-header[data-hide] {
+    translate: none;
+  }
 }
 /* Enlaces del menú principal (escritorio). */
 .nav-link {

@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 14-oct-2026 · **Fase E cerrada** (E-1 #48, E-0 revertida #49, L-1 #50, E-2 correa a medida en `feat/correas`, PR pendiente de merge). Estado en **§6.10**. **Siguiente: análisis de lista de deseos y programa de puntos (handover §6.11)**; después, fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 14-oct-2026 · **Fase E cerrada** (#48-#51). **Fase L (lista de deseos y puntos) en curso** en `feat/faseL-deseos-puntos`: análisis cerrado, decisiones en [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md) §0.1; L-0 (spike) ✅, el canje como promoción funciona (IVA y reparto correctos); L-1 (lista de deseos) ✅ (doc §6.2: módulo `wishlist` + migración, `/cuenta/deseos/`, ♥ rojo si está guardado, ♡ sobre la imagen de las tarjetas y junto al título de la ficha, ♡ e icono de cuenta con estado en la cabecera (island `HeaderState`), tema al menú en móvil; `CartClient` 1 666 B); L-1b (compartir por enlace) ✅ (doc §6.3: token aleatorio revocable, `/deseos/<token>/` sin datos personales); siguiente, L-2 (puntos, backend). Varias subfases en la misma rama y un solo PR. Después, fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -27,7 +27,8 @@
 | 10 CD + imágenes Docker                     | ✅     | [fase10.md](./fases/fase10.md)                                       |
 | C Importador de catálogo (CSV)              | ✅     | [faseC-catalogo.md](./fases/faseC-catalogo.md)                       |
 | S Catálogo en el storefront                 | ✅     | [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) |
-| E URL, descatalogados y especiales          | 🚧     | [faseE-urls-correas.md](./fases/faseE-urls-correas.md)               |
+| E URL, descatalogados y especiales          | ✅     | [faseE-urls-correas.md](./fases/faseE-urls-correas.md)               |
+| L Lista de deseos y puntos                  | 🚧     | [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md)             |
 
 Roadmap completo y tiempos: README §13.
 
@@ -406,6 +407,8 @@ Doc: [faseE-urls-correas.md](./fases/faseE-urls-correas.md).
 - **BD local**: catálogo mock con 6 descatalogados, categoría `correas-perro` y las 6 correas de la plantilla (`correas:sync catalog/plantilla/correas`).
 
 ## 6.11 Handover → análisis: lista de deseos y programa de puntos
+
+> ✅ **Análisis hecho**: [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md). Las decisiones (§0.1) mandan sobre lo de abajo: puntos solo web, sin migrar, sin caducidad, canje como **promoción** (P-B, sin plugin).
 
 > **Solo análisis y propuesta**, sin código (REGLA Nº 1). Al empezar, crear `docs/fases/faseL-deseos-puntos.md` (nombre provisional) desde [PLANTILLA.md](./fases/PLANTILLA.md). Consultar antes: context7 `/medusajs/medusa` (guía _wishlist_, Loyalty Plugin / Store Credit), astro-docs (actions, server islands) y, para la parte legal, preparar preguntas para la gestoría.
 > Requisito previo: el PR de la Fase E (`feat/correas`) mergeado en `main`. Rama nueva desde `main`.

@@ -9,6 +9,7 @@ describe("isPrivatePath", () => {
       "/checkout/",
       "/checkout/completar/",
       "/pedido/order_1/",
+      "/deseos/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/",
       "/cuenta",
       "/cuenta/",
       "/cuenta/entrar/",
@@ -27,7 +28,7 @@ describe("isPrivatePath", () => {
       "/buscar/",
       "/cuentas-claras/",
       "/carritos/",
-      "/_server-islands/CartCount/",
+      "/_server-islands/HeaderState/",
     ]) {
       expect(isPrivatePath(p), p).toBe(false);
     }

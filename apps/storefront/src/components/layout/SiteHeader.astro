@@ -9,12 +9,21 @@
 // navegador gestiona aria-expanded y devuelve el foco). Fuente: MDN (Popover API, anchor
 // positioning: el invocador es el ancla implícita).
 // Ocultar al bajar / mostrar al subir (D1): `data-hide` lo pone SiteClient; sin JS, la cabecera
-// es fija (sticky) y siempre visible.
+// es fija (sticky) y siempre visible. Fase L-1: en móvil, al bajar queda visible SOLO la búsqueda
+// (su fila); en escritorio la cabecera no se esconde. CSS en global.css (.site-header).
 // "Mi cuenta" (fase 9): enlace FIJO a /cuenta/ (igual para todos: la cabecera sigue estática y
 // cacheable). Sin sesión, /cuenta/ redirige a "Entrar".
+// Fase L-1: ♡ a la lista de deseos (sin sesión, /cuenta/deseos/ manda a «Entrar»). Estado por
+// usuario (icono de cuenta relleno con sesión, ♡ relleno si hay algo guardado): en páginas
+// estáticas lo trae la island HeaderState (con el contador del carrito) y lo aplica CartClient
+// (`<html data-auth / data-wish-any>`, CSS en global.css); en carrito/checkout/pedido (on-demand,
+// sin CartClient) sale del servidor. En móvil el selector de tema va en el menú (no cabía).
 import Icon from "../Icon.astro";
+import HeartFilled from "../HeartFilled.astro";
 import CartCountBadge from "../CartCountBadge.astro";
-import CartCount from "../server/CartCount.astro";
+import HeaderState from "../server/HeaderState.astro";
+import { WISHLIST_PATH } from "$lib/wishlist";
+import { listWishlist } from "$lib/medusa";
 import { CART_PATH } from "$lib/cart";
 import { categoryHref } from "$lib/categories";
 import { getShopTree } from "$lib/shop";
@@ -46,6 +55,15 @@ const mainLinks = [
 ];
 const aria = (href: string) => (current.startsWith(href) ? "page" : undefined);
 const iconBtn = "header-hover inline-flex size-10 items-center justify-center rounded-md";
+// Páginas on-demand con el carrito ya calculado (sin island ni CartClient): estado del servidor.
+const token = Astro.isPrerendered ? null : Astro.locals.customerToken;
+const server =
+  cartCount !== undefined
+    ? {
+        auth: Boolean(token),
+        wishAny: token ? ((await listWishlist(token).catch(() => [])).length ?? 0) > 0 : false,
+      }
+    : null;
 ---
 
 <header class="site-header" data-site-header>
@@ -172,10 +190,11 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
 
     <div class="-mr-2 flex items-center justify-self-end">
       {/* Selector de tema: sin JS no hace nada, así que nace oculto y SiteClient lo muestra. */}
+      {/* En móvil (< lg) va en el menú: con el ♡ no cabía. */}
       <button
         type="button"
         data-theme-toggle
-        class={iconBtn}
+        class:list={[iconBtn, "max-lg:hidden"]}
         aria-label="Cambiar a modo oscuro"
         hidden
       >
@@ -183,12 +202,44 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
         <Icon name="sun" class="hidden size-6 dark:block" />
       </button>
       <a
+        href={WISHLIST_PATH}
+        class={iconBtn}
+        aria-label="Mi lista de deseos"
+        aria-current={current.startsWith(WISHLIST_PATH) ? "page" : undefined}
+      >
+        {/* Con algo guardado: ♥ rojo con contorno (resalta más que el relleno del icono de
+            cuenta, a propósito). */}
+        {server ? (
+          server.wishAny ? (
+            <HeartFilled />
+          ) : (
+            <Icon name="heart" />
+          )
+        ) : (
+          <>
+            <Icon name="heart" class="size-6" data-if-wish-none />
+            <HeartFilled data-if-wish-any />
+          </>
+        )}
+      </a>
+      <a
         href={ACCOUNT_PATH}
         class={iconBtn}
         aria-label="Mi cuenta"
-        aria-current={current.startsWith(ACCOUNT_PATH) ? "page" : undefined}
+        aria-current={
+          current.startsWith(ACCOUNT_PATH) && !current.startsWith(WISHLIST_PATH)
+            ? "page"
+            : undefined
+        }
       >
-        <Icon name="user" />
+        {server ? (
+          <Icon name={server.auth ? "user-fill" : "user"} />
+        ) : (
+          <>
+            <Icon name="user" class="size-6" data-if-anon />
+            <Icon name="user-fill" class="size-6" data-if-auth />
+          </>
+        )}
       </a>
       {/* Carrito: enlace a /carrito/ (sin JS); con JS, el script del carrito abre el panel.
           Contador: server island en páginas estáticas. Nombre accesible = texto oculto
@@ -205,9 +256,9 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
         {cartCount !== undefined ? (
           <CartCountBadge count={cartCount} />
         ) : (
-          <CartCount server:defer>
+          <HeaderState server:defer>
             <CartCountBadge slot="fallback" />
-          </CartCount>
+          </HeaderState>
         )}
       </a>
     </div>
@@ -285,6 +336,30 @@ const iconBtn = "header-hover inline-flex size-10 items-center justify-center ro
         >
           Mi cuenta
         </a>
+      </li>
+      <li>
+        <a
+          href={WISHLIST_PATH}
+          class="mobile-menu__link font-semibold"
+          aria-current={aria(WISHLIST_PATH)}
+        >
+          Mi lista de deseos
+        </a>
+      </li>
+      <li>
+        {/* Selector de tema en móvil (oculto sin JS, como el de la cabecera; SiteClient). */}
+        <button
+          type="button"
+          data-theme-toggle
+          class="mobile-menu__link flex w-full items-center gap-2 text-left font-semibold"
+          aria-label="Cambiar a modo oscuro"
+          hidden
+        >
+          <Icon name="moon" class="size-5 dark:hidden" />
+          <Icon name="sun" class="hidden size-5 dark:block" />
+          <span class="dark:hidden">Modo oscuro</span>
+          <span class="hidden dark:inline">Modo claro</span>
+        </button>
       </li>
     </ul>
   </div>

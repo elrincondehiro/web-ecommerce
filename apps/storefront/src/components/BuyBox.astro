@@ -10,9 +10,16 @@
 import { Badge } from "$lib/components/ui/badge";
 import AddToCart from "./AddToCart.astro";
 import { commonRule, formatGrams } from "$lib/bulk";
-import { discountPercent, getProductPricing, minimumNote, type StoreProduct } from "$lib/catalog";
+import {
+  discountPercent,
+  getProductPricing,
+  minimumNote,
+  preselectedVariantId,
+  type StoreProduct,
+} from "$lib/catalog";
 import { stockLeftText } from "$lib/live-sync";
 import Price from "./Price.astro";
+import { BUY_FORM_ID } from "$lib/wishlist";
 
 interface Props {
   product: StoreProduct;
@@ -23,7 +30,7 @@ const multi = pricing.variants.length > 1;
 const currency = pricing.currencyCode;
 const back = `/producto/${product.handle}/`;
 // Preselección: la primera variante con stock (en el build) o, si no hay, la primera.
-const preselected = (pricing.variants.find((v) => v.inStock) ?? pricing.variants[0])?.id;
+const preselected = preselectedVariantId(pricing);
 const bulk = pricing.isBulk
   ? commonRule(pricing.variants.flatMap((v) => (v.bulk ? [v.bulk] : [])))
   : null;
@@ -74,6 +81,7 @@ const singleLeft = single ? stockLeftText(single) : null;
       class="flex flex-col gap-4"
       bulk={bulk}
       unitKey={multi ? "" : product.id}
+      id={BUY_FORM_ID}
     >
       {multi && (
         <fieldset slot="before">

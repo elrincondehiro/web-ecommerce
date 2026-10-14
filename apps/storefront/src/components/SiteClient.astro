@@ -86,7 +86,8 @@
           if (Math.abs(y - lastY) > 8) {
             const keep =
               y < header.offsetHeight * 2 ||
-              header.contains(document.activeElement) ||
+              (header.contains(document.activeElement) &&
+                !document.activeElement!.closest("[role=search]")) ||
               document.querySelector(":popover-open");
             header.toggleAttribute("data-hide", down && !keep);
             lastY = y;
@@ -96,23 +97,28 @@
       },
       { passive: true },
     );
-    header.addEventListener("focusin", () => header.removeAttribute("data-hide"));
+    // Con la cabecera recogida, enfocar la búsqueda (lo único visible) no la despliega: si no,
+    // el campo se movería bajo el dedo (Fase L-1).
+    header.addEventListener("focusin", (e) => {
+      if (!(e.target as Element).closest("[role=search]")) header.removeAttribute("data-hide");
+    });
   }
 
-  const themeBtn = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
-  if (themeBtn) {
-    const root = document.documentElement;
-    const isDark = () =>
-      (root.dataset.theme ??
-        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
-    const label = () =>
-      themeBtn.setAttribute(
-        "aria-label",
-        isDark() ? "Cambiar a modo claro" : "Cambiar a modo oscuro",
-      );
-    label();
-    themeBtn.hidden = false;
-    themeBtn.addEventListener("click", () => {
+  // Dos selectores (Fase L-1): cabecera en escritorio y menú en móvil.
+  const themeBtns = document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]");
+  const root = document.documentElement;
+  const isDark = () =>
+    (root.dataset.theme ??
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+  const label = () => {
+    for (const b of themeBtns) {
+      b.setAttribute("aria-label", isDark() ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+      b.hidden = false;
+    }
+  };
+  label();
+  for (const b of themeBtns)
+    b.addEventListener("click", () => {
       const next = isDark() ? "light" : "dark";
       root.dataset.theme = next;
       try {
@@ -122,7 +128,6 @@
       }
       label();
     });
-  }
 
   const input = document.getElementById("buscar-q") as HTMLInputElement | null;
   const list = document.getElementById("buscar-sug");

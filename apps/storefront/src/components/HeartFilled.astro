@@ -1,0 +1,19 @@
+---
+// ♥ «guardado» de la lista de deseos (Fase L-1): relleno rojo (--destructive) + el contorno del
+// corazón de trazo (mismo icono de Phosphor) en el color de línea de la web, para que el rojo
+// destaque sobre cualquier fondo. Dos <svg> superpuestos, decorativos (el nombre accesible lo da
+// el enlace que lo contiene).
+import Icon from "./Icon.astro";
+
+interface Props {
+  class?: string;
+  /** Atributos data-* (data-if-wish-any en la cabecera). */
+  [data: `data-${string}`]: unknown;
+}
+const { class: size = "size-6", ...rest } = Astro.props;
+---
+
+<span class={`inline-grid ${size}`} {...rest}>
+  <Icon name="heart-fill" class={`col-start-1 row-start-1 text-destructive ${size}`} />
+  <Icon name="heart" class={`col-start-1 row-start-1 text-line ${size}`} />
+</span>

@@ -670,3 +670,105 @@ export async function requestAccountDeletion(token: string, reason: string): Pro
     body: reason ? { reason } : {},
   });
 }
+
+// ── Lista de deseos (Fase L-1): rutas propias del backend, siempre con el token del cliente. ──
+
+export interface WishlistItem {
+  id: string;
+  product_id: string;
+  variant_id: string | null;
+  created_at: string;
+}
+
+/** Productos guardados del cliente, del más reciente al más antiguo (solo ids). */
+export async function listWishlist(token: string): Promise<WishlistItem[]> {
+  return (await getWishlist(token)).items;
+}
+
+/** Lista del cliente + token del enlace público si está compartida (L-1b). */
+export async function getWishlist(
+  token: string,
+): Promise<{ items: WishlistItem[]; share_token: string | null }> {
+  return cartSdk().client.fetch<{ items: WishlistItem[]; share_token: string | null }>(
+    "/store/customers/me/wishlist",
+    { headers: bearer(token) },
+  );
+}
+
+/** Compartir la lista (L-1b): token del enlace público (el mismo si ya estaba compartida). */
+export async function shareWishlist(token: string): Promise<string> {
+  const { token: share } = await cartSdk().client.fetch<{ token: string }>(
+    "/store/customers/me/wishlist/share",
+    { method: "POST", headers: bearer(token) },
+  );
+  return share;
+}
+
+/** Dejar de compartir (L-1b): el enlace anterior deja de funcionar. */
+export async function unshareWishlist(token: string): Promise<void> {
+  await cartSdk().client.fetch("/store/customers/me/wishlist/share", {
+    method: "DELETE",
+    headers: bearer(token),
+  });
+}
+
+/**
+ * Lista compartida (L-1b, pública): solo productos y variantes; null si el enlace no existe o se
+ * revocó (404 del backend).
+ */
+export async function getSharedWishlist(
+  shareToken: string,
+): Promise<{ product_id: string; variant_id: string | null }[] | null> {
+  try {
+    const { items } = await cartSdk().client.fetch<{
+      items: { product_id: string; variant_id: string | null }[];
+    }>(`/store/wishlists/${encodeURIComponent(shareToken)}`);
+    return items;
+  } catch (err) {
+    if ((err as { status?: unknown } | null)?.status === 404) return null;
+    throw err;
+  }
+}
+
+/** Guarda un producto (idempotente): `created: false` si ya estaba. */
+export async function addToWishlist(
+  token: string,
+  productId: string,
+  variantId: string | null,
+): Promise<{ created: boolean }> {
+  return cartSdk().client.fetch<{ created: boolean }>("/store/customers/me/wishlist/items", {
+    method: "POST",
+    headers: bearer(token),
+    body: variantId ? { product_id: productId, variant_id: variantId } : { product_id: productId },
+  });
+}
+
+/** Quita un producto guardado (si no es del cliente, `deleted: false`). */
+export async function removeFromWishlist(token: string, itemId: string): Promise<boolean> {
+  const { deleted } = await cartSdk().client.fetch<{ deleted: boolean }>(
+    `/store/customers/me/wishlist/items/${encodeURIComponent(itemId)}`,
+    { method: "DELETE", headers: bearer(token) },
+  );
+  return deleted;
+}
+
+const WISHLIST_PRODUCT_FIELDS =
+  "id,handle,title,subtitle,thumbnail,metadata,*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity";
+
+/**
+ * Productos de la lista con precio y stock actuales (página on-demand `/cuenta/deseos/`). Solo
+ * devuelve los publicados del canal de la tienda: un producto despublicado desaparece de la lista
+ * (la entrada sigue en la BD y vuelve si se publica otra vez).
+ */
+export async function getWishlistProducts(ids: string[]): Promise<StoreProduct[]> {
+  if (!ids.length) return [];
+  const region = await getRegionES();
+  const { products } = await cartSdk().store.product.list({
+    id: ids,
+    limit: ids.length,
+    region_id: region.id,
+    country_code: COUNTRY_CODE,
+    fields: WISHLIST_PRODUCT_FIELDS,
+  });
+  return products;
+}

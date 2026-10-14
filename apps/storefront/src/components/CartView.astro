@@ -49,7 +49,16 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
 ) : (
   <div class:list={isPage ? "flex flex-col gap-6" : "flex min-h-0 flex-1 flex-col"} data-cart-view>
     <div class:list={[!isPage && "flex-1 overflow-y-auto overscroll-contain px-4 pb-4"]}>
-      <ul class="divide-y border-y">
+      {/* Página: tarjeta con el marco de la web (Fase L-1, como checkout y cuenta); panel: el
+          propio panel ya es el marco, solo separadores. */}
+      <ul
+        class:list={[
+          "divide-y-2 divide-line",
+          isPage
+            ? "rounded-md border-2 border-line bg-card px-4 shadow-sm"
+            : "border-y-2 border-line",
+        ]}
+      >
         {items.map((item) => {
           const href = item.product_handle ? `/producto/${item.product_handle}/` : undefined;
           const qtyId = `qty-${item.id}`;
@@ -131,7 +140,9 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
                   </form>
                 )}
                 {isPage && (
-                  <div class="mt-2 flex items-end gap-2">
+                  // flex-wrap: en móvil, dentro de la tarjeta, «Quitar» baja de línea en vez de
+                  // quedar bajo el precio (Fase L-1).
+                  <div class="mt-2 flex flex-wrap items-end gap-2">
                     <form
                       method="post"
                       action={actionUrl("cart.update")}
@@ -200,7 +211,7 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
       <dl
         class:list={[
           "ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm tabular-nums",
-          !isPage && "mt-4",
+          isPage ? "mt-6" : "mt-4",
         ]}
       >
         <dt class="text-muted-foreground">Artículos</dt>

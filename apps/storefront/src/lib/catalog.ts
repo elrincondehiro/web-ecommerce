@@ -193,6 +193,11 @@ export function getProductPricing(product: StoreProduct): ProductPricing {
   };
 }
 
+/** Variante preseleccionada en la ficha: la primera con stock (en el build) o, si no hay, la primera. */
+export function preselectedVariantId(pricing: ProductPricing): string | undefined {
+  return (pricing.variants.find((v) => v.inStock) ?? pricing.variants[0])?.id;
+}
+
 /** «mínimo 100 g» del precio «Desde» de un producto a granel (variante más barata), o null. */
 export function minimumNote(pricing: ProductPricing): string | null {
   const v = pricing.variants.find((x) => x.bulk && x.amount === pricing.fromAmount);

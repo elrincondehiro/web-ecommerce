@@ -10,6 +10,7 @@
 //   `name="preset"` que añaden esa cantidad directamente (igual con y sin JS). La action valida
 //   paso, mínimo y máximo con la regla de la variante (servidor). Con `bulkLiveTotal`, el total
 //   en vivo lo calcula CartClient con el €/kg de la página ([data-unit], corregido por LiveSync).
+// - `id` (Fase L-1): el ♡ de la ficha (WishButton `form`) envía este formulario a la lista.
 import { buttonVariants } from "$lib/components/ui/button";
 import { BULK_MAX_G, formatGrams, quickGrams, type BulkRule } from "$lib/bulk";
 import { MAX_QUANTITY, actionUrl } from "$lib/cart";
@@ -29,6 +30,8 @@ interface Props {
   bulk?: BulkRule | null | undefined;
   /** Granel: id de la clave de LiveSync cuyo [data-unit] tiene el €/kg (vacío = variante elegida). */
   unitKey?: string | undefined;
+  /** Id del formulario (ficha: lo usa el ♡ del título, WishButton `form`). */
+  id?: string | undefined;
 }
 const {
   variantId,
@@ -39,12 +42,13 @@ const {
   class: className = "",
   bulk,
   unitKey = "",
+  id,
 } = Astro.props;
 const qtyId = `qty-${productId}`;
 const quick = bulk ? quickGrams(bulk) : [];
 ---
 
-<form method="post" action={actionUrl("cart.add")} data-cart-form class={className}>
+<form method="post" action={actionUrl("cart.add")} data-cart-form class={className} id={id}>
   <input type="hidden" name="back" value={back} />
   {variantId && <input type="hidden" name="variant_id" value={variantId} />}
   <slot name="before" />

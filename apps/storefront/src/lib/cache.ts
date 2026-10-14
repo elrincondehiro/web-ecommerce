@@ -2,7 +2,15 @@
 // Rutas por usuario: nunca en una caché compartida (Cloudflare, Caddy), ni las redirecciones.
 
 /** Prefijos de rutas cuya respuesta depende del usuario (cookies). */
-export const PRIVATE_PREFIXES = ["/carrito/", "/checkout/", "/pedido/", "/cuenta/", "/_actions/"];
+// `/deseos/` (L-1b): lista compartida, la URL lleva un token (no se cachea ni se comparte).
+export const PRIVATE_PREFIXES = [
+  "/carrito/",
+  "/checkout/",
+  "/pedido/",
+  "/cuenta/",
+  "/deseos/",
+  "/_actions/",
+];
 
 /** ¿La respuesta de esta ruta es por usuario? (`/cuenta` sin barra también). */
 export function isPrivatePath(pathname: string): boolean {

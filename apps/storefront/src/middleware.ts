@@ -11,6 +11,9 @@
 // Cuenta (fase 9): `locals.customerToken` = JWT de la cookie `customer_token` si es de un cliente
 // creado y no ha caducado (sin red: la firma la comprueba Medusa). Las actions `account.*`
 // responden siempre 303 (PRG) al destino que devuelvan, con el aviso en la cookie flash.
+// Lista de deseos (Fase L-1): `wishlist.*` como el carrito (303 a `back` + `#deseos-<código>` o
+// JSON). Sin sesión: 303 a «Entrar» con el aviso en la cookie flash de la cuenta (o, con JS,
+// `login` en el JSON y CartClient navega).
 import type { APIContext, MiddlewareNext } from "astro";
 import { getActionContext } from "astro:actions";
 import { COOKIE_SECURE } from "astro:env/server";
@@ -27,6 +30,7 @@ import {
 } from "$lib/account";
 import { CHECKOUT_PATH, FLASH_COOKIE, encodeFlash, flashCookieOptions } from "$lib/checkout";
 import { isPrivatePath } from "$lib/cache";
+import { WISH_NOTICES, isWishError, wishRedirectTarget, type WishResult } from "$lib/wishlist";
 import {
   isErrorNotice,
   noticeMessage,
@@ -100,6 +104,38 @@ async function handle(context: APIContext, next: MiddlewareNext): Promise<Respon
     }
     const target = data.step === "carrito" ? "/carrito/" : `${CHECKOUT_PATH}#${data.step}`;
     const response = context.redirect(target, 303);
+    response.headers.set("Cache-Control", NO_STORE);
+    return response;
+  }
+
+  if (action.name.startsWith("wishlist.")) {
+    const result = await action.handler();
+    const data: WishResult = result.error ? { code: "wish_error" } : (result.data as WishResult);
+    if (data.login) {
+      context.cookies.set(
+        ACCOUNT_FLASH_COOKIE,
+        encodeAccountFlash({ code: "wish_login" }),
+        accountFlashCookieOptions(COOKIE_SECURE),
+      );
+    }
+    if (context.request.headers.get("accept")?.includes("application/json")) {
+      return Response.json(
+        {
+          code: data.code,
+          msg: WISH_NOTICES[data.code],
+          kind: isWishError(data.code) ? "error" : "ok",
+          login: data.login ?? null,
+        },
+        { status: isWishError(data.code) ? 422 : 200, headers: { "Cache-Control": NO_STORE } },
+      );
+    }
+    if (data.login) {
+      const response = context.redirect(data.login, 303);
+      response.headers.set("Cache-Control", NO_STORE);
+      return response;
+    }
+    const form = await context.request.formData().catch(() => null);
+    const response = context.redirect(wishRedirectTarget(form?.get("back"), data.code), 303);
     response.headers.set("Cache-Control", NO_STORE);
     return response;
   }

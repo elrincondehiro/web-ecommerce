@@ -38,7 +38,9 @@ import {
   type AccountFlash,
 } from "$lib/account";
 import { CART_COOKIE, cartCookieOptions, isValidId } from "$lib/cart";
+import { WISH_PENDING_COOKIE, decodeWishPending } from "$lib/wishlist";
 import {
+  addToWishlist,
   confirmEmailVerification,
   createAddress,
   createCustomer,
@@ -128,6 +130,23 @@ async function adoptCart(ctx: ActionAPIContext, token: string): Promise<void> {
   }
 }
 
+/**
+ * Producto que el cliente quiso guardar sin sesión (Fase L-1, cookie `wish_pending` de 10 min):
+ * se guarda al entrar y se borra la cookie. Si falla, no impide entrar.
+ */
+async function savePendingWish(ctx: ActionAPIContext, token: string): Promise<void> {
+  const raw = ctx.cookies.get(WISH_PENDING_COOKIE)?.value;
+  if (raw === undefined) return;
+  ctx.cookies.delete(WISH_PENDING_COOKIE, { path: "/" });
+  const target = decodeWishPending(raw);
+  if (!target) return;
+  try {
+    await addToWishlist(token, target.product_id, target.variant_id);
+  } catch (err) {
+    logError(ctx, "deseo pendiente al entrar", err);
+  }
+}
+
 export const account = {
   register: defineAction({
     accept: "form",
@@ -183,7 +202,7 @@ export const account = {
         }
         const token = await ensureCustomer(login.token, email, password);
         setSession(ctx, token);
-        await adoptCart(ctx, token);
+        await Promise.all([adoptCart(ctx, token), savePendingWish(ctx, token)]);
         return { to: next };
       } catch (err) {
         if (isUnauthorized(err)) {

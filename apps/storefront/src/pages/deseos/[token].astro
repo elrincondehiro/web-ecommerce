@@ -1,0 +1,39 @@
+---
+// Lista de deseos compartida (Fase L-1b): pública por enlace, on-demand, `private, no-store`
+// (la URL lleva el token; lib/cache.ts) y `noindex`. `Referrer-Policy: same-origin`: el token
+// no sale a otros sitios al pulsar un enlace. Solo productos y variantes (G8: sin nombre ni email
+// del dueño; título genérico). Se puede añadir al carrito (para regalar, S3); sin «Quitar».
+// Token mal formado, desconocido o revocado → 404. JS: el común (SiteClient + CartClient).
+import { getSharedWishlist, getWishlistProducts } from "$lib/medusa";
+import { SHARE_TOKEN_RE, sharedWishlistPath } from "$lib/wishlist";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import WishlistRows from "../../components/WishlistRows.astro";
+
+export const prerender = false;
+
+Astro.response.headers.set("Cache-Control", "private, no-store");
+Astro.response.headers.set("Referrer-Policy", "same-origin");
+const { token = "" } = Astro.params;
+if (!SHARE_TOKEN_RE.test(token)) return new Response(null, { status: 404 });
+const shared = await getSharedWishlist(token);
+if (!shared) return new Response(null, { status: 404 });
+const items = shared.map((i, n) => ({ id: `s${n}`, ...i }));
+const products = await getWishlistProducts([...new Set(items.map((i) => i.product_id))]);
+---
+
+<BaseLayout title="Lista de deseos" description="Una lista de deseos de El Rincón de Hiro." noindex>
+  <h1 class="mb-2 text-3xl font-semibold tracking-tight">Lista de deseos</h1>
+  <p class="mb-6 text-muted-foreground">
+    Alguien ha compartido contigo su lista de deseos. Puedes añadir sus productos a tu carrito.
+  </p>
+  {items.length === 0 ? (
+    <p class="text-muted-foreground">
+      Esta lista está vacía por ahora.
+      <a href="/productos/" class="ml-1 underline underline-offset-4">
+        Ver productos
+      </a>
+    </p>
+  ) : (
+    <WishlistRows items={items} products={products} back={sharedWishlistPath(token)} />
+  )}
+</BaseLayout>

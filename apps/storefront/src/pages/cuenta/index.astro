@@ -1,5 +1,6 @@
 ---
 // Mi cuenta: resumen (fase 9). On-demand, noindex, 0 JS. Sin sesión → "Entrar".
+import { WISHLIST_PATH } from "$lib/wishlist";
 import { buttonVariants } from "$lib/components/ui/button";
 import {
   ADDRESSES_PATH,
@@ -26,7 +27,7 @@ const last = orders[0];
 const address = defaultAddress(customer.addresses);
 const name = customer.first_name?.trim();
 const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" });
-const card = "flex flex-col gap-2 rounded-lg border p-4";
+const card = "flex flex-col gap-2 rounded-md border-2 border-line bg-card shadow-sm p-4";
 ---
 
 <AccountLayout title="Mi cuenta">
@@ -84,6 +85,18 @@ const card = "flex flex-col gap-2 rounded-lg border p-4";
       )}
       <a href={ADDRESSES_PATH} class="mt-auto text-sm underline underline-offset-4">
         Gestionar direcciones
+      </a>
+    </section>
+
+    <section aria-labelledby="resumen-deseos" class={card}>
+      <h2 id="resumen-deseos" class="text-lg font-semibold">
+        Lista de deseos
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        Los productos que has guardado con el corazón, con su precio y stock de ahora.
+      </p>
+      <a href={WISHLIST_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Ver mi lista
       </a>
     </section>
 

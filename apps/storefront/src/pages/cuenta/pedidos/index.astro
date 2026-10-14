@@ -38,7 +38,7 @@ const pageUrl = (n: number) => (n === 1 ? ORDERS_PATH : `${ORDERS_PATH}?pagina=$
       </a>
     </p>
   ) : (
-    <ul class="flex flex-col divide-y rounded-lg border">
+    <ul class="flex flex-col divide-y-2 divide-line rounded-md border-2 border-line bg-card shadow-sm">
       {orders.map((o) => (
         <li>
           <a

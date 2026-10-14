@@ -1,6 +1,13 @@
 ---
 import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
-import { isDiscontinued, metaDescription, replacementHandle } from "$lib/catalog";
+import {
+  getProductPricing,
+  isDiscontinued,
+  metaDescription,
+  preselectedVariantId,
+  replacementHandle,
+} from "$lib/catalog";
+import { BUY_FORM_ID } from "$lib/wishlist";
 import { buttonVariants } from "$lib/components/ui/button";
 import { categoryHref, deepestCategory } from "$lib/categories";
 import { getEntry } from "astro:content";
@@ -16,6 +23,7 @@ import ColorPicker from "../../components/correa/ColorPicker.astro";
 import CorreaBuilder from "../../components/correa/CorreaBuilder.astro";
 import ProductGallery from "../../components/ProductGallery.astro";
 import LiveSync from "../../components/LiveSync.astro";
+import WishButton from "../../components/WishButton.astro";
 
 // Todas las fichas, también las descatalogadas (Fase E, opción i): su URL sigue respondiendo.
 export const getStaticPaths = (async () => {
@@ -56,6 +64,10 @@ const gallery = (product.images ?? [])
 if (!gallery.length && product.thumbnail) gallery.push(product.thumbnail);
 const image = gallery[0] ?? null;
 // Correa: las opciones se eligen en el configurador (no se listan)
+// Lista de deseos (L-1, decisión B): ♡ junto al título, lejos de «Añadir». Varias variantes →
+// guarda la elegida (y se enciende si ESA está guardada); una sola o correa → el producto.
+const pricing = getProductPricing(product);
+const wishVariant = !correa && pricing.variants.length > 1;
 const options = correa ? [] : (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
 // Plazo de fabricación de la correa (src/content/correa.md)
 const plazo = correa ? (await getEntry("correa", "correa"))?.data.plazo : undefined;
@@ -86,9 +98,23 @@ const onward = replacement
   <div class="grid gap-8 md:grid-cols-2">
     <ProductGallery images={gallery} alt={product.title} />
     <div class="flex flex-col gap-6">
-      <div class="flex flex-col gap-2">
-        <h1 class="text-3xl font-semibold tracking-tight">{product.title}</h1>
-        {product.subtitle && <p class="text-muted-foreground">{product.subtitle}</p>}
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex min-w-0 flex-col gap-2">
+          <h1 class="text-3xl font-semibold tracking-tight">{product.title}</h1>
+          {product.subtitle && <p class="text-muted-foreground">{product.subtitle}</p>}
+        </div>
+        {!discontinued && (
+          <WishButton
+            variant="title"
+            form={BUY_FORM_ID}
+            wish={wishVariant ? "variant" : "product"}
+            initialKey={wishVariant ? preselectedVariantId(pricing) : undefined}
+            productField={!correa}
+            productId={product.id}
+            productTitle={product.title}
+            back={`/producto/${product.handle}/`}
+          />
+        )}
       </div>
 
       {discontinued ? (

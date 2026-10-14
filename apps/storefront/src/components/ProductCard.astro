@@ -15,6 +15,7 @@ import type { CardImage } from "$lib/images";
 import { buttonVariants } from "$lib/components/ui/button";
 import AddToCart from "./AddToCart.astro";
 import ProductImage from "./ProductImage.astro";
+import WishButton from "./WishButton.astro";
 
 interface Props {
   product: StoreProduct;
@@ -47,6 +48,9 @@ const chooseLabel = pricing.isBulk
       ? "Elegir medida"
       : "Elegir opciones";
 const bulkNote = minimumNote(pricing);
+// Lista de deseos (L-1): corazón sobre la imagen; no en la tarjeta del grupo de correas (es un
+// producto sintético: se guarda cada color desde su ficha).
+const wish = !isCorreaGroup(product);
 ---
 
 <article
@@ -69,13 +73,24 @@ const bulkNote = minimumNote(pricing);
     </Badge>
     {/* Distintivo de oferta (visible si hay precio anterior; LiveSync lo corrige con data-was-box). */}
     <span
-      class="absolute top-2 right-2 border-2 border-line bg-accent px-1.5 text-xs leading-5 font-bold text-accent-foreground uppercase shadow-xs"
+      class="absolute bottom-2 left-2 border-2 border-line bg-accent px-1.5 text-xs leading-5 font-bold text-accent-foreground uppercase shadow-xs"
       data-was-box={product.id}
       hidden={pricing.wasAmount === null}
     >
       Oferta
     </span>
   </div>
+  {/* Lista de deseos (L-1, opción 1): sobre la imagen, arriba a la derecha. Hermano de la imagen
+      (no dentro): con el hover la imagen se desplaza (translate = contexto de apilamiento) y el
+      enlace estirado del título lo taparía; aquí z-10 lo deja siempre por encima. */}
+  {wish && (
+    <WishButton
+      productId={product.id}
+      productTitle={product.title}
+      back={back}
+      class="absolute top-2 right-2 z-10"
+    />
+  )}
   <div class="flex flex-col gap-1" data-dim-text>
     <Heading class="text-sm leading-snug font-medium">
       <a href={href} class="after:absolute after:inset-0 group-hover:underline">

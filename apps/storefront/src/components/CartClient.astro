@@ -9,6 +9,8 @@
 //     inerte). El icono lo abre; se cierra con ✕, Escape o pulsando fuera (light dismiss; ese
 //     clic lo anula SiteClient, 3.1). Lateral derecho a toda altura (móvil: 88 %). HTML del partial
 //     /carrito/flyout/. Al añadir: el panel solo se abre en escritorio; en móvil, el toast.
+//   - Lista de deseos (Fase L-1): botones [data-wish] → fetch a su formaction + toast (o a
+//     «Entrar» si no hay sesión). Sin JS, el formulario hace POST → 303.
 //   - Granel (S-3, CATALOG_FEATURES.bulkLiveTotal): «Total: 5,00 €» junto al campo de gramos
 //     ([data-bulk-total]) = gramos × €/kg del [data-unit] de la página (el de la variante elegida
 //     si hay varias). Envío con el botón pulsado (accesos rápidos: name="preset").
@@ -126,6 +128,30 @@
 
   const send = (e: SubmitEvent) => {
     const form = e.target as HTMLFormElement;
+    // Lista de deseos (L-1): botón ♡ [data-wish] (formulario propio o, en la ficha, el de Añadir
+    // con `form`). Toast y ♥ rojo, o sin sesión a «Entrar» (el servidor deja el pendiente).
+    const wish = e.submitter as HTMLButtonElement | null;
+    if (wish?.hasAttribute("data-wish")) {
+      e.preventDefault();
+      const box = wish.closest<HTMLElement>("[data-wish-box]");
+      fetch(wish.formAction, {
+        method: "POST",
+        body: new FormData(form, wish),
+        headers: { Accept: "application/json" },
+      })
+        .then((r) => r.json() as Promise<{ msg: string; kind: Kind; login: string | null }>)
+        .then((r) => {
+          if (r.login) return location.assign(r.login);
+          toast(r.msg, r.kind);
+          if (r.kind == "ok" && box) {
+            saved.add(box.dataset.wishKey!);
+            root.dataset.wishAny = "";
+            paint();
+          }
+        })
+        .catch(() => toast("No se ha podido guardar. Inténtalo de nuevo.", "error"));
+      return;
+    }
     // "Quitar" en el panel (Fase D, 5.4): fetch y se vuelve a pedir el panel.
     if (form.matches("#cart-flyout form[data-cart-remove]")) {
       e.preventDefault();
@@ -167,6 +193,64 @@
       });
   };
   addEventListener("submit", send);
+
+  // Estado de la lista (L-1): <template data-wish-state> de la island de la cabecera
+  // (HeaderState: {a, p, v, n}). Marca <html data-auth / data-wish-any> y data-saved en los ♡
+  // guardados. La island llega después de cargar: se espera con un MutationObserver.
+  const root = document.documentElement;
+  const saved = new Set<string>();
+  const paint = () => {
+    for (const b of document.querySelectorAll<HTMLElement>("[data-wish-box]"))
+      b.toggleAttribute("data-saved", saved.has(b.dataset.wishKey!));
+  };
+  const readState = () => {
+    const t = document.querySelector("template[data-wish-state]");
+    if (!t) return false;
+    const d = JSON.parse(t.innerHTML) as { p: string[]; v: string[]; n: number };
+    root.dataset.auth = "";
+    if (d.n) root.dataset.wishAny = "";
+    for (const k of [...d.p, ...d.v]) saved.add(k);
+    t.remove();
+    paint();
+    return true;
+  };
+  if (!readState()) {
+    const o = new MutationObserver(() => readState() && o.disconnect());
+    o.observe(document.body, { childList: true, subtree: true });
+  }
+  // Compartir la lista (L-1b, /cuenta/deseos/): «Copiar enlace» y, si hay Web Share, «Compartir…».
+  const url = document.querySelector<HTMLInputElement>("[data-share-url]");
+  if (url) {
+    const copy = document.querySelector<HTMLButtonElement>("[data-share-copy]")!;
+    const native = document.querySelector<HTMLButtonElement>("[data-share-native]")!;
+    // Sin contexto seguro (http por la IP de la LAN en desarrollo) no hay navigator.clipboard ni
+    // navigator.share: se copia seleccionando el campo (execCommand, obsoleto pero sin
+    // alternativa ahí). «Compartir…» solo aparece con Web Share (https en producción).
+    copy.hidden = false;
+    copy.onclick = () => {
+      const done = () => toast("Enlace copiado");
+      const legacy = () => {
+        url.select();
+        if (document.execCommand("copy")) done();
+      };
+      if (navigator.clipboard) navigator.clipboard.writeText(url.value).then(done, legacy);
+      else legacy();
+    };
+    if (navigator.share) {
+      native.hidden = false;
+      native.onclick = () =>
+        navigator.share({ title: "Mi lista de deseos", url: url.value }).catch(() => {});
+    }
+  }
+  // Ficha con variantes: el ♡ del título sigue a la variante elegida (data-wish-follow = id del
+  // formulario de Añadir).
+  addEventListener("change", (e) => {
+    const r = e.target as HTMLInputElement;
+    if (r.name != "variant_id" || !r.form) return;
+    for (const b of document.querySelectorAll<HTMLElement>(`[data-wish-follow="${r.form.id}"]`))
+      b.dataset.wishKey = r.value;
+    paint();
+  });
 
   // Icono del carrito: abre el panel (móvil y escritorio). Ctrl/⌘/⇧ + clic: enlace normal.
   addEventListener("click", (e) => {

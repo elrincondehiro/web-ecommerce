@@ -47,11 +47,14 @@ const addr = order?.shipping_address;
         tarjeta se hace cuando preparamos el envío.
       </p>
 
-      <section aria-labelledby="pedido-lineas" class="rounded-lg border p-4">
+      <section
+        aria-labelledby="pedido-lineas"
+        class="rounded-md border-2 border-line bg-card shadow-sm p-4"
+      >
         <h2 id="pedido-lineas" class="mb-3 text-lg font-semibold">
           Productos
         </h2>
-        <ul class="divide-y text-sm">
+        <ul class="divide-y-2 divide-line text-sm">
           {(order.items ?? []).map((item) => (
             <li class="flex justify-between gap-4 py-2">
               <span>
@@ -67,7 +70,7 @@ const addr = order?.shipping_address;
             </li>
           ))}
         </ul>
-        <dl class="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t pt-3 text-sm tabular-nums">
+        <dl class="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t-2 border-line pt-3 text-sm tabular-nums">
           <dt class="text-muted-foreground">
             Envío{order.shipping_methods?.[0]?.name ? ` (${order.shipping_methods[0].name})` : ""}
           </dt>
@@ -84,7 +87,10 @@ const addr = order?.shipping_address;
       </section>
 
       {addr && (
-        <section aria-labelledby="pedido-envio" class="rounded-lg border p-4 text-sm">
+        <section
+          aria-labelledby="pedido-envio"
+          class="rounded-md border-2 border-line bg-card shadow-sm p-4 text-sm"
+        >
           <h2 id="pedido-envio" class="mb-2 text-lg font-semibold">
             Dirección de envío
           </h2>

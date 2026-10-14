@@ -1,0 +1,111 @@
+---
+// Corazón de la lista de deseos (Fase L-1). HTML estático, 0 JS propio. Dos estados en el mismo
+// marcado (CSS `[data-wish-box][data-saved]`, global.css):
+//   - ♡ (no guardado): botón que guarda con la action `wishlist.add` (ruta on-demand
+//     /cuenta/deseos/). Sin JS: 303 de vuelta con aviso (#deseos-<código>) o, sin sesión, a
+//     «Entrar» (el producto se guarda al entrar, cookie de 10 min). Con JS lo envía CartClient
+//     (`data-wish`): toast, o a «Entrar».
+//   - ♥ rojo (guardado): ENLACE a /cuenta/deseos/; no quita (decisión A: solo se quita desde la
+//     lista, así un clic por error no borra nada).
+// El estado lo pone CartClient con los datos de la island de la cabecera (HeaderState): marca
+// `data-saved` en los [data-wish-box] cuyo `data-wish-key` está guardado. Sin JS o sin sesión,
+// siempre ♡ (guardar es idempotente: «Ya estaba en tu lista»).
+// - `overlay` (tarjetas, opción 1): círculo sobre la imagen, arriba a la derecha.
+// - `title` (ficha, decisión B): junto al título. Guarda la variante elegida: el botón va fuera del
+//   formulario de Añadir pero asociado a él (`form`), así envía su `variant_id`; con una sola
+//   variante, `wish=product`. Clave = variante elegida (CartClient la sigue al cambiar el radio:
+//   `data-wish-follow`) o el producto.
+import { WISHLIST_PATH, wishlistActionUrl } from "$lib/wishlist";
+import Icon from "./Icon.astro";
+import HeartFilled from "./HeartFilled.astro";
+
+interface Props {
+  productId: string;
+  productTitle: string;
+  /** Ruta de vuelta sin JS (la página actual). */
+  back: string;
+  variant?: "overlay" | "title";
+  /** `title`: id del formulario de Añadir (envía la variante elegida). */
+  form?: string | undefined;
+  /** `title`: qué guarda. `variant` = la variante elegida; `product` = el producto. */
+  wish?: "variant" | "product";
+  /** `title`: clave inicial (la variante preseleccionada) si se guarda la variante. */
+  initialKey?: string | undefined;
+  /** `title`: false si el formulario de Añadir ya lleva `product_id` (correa). */
+  productField?: boolean;
+  class?: string;
+}
+const {
+  productId,
+  productTitle,
+  back,
+  variant = "overlay",
+  form,
+  wish = "product",
+  initialKey,
+  productField = true,
+  class: className = "",
+} = Astro.props;
+const url = wishlistActionUrl("wishlist.add");
+const key = wish === "variant" ? (initialKey ?? productId) : productId;
+const label = `Guardar ${productTitle} en mi lista de deseos`;
+const size = variant === "overlay" ? "size-8" : "size-10";
+const icon = variant === "overlay" ? "size-5" : "size-6";
+const base = `inline-flex ${size} items-center justify-center rounded-full border-2 border-line bg-card shadow-xs transition-[translate,box-shadow] hover:translate-x-px hover:translate-y-px hover:shadow-none`;
+---
+
+<div
+  data-wish-box
+  data-wish-key={key}
+  data-wish-follow={wish === "variant" && form ? form : undefined}
+  class:list={["shrink-0", className]}
+>
+  {form ? (
+    // Ficha: el botón envía el formulario de Añadir (atributo `form`) a la action de la lista;
+    // `product_id` se le asocia con `form` (el de Añadir solo lleva la variante, salvo la correa:
+    // `productField={false}`). Los demás campos (cantidad, gramos, correa) los ignora la action.
+    <>
+      {productField && <input type="hidden" form={form} name="product_id" value={productId} />}
+      <button
+        type="submit"
+        form={form}
+        formaction={url}
+        formnovalidate
+        name="wish"
+        value={wish}
+        data-wish
+        data-if-unsaved
+        class={base}
+        aria-label={label}
+        title="Guardar en mi lista"
+      >
+        <Icon name="heart" class={icon} />
+      </button>
+    </>
+  ) : (
+    // Tarjetas: formulario propio. `formaction` también aquí: CartClient usa `button.formAction`.
+    <form method="post" action={url} data-if-unsaved>
+      <input type="hidden" name="product_id" value={productId} />
+      <input type="hidden" name="back" value={back} />
+      <button
+        type="submit"
+        formaction={url}
+        data-wish
+        class={base}
+        aria-label={label}
+        title="Guardar en mi lista"
+      >
+        <Icon name="heart" class={icon} />
+      </button>
+    </form>
+  )}
+  <a
+    href={WISHLIST_PATH}
+    data-if-saved
+    class={base}
+    aria-label={`${productTitle} está en tu lista de deseos: ver mi lista`}
+    title="En tu lista de deseos"
+  >
+    <HeartFilled class={icon} />
+  </a>
+</div>

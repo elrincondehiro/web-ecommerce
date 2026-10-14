@@ -2,7 +2,11 @@
 // Avisos del carrito SIN JS (fase 4). Tras el POST de un formulario, el middleware redirige
 // (303) a la página de origen con `#carrito-<código>`; la regla :target de global.css muestra
 // solo el aviso correspondiente. HTML estático e idéntico en todas las páginas (cacheable).
+// Lista de deseos (Fase L-1): igual, con `#deseos-<código>` y enlace a la lista.
 import { CART_PATH, NOTICES, NOTICE_CODES, isErrorNotice } from "$lib/cart";
+import { WISH_NOTICES, WISH_NOTICE_CODES, WISHLIST_PATH, isWishError } from "$lib/wishlist";
+
+const wishCodes = WISH_NOTICE_CODES.filter((c) => c !== "wish_login");
 ---
 
 <div class="cart-notices">
@@ -21,6 +25,26 @@ import { CART_PATH, NOTICES, NOTICE_CODES, isErrorNotice } from "$lib/cart";
           {" · "}
           <a href={CART_PATH} class="font-medium underline underline-offset-4">
             Ver carrito
+          </a>
+        </>
+      )}
+    </p>
+  ))}
+  {wishCodes.map((code) => (
+    <p
+      id={`deseos-${code}`}
+      tabindex="-1"
+      class:list={[
+        "cart-notice mb-6 rounded-md border-2 border-line px-4 py-3 text-sm",
+        isWishError(code) ? "border-destructive/40 text-destructive" : "bg-muted",
+      ]}
+    >
+      {WISH_NOTICES[code]}
+      {(code === "wish_added" || code === "wish_already") && (
+        <>
+          {" · "}
+          <a href={WISHLIST_PATH} class="font-medium underline underline-offset-4">
+            Ver mi lista
           </a>
         </>
       )}
