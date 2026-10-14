@@ -33,6 +33,9 @@ module.exports = {
         `${BASE}/producto/mock-pienso-premium-001/`,
         // S-3: ficha a granel (campo de gramos, accesos rápidos, «Quedan»)
         `${BASE}/producto/mock-premios-plus-010/`,
+        // E-2c: correa a medida (página de grupo y configurador)
+        `${BASE}/producto/correa-a-medida/`,
+        `${BASE}/producto/correa-verde-pvc/`,
         `${BASE}/carrito/`,
       ],
       numberOfRuns: 3,

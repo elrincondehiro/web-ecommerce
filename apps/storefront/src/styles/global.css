@@ -266,6 +266,23 @@
   pointer-events: none;
 }
 
+/* Muestras de color de la correa a medida (ColorPicker, E-2c): el color de cada correa lo pone
+   SwatchStyles (--sw); sin color, gris. */
+.swatch {
+  background: var(--sw, var(--muted));
+}
+/* Landing: con una correa elegida (:has), solo el CTA de esa (las reglas por handle, en
+   SwatchStyles, tienen más especificidad). Sin :has() se ven todos (cada uno dice su color). */
+.correa-pick__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.correa-pick:has(:checked) [data-cta],
+.correa-pick:has(:checked) .correa-pick__which {
+  display: none;
+}
+
 /*
  * Cantidad − / + (Fase D, 3.3, QuantityField.astro). Sin JS: solo el campo numérico con sus
  * flechas. Con JS (<html data-js>, SiteClient): botones visibles y sin flechas nativas.

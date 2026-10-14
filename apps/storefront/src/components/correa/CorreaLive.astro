@@ -1,0 +1,76 @@
+---
+// Configurador de la correa a medida con JS (Fase E-2c). UN bundle en /_astro/ (≤ 1 KB gzip, sin
+// imports; excepción de AGENTS §3.4), SOLO en las fichas de correa (lo incluye CorreaBuilder).
+// Sin JS el formulario funciona igual (desplegables con el precio del build, el servidor valida).
+// Con JS:
+//   - total en vivo: precio = base del largo + recargo de cada mosquetón (céntimos de
+//     `data-correa`) × cantidad;
+//   - texto de cada opción con el precio actual y «agotado» según la elección de los otros dos
+//     desplegables (data-n = nombre); si la combinación elegida está agotada, lo dice y desactiva
+//     «Añadir»;
+//   - el tramo de la medida exacta sigue al largo, y escribir una medida elige su largo.
+// Los datos de la island de LiveSync (`_correa` del <template data-live-sync>) sustituyen a los
+// del build al llegar (precios y disponibilidad actuales), si tienen los mismos largos y
+// mosquetones que el HTML (si no, hasta el siguiente build se queda con los del build).
+---
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("form[data-correa]");
+  if (form) {
+    type D = { c: string[]; l: number[]; b: number[]; s: number[]; m: Record<string, number> };
+    let d = JSON.parse(form.dataset.correa!) as D;
+    const eur = (c: number) =>
+      (c / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+    const $ = <T extends HTMLElement>(s: string) => form.querySelector(s) as T;
+    const [L, P, M] = ["largo", "perro", "mano"].map((n) => $<HTMLSelectElement>(`[name=${n}]`));
+    const cm = $<HTMLInputElement>("[name=medida_cm]");
+    const update = () => {
+      const li = L!.selectedIndex;
+      const i = P!.selectedIndex;
+      const j = M!.selectedIndex;
+      const n = d.c.length;
+      const ok = (l: number, a: number, b: number) => ((d.m[d.l[l]!] ?? 0) >> (a * n + b)) & 1;
+      const label = (s: HTMLSelectElement, f: (k: number) => [number, string]) => {
+        for (const o of s.options) {
+          const [avail, price] = f(o.index);
+          o.text = `${o.dataset.n} (${price})${avail ? "" : " · agotado"}`;
+        }
+      };
+      label(L!, (k) => [ok(k, i, j), eur(d.b[k]! + d.s[i]! + d.s[j]!)]);
+      label(P!, (k) => [ok(li, k, j), d.s[k] ? `+${eur(d.s[k]!)}` : "incluido"]);
+      label(M!, (k) => [ok(li, i, k), d.s[k] ? `+${eur(d.s[k]!)}` : "incluido"]);
+      const avail = ok(li, i, j);
+      $("[data-correa-out]").hidden = !!avail;
+      $<HTMLButtonElement>("button[type=submit]").disabled = !avail;
+      const q = +$<HTMLInputElement>("[name=quantity]").value || 1;
+      $("[data-correa-total]").textContent = `Total: ${eur((d.b[li]! + d.s[i]! + d.s[j]!) * q)}`;
+      const m = d.l[li]! * 100;
+      cm.min = String(m - 99);
+      cm.max = String(m);
+      $("[data-correa-range]").textContent = `Para ${m / 100} m: de ${m - 99} a ${m} cm.`;
+    };
+    form.addEventListener("input", (e) => {
+      if (e.target === cm && cm.value) {
+        const k = d.l.indexOf(Math.ceil(+cm.value / 100));
+        if (k >= 0) L!.selectedIndex = k;
+      }
+      update();
+    });
+    // − / + de la cantidad (SiteClient) lanzan "input": no hace falta más.
+    const live = () => {
+      const t = document.querySelector<HTMLTemplateElement>("template[data-live-sync]");
+      if (!t) return 0;
+      const x = JSON.parse(t.content.textContent!)._correa as D | undefined;
+      // Solo si los largos y mosquetones son los del HTML (las opciones son las del build)
+      if (x && `${x.l}${x.c}` === `${d.l}${d.c}`) d = x;
+      update();
+      return 1;
+    };
+    update();
+    if (!live())
+      new MutationObserver((_, o) => live() && o.disconnect()).observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+  }
+</script>

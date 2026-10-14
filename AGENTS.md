@@ -177,6 +177,8 @@ Excepción aprobada en la Fase D: `/carrito/` carga **un bundle propio** (`CartL
 
 Excepción aprobada en la Fase D: las páginas con **carrusel** cargan **un bundle de arrastre** (`ScrollDrag`, ≤ 1 KB gzip, sin imports, en `/_astro/`) para desplazarlo con el ratón. **Recordatorio: todo carrusel nuevo (cualquier contenedor con scroll horizontal) lleva `data-drag-scroll` y su componente incluye `<ScrollDrag />`** (Astro deduplica el script), salvo que el arrastre se meta dentro del propio componente. `check:budget` exige `ScrollDrag` en toda página con `data-drag-scroll` y lo prohíbe en las demás. Hoy: carrusel de la home (`index.astro`) y galería de la ficha (`ProductGallery.astro`).
 
+Excepción aprobada en la Fase E (E-2c): las fichas de la **correa a medida** (formulario `form[data-correa]`, `CorreaBuilder.astro`) cargan **un bundle del configurador** (`CorreaLive`, ≤ 1 KB gzip, sin imports, en `/_astro/`; 807 B al aprobarla): total en vivo, combinaciones agotadas y tramo de la medida exacta. Sin JS el formulario funciona igual (action `cart.addCorrea`). `check:budget` lo exige en las páginas con `data-correa=` y lo prohíbe en las demás.
+
 ---
 
 ## 4. Backend (apps/backend)

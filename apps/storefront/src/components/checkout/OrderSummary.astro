@@ -3,6 +3,7 @@
 import { lineQuantityLabel } from "$lib/bulk";
 import { formatPrice } from "$lib/format";
 import type { StoreCart } from "$lib/medusa";
+import { lineDetails } from "$lib/correa";
 
 interface Props {
   cart: StoreCart;
@@ -27,6 +28,9 @@ const hasShipping = (cart.shipping_methods?.length ?? 0) > 0;
           {item.variant_title && item.variant_title !== "Única" && (
             <span class="text-muted-foreground"> · {item.variant_title}</span>
           )}
+          {lineDetails(item.metadata).map((d) => (
+            <span class="block text-xs break-words text-muted-foreground">{d}</span>
+          ))}
         </span>
         <span class="shrink-0 tabular-nums">{formatPrice(item.total ?? 0, currency)}</span>
       </li>

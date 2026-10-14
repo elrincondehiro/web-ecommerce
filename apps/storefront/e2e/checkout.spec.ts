@@ -6,11 +6,19 @@ import { expect, test, type FrameLocator, type Page } from "@playwright/test";
 
 const PRODUCT = "/producto/mock-clicker-esencial-018/";
 const BULK = "/producto/mock-premios-plus-010/"; // granel (S-3): paso 5 g, 20 €/kg
+const CORREA = "/producto/correa-azul-nylon/"; // correa a medida (E-2c)
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 
+/** `bulkGrams`: gramos del granel, o "correa" para una correa de 7 m con medida y observaciones. */
 async function addAndGoToCheckout(page: Page, bulkGrams?: string) {
-  await page.goto(bulkGrams ? BULK : PRODUCT);
-  if (bulkGrams) {
+  await page.goto(bulkGrams === "correa" ? CORREA : bulkGrams ? BULK : PRODUCT);
+  if (bulkGrams === "correa") {
+    const form = page.locator("form[data-correa]");
+    await form.locator("select[name=largo]").selectOption("7");
+    await form.getByLabel(/Medida exacta/).fill("640");
+    await form.getByLabel(/Observaciones/).fill("Para Hiro");
+    await form.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
+  } else if (bulkGrams) {
     await page.getByLabel("Cantidad (g)").fill(bulkGrams);
     await page.getByRole("button", { name: "Añadir Premios Plus al carrito", exact: true }).click();
   } else {
@@ -149,6 +157,31 @@ test.describe("con JS (Stripe test)", () => {
     }
     expect(text).toMatch(/250 g · 20,00\s€\/kg/);
     expect(text).not.toMatch(/50 ×/);
+  });
+
+  test("correa a medida (E-2c): medida y observaciones en resumen, pedido y email", async ({
+    page,
+  }) => {
+    const email = `correa-${Date.now()}@example.com`;
+    await toPayment(page, "correa", email);
+    const details = ["Medida exacta: 6,40 m", "Observaciones: Para Hiro"];
+    for (const d of details) await expect(page.locator("#resumen-titulo + ul")).toContainText(d);
+    await fillCard(page, "4242 4242 4242 4242");
+    await page.getByRole("button", { name: /^Pagar y realizar pedido/ }).click();
+    await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 30_000 });
+    for (const d of details) await expect(page.locator("#pedido-lineas + ul")).toContainText(d);
+    let text = "";
+    for (let i = 0; i < 40 && !text; i++) {
+      const res = await page.request.get(
+        `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+      );
+      const { messages } = (await res.json()) as { messages: { ID: string }[] };
+      if (messages[0]) {
+        const msg = await page.request.get(`${MAILPIT}/api/v1/message/${messages[0].ID}`);
+        text = ((await msg.json()) as { Text: string }).Text;
+      } else await page.waitForTimeout(500);
+    }
+    for (const d of details) expect(text).toContain(d);
   });
 
   test("tarjeta rechazada: aviso y se puede reintentar", async ({ page }) => {

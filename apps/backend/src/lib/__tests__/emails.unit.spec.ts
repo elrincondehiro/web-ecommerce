@@ -139,6 +139,14 @@ describe("emails: datos de Medusa → props", () => {
     expect(toEmailItem({ ...line, variant: null }).bulk).toBeNull();
   });
 
+  it("correa a medida (E-2): medida exacta y observaciones de la línea", () => {
+    const line = { product_title: "Correa", quantity: big(1), unit_price: 37, total: big(37) };
+    expect(
+      toEmailItem({ ...line, metadata: { medida_cm: 640, observaciones: " Para Hiro " } }).details,
+    ).toEqual(["Medida exacta: 6,40 m", "Observaciones: Para Hiro"]);
+    expect(toEmailItem(line).details).toEqual([]);
+  });
+
   it("enlaces: sin barra final y assets por defecto = storefront", () => {
     expect(emailLinks("https://tienda.test/", undefined)).toEqual(links);
     expect(emailLinks(undefined, "https://cdn.test/")).toEqual({

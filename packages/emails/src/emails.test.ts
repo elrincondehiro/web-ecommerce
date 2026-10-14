@@ -18,13 +18,19 @@ describe("renderEmail", () => {
     expect(subject).toBe("Hemos recibido tu pedido n.º 1042");
     expect(text).toContain("IVA 21 %");
     expect(text).toContain("IVA 4 %");
-    expect(text).toMatch(/66,05\s€/);
+    expect(text).toMatch(/103,05\s€/);
   });
 
   it("granel (S-3): gramos y precio por kilo en vez de unidades", async () => {
     const { text } = await renderEmail("order-placed", previewProps("order-placed"));
     expect(text).toMatch(/250 g · 20,00\s€\/kg/);
     expect(text).not.toMatch(/50 ×/);
+  });
+
+  it("correa a medida (E-2): medida exacta y observaciones", async () => {
+    const { text } = await renderEmail("order-placed", previewProps("order-placed"));
+    expect(text).toContain("Medida exacta: 6,40 m");
+    expect(text).toContain("Observaciones: Con el nombre de Hiro, por favor");
   });
 
   it("el envío muestra el seguimiento", async () => {

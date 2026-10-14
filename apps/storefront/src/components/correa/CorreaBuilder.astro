@@ -1,0 +1,207 @@
+---
+// Configurador de la correa a medida (Fase E-2c). Formulario ESTÁTICO que funciona sin JS:
+// largo, mosquetón de cada lado, medida exacta (cm, opcional), observaciones y cantidad. Envía a
+// la action `cart.addCorrea` (POST a /carrito/?_action=…, 303 de vuelta con el aviso); el servidor
+// busca la variante por largo y mosquetones (nunca la manda el cliente) y valida la medida.
+// Sin JS se ven el precio de cada largo (con mosquetones estándar) y el recargo de cada
+// mosquetón: precio = largo + mosquetones (lib/correa.ts, el build comprueba la fórmula).
+// Precios y stock: los del build con marcas de LiveSync (data-price, data-pid/data-stock); la
+// island manda además las máscaras de disponibilidad (`_correa`). Con JS, CorreaLive calcula el
+// total, marca lo agotado y ajusta el rango de la medida exacta (excepción de AGENTS §3.4).
+import { Badge } from "$lib/components/ui/badge";
+import { buttonVariants } from "$lib/components/ui/button";
+import { actionUrl, MAX_QUANTITY } from "$lib/cart";
+import { getProductPricing, type StoreProduct } from "$lib/catalog";
+import { NOTES_MAX, correaLiveData, correaModel, exactRange } from "$lib/correa";
+import { formatPrice } from "$lib/format";
+import { surchargeText } from "$lib/live-sync";
+import CorreaLive from "./CorreaLive.astro";
+import Price from "../Price.astro";
+import QuantityField from "../QuantityField.astro";
+
+interface Props {
+  product: StoreProduct;
+}
+const { product } = Astro.props;
+const model = correaModel(product);
+const data = correaLiveData(product, model);
+const pricing = getProductPricing(product);
+const fmt = (n: number) => formatPrice(n, model.currency);
+const back = `/producto/${product.handle}/`;
+const n = data.c.length;
+const bit = (m: number, i: number, j: number) => ((data.m[m] ?? 0) >> (i * n + j)) & 1;
+// Preselección (build): el primer largo con alguna combinación disponible y, en él, la primera
+// combinación disponible (estándar–estándar si la hay).
+const firstM = data.l.find((m) => data.m[m]) ?? data.l[0]!;
+let pick = [0, 0];
+search: for (let i = 0; i < n; i++)
+  for (let j = 0; j < n; j++)
+    if (bit(firstM, i, j)) {
+      pick = [i, j];
+      break search;
+    }
+const minCm = exactRange(data.l[0]!).minCm;
+const maxCm = exactRange(data.l.at(-1)!).maxCm;
+const example = exactRange(firstM);
+const id = (s: string) => `correa-${s}`;
+const field = "flex flex-col gap-1";
+const select =
+  "correa-select h-11 w-full rounded-md border-2 border-line bg-background px-3 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-ring";
+const sides = [
+  { name: "perro", label: "Mosquetón lado perro", pick: pick[0] },
+  { name: "mano", label: "Mosquetón lado mano", pick: pick[1] },
+] as const;
+---
+
+<div class="flex flex-col gap-4" data-pid={product.id} data-stock={pricing.inStock ? "in" : "out"}>
+  {pricing.fromAmount != null && (
+    <p class="flex flex-wrap items-baseline gap-x-2">
+      <Price
+        id={product.id}
+        amount={pricing.fromAmount}
+        currency={model.currency}
+        wasAmount={null}
+        discountPercent={null}
+        from={true}
+        size="lg"
+      />
+      <span class="text-sm text-muted-foreground">IVA incluido</span>
+    </p>
+  )}
+  <p>
+    <Badge variant="outline" data-if-stock="in">
+      En stock
+    </Badge>
+    <Badge variant="secondary" data-if-stock="out">
+      Agotada
+    </Badge>
+  </p>
+
+  <form
+    method="post"
+    action={actionUrl("cart.addCorrea")}
+    data-cart-form
+    data-correa={JSON.stringify(data)}
+    class="flex flex-col gap-5"
+  >
+    <input type="hidden" name="back" value={back} />
+    <input type="hidden" name="product_id" value={product.id} />
+
+    {/* Desplegables nativos (sin JS; en móvil, el selector del sistema). Con JS, CorreaLive
+        reescribe el texto de cada opción con el precio actual y «agotado» (data-n = nombre). */}
+    <div class={field}>
+      <label for={id("largo")} class="font-semibold">
+        Largo
+      </label>
+      <select id={id("largo")} name="largo" required class={select}>
+        {model.lengths.map((l) => (
+          <option value={l.m} selected={l.m === firstM} data-n={`${l.m} m`}>
+            {`${l.m} m (${fmt(l.base)})`}
+          </option>
+        ))}
+      </select>
+      <p class="text-xs text-muted-foreground">
+        Precio con mosquetones estándar. ¿Una medida intermedia? Elige el metro siguiente y escribe
+        la medida exacta más abajo.
+      </p>
+    </div>
+
+    {/* Dos columnas también en móvil: dos desplegables iguales, sin filas partidas */}
+    <div class="grid grid-cols-2 gap-3">
+      {sides.map((side) => (
+        <div class={field}>
+          <label for={id(side.name)} class="font-semibold">
+            {side.label}
+          </label>
+          <select id={id(side.name)} name={side.name} required class={select}>
+            {model.clips.map((c, i) => (
+              <option value={c.code} selected={i === side.pick} data-n={c.name}>
+                {`${c.name} (${surchargeText(c.surcharge, fmt)})`}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for={id("medida")} class="font-semibold">
+        Medida exacta <span class="font-normal text-muted-foreground">(opcional, en cm)</span>
+      </label>
+      <input
+        id={id("medida")}
+        name="medida_cm"
+        type="number"
+        inputmode="numeric"
+        min={minCm}
+        max={maxCm}
+        step="1"
+        placeholder={`p. ej. ${example.maxCm - 50}`}
+        aria-describedby={id("medida-ayuda")}
+        class="h-10 w-32 rounded-md border-2 border-line bg-background px-3 text-sm tabular-nums"
+      />
+      <p id={id("medida-ayuda")} class="text-xs text-muted-foreground">
+        Tiene que caber en el largo elegido.{" "}
+        <span data-correa-range>
+          Para {firstM} m: de {example.minCm} a {example.maxCm} cm.
+        </span>{" "}
+        Si lo dejas vacío, la hacemos del largo justo.
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for={id("notas")} class="font-semibold">
+        Observaciones <span class="font-normal text-muted-foreground">(opcional)</span>
+      </label>
+      <textarea
+        id={id("notas")}
+        name="observaciones"
+        rows="3"
+        maxlength={NOTES_MAX}
+        aria-describedby={id("notas-ayuda")}
+        class="max-w-md rounded-md border-2 border-line bg-background px-3 py-2 text-sm"
+      />
+      <p id={id("notas-ayuda")} class="text-xs text-muted-foreground">
+        Hasta {NOTES_MAX} caracteres. Por ejemplo, si la quieres para un perro que tira mucho.
+      </p>
+    </div>
+
+    <p class="font-semibold tabular-nums" data-correa-total aria-live="polite"></p>
+    <p class="text-sm text-destructive" data-correa-out hidden>
+      Agotada esta combinación. Prueba con otro largo u otros mosquetones.
+    </p>
+
+    <div class="flex flex-wrap items-end gap-2">
+      <div class="flex flex-col gap-1" data-if-stock="in">
+        <label for={id("qty")} class="text-xs text-muted-foreground">
+          Cantidad
+        </label>
+        <QuantityField
+          id={id("qty")}
+          value={1}
+          min={1}
+          max={MAX_QUANTITY}
+          size="lg"
+          label={product.title}
+        />
+      </div>
+      <button
+        type="submit"
+        class={buttonVariants({ size: "lg" })}
+        data-if-stock="in"
+        aria-label={`Añadir ${product.title} al carrito`}
+      >
+        Añadir
+      </button>
+      <button
+        type="button"
+        class={buttonVariants({ size: "lg", variant: "secondary" })}
+        data-if-stock="out"
+        disabled
+      >
+        Agotada
+      </button>
+    </div>
+  </form>
+</div>
+<CorreaLive />

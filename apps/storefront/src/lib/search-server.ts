@@ -6,6 +6,8 @@ import type { StoreProduct } from "./catalog";
 import { facetsFromSearch, type ListingFacets } from "./facets";
 import type { CardImage } from "./images";
 import { categoryNames, facetCategories, narrowCategories } from "./categories";
+import { CORREA_OPTION_TITLES, groupSearchIds } from "./correa";
+import { cardOf, freshCorreaCards, getCorreaCards } from "./correa-server";
 import { getPricedProductsByIds, searchProducts } from "./medusa";
 import { getShopTree } from "./shop";
 import { buildSearchQueries, parseSearchResults, type SearchParams } from "./search";
@@ -28,17 +30,42 @@ export async function loadSearchPage(params: SearchParams, timings?: Timings): P
   const query = { ...params, categoria: narrowCategories(tree, params.categoria) };
   const results = await measure("search", searchProducts(buildSearchQueries(query)));
   const outcome = parseSearchResults(params, results);
-  const products = await measure("cards", getPricedProductsByIds(outcome.ids));
+  // Correas a medida (E-2c): con ≥ 2 en la página, una tarjeta de grupo; sus datos, del
+  // manifiesto del build + variantes del largo más corto (lib/correa-server.ts). El total y las
+  // facetas siguen siendo los del motor (cuentan cada color): diferencia aceptada.
+  const cards = await getCorreaCards();
+  const ids = groupSearchIds(outcome.ids, cards);
+  const [rest, correas] = await measure(
+    "cards",
+    Promise.all([
+      getPricedProductsByIds(ids.filter((id) => !cardOf(cards, id))),
+      freshCorreaCards(ids, cards),
+    ]),
+  );
+  const byId = new Map(rest.map((p) => [p.id, p]));
+  const products = ids.flatMap((id) => {
+    const p = correas.get(id) ?? byId.get(id);
+    return p ? [p] : [];
+  });
   return {
     products,
     total: outcome.total,
-    facets: facetsFromSearch(outcome.facets, {
-      // Filtro por niveles (Fase S): raíces, o las hijas de lo elegido
-      categories: facetCategories(tree, params.categoria),
-      selected: new Set([...params.categoria, ...params.etiqueta, ...params.opcion]),
-      total: outcome.total,
-      disponible: params.disponible,
-    }),
+    facets: facetsFromSearch(
+      {
+        ...outcome.facets,
+        // Las opciones de la correa (largo, mosquetones) se eligen en su ficha: no son filtros
+        opcion: outcome.facets.opcion.filter(
+          (f) => !CORREA_OPTION_TITLES.has(f.value.slice(0, f.value.indexOf(":"))),
+        ),
+      },
+      {
+        // Filtro por niveles (Fase S): raíces, o las hijas de lo elegido
+        categories: facetCategories(tree, params.categoria),
+        selected: new Set([...params.categoria, ...params.etiqueta, ...params.opcion]),
+        total: outcome.total,
+        disponible: params.disponible,
+      },
+    ),
     categories: categoryNames(tree),
     images: getCardImages(),
   };

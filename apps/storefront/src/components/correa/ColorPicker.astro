@@ -1,0 +1,108 @@
+---
+// Selector de color y material de la correa a medida (Fase E-2c): una fila de muestras de color
+// por material. HTML + CSS, 0 JS.
+// - `mode="link"` (ficha de un color): cada muestra es un enlace a su ficha; la actual va marcada.
+// - `mode="radio"` (landing): radios + un enlace «A por ella» por correa. CSS `:has()` muestra
+//   SOLO el CTA de la elegida (global.css, .correa-pick). Sin `:has()` (navegadores antiguos) se
+//   ven todos los CTA, cada uno con su color: sigue funcionando.
+// Disponibilidad («hasta 8 m» / «Agotada», landing): texto y data-stock del build con la clave
+// `<handle>_max` (data-price / data-pid); los corrige <LiveSync correaLanding> con el aplicador
+// de siempre (lib/live-sync.ts), sin script nuevo.
+import { buttonVariants } from "$lib/components/ui/button";
+import { maxKey, maxText, swatchClass, swatchesByMaterial, type CorreaSwatch } from "$lib/correa";
+import SwatchStyles from "./SwatchStyles.astro";
+
+interface Props {
+  swatches: CorreaSwatch[];
+  mode: "link" | "radio";
+  /** Ficha: handle actual. Landing: el preseleccionado. */
+  current?: string | undefined;
+  /** Landing: largo máximo del build por handle (0 = agotada). */
+  maxM?: Record<string, number> | undefined;
+  /** Landing: texto del CTA. */
+  cta?: string | undefined;
+}
+const { swatches, mode, current, maxM = {}, cta = "A por ella" } = Astro.props;
+const groups = swatchesByMaterial(swatches);
+const label = (s: CorreaSwatch) => `${s.color} · ${s.material}`;
+const swatchBase = "swatch size-9 shrink-0 rounded-full border-2 border-line shadow-xs";
+---
+
+<SwatchStyles swatches={swatches} picker={mode === "radio"} />
+{mode === "link" ? (
+  <nav aria-label="Color y material" class="flex flex-col gap-3">
+    {groups.map(([material, list]) => (
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="w-14 text-sm text-muted-foreground">{material}</span>
+        {list.map((s) =>
+          s.handle === current ? (
+            <span
+              aria-current="page"
+              title={label(s)}
+              class={`${swatchBase} ${swatchClass(s.handle)} ring-2 ring-primary ring-offset-2 ring-offset-background`}
+            >
+              <span class="sr-only">{label(s)} (elegida)</span>
+            </span>
+          ) : (
+            <a
+              href={`/producto/${s.handle}/`}
+              title={label(s)}
+              class={`${swatchBase} ${swatchClass(s.handle)} hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+            >
+              <span class="sr-only">{label(s)}</span>
+            </a>
+          ),
+        )}
+      </div>
+    ))}
+  </nav>
+) : (
+  <div class="correa-pick flex flex-col gap-5">
+    <fieldset class="flex flex-col gap-4">
+      <legend class="sr-only">Color y material</legend>
+      {groups.map(([material, list]) => (
+        <div class="flex flex-col gap-2">
+          <span class="text-sm font-semibold">{material}</span>
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-3">
+            {list.map((s) => (
+              <label
+                data-pid={maxKey(s.handle)}
+                data-stock={maxM[s.handle] ? "in" : "out"}
+                class="correa-pick__opt flex cursor-pointer flex-col items-center gap-1 rounded-md p-1 text-center text-sm has-checked:bg-muted has-focus-visible:outline-2 has-focus-visible:outline-ring"
+              >
+                <input
+                  type="radio"
+                  name="correa"
+                  value={s.handle}
+                  checked={s.handle === current}
+                  class="sr-only"
+                />
+                <span
+                  class={`${swatchBase} ${swatchClass(s.handle)} size-11`}
+                  aria-hidden="true"
+                  data-dim
+                />
+                <span class="font-medium">{s.color}</span>
+                <span class="text-xs text-muted-foreground" data-price={maxKey(s.handle)}>
+                  {maxText(maxM[s.handle])}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+    </fieldset>
+    <div class="correa-pick__ctas">
+      {swatches.map((s) => (
+        <a
+          href={`/producto/${s.handle}/`}
+          class={buttonVariants({ size: "lg" })}
+          data-cta={s.handle}
+          aria-label={`${cta}: ${label(s)}`}
+        >
+          {cta} <span class="correa-pick__which">· {label(s)}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+)}

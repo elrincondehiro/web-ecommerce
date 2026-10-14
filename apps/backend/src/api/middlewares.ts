@@ -5,6 +5,7 @@ import {
   validateAndTransformQuery,
 } from "@medusajs/framework/http";
 import { StoreDeletionRequestBody } from "./store/customers/me/deletion-request/route";
+import { StoreCorreasQuery } from "./store/correas/disponibilidad/route";
 import { StoreOfertasQuery } from "./store/ofertas/route";
 
 /**
@@ -24,6 +25,12 @@ export default defineMiddlewares({
       matcher: "/store/ofertas",
       methods: ["GET"],
       middlewares: [validateAndTransformQuery(StoreOfertasQuery, {})],
+    },
+    // Disponibilidad de las correas a medida (Fase E-2): sin parámetros.
+    {
+      matcher: "/store/correas/disponibilidad",
+      methods: ["GET"],
+      middlewares: [validateAndTransformQuery(StoreCorreasQuery, {})],
     },
     // Solicitud de baja (fase 9). La autenticación la pone Medusa (`/store/customers/me*`).
     {

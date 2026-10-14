@@ -17,6 +17,7 @@ snacks-perro,Snacks y masticación,alimentacion-perro,Snacks y masticación para
 suplementos-perro,Suplementos,alimentacion-perro,Suplementos para perros,5,
 accesorios-perro,Accesorios,perro,Accesorios para perros,1,
 paseo-perro,Paseo,accesorios-perro,Accesorios para el paseo,0,
+correas-perro,Correas a medida,paseo-perro,"Correas largas a medida, de 3 a 15 m",0,
 viaje-perro,Viaje,accesorios-perro,Accesorios para los viajes,1,
 ropa-perro,Ropa,accesorios-perro,Ropa para perros,2,
 entrenamiento-perro,Entrenamiento,accesorios-perro,Accesorios para entrenar,3,

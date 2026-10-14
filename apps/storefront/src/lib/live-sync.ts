@@ -24,6 +24,7 @@ import {
   type VariantAvailability,
 } from "./catalog";
 import { formatStockGrams } from "./bulk";
+import { correaLiveData, correaModel, type CorreaLiveData } from "./correa";
 import { CATALOG_FEATURES } from "./constants";
 import { formatDiscount, formatPrice, formatUnitPrice } from "./format";
 
@@ -106,14 +107,40 @@ export function liveEntries(
   return out.filter((e) => SAFE_ID.test(e.id));
 }
 
+/** Recargo de un mosquetón: «incluido» o «+3,00 €» (build y LiveSync, mismo texto). */
+export function surchargeText(amount: number, fmt: (n: number) => string): string {
+  return amount > 0 ? `+${fmt(amount)}` : "incluido";
+}
+
+/**
+ * Ficha de una correa a medida (E-2c): entrada del producto («Desde» y stock) y los datos del
+ * configurador (`_correa`, los lee CorreaLive: precios en céntimos y máscaras). Sin entradas por
+ * variante (117; la ficha no tiene marcas por variante). Si los precios actuales no cumplen el
+ * modelo aditivo (lib/correa.ts), sin `_correa`: el configurador se queda con los del build y el
+ * carrito cobra el de Medusa.
+ */
+export function correaLive(product: StoreProduct): {
+  entries: LiveEntry[];
+  correa: CorreaLiveData | null;
+} {
+  const entries = liveEntries([product], { variants: false });
+  try {
+    return { entries, correa: correaLiveData(product, correaModel(product)) };
+  } catch {
+    return { entries, correa: null };
+  }
+}
+
 /**
  * Datos de la island: id → [precio | null, rango 0|1, stock 0|1, anterior?, descuento?, €/kg?,
- * quedan?], seguro dentro de HTML. La tupla se corta tras el último dato: sin oferta ni €/kg
+ * quedan?] (+ `extra`), seguro dentro de HTML. La tupla se corta tras el último dato: sin oferta ni €/kg
  * queda en 3 (v[3] vacío = sin oferta); los huecos anteriores a un dato van a 0.
  */
-export function liveData(entries: LiveEntry[]): string {
+export function liveData(entries: LiveEntry[], extra?: Record<string, unknown>): string {
   type Tuple = (string | number | null)[];
-  const map: Record<string, Tuple> = {};
+  // `extra` (E-2c): claves que empiezan por «_» (no son ids de Medusa) para otros scripts,
+  // p. ej. `_correa` (datos del configurador, CorreaLive). El aplicador no las mira.
+  const map: Record<string, unknown> = { ...extra };
   for (const e of entries) {
     const t: Tuple = [e.price, e.range ? 1 : 0, e.inStock ? 1 : 0];
     const sale = e.was && e.off;

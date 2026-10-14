@@ -20,6 +20,7 @@
     "catalog:mock": "medusa exec ./src/scripts/catalog-mock.ts",
     "stripe:region": "medusa exec ./src/scripts/stripe-region.ts",
     "stock:mock": "medusa exec ./src/scripts/stock-mock.ts",
+    "correas:sync": "medusa exec ./src/scripts/correas-sync.ts",
     "carts:cleanup": "medusa exec ./src/scripts/delete-stale-carts.ts"
   },
   "dependencies": {

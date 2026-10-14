@@ -21,6 +21,7 @@ import { formatPrice } from "$lib/format";
 import type { StoreCart } from "$lib/medusa";
 import Price from "./Price.astro";
 import QuantityField from "./QuantityField.astro";
+import { lineDetails } from "$lib/correa";
 
 interface Props {
   cart: StoreCart | null;
@@ -99,6 +100,9 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
                 {item.variant_title && item.variant_title !== "Única" && (
                   <p class="text-sm text-muted-foreground">{item.variant_title}</p>
                 )}
+                {lineDetails(item.metadata).map((d) => (
+                  <p class="text-sm break-words text-muted-foreground">{d}</p>
+                ))}
                 <p class="flex flex-wrap items-baseline gap-x-1 text-sm text-muted-foreground tabular-nums">
                   {grams !== null ? (
                     <span>{formatGrams(grams)} ·</span>

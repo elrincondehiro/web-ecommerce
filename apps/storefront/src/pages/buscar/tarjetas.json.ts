@@ -7,6 +7,7 @@
 import type { APIRoute } from "astro";
 import { getImage } from "astro:assets";
 import { getListedProducts } from "$lib/medusa";
+import { getListingProducts } from "$lib/shop";
 import { IMAGE_FALLBACK_FORMAT, IMAGE_FORMATS, IMAGE_PRESETS, type CardImage } from "$lib/images";
 
 export const prerender = true;
@@ -33,7 +34,10 @@ async function cardImage(src: string): Promise<CardImage> {
 
 export const GET: APIRoute = async () => {
   const entries: [string, CardImage][] = [];
-  for (const p of await getListedProducts()) {
+  // Con la tarjeta del grupo de correas (E-2c): /buscar/ la pinta con su id sintético.
+  const listed = await getListedProducts();
+  const group = (await getListingProducts()).filter((p) => !listed.includes(p));
+  for (const p of [...listed, ...group]) {
     const src = p.thumbnail ?? p.images?.[0]?.url;
     if (src) entries.push([p.id, await cardImage(src)]);
   }

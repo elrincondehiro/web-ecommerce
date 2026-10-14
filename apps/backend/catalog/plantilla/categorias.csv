@@ -11,6 +11,7 @@ pienso-perro,Pienso,alimentacion-perro,,0,sí
 snacks-perro,Snacks y premios,alimentacion-perro,,1,sí
 paseo-perro,Paseo,perros,,1,sí
 collares-perro,Collares,paseo-perro,Collares de nailon y cuero,0,sí
+correas-perro,Correas a medida,paseo-perro,"Correas largas a medida, de 3 a 15 m",1,sí
 gatos,Gatos,,Todo para tu gato,1,sí
 para-ti,Para ti,,Regalos para personas amantes de los animales,2,sí
 tazas-para-ti,Tazas,para-ti,,0,sí

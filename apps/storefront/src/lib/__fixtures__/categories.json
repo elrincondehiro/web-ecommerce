@@ -291,5 +291,13 @@
     "description": "Camas refrescantes para perros",
     "rank": 1,
     "parent_category_id": "pcat_01M4S0R2R1VGB7DFHKHX2X2T69"
+  },
+  {
+    "id": "pcat_01M4VRFQJXS9KPXY0RC1W7151Y",
+    "name": "Correas a medida",
+    "handle": "correas-perro",
+    "description": "Correas largas a medida, de 3 a 15 m",
+    "rank": 0,
+    "parent_category_id": "pcat_01M4S0R2TFKE6ZQ66T0VBK19FB"
   }
 ]

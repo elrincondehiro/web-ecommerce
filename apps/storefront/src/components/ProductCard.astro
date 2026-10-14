@@ -9,6 +9,7 @@
 import { Badge } from "$lib/components/ui/badge";
 import { getProductPricing, minimumNote, type StoreProduct } from "$lib/catalog";
 import { CATALOG_FEATURES } from "$lib/constants";
+import { isCorrea, isCorreaGroup } from "$lib/correa";
 import Price from "./Price.astro";
 import type { CardImage } from "$lib/images";
 import { buttonVariants } from "$lib/components/ui/button";
@@ -35,8 +36,16 @@ const pricing = getProductPricing(product);
 const image = product.thumbnail ?? product.images?.[0]?.url ?? null;
 // Añadir desde el listado solo con UNA variante; con varias → ficha para elegir (fase 4).
 // Granel (S-3): siempre a la ficha (se eligen los gramos); precio «Desde» del mínimo y €/kg.
+// Correa a medida (E-2c): la tarjeta del grupo (producto sintético, lib/correa.ts) lleva a
+// /producto/correa-a-medida/ y la de un color, a su configurador.
 const single = pricing.variants.length === 1 && !pricing.isBulk ? pricing.variants[0] : undefined;
-const chooseLabel = pricing.isBulk ? "Elegir cantidad" : "Elegir opciones";
+const chooseLabel = pricing.isBulk
+  ? "Elegir cantidad"
+  : isCorreaGroup(product)
+    ? "Elegir color y medida"
+    : isCorrea(product)
+      ? "Elegir medida"
+      : "Elegir opciones";
 const bulkNote = minimumNote(pricing);
 ---
 

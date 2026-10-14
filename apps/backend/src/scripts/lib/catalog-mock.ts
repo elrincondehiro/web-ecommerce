@@ -193,10 +193,18 @@ export const slug = (s: string) =>
 const money = (n: number) => n.toFixed(2).replace(".", ",");
 const roundPrice = (n: number, i: number) => Math.max(0.95, Math.floor(n) + (i % 2 ? 0.95 : 0.9));
 
+/**
+ * Categorías que llena otro script (la correa a medida, `correas:sync`, Fase E-2): el mock no
+ * pone productos en ellas y su padre sigue contando como hoja (así los handles `mock-*` no
+ * cambian al añadirlas).
+ */
+export const NOT_MOCKED = new Set(["correas-perro"]);
+
 /** Hojas del árbol (categorías sin hijas), en el orden de la hoja. */
 export function leafCategories(categories: CategorySheet[]): CategorySheet[] {
-  const parents = new Set(categories.map((c) => c.parent).filter(Boolean));
-  return categories.filter((c) => !parents.has(c.handle) && c.active !== false);
+  const tree = categories.filter((c) => !NOT_MOCKED.has(c.handle));
+  const parents = new Set(tree.map((c) => c.parent).filter(Boolean));
+  return tree.filter((c) => !parents.has(c.handle) && c.active !== false);
 }
 
 function variantsFor(kind: Kind, i: number): Variant[] {

@@ -85,6 +85,16 @@ describe("classifyCartError", () => {
     expect(
       classifyCartError(new FetchError("Some variant does not have the required inventory", 400)),
     ).toBe("stock");
+    expect(
+      classifyCartError(
+        new FetchError("No queda material suficiente para todo lo que hay en el carrito.", 400),
+      ),
+    ).toBe("stock");
+    expect(
+      classifyCartError(
+        new FetchError("Para una correa de 7 m, la medida exacta va de 6,01 a 7 m.", 400),
+      ),
+    ).toBe("correa");
     expect(classifyCartError(new FetchError("Cart with id 'cart_x' not found", 404))).toBe(
       "cart_invalid",
     );
@@ -135,6 +145,7 @@ describe("itemCount y avisos", () => {
       "minimum",
       "discontinued",
       "maximum",
+      "correa",
       "error",
     ]);
   });

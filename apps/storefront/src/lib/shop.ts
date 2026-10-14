@@ -17,6 +17,7 @@ import {
   type CategoryTree,
   type StoreCategory,
 } from "./categories";
+import { groupCorreas, isCorrea, tableProducts } from "./correa";
 import { listingPagesManifest, LISTING_PAGES_MANIFEST } from "./listing-pages";
 import {
   getCategoryList,
@@ -70,9 +71,25 @@ export function shopCategoriesManifest(tree: CategoryTree): Record<string, Store
   );
 }
 
+let listingPromise: Promise<StoreProduct[]> | undefined;
+
+/**
+ * Productos de las TARJETAS de los listados (categorías, /productos/, carrusel de la home): el
+ * catálogo listado con las correas a medida en UNA tarjeta de grupo (E-2c, lib/correa.ts), en el
+ * sitio de la primera. Las fichas, el sitemap y las miniaturas siguen usando `getListedProducts`.
+ */
+export function getListingProducts(): Promise<StoreProduct[]> {
+  return (listingPromise ??= getListedProducts().then((p) => groupCorreas(p)));
+}
+
+/** Correas a medida del catálogo listado (página de grupo, E-2c). */
+export async function getCorreaProducts(): Promise<StoreProduct[]> {
+  return (await getListedProducts()).filter(isCorrea);
+}
+
 /** Productos de una categoría y de sus descendientes (orden del catálogo, sin duplicados). */
 export async function getCategoryProducts(node: CategoryNode): Promise<StoreProduct[]> {
-  return productsInSubtree(await getListedProducts(), node);
+  return productsInSubtree(await getListingProducts(), node);
 }
 
 /** Productos del carrusel de la home: Collection de content/home.yaml, hasta `maximo`. */
@@ -80,24 +97,27 @@ export async function getFeaturedProducts(): Promise<StoreProduct[]> {
   const home = (await getEntry("home", "home"))!.data;
   const collection = await getCollectionByHandle(home.destacados.coleccion);
   if (!collection) return [];
-  return (await getListedProducts())
+  return (await getListingProducts())
     .filter((p) => p.collection_id === collection.id)
     .slice(0, home.destacados.maximo);
 }
 
 /** Manifiesto { clave → ids } de TODOS los listados del build (D-S1). */
 export async function buildListingManifest(): Promise<Record<string, string[]>> {
-  const [tree, products, sale, featured] = await Promise.all([
+  const [tree, products, sale, featured, correas] = await Promise.all([
     computeShopTree(),
-    getListedProducts(),
+    getListingProducts(),
     getSaleProducts(),
     getFeaturedProducts(),
+    getCorreaProducts(),
   ]);
   const ids = (list: StoreProduct[]) => list.map((p) => p.id);
   return listingPagesManifest([
     { ids: ids(products) },
     { ids: ids(sale) },
     { ids: ids(featured), size: Infinity },
+    // Landing de la correa a medida (E-2c): las correas de la tabla de precios (una por material)
+    { ids: ids(tableProducts(correas)), size: Infinity },
     ...tree.all.map((n) => ({ ids: ids(productsInSubtree(products, n)) })),
   ]);
 }

@@ -1,0 +1,202 @@
+---
+// Landing de la correa a medida (Fase E-2c): /producto/correa-a-medida/. Página ESTÁTICA y ligera
+// (para redes y campañas): crece poco con el número de colores. Ruta fija que gana a
+// [handle].astro (astro-docs, routing «Route Priority Order»); el build falla si un producto usa
+// este handle.
+// - Textos: src/content/correa.md (frontmatter + bloques en Markdown).
+// - Selector de color y material (ColorPicker, radios + CSS :has(), 0 JS) con «hasta X m» /
+//   «Agotada» y un CTA a la ficha de la elegida (sin JS, cada muestra lleva su CTA).
+// - Tabla de precios con los de la PRIMERA correa de cada material.
+// - Datos en vivo: <LiveSync pageKey correaLanding>: una island que pide la tabla (variantes de
+//   una correa por material) y la disponibilidad (ruta del backend, sin cantidades) y los aplica
+//   con el aplicador de siempre. Sin JS o si falla: lo del build.
+// - JSON-LD ProductGroup (cada color como hasVariant) sin `offers`, como el resto de fichas.
+import { getEntry, render } from "astro:content";
+import { Image } from "astro:assets";
+import { categoryHref, deepestCategory } from "$lib/categories";
+import {
+  CORREA_GROUP_HANDLE,
+  CORREA_GROUP_PATH,
+  clipPriceKey,
+  correaMaterial,
+  correaModel,
+  correaSwatch,
+  lengthPriceKey,
+  maxLength,
+  tableProducts,
+} from "$lib/correa";
+import { formatPrice } from "$lib/format";
+import { listingPageKey } from "$lib/listing-pages";
+import { surchargeText } from "$lib/live-sync";
+import { getCorreaProducts, getShopTree } from "$lib/shop";
+import { breadcrumbJsonLd, productGroupJsonLd } from "$lib/seo";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import ColorPicker from "../../components/correa/ColorPicker.astro";
+import LiveSync from "../../components/LiveSync.astro";
+
+const entry = (await getEntry("correa", "correa"))!;
+const { Content } = await render(entry);
+const page = entry.data;
+
+const members = await getCorreaProducts();
+const category = members[0] ? deepestCategory(await getShopTree(true), members[0]) : null;
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  ...(category?.path ?? []).map((c) => ({ name: c.name, href: categoryHref(c) })),
+  { name: page.titulo, href: CORREA_GROUP_PATH },
+];
+const swatches = members.map(correaSwatch);
+const maxM = Object.fromEntries(members.map((p) => [p.handle, maxLength(p)]));
+// Preselección: la primera con stock
+const first = members.find((p) => maxM[p.handle]) ?? members[0];
+const tables = tableProducts(members).map((p) => ({
+  id: p.id,
+  material: correaMaterial(p) ?? p.title,
+  model: correaModel(p),
+}));
+const clips = tables[0]?.model.clips ?? [];
+const clipsId = tables[0]?.id ?? "";
+const currency = tables[0]?.model.currency ?? "eur";
+const fmt = (n: number) => formatPrice(n, currency);
+const lengths = [...new Set(tables.flatMap((t) => t.model.lengths.map((l) => l.m)))].sort(
+  (a, b) => a - b,
+);
+const from = Math.min(...tables.map((t) => t.model.lengths[0]?.base ?? Infinity));
+---
+
+<BaseLayout
+  title={page.titulo}
+  description={page.descripcion}
+  type="product"
+  image={page.imagen?.src}
+  noindex={members.length === 0}
+  jsonLd={[
+    breadcrumbJsonLd(crumbs, Astro.site!),
+    ...(members.length
+      ? [
+          productGroupJsonLd(
+            { handle: CORREA_GROUP_HANDLE, title: page.titulo, description: page.descripcion },
+            members,
+            Astro.site!,
+          ),
+        ]
+      : []),
+  ]}
+>
+  <Breadcrumbs items={crumbs} />
+
+  <section class="mb-12 grid items-start gap-8 md:grid-cols-2">
+    <div class="flex flex-col gap-4">
+      <h1 class="font-display text-4xl font-bold tracking-tight">{page.titulo}</h1>
+      <p class="max-w-prose text-lg text-muted-foreground">{page.entradilla}</p>
+      {Number.isFinite(from) && (
+        <p class="text-lg">
+          Desde <strong class="tabular-nums">{fmt(from)}</strong>
+          <span class="text-sm text-muted-foreground">IVA incluido</span>
+        </p>
+      )}
+      <p class="font-semibold">{page.plazo}</p>
+      {page.imagen && (
+        <Image
+          src={page.imagen}
+          alt={page.imagenAlt ?? ""}
+          widths={[480, 720, 960]}
+          sizes="(min-width: 768px) 50vw, 100vw"
+          loading="eager"
+          fetchpriority="high"
+          class="rounded-md border-2 border-line"
+        />
+      )}
+    </div>
+
+    {members.length === 0 ? (
+      <p>
+        Ahora mismo no hay correas a medida.{" "}
+        <a href="/productos/" class="font-semibold underline underline-offset-4">
+          Ver todos los productos
+        </a>
+      </p>
+    ) : (
+      <div class="rounded-md border-2 border-line p-5 shadow-sm">
+        <h2 class="mb-4 text-xl font-semibold">Elige color y material</h2>
+        <ColorPicker
+          swatches={swatches}
+          mode="radio"
+          current={first?.handle}
+          maxM={maxM}
+          cta={page.cta}
+        />
+        <p class="mt-4 text-xs text-muted-foreground">
+          Largo, mosquetones y medida exacta los eliges en el paso siguiente.
+        </p>
+      </div>
+    )}
+  </section>
+
+  <div class="grid gap-12 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+    <article class="prose-page max-w-prose">
+      <Content />
+    </article>
+
+    {tables.length > 0 && (
+      <section aria-labelledby="correa-precios">
+        <h2 id="correa-precios" class="mb-2 text-xl font-semibold">
+          Precios
+        </h2>
+        <p class="mb-4 text-sm text-muted-foreground">Con mosquetones estándar, IVA incluido.</p>
+        <table class="w-full text-sm tabular-nums">
+          <caption class="sr-only">Precio por largo y material</caption>
+          <thead class="text-left text-muted-foreground">
+            <tr>
+              <th scope="col" class="py-1 pr-4 font-normal">
+                Largo
+              </th>
+              {tables.map((t) => (
+                <th scope="col" class="py-1 pr-4 font-normal">
+                  {t.material}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {lengths.map((m) => (
+              <tr class="border-t">
+                <th scope="row" class="py-1.5 pr-4 font-medium">
+                  {m} m
+                </th>
+                {tables.map((t) => {
+                  const l = t.model.lengths.find((x) => x.m === m);
+                  return (
+                    <td class="py-1.5 pr-4">
+                      {l ? <span data-price={lengthPriceKey(t.id, m)}>{fmt(l.base)}</span> : "—"}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {clips.length > 1 && (
+          <>
+            <h3 class="mt-6 mb-2 font-semibold">Mosquetones (cada lado)</h3>
+            <ul class="flex flex-col gap-1 text-sm">
+              {clips.map((c) => (
+                <li>
+                  {c.name}:{" "}
+                  <span class="tabular-nums" data-price={clipPriceKey(clipsId, c.code)}>
+                    {surchargeText(c.surcharge, fmt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+    )}
+  </div>
+
+  {members.length > 0 && (
+    <LiveSync pageKey={listingPageKey(tableProducts(members).map((p) => p.id))} correaLanding />
+  )}
+</BaseLayout>

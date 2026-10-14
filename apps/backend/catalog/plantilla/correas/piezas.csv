@@ -1,0 +1,4 @@
+# OTRAS PIEZAS de cada correa · por_correa: unidades que gasta una correa · stock_inicial: SOLO al crear la pieza
+sku,nombre,por_correa,stock_inicial
+PIEZA-ANILLA,Anilla,3,150
+PIEZA-HEBILLA,Hebilla,2,100

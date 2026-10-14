@@ -82,4 +82,24 @@ const paginas = defineCollection({
   }),
 });
 
-export const collections = { anuncios, home, tienda, paginas };
+/**
+ * Landing de la correa a medida (Fase E-2c): `src/content/correa.md` → /producto/correa-a-medida/.
+ * Frontmatter = textos fijos de la página (título, entradilla, CTA, plazo) y cuerpo en Markdown =
+ * los bloques de «cómo la hacemos». Imagen opcional (astro:assets).
+ */
+const correa = defineCollection({
+  loader: glob({ pattern: "correa.md", base: "./src/content" }),
+  schema: ({ image }) =>
+    z.object({
+      titulo: z.string(),
+      descripcion: z.string().max(160),
+      entradilla: z.string(),
+      cta: z.string().max(30),
+      /** Plazo de fabricación: se muestra en la landing y en la ficha de cada color. */
+      plazo: z.string().max(80),
+      imagen: image().optional(),
+      imagenAlt: z.string().optional(),
+    }),
+});
+
+export const collections = { anuncios, home, tienda, paginas, correa };

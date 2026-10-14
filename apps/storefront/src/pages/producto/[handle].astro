@@ -3,6 +3,8 @@ import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
 import { isDiscontinued, metaDescription, replacementHandle } from "$lib/catalog";
 import { buttonVariants } from "$lib/components/ui/button";
 import { categoryHref, deepestCategory } from "$lib/categories";
+import { getEntry } from "astro:content";
+import { CORREA_GROUP_HANDLE, CORREA_GROUP_PATH, correaSwatch, isCorrea } from "$lib/correa";
 import { getAllProducts } from "$lib/medusa";
 import { getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
@@ -10,29 +12,40 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import AnalyticsTable from "../../components/AnalyticsTable.astro";
 import BuyBox from "../../components/BuyBox.astro";
+import ColorPicker from "../../components/correa/ColorPicker.astro";
+import CorreaBuilder from "../../components/correa/CorreaBuilder.astro";
 import ProductGallery from "../../components/ProductGallery.astro";
 import LiveSync from "../../components/LiveSync.astro";
 
 // Todas las fichas, también las descatalogadas (Fase E, opción i): su URL sigue respondiendo.
 export const getStaticPaths = (async () => {
   const products = await getAllProducts();
+  // /producto/correa-a-medida/ es la página de grupo (E-2c): ningún producto puede usar el handle
+  if (products.some((p) => p.handle === CORREA_GROUP_HANDLE)) {
+    throw new Error(`El handle «${CORREA_GROUP_HANDLE}» está reservado (página de grupo).`);
+  }
   const titles = new Map(products.map((p) => [p.handle, p.title]));
+  // Correas a medida: enlaces a los otros colores y materiales (sin descatalogadas)
+  const correas = products.filter((p) => isCorrea(p) && !isDiscontinued(p)).map(correaSwatch);
   return products.map((product) => {
     const handle = isDiscontinued(product) ? replacementHandle(product) : null;
     const replacement =
       handle && titles.has(handle) ? { handle, title: titles.get(handle)! } : null;
-    return { params: { handle: product.handle }, props: { product, replacement } };
+    const siblings = isCorrea(product) ? correas : [];
+    return { params: { handle: product.handle }, props: { product, replacement, siblings } };
   });
 }) satisfies GetStaticPaths;
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
-const { product, replacement } = Astro.props as Props;
+const { product, replacement, siblings } = Astro.props as Props;
 const discontinued = isDiscontinued(product);
+const correa = isCorrea(product);
 // Migas: cadena completa de la categoría más concreta del producto (Fase S)
 const category = deepestCategory(await getShopTree(true), product);
 const crumbs = [
   { name: "Inicio", href: "/" },
   ...(category?.path ?? []).map((c) => ({ name: c.name, href: categoryHref(c) })),
+  ...(correa ? [{ name: "Correa a medida", href: CORREA_GROUP_PATH }] : []),
   { name: product.title, href: `/producto/${product.handle}/` },
 ];
 const gallery = (product.images ?? [])
@@ -42,7 +55,10 @@ const gallery = (product.images ?? [])
   .filter(Boolean);
 if (!gallery.length && product.thumbnail) gallery.push(product.thumbnail);
 const image = gallery[0] ?? null;
-const options = (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
+// Correa: las opciones se eligen en el configurador (no se listan)
+const options = correa ? [] : (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
+// Plazo de fabricación de la correa (src/content/correa.md)
+const plazo = correa ? (await getEntry("correa", "correa"))?.data.plazo : undefined;
 // Descatalogado: enlace al sustituto o, si no hay, a su categoría (o al catálogo)
 const onward = replacement
   ? { href: `/producto/${replacement.handle}/`, text: `Ver ${replacement.title}` }
@@ -83,6 +99,14 @@ const onward = replacement
             {onward.text}
           </a>
         </div>
+      ) : correa ? (
+        <>
+          {siblings.length > 1 && (
+            <ColorPicker swatches={siblings} mode="link" current={product.handle} />
+          )}
+          {plazo && <p class="font-semibold">{plazo}</p>}
+          <CorreaBuilder product={product} />
+        </>
       ) : (
         <BuyBox product={product} />
       )}

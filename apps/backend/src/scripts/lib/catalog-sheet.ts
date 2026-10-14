@@ -106,6 +106,11 @@ export const OPTION_PREFIX = "opcion:";
 export const CLEAR = "-";
 
 export const HANDLE_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/**
+ * Handles de producto reservados por páginas del storefront: /producto/correa-a-medida/ es la
+ * página de grupo de las correas (Fase E-2c; el build del storefront también lo comprueba).
+ */
+export const RESERVED_PRODUCT_HANDLES = new Set(["correa-a-medida"]);
 
 /** Minúsculas y sin acentos (cabeceras y comparación de valores). */
 export const fold = (s: string) =>
@@ -501,6 +506,10 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
     const handle = cell("handle");
     if (!HANDLE_RE.test(handle)) {
       err("handle", "Handle no válido: minúsculas, números y guiones (p. ej. «camiseta-basica»).");
+      continue;
+    }
+    if (RESERVED_PRODUCT_HANDLES.has(handle)) {
+      err("handle", `«${handle}» está reservado por la tienda (página de grupo): usa otro.`);
       continue;
     }
 

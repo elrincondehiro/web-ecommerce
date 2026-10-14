@@ -37,7 +37,11 @@ const { product_categories } = await get("/store/product-categories", {
 // reparte los primeros 39 por todas las hojas del árbol) y sin imágenes: el build de CI no tiene
 // bucket. Las ofertas y la Collection se recortan a ese subconjunto.
 const FIXTURE_MAX = 48;
+// Correa a medida (E-2c): dos colores de la plantilla (`correas:sync catalog/plantilla/correas`),
+// uno de cada material y uno con poca cuerda (verde PVC: hasta 8 m), para el build de CI.
+const FIXTURE_CORREAS = new Set(["correa-azul-nylon", "correa-verde-pvc"]);
 const inFixture = (/** @type {string} */ handle) => {
+  if (FIXTURE_CORREAS.has(handle)) return true;
   const n = Number(/^mock-.*-(\d{3})$/.exec(handle)?.[1] ?? NaN);
   return n >= 1 && n <= FIXTURE_MAX;
 };
@@ -58,14 +62,31 @@ const query = new URLSearchParams({
 });
 for (const id of ids) query.append("id[]", id);
 const { products: base } = await get(`/store/products?${query}`);
-const products = base.map((/** @type {any} */ p) => ({
-  ...p,
-  thumbnail: null,
-  images: [],
-  variants: [...(p.variants ?? [])].sort(
+// Correas (117 variantes cada una): variantes recortadas a lo que leen lib/catalog.ts y
+// lib/correa.ts, para que el fixture no crezca ~250 KB por correa.
+const slimCorrea = (/** @type {any} */ v) => ({
+  id: v.id,
+  title: v.title,
+  manage_inventory: v.manage_inventory,
+  allow_backorder: v.allow_backorder,
+  metadata: v.metadata,
+  calculated_price: {
+    calculated_amount_with_tax: v.calculated_price?.calculated_amount_with_tax,
+    currency_code: v.calculated_price?.currency_code,
+  },
+  inventory_quantity: v.inventory_quantity,
+});
+const products = base.map((/** @type {any} */ p) => {
+  const variants = [...(p.variants ?? [])].sort(
     (/** @type {any} */ a, /** @type {any} */ b) => (a.variant_rank ?? 0) - (b.variant_rank ?? 0),
-  ),
-}));
+  );
+  return {
+    ...p,
+    thumbnail: null,
+    images: [],
+    variants: p.metadata?.plantilla === "correa" ? variants.map(slimCorrea) : variants,
+  };
+});
 
 // I-Interficie: Collection del carrusel de la home y productos en oferta (backend /store/ofertas;
 // datos de prueba con `catalog:import catalog/mock`, columna precio_oferta).

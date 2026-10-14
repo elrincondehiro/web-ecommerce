@@ -1,0 +1,6 @@
+# AJUSTES DE LA CORREA A MEDIDA · correas:sync (instrucciones en LEEME.md)
+# categoria: handle de la categoría (debe existir: créala con catalog:import) · peso_fijo_g: gramos de mosquetones, anillas y hebillas · cuerda_extra_m: metros de cuerda de más por correa (lazos y costuras)
+clave,valor
+categoria,correas-perro
+peso_fijo_g,250
+cuerda_extra_m,"0,5"

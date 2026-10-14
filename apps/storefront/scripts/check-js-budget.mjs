@@ -4,7 +4,9 @@
 //   - UN bundle común de la web (SiteClient, ≤ 1,5 KB gzip, fase 7-2: sugerencias), OBLIGATORIO
 //     (va en BaseLayout; también en carrito/checkout/pedido, comprobado en e2e/sugerencias);
 //   - UN bundle de arrastre de carruseles (ScrollDrag, ≤ 1 KB gzip, Fase D) SOLO en páginas con
-//     un [data-drag-scroll] y obligatorio en ellas (un carrusel nuevo debe incluir <ScrollDrag />).
+//     un [data-drag-scroll] y obligatorio en ellas (un carrusel nuevo debe incluir <ScrollDrag />);
+//   - UN bundle del configurador de la correa a medida (CorreaLive, ≤ 1 KB gzip, Fase E-2c) SOLO
+//     en las fichas con el formulario [data-correa] y obligatorio en ellas.
 // Se permite el script inline de las server
 // islands (lo genera Astro) y el aplicador de LiveSync, ≤ 1,2 KB gzip en total (margen: las props
 // cifradas de las islands cambian de longitud en cada build).
@@ -39,8 +41,10 @@ const PAGE_BUNDLES = [
   { name: "carrito", re: /^CartClient\.[^/]*\.js$/, max: 2048, required: false },
   { name: "común", re: /^SiteClient\.[^/]*\.js$/, max: 1536, required: true },
   { name: "arrastre", re: /^ScrollDrag\.[^/]*\.js$/, max: 1024, required: "drag" },
+  { name: "correa", re: /^CorreaLive\.[^/]*\.js$/, max: 1024, required: "correa" },
 ];
-const DRAG = /\bdata-drag-scroll\b/;
+/** Bundles que solo pueden (y deben) ir en las páginas con cierta marca. */
+const MARKS = { drag: /\bdata-drag-scroll\b/, correa: /\bdata-correa=/ };
 /** Mejora progresiva de /buscar/ (modelo híbrido, fase 7-1). */
 const SEARCH_BUNDLE = /^SearchLive\.[^/]*\.js$/;
 const SEARCH_GZIP_MAX = 1024;
@@ -95,14 +99,14 @@ for await (const file of htmlFiles(ROOT)) {
   const inlineGzip = inline ? gzipSync(inline).length : 0;
   const others = bundles.filter((b) => !PAGE_BUNDLES.some(({ re }) => re.test(basename(b))));
   if (others.length) failures.push(`${rel}: bundles JS no permitidos ${others.join(", ")}`);
-  const hasDrag = DRAG.test(html);
   for (const { name, re, max, required } of PAGE_BUNDLES) {
     const found = [...new Set(bundles.filter((b) => re.test(basename(b))))];
     if (found.length > 1) failures.push(`${rel}: más de un bundle ${name} ${found.join(", ")}`);
-    const must = required === "drag" ? hasDrag : required;
+    const mark = typeof required === "string" ? MARKS[required] : null;
+    const must = mark ? mark.test(html) : required;
     if (must && !found.length) failures.push(`${rel}: falta el bundle ${name}`);
-    if (required === "drag" && !hasDrag && found.length)
-      failures.push(`${rel}: bundle ${name} sin ningún [data-drag-scroll]`);
+    if (mark && !must && found.length)
+      failures.push(`${rel}: bundle ${name} sin su marca (${mark.source})`);
     for (const src of found) {
       const gz = await bundleGzip(src);
       if (gz > max)

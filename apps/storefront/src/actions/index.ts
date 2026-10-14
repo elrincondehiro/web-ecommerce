@@ -12,6 +12,13 @@ import { COOKIE_SECURE } from "astro:env/server";
 import { z } from "astro/zod";
 import { bulkRule, checkGrams, lineRule } from "$lib/bulk";
 import {
+  CORREA_LINE_META,
+  NOTES_MAX,
+  cleanNotes,
+  exactRange,
+  findCorreaVariant,
+} from "$lib/correa";
+import {
   CART_COOKIE,
   ID_PATTERN,
   MAX_QUANTITY,
@@ -25,6 +32,7 @@ import {
   addLineItem,
   createCart,
   deleteLineItem,
+  getProductVariantsMeta,
   getVariantMetadata,
   retrieveCart,
   updateLineItem,
@@ -63,6 +71,48 @@ function titleOf(cart: StoreCart, variantId: string): string | null {
   return cart.items?.find((i) => i.variant_id === variantId)?.product_title ?? null;
 }
 
+const fail = (kind: ReturnType<typeof classifyCartError>): CartResult | null =>
+  kind === "stock" || kind === "minimum" || kind === "discontinued" || kind === "correa"
+    ? { code: kind, count: null }
+    : null;
+
+/**
+ * Añade una línea; si la cookie apunta a un carrito inexistente o completado, crea otro y
+ * reintenta una vez.
+ */
+async function addWithRetry(
+  ctx: ActionAPIContext,
+  op: string,
+  variantId: string,
+  units: number,
+  metadata?: Record<string, unknown>,
+): Promise<CartResult> {
+  let cartId = getCartId(ctx);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      if (!cartId) {
+        // Con sesión, el carrito nace ya asociado al cliente (fase 9).
+        cartId = (await createCart(undefined, ctx.locals.customerToken)).id;
+        setCartId(ctx, cartId);
+      }
+      const cart = await addLineItem(cartId, variantId, units, metadata);
+      return { code: "added", count: itemCount(cart), title: titleOf(cart, variantId) };
+    } catch (err) {
+      const kind = classifyCartError(err);
+      const known = fail(kind);
+      if (known) return known;
+      if (kind === "cart_invalid" && attempt === 0) {
+        clearCartId(ctx);
+        cartId = null;
+        continue;
+      }
+      logError(ctx, op, err);
+      return { code: "error", count: null };
+    }
+  }
+  return { code: "error", count: null };
+}
+
 export const server = {
   account,
   checkout,
@@ -71,46 +121,85 @@ export const server = {
       accept: "form",
       input: z.object({ variant_id: id, quantity: quantity.default(1), grams, preset: grams }),
       handler: async ({ variant_id, quantity, grams, preset }, ctx): Promise<CartResult> => {
-        // Hasta 2 intentos: si la cookie apunta a un carrito inexistente o completado, se crea
-        // otro y se reintenta una vez.
-        let cartId = getCartId(ctx);
         const wanted = preset ?? grams;
-        for (let attempt = 0; attempt < 2; attempt++) {
+        let units = quantity;
+        if (wanted != null) {
           try {
-            let units = quantity;
-            if (wanted != null) {
-              // Granel (S-3): el paso y el mínimo salen de la variante (servidor), no del form.
-              const rule = bulkRule(await getVariantMetadata(variant_id));
-              if (!rule) return { code: "invalid", count: null };
-              const current = cartId ? await retrieveCart(cartId).catch(() => null) : null;
-              const already = (current?.completed_at ? [] : (current?.items ?? []))
-                .filter((i) => i.variant_id === variant_id)
-                .reduce((g, i) => g + (i.quantity ?? 0) * rule.stepG, 0);
-              const check = checkGrams(wanted, rule, already);
-              if (!check.ok) return { code: check.code, count: null };
-              units = check.units;
-            }
-            if (!cartId) {
-              // Con sesión, el carrito nace ya asociado al cliente (fase 9).
-              cartId = (await createCart(undefined, ctx.locals.customerToken)).id;
-              setCartId(ctx, cartId);
-            }
-            const cart = await addLineItem(cartId, variant_id, units);
-            return { code: "added", count: itemCount(cart), title: titleOf(cart, variant_id) };
+            // Granel (S-3): el paso y el mínimo salen de la variante (servidor), no del form.
+            const rule = bulkRule(await getVariantMetadata(variant_id));
+            if (!rule) return { code: "invalid", count: null };
+            const cartId = getCartId(ctx);
+            const current = cartId ? await retrieveCart(cartId).catch(() => null) : null;
+            const already = (current?.completed_at ? [] : (current?.items ?? []))
+              .filter((i) => i.variant_id === variant_id)
+              .reduce((g, i) => g + (i.quantity ?? 0) * rule.stepG, 0);
+            const check = checkGrams(wanted, rule, already);
+            if (!check.ok) return { code: check.code, count: null };
+            units = check.units;
           } catch (err) {
-            const kind = classifyCartError(err);
-            if (kind === "stock" || kind === "minimum" || kind === "discontinued")
-              return { code: kind, count: null };
-            if (kind === "cart_invalid" && attempt === 0) {
-              clearCartId(ctx);
-              cartId = null;
-              continue;
-            }
+            const known = fail(classifyCartError(err));
+            if (known) return known;
             logError(ctx, "add", err);
             return { code: "error", count: null };
           }
         }
-        return { code: "error", count: null };
+        return addWithRetry(ctx, "add", variant_id, units);
+      },
+    }),
+
+    /**
+     * Correa a medida (Fase E-2c, CorreaBuilder): el cliente manda el producto, el largo y los
+     * mosquetones; la variante la busca el servidor en la metadata de las variantes del producto
+     * (nunca se acepta un variant_id). Medida exacta en cm dentro del tramo del largo y
+     * observaciones ≤ 200 caracteres: van en la metadata de la línea (el backend las vuelve a
+     * validar, hook validar-carrito). Dos correas iguales con distinta medida u observaciones son
+     * líneas distintas (Medusa solo junta líneas con la misma metadata).
+     */
+    addCorrea: defineAction({
+      accept: "form",
+      input: z.object({
+        product_id: id,
+        largo: z.number().int().min(1).max(100),
+        perro: z.string().regex(/^[A-Z]{2,4}$/),
+        mano: z.string().regex(/^[A-Z]{2,4}$/),
+        medida_cm: z.number().int().min(1).max(10_000).nullish(),
+        observaciones: z
+          .string()
+          .max(NOTES_MAX * 4)
+          .nullish(),
+        quantity: quantity.default(1),
+      }),
+      handler: async (input, ctx): Promise<CartResult> => {
+        const { product_id, largo, perro, mano, medida_cm, quantity } = input;
+        if (medida_cm != null) {
+          const { minCm, maxCm } = exactRange(largo);
+          if (medida_cm < minCm || medida_cm > maxCm) return { code: "correa", count: null };
+        }
+        const notes = cleanNotes(input.observaciones);
+        if (notes === false) return { code: "correa", count: null };
+        let variantId: string | null;
+        try {
+          variantId = findCorreaVariant(
+            await getProductVariantsMeta(product_id),
+            largo,
+            perro,
+            mano,
+          );
+        } catch (err) {
+          logError(ctx, "addCorrea", err);
+          return { code: "error", count: null };
+        }
+        if (!variantId) return { code: "invalid", count: null };
+        const metadata: Record<string, unknown> = {};
+        if (medida_cm != null) metadata[CORREA_LINE_META.exactCm] = medida_cm;
+        if (notes) metadata[CORREA_LINE_META.notes] = notes;
+        return addWithRetry(
+          ctx,
+          "addCorrea",
+          variantId,
+          quantity,
+          Object.keys(metadata).length ? metadata : undefined,
+        );
       },
     }),
 
@@ -149,8 +238,8 @@ export const server = {
           return { code: "updated", count: itemCount(cart) };
         } catch (err) {
           const kind = classifyCartError(err);
-          if (kind === "stock" || kind === "minimum" || kind === "discontinued")
-            return { code: kind, count: null };
+          const known = fail(kind);
+          if (known) return known;
           if (kind === "cart_invalid") {
             clearCartId(ctx);
             return { code: "expired", count: 0 };

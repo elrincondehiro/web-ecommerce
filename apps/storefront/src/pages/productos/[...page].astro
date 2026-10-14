@@ -3,15 +3,14 @@ import type { GetStaticPaths } from "astro";
 import { PAGE_SIZE } from "$lib/constants";
 import { buildListingFacets } from "$lib/facets";
 import { facetCategories, productTreeHandles } from "$lib/categories";
-import { getListedProducts } from "$lib/medusa";
-import { getShopTree } from "$lib/shop";
+import { getListingProducts, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd } from "$lib/seo";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CatalogPage from "../../components/CatalogPage.astro";
 
 export const getStaticPaths = (async ({ paginate }) => {
-  const [products, tree] = await Promise.all([getListedProducts(), getShopTree(true)]);
+  const [products, tree] = await Promise.all([getListingProducts(), getShopTree(true)]);
   // Filtro «Categoría» por niveles (Fase S): aquí, las raíces (contando sus subárboles)
   const facets = buildListingFacets(products, {
     categories: facetCategories(tree, []),

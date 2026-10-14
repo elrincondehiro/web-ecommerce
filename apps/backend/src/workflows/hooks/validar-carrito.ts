@@ -2,29 +2,71 @@ import { MedusaError, ContainerRegistrationKeys } from "@medusajs/framework/util
 import type { MedusaContainer } from "@medusajs/framework/types";
 import {
   addToCartWorkflow,
+  completeCartWorkflow,
   createCartWorkflow,
   updateLineItemInCartWorkflow,
 } from "@medusajs/medusa/core-flows";
 import { bulkMinimumError, bulkRule } from "../../lib/granel";
 import { DISCONTINUED_MESSAGE, isDiscontinued } from "../../lib/descatalogado";
+import { isCorrea, lineMetadataError, variantLength } from "../../lib/correas";
+import { KIT_SHORTAGE_MESSAGE, kitShortages, type DemandLine } from "../../lib/kit-demand";
 
 /**
  * Validaciones del carrito con los hooks `validate` oficiales. Medusa admite UN solo handler por
- * hook (docs: workflow-hooks «A hook can have only one handler»), así que van todas aquí:
+ * hook (docs: workflow-hooks «A hook can have only one handler»), así que van todas aquí. Se
+ * ejecutan antes de tocar el carrito, así que un error lo deja como estaba.
  * - Descatalogados (Fase E): no se pueden añadir (sí cambiar la cantidad o quitar una línea que ya
  *   estaba en el carrito).
- * - Granel (S-3): la cantidad total de una variante en el carrito × `paso_g` no puede quedar por debajo
- * de `min_g` (metadata de la variante, la escribe `catalog:import`). Hooks `validate` oficiales:
- * se ejecutan antes de tocar el carrito, así que un error lo deja como estaba.
+ * - Granel (S-3): la cantidad total de una variante en el carrito × `paso_g` no puede quedar por
+ *   debajo de `min_g` (metadata de la variante, la escribe `catalog:import`).
+ * - Metadata de la línea (E-2): solo las correas la admiten, y solo `observaciones` y
+ *   `medida_cm` (`lib/correas.ts`).
+ * - Piezas compartidas (E-2): la demanda de TODO el carrito por artículo de inventario no puede
+ *   superar el stock libre (`lib/kit-demand.ts`; Medusa lo comprueba línea a línea). También al
+ *   completar el carrito, porque entre añadir y pagar otro cliente puede haber comprado.
  */
 type Quantities = Map<string, number>;
+
+interface CartItem {
+  id?: string;
+  variant_id?: string | null;
+  quantity?: unknown;
+  metadata?: unknown;
+}
+
+interface NewLine {
+  variant_id: string;
+  metadata?: unknown;
+}
+
+const add = (map: Quantities, variantId: string | null | undefined, qty: unknown) => {
+  if (!variantId) return;
+  map.set(variantId, (map.get(variantId) ?? 0) + Number(qty ?? 0));
+};
+
+const demandLines = (items: CartItem[]): DemandLine[] =>
+  items.flatMap((i) =>
+    i.variant_id ? [{ variant_id: i.variant_id, quantity: Number(i.quantity ?? 0) }] : [],
+  );
 
 async function check(
   container: MedusaContainer,
   quantities: Quantities,
-  adding: ReadonlySet<string> = new Set(),
+  {
+    adding = new Set<string>(),
+    lines = [],
+    newLines = [],
+    salesChannelId,
+  }: {
+    adding?: ReadonlySet<string>;
+    /** Líneas finales del carrito (para la demanda conjunta de piezas). */
+    lines?: DemandLine[];
+    /** Líneas nuevas o cambiadas cuya metadata hay que validar. */
+    newLines?: NewLine[];
+    salesChannelId?: string | null;
+  } = {},
 ) {
-  const ids = [...quantities.keys()];
+  const ids = [...new Set([...quantities.keys(), ...newLines.map((l) => l.variant_id)])];
   if (!ids.length) return;
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
   const { data } = await query.graph({
@@ -32,6 +74,7 @@ async function check(
     fields: ["id", "metadata", "product.metadata"],
     filters: { id: ids },
   });
+  const byId = new Map(data.map((v) => [v.id, v]));
   for (const v of data) {
     const product = (v as { product?: { metadata?: Record<string, unknown> | null } | null })
       .product;
@@ -43,35 +86,50 @@ async function check(
     const message = bulkMinimumError(rule, quantities.get(v.id) ?? 0);
     if (message) throw new MedusaError(MedusaError.Types.INVALID_DATA, message);
   }
+  for (const line of newLines) {
+    const v = byId.get(line.variant_id) as
+      | { metadata?: Record<string, unknown> | null; product?: { metadata?: unknown } | null }
+      | undefined;
+    const correa = isCorrea(v?.product?.metadata as Record<string, unknown> | null | undefined);
+    const message = lineMetadataError(line.metadata, correa, variantLength(v?.metadata));
+    if (message) throw new MedusaError(MedusaError.Types.INVALID_DATA, message);
+  }
+  if ((await kitShortages(container, lines, salesChannelId)).length) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      KIT_SHORTAGE_MESSAGE,
+      "insufficient_inventory",
+    );
+  }
 }
 
-interface CartItem {
-  id?: string;
-  variant_id?: string | null;
-  quantity?: unknown;
-}
-
-const add = (map: Quantities, variantId: string | null | undefined, qty: unknown) => {
-  if (!variantId) return;
-  map.set(variantId, (map.get(variantId) ?? 0) + Number(qty ?? 0));
-};
-
-addToCartWorkflow.hooks.validate(async ({ input }, { container }) => {
+addToCartWorkflow.hooks.validate(async ({ input, cart }, { container }) => {
+  const items = ((input.items ?? []) as CartItem[]).filter(
+    (i): i is CartItem & { variant_id: string } => Boolean(i.variant_id),
+  );
+  if (!items.length) return;
   const quantities: Quantities = new Map();
-  for (const item of (input.items ?? []) as CartItem[])
-    add(quantities, item.variant_id, item.quantity);
-  if (!quantities.size) return;
+  for (const item of items) add(quantities, item.variant_id, item.quantity);
   const adding = new Set(quantities.keys());
-  // Añadir una variante que ya está en el carrito suma a su línea (el carrito del hook no trae
-  // las líneas: se leen aquí)
+  // El carrito del hook no trae las líneas: se leen aquí. Añadir una variante que ya está en el
+  // carrito suma a su línea (granel) y toda línea cuenta para las piezas compartidas.
   const query = (container as MedusaContainer).resolve(ContainerRegistrationKeys.QUERY);
-  const { data: items } = await query.graph({
+  const { data: existing } = await query.graph({
     entity: "line_item",
     fields: ["variant_id", "quantity"],
-    filters: { cart_id: input.cart_id, variant_id: [...quantities.keys()] },
+    filters: { cart_id: input.cart_id },
   });
-  for (const item of items as CartItem[]) add(quantities, item.variant_id, item.quantity);
-  await check(container, quantities, adding);
+  for (const item of existing as CartItem[]) {
+    if (item.variant_id && adding.has(item.variant_id)) {
+      add(quantities, item.variant_id, item.quantity);
+    }
+  }
+  await check(container as MedusaContainer, quantities, {
+    adding,
+    lines: demandLines([...(existing as CartItem[]), ...items]),
+    newLines: items,
+    salesChannelId: (cart as { sales_channel_id?: string | null }).sales_channel_id,
+  });
 });
 
 updateLineItemInCartWorkflow.hooks.validate(async ({ input, cart }, { container }) => {
@@ -86,12 +144,43 @@ updateLineItemInCartWorkflow.hooks.validate(async ({ input, cart }, { container 
       add(quantities, other.variant_id, other.quantity);
     }
   }
-  await check(container, quantities);
+  const metadata = (input.update as { metadata?: unknown }).metadata;
+  await check(container as MedusaContainer, quantities, {
+    lines: demandLines(items.map((i) => (i.id === item.id ? { ...i, quantity } : i))),
+    newLines: metadata !== undefined ? [{ variant_id: item.variant_id, metadata }] : [],
+    salesChannelId: (cart as { sales_channel_id?: string | null }).sales_channel_id,
+  });
 });
 
-createCartWorkflow.hooks.validate(async ({ input }, { container }) => {
+createCartWorkflow.hooks.validate(async ({ input, cart }, { container }) => {
+  const items = ((input.items ?? []) as CartItem[]).filter(
+    (i): i is CartItem & { variant_id: string } => Boolean(i.variant_id),
+  );
   const quantities: Quantities = new Map();
-  for (const item of (input.items ?? []) as CartItem[])
-    add(quantities, item.variant_id, item.quantity);
-  await check(container, quantities, new Set(quantities.keys()));
+  for (const item of items) add(quantities, item.variant_id, item.quantity);
+  await check(container as MedusaContainer, quantities, {
+    adding: new Set(quantities.keys()),
+    lines: demandLines(items),
+    newLines: items,
+    salesChannelId: (cart as { sales_channel_id?: string | null }).sales_channel_id,
+  });
+});
+
+completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
+  const c = cart as {
+    items?: CartItem[];
+    sales_channel_id?: string | null;
+    completed_at?: unknown;
+  };
+  // Reintento de un carrito ya completado (webhook de Stripe + vuelta del cliente): sus reservas
+  // ya restan del stock libre y la comprobación daría un falso «no queda material».
+  if (c.completed_at) return;
+  const lines = demandLines(c.items ?? []);
+  if ((await kitShortages(container as MedusaContainer, lines, c.sales_channel_id)).length) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      KIT_SHORTAGE_MESSAGE,
+      "insufficient_inventory",
+    );
+  }
 });

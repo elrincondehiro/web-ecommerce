@@ -158,7 +158,7 @@ web-ecommerce/
 
 ## 4. Versiones fijadas
 
-**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 13-oct-2026 (cierre de la Fase S; sin cambios de dependencias desde la Fase C).
+**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 14-oct-2026 (cierre de la Fase E; sin cambios de dependencias desde la Fase C).
 
 Política:
 
@@ -483,6 +483,7 @@ pnpm --filter backend exec medusa db:migrate
 pnpm backend:seed                                         # región ES, IVA, envíos, publishable key, Collection destacados
 pnpm --filter backend catalog:mock [300]                  # genera catalog/mock/productos.csv (árbol de categorías real)
 pnpm --filter backend catalog:import catalog/mock         # … y lo carga (idempotente)
+pnpm --filter backend correas:sync catalog/plantilla/correas  # correas a medida de prueba (Fase E-2, kits por piezas)
 pnpm backend:stock:mock                                   # repone stock libre de los mock (los e2e de checkout lo gastan)
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup  # limpieza de carritos a mano (borrado suave, fase 10-4)
 pnpm --filter backend catalog:import <carpeta> [dry-run]  # categorías + productos desde CSV (apps/backend/catalog/plantilla)
@@ -685,7 +686,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | ✅     |
 | C Importador de catálogo (CSV)         | [faseC-catalogo.md](./docs/fases/faseC-catalogo.md)                                              | ✅     |
 | S Catálogo en el storefront            | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | ✅     |
-| E URL, descatalogados y especiales     | [faseE-urls-correas.md](./docs/fases/faseE-urls-correas.md)                                      | 🚧     |
+| E URL, descatalogados y especiales     | [faseE-urls-correas.md](./docs/fases/faseE-urls-correas.md)                                      | ✅     |
 | 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

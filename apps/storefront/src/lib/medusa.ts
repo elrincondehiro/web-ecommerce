@@ -13,7 +13,8 @@ import {
   STOREFRONT_MAX_PRODUCTS,
 } from "astro:env/server";
 import { CardCache } from "./card-cache";
-import { isDiscontinued, type StoreProduct } from "./catalog";
+import { isDiscontinued, type StoreProduct, type StoreVariant } from "./catalog";
+import { isCorrea, maxLength } from "./correa";
 import type { RawSearchResult, SearchQueryBody } from "./search";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
@@ -173,17 +174,19 @@ async function loadSaleProductIds(): Promise<string[]> {
 export async function getSaleProducts(): Promise<StoreProduct[]> {
   const [ids, all] = await Promise.all([getSaleProductIds(), getListedProducts()]);
   const set = new Set(ids);
-  return all.filter((p) => set.has(p.id));
+  // Correas a medida (E-2c): el configurador no admite ofertas por variante (lib/correa.ts).
+  return all.filter((p) => set.has(p.id) && !isCorrea(p));
 }
 
 /**
  * Campos de la island de LiveSync (perf L-1): solo lo que usa `getProductPricing`. `*variants`
  * y no `variants.id,…` porque el granel y el €/kg leen `variants.metadata`, que la Store API
  * 2.21.2 no admite suelto (ver CARD_FIELDS). Sin título, imagen, categorías ni opciones.
+ * `metadata` (E-2c): la ficha de una correa a medida manda además los datos del configurador.
  * Medido en dev (24 productos, 144 variantes): 202 → 141 KB de JSON entre servidores; el tiempo
  * lo marca `inventory_quantity` (~93 ms), que se mantiene: es el stock fresco.
  */
-const LIVE_FIELDS = "id,*variants,*variants.calculated_price,+variants.inventory_quantity";
+const LIVE_FIELDS = "id,metadata,*variants,*variants.calculated_price,+variants.inventory_quantity";
 
 async function fetchLive(ids: string[]): Promise<StoreProduct[]> {
   const region = await getRegionES();
@@ -208,6 +211,53 @@ export async function getPricedProductsFresh(ids: string[]): Promise<StoreProduc
   return ids.map((id) => byId.get(id)).filter((p): p is StoreProduct => Boolean(p));
 }
 
+/**
+ * Variantes por id con precio y stock actuales (correa a medida, E-2c: las tarjetas del grupo
+ * usan solo las del largo más corto de cada color, lib/correa-server.ts). `GET
+ * /store/product-variants`: mucho más barato que pedir los productos con sus 117 variantes.
+ */
+export async function getVariantsFresh(ids: string[]): Promise<StoreVariant[]> {
+  if (!ids.length) return [];
+  if (useFixtures) {
+    const set = new Set(ids);
+    return (await fixtures.products()).flatMap((p) =>
+      (p.variants ?? []).filter((v) => set.has(v.id)),
+    );
+  }
+  const region = await getRegionES();
+  const { variants } = await sdk().client.fetch<{ variants: StoreVariant[] }>(
+    "/store/product-variants",
+    {
+      query: {
+        id: ids,
+        limit: ids.length,
+        region_id: region.id,
+        country_code: COUNTRY_CODE,
+        fields:
+          "id,product_id,manage_inventory,allow_backorder,*calculated_price,+inventory_quantity",
+      },
+    },
+  );
+  return variants;
+}
+
+/**
+ * Disponibilidad de las correas a medida (backend E-2b: `GET /store/correas/disponibilidad`): por
+ * handle, el largo más largo que se puede pedir (0 = agotada). Solo indicadores, sin cantidades;
+ * 939 B para 6 correas, ~70–100 ms (enlaces de kit en memoria del backend). Landing (E-2c).
+ */
+export async function getCorreaMaxLengths(): Promise<Record<string, number>> {
+  if (useFixtures) {
+    return Object.fromEntries(
+      (await fixtures.products()).filter(isCorrea).map((p) => [p.handle, maxLength(p)]),
+    );
+  }
+  const { correas } = await sdk().client.fetch<{ correas: { handle: string; max_m: number }[] }>(
+    "/store/correas/disponibilidad",
+  );
+  return Object.fromEntries(correas.map((c) => [c.handle, c.max_m]));
+}
+
 // ── Carrito (runtime: actions, /carrito/, island del contador). Fase 4. ─────────────────────
 // Importes en unidad principal y con IVA incluido (item_total, unit_price…). Ver fase4.md §3.
 
@@ -224,7 +274,7 @@ export const CART_FULL_FIELDS =
   "id,completed_at,currency_code,item_total,item_subtotal,item_tax_total," +
   "items.id,items.quantity,items.product_title,items.variant_title,items.product_handle," +
   "items.thumbnail,items.unit_price,items.compare_at_unit_price,items.total,items.variant_id," +
-  "*items.variant";
+  "items.metadata,*items.variant";
 
 function cartSdk(): Medusa {
   if (useFixtures) throw new Error("El carrito no está disponible con STOREFRONT_DATA=fixtures.");
@@ -257,10 +307,12 @@ export async function addLineItem(
   cartId: string,
   variantId: string,
   quantity: number,
+  /** Datos de la línea (correa a medida: observaciones y medida exacta; los valida el backend). */
+  metadata?: Record<string, unknown>,
 ): Promise<StoreCart> {
   const { cart } = await cartSdk().store.cart.createLineItem(
     cartId,
-    { variant_id: variantId, quantity },
+    { variant_id: variantId, quantity, ...(metadata ? { metadata } : {}) },
     { fields: CART_COUNT_FIELDS },
   );
   return cart;
@@ -276,6 +328,22 @@ export async function getVariantMetadata(id: string): Promise<Record<string, unk
     variant: { metadata?: Record<string, unknown> | null };
   }>(`/store/product-variants/${id}`, { query: { fields: "id,metadata" } });
   return variant.metadata ?? null;
+}
+
+/**
+ * Variantes de un producto con su metadata (correa a medida, E-2c: la action busca la variante
+ * por largo y mosquetones; nunca la manda el cliente). `GET /store/product-variants` (solo
+ * productos publicados del canal de la publishable key); medido en dev: ~40 ms con 117.
+ */
+export async function getProductVariantsMeta(
+  productId: string,
+): Promise<{ id: string; metadata?: Record<string, unknown> | null }[]> {
+  const { variants } = await cartSdk().client.fetch<{
+    variants: { id: string; metadata?: Record<string, unknown> | null }[];
+  }>("/store/product-variants", {
+    query: { product_id: productId, limit: 500, fields: "id,metadata" },
+  });
+  return variants;
 }
 
 export async function updateLineItem(
@@ -372,7 +440,7 @@ export const ORDER_FIELDS =
   "id,display_id,email,created_at,currency_code,total,subtotal,tax_total,shipping_total," +
   "item_total,payment_status,*shipping_address,shipping_methods.name,shipping_methods.amount," +
   "items.id,items.quantity,items.product_title,items.variant_title,items.unit_price,items.total," +
-  "*items.variant";
+  "items.metadata,*items.variant";
 
 export async function retrieveOrder(id: string): Promise<StoreOrder> {
   const { order } = await cartSdk().store.order.retrieve(id, { fields: ORDER_FIELDS });

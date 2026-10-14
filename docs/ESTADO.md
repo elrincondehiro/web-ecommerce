@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 13-oct-2026 · **Fase S cerrada** (S-1 #45, S-2 #46, S-3 #47). **Fase E en curso** (`feat/fase-e`): E-0 (CI Gitea/GitHub, **revertido**) y E-1 (URL, descatalogados, redirecciones, sitemap) hechas; **E-2 correa a medida** espera las respuestas del usuario. Estado en **§6.10**. Después, fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 14-oct-2026 · **Fase E cerrada** (E-1 #48, E-0 revertida #49, L-1 #50, E-2 correa a medida en `feat/correas`, PR pendiente de merge). Estado en **§6.10**. **Siguiente: análisis de lista de deseos y programa de puntos (handover §6.11)**; después, fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -378,22 +378,77 @@ Dos trabajos:
 - **BD local:** 300 productos mock, con el granel publicado.
 - **Docker:** limpio. Imágenes antiguas y volúmenes anónimos borrados. Pendiente de que decida el usuario: volúmenes `tienda-dev_*` (proyecto anterior), imágenes `*:prodlocal` / `:local` / `:fixtures` y la caché de build.
 
-## 6.10 Fase E en curso
+## 6.10 Fase E ✅ cerrada
 
-Doc: [faseE-urls-correas.md](./fases/faseE-urls-correas.md). Rama `feat/fase-e`, creada sobre `docs/cierre-fase-s` rebasada en `main` (`3a42fa8`, S-3 #47). **Sin push**.
+Doc: [faseE-urls-correas.md](./fases/faseE-urls-correas.md).
 
-- **E-0 ↩️ CI revertido**: el reparto Gitea/GitHub entró en #48 y se deshizo en `fix/ci-revertir-reparto`. `ci.yml` vuelve a ser el de `3a42fa8`. Si se quitó `lighthouse` de los checks obligatorios de Gitea, hay que volver a ponerlo.
-- **E-1 ✅ URL**:
+- **E-0 ↩️ CI revertido** (#49): `ci.yml` vuelve a ser el de `3a42fa8`. Si se quitó `lighthouse` de los checks obligatorios de Gitea, hay que volver a ponerlo.
+- **E-1 ✅ URL** (#48):
   - `/categoria/<handle>/`, con 301 desde `/categorias/…`;
   - redirecciones en `apps/storefront/src/lib/redirects.mjs`, validadas en el build;
   - **descatalogado**, que se marca con las columnas `descatalogado` y `sustituto` de la hoja. La ficha sigue, con aviso y `noindex`. El producto sale de listados, búsqueda y sitemap, y Medusa no deja añadirlo al carrito;
   - sitemap con `lastmod`;
   - test de reglas de URL, con reservados `blog`, `ca`, `eu` y `gl`.
+- **L-1 ✅** (#50): la island de LiveSync de los listados solo trae datos de tarjeta.
+- **E-2 correa a medida** (diseño y decisiones en el doc de fase §3.3):
+  - E-2a ✅ medición en local. Encontró la **sobreventa entre líneas** que comparten pieza (Medusa valida línea a línea).
+  - **E-2b ✅ backend** (`feat/correas`): hojas `catalog/plantilla/correas/` + `correas:sync` (6 correas × 117 variantes con inventory kit), demanda conjunta de piezas en `validar-carrito.ts` (también al completar), metadata de la línea (`observaciones`, `medida_cm`) solo en correas, `GET /store/correas/disponibilidad` (máscaras, sin cantidades) y categoría `correas-perro`. Manual: `catalog/plantilla/correas/LEEME.md`.
+  - **E-2c ✅ storefront** (`feat/correas`, doc de fase §2 E-2c):
+    - listados y búsqueda con una sola tarjeta «Correa a medida» (`lib/correa.ts`, `getListingProducts`);
+    - **landing** `/producto/correa-a-medida/`: textos en `src/content/correa.md`, selector de color pintado (`color_hex`) con «hasta X m» y CTA (CSS `:has()`, 0 JS), tabla de precios; island con la ruta de disponibilidad (enlaces de kit en memoria, ~80 ms) + 16 variantes por material;
+    - ficha de cada color: muestras de color, plazo de fabricación y `CorreaBuilder` con **desplegables** (sin JS: action `cart.addCorrea`, el servidor resuelve la variante; el build comprueba el precio aditivo);
+    - bundle `CorreaLive` 788 B gzip (excepción en AGENTS §3.4);
+    - medida y observaciones en carrito, checkout, pedidos y emails;
+    - `correa-a-medida` reservado (build, importadores, `url-rules.test.ts`);
+    - fixtures con 2 colores; e2e con y sin JS y checkout con correa.
+  - **E-2d ✅**: excepción `CorreaLive` en AGENTS §3.4, README §4/§13 y cierre del doc de fase.
+  - Pendientes (doc de fase §7): fotos de mosquetones (rejilla en vez de desplegable), plazo de fabricación provisional, desistimiento de personalizados (gestoría).
+- **BD local**: catálogo mock con 6 descatalogados, categoría `correas-perro` y las 6 correas de la plantilla (`correas:sync catalog/plantilla/correas`).
 
-  Hook del carrito: `validar-carrito.ts`. Índice de búsqueda: `product_v3`.
+## 6.11 Handover → análisis: lista de deseos y programa de puntos
 
-- **BD local**: catálogo mock reimportado, con 6 descatalogados (p. ej. `mock-guiso-eco-046` → `mock-guiso-eco-007`), y `db:migrate` ya hecho.
-- **E-2 ⏳ correa a medida**: diseño en el doc de fase §3.3; preguntas abiertas en su §7. Hay que esperar las respuestas del usuario y presentar un plan antes de escribir código.
+> **Solo análisis y propuesta**, sin código (REGLA Nº 1). Al empezar, crear `docs/fases/faseL-deseos-puntos.md` (nombre provisional) desde [PLANTILLA.md](./fases/PLANTILLA.md). Consultar antes: context7 `/medusajs/medusa` (guía _wishlist_, Loyalty Plugin / Store Credit), astro-docs (actions, server islands) y, para la parte legal, preparar preguntas para la gestoría.
+> Requisito previo: el PR de la Fase E (`feat/correas`) mergeado en `main`. Rama nueva desde `main`.
+
+### Lo que ya se habló (fase9.md §7, ESTADO §6.2)
+
+- **Programa de puntos** (regla de la tienda física): el **0,8 %** de cada compra en puntos; **1 punto = 1 €** de descuento, con decimales (0,15 puntos = 0,15 €), para usar o acumular. Hoy lo calcula un script diario en un POS que **desaparecerá**: no hay que integrarlo (¿migrar saldos existentes? preguntar).
+  - Encaja con el **Store Credit** del `@medusajs/loyalty-plugin` 2.21.2 (MIT, misma versión que Medusa): cuenta de crédito por cliente (`createStoreCreditAccountsWorkflow`), abonos con referencia (`creditStoreCreditAccountWorkflow`, `reference: "order"`, `reference_id`) y en el checkout `addStoreCreditsToCartWorkflow` (todo el saldo o una parte, como _credit line_ del carrito).
+  - Es una **dependencia nueva** (backend): requiere aprobación y entrada en README §4. Comprobar que no arrastra el resto del plugin que no usemos (gift cards) o que se puede desactivar.
+- **Lista de deseos**: hasta ahora solo «idea» (alternativa a una lista de carritos, que se descartó: un carrito por cuenta).
+  - Medusa tiene una **guía oficial** (no un paquete): módulo propio `wishlist` (+ `wishlist_item`), `defineLink` con cliente y variante, workflows (crear lista, añadir/quitar ítem, validación de canal de venta) y rutas `GET/POST /store/customers/me/wishlists`, `…/items`, `DELETE …/items/:id` y **compartir** (`…/share` → token JWT y `GET /store/wishlists/:token`). context7 `/medusajs/medusa`, `plugins/guides/wishlist`.
+- **Carrito abandonado** (misma «fase de marketing»): tutorial oficial; es comunicación comercial (consentimiento/baja). No es parte de este análisis salvo que se decida juntar.
+
+### Preguntas para el análisis (orientativas)
+
+**Lista de deseos**
+
+- ¿Solo con cuenta, o también invitados (cookie + se fusiona al entrar)? ¿Por **producto** o por **variante**? (La guía oficial guarda variantes; la correa a medida tiene 117 → ¿producto?)
+- ¿Una lista o varias? ¿Compartir por enlace (regalos)? ¿Aviso por email cuando un deseado baja de precio o vuelve a tener stock (comunicación comercial)?
+- Storefront (AGENTS §3): el corazón en tarjetas y fichas **estáticas** sin JS añadido a home/listados/ficha (0 bundles salvo excepciones aprobadas). Opciones: `<form>` + action `wishlist.toggle` (PRG, funciona sin JS) y estado «ya está en la lista» vía server island o `CartClient`/`SiteClient` (¿cabe en sus presupuestos?). Página `/cuenta/deseos/` on-demand.
+- ¿Precio y stock en la lista? (Datos frescos: on-demand, como el carrito.)
+
+**Programa de puntos**
+
+- **Cuándo se abonan**: al pagar (`order.placed`/pago capturado) con saldo «pendiente», o al **entregar** / pasado el plazo de desistimiento (14 días). ¿Qué pasa con devoluciones y cancelaciones (descontar el abono, idempotencia)?
+- **Base de cálculo**: ¿con IVA? ¿sin envío? ¿se excluyen productos (ofertas, correas a medida)? ¿Se generan puntos sobre la parte pagada con puntos? Redondeo (céntimos).
+- **Caducidad** y **límites** de uso (¿mínimo de compra? ¿máximo por pedido? ¿combinable con descuentos?).
+- **Solo con cuenta** (Store Credit va por cliente). ¿Se avisa en el checkout de invitado («con cuenta ganarías X»)?
+- Dónde se ve: «Mi cuenta» (saldo y movimientos), checkout (aplicar todo/parte), emails de pedido («has ganado X puntos»).
+- **Contabilidad/IVA**: un descuento con puntos reduce la base imponible del pedido; ¿cómo lo trata Medusa en `tax_total` y en la factura? Verificar con el desglose de IVA de los emails (`buildTaxBreakdown`). **Gestoría**: condiciones del programa (texto legal en `/condiciones/`), caducidad, y si los puntos tienen tratamiento contable.
+- Migración: ¿se importan los saldos del POS actual a cuentas online (por email)? ¿Cómo se vincula un cliente de tienda física con su cuenta online?
+
+### Contexto técnico útil
+
+- Cuenta de cliente: fase 9 (`docs/fases/fase9.md`): JWT en cookie httpOnly, actions `account.*` con PRG, páginas `/cuenta/*` on-demand sin JS, `retrieveCustomer`, `listCustomerOrders`.
+- Checkout: fase 5 (`docs/fases/fase5.md`): pasos datos → envío → pago (Stripe Payment Element, bundle `StripePayment` ≤ 30 KB); `CHECKOUT_FIELDS`, `OrderSummary.astro`. Un _credit line_ cambia `total`: comprobar que el importe del Payment Intent se recalcula.
+- Emails: `packages/emails` + `apps/backend/src/lib/emails.ts` (`ORDER_EMAIL_FIELDS`, `buildOrderPlacedProps`), subscribers con `sendEmail` e `idempotency_key`.
+- Hooks del carrito: un solo handler por hook (`src/workflows/hooks/validar-carrito.ts`).
+- Presupuestos de JS: AGENTS §3.4 (CartClient ≤ 2 KB, SiteClient ≤ 1,5 KB, ya en 1,46 KB: poco margen).
+
+### Entregable del análisis
+
+Documento de fase con: opciones (con pros/contras y fuentes), propuesta recomendada, modelo de datos, flujos (diagrama), impacto en JS/rendimiento, lista de preguntas para la gestoría y plan por subfases (p. ej. L-1 lista de deseos, L-2 puntos backend, L-3 puntos storefront/emails). **Esperar aprobación antes de codificar.**
 
 ## 7. Pendientes conocidos
 

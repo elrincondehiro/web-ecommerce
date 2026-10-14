@@ -51,6 +51,14 @@ export function LineItems({
                 ? `${formatGrams(item.bulk.grams)}${showPrices ? ` · ${formatMoney(item.bulk.pricePerKg, currencyCode)}/kg` : ""}`
                 : `${item.quantity} × ${showPrices ? formatMoney(item.unitPrice, currencyCode) : "ud."}`}
             </Text>
+            {(item.details ?? []).map((d, k) => (
+              <Text
+                key={k}
+                style={{ color: color.mutedForeground, fontSize: 13, margin: "2px 0 0" }}
+              >
+                {d}
+              </Text>
+            ))}
           </Column>
           {showPrices ? (
             <Column style={{ textAlign: "right", verticalAlign: "top", width: 100 }}>

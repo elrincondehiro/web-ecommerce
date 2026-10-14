@@ -9,6 +9,7 @@ import {
   type TrackingInfo,
 } from "emails";
 import { bulkRule } from "./granel";
+import { CORREA_LINE_META } from "./correas";
 
 /**
  * Datos de Medusa → props de las plantillas de `packages/emails` (fase 8). Funciones puras para
@@ -38,6 +39,8 @@ export const ORDER_EMAIL_FIELDS = [
   "items.total",
   "items.tax_total",
   "items.thumbnail",
+  // Correa a medida (E-2): medida exacta y observaciones del cliente
+  "items.metadata",
   // Granel (S-3): la regla está en la variante (paso_g); sin variante, la línea va en unidades.
   "items.variant.metadata",
   "items.tax_lines.rate",
@@ -82,6 +85,7 @@ type ItemLike = {
   thumbnail?: string | null;
   tax_lines?: TaxLineLike[] | null;
   variant?: { metadata?: Record<string, unknown> | null } | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type ShippingMethodLike = {
@@ -132,6 +136,18 @@ const countryName = (code: string | null | undefined) => {
   }
 };
 
+/** «Medida exacta: 6,40 m» y «Observaciones: …» de una línea de correa a medida (E-2). */
+export function lineDetails(metadata: Record<string, unknown> | null | undefined): string[] {
+  const out: string[] = [];
+  const cm = metadata?.[CORREA_LINE_META.exactCm];
+  if (typeof cm === "number" && Number.isInteger(cm) && cm > 0) {
+    out.push(`Medida exacta: ${(cm / 100).toFixed(2).replace(".", ",")} m`);
+  }
+  const notes = metadata?.[CORREA_LINE_META.notes];
+  if (typeof notes === "string" && notes.trim()) out.push(`Observaciones: ${notes.trim()}`);
+  return out;
+}
+
 /** Solo una variante "real": Medusa llama "Default variant"/"Única" a la de un solo modelo. */
 const variantLabel = (title: string | null | undefined) =>
   !title || /^(default( variant)?|única|unica)$/i.test(title.trim()) ? null : title;
@@ -173,6 +189,7 @@ export function toEmailItem(item: ItemLike, quantity?: number): EmailLineItem {
           pricePerKg: Math.round(((unitPrice * 1000) / rule.stepG) * 100) / 100,
         }
       : null,
+    details: lineDetails(item.metadata),
   };
 }
 

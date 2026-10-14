@@ -152,6 +152,10 @@ Un producto que ya no se vende **no se borra ni se pasa a borrador**: su URL tie
 - Volver a venderlo: `descatalogado` = `no`.
 - El cambio llega a la búsqueda al momento y a las páginas en el siguiente build.
 
+## Correa a medida
+
+Las correas configurables (largo y mosquetones, stock por piezas) **no van en `productos.csv`**: tienen sus propias hojas y su script, `correas:sync`. Ver [`correas/LEEME.md`](./correas/LEEME.md). Su categoría (`correas-perro`) sí va en `categorias.csv`.
+
 ## Fotos
 
 Las fotos van **por producto**, con `images:import`: ficheros `handle_01.jpg`, `handle_02.jpg`… `_01` es la miniatura y solo se admite JPG. Se suben al bucket (SeaweedFS en dev, R2 en producción). Ya importadas se omiten; `replace` las sustituye todas.

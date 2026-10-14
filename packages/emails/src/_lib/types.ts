@@ -27,4 +27,6 @@ export type EmailLineItem = {
    * Sin esto, «2 × 4,95 €».
    */
   bulk?: { grams: number; pricePerKg: number } | null;
+  /** Líneas extra (correa a medida, Fase E-2: «Medida exacta: 6,40 m», «Observaciones: …»). */
+  details?: string[] | null;
 };

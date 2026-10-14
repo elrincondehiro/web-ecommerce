@@ -6,6 +6,7 @@
 import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { CORREA_GROUP_HANDLE } from "./correa";
 import { REDIRECTS, redirectErrors } from "./redirects.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -48,6 +49,12 @@ describe("reglas de URL", () => {
   it("singular/plural del catálogo: /producto/, /productos/ y /categoria/ (no /categorias/)", () => {
     expect(pageSegments).toEqual(expect.arrayContaining(["producto", "productos", "categoria"]));
     expect(pageSegments).not.toContain("categorias");
+  });
+
+  it("/producto/: solo la ficha dinámica y la página de grupo de la correa (handle reservado)", () => {
+    // Una página fija en /producto/ tapa a un producto con ese handle (gana la ruta estática):
+    // cada una se reserva también en el backend (RESERVED_PRODUCT_HANDLES de catalog-sheet.ts).
+    expect(names("pages/producto/").map(segment)).toEqual(["[handle]", CORREA_GROUP_HANDLE]);
   });
 
   it("las redirecciones son válidas y ninguna queda tapada por una página", () => {

@@ -10,6 +10,7 @@ import { LAST_ORDER_COOKIE, canViewOrder } from "$lib/checkout";
 import { formatPrice } from "$lib/format";
 import { retrieveOrder, type StoreOrder } from "$lib/medusa";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { lineDetails } from "$lib/correa";
 
 export const prerender = false;
 
@@ -58,6 +59,9 @@ const addr = order?.shipping_address;
                 {item.variant_title && item.variant_title !== "Única" && (
                   <span class="text-muted-foreground"> · {item.variant_title}</span>
                 )}
+                {lineDetails(item.metadata).map((d) => (
+                  <span class="block text-xs break-words text-muted-foreground">{d}</span>
+                ))}
               </span>
               <span class="tabular-nums">{formatPrice(item.total ?? 0, currency)}</span>
             </li>
