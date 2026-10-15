@@ -30,6 +30,54 @@ test.describe("con JS", () => {
   });
 });
 
+test.describe("cabecera estable al cargar", () => {
+  test.use({ javaScriptEnabled: true });
+
+  test("el selector de tema está desde el primer pintado: la búsqueda no se mueve", async ({
+    page,
+  }) => {
+    // Posición de la búsqueda en cada frame pintado (requestAnimationFrame) durante 1,5 s, y los
+    // layout shifts. Antes de pintar (HTML a medias, sin CSS) la medida no cuenta.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __xs: number[] };
+      w.__xs = [];
+      const tick = () => {
+        const r = document.querySelector("header [role=search]")?.getBoundingClientRect();
+        if (r && r.width && performance.getEntriesByName("first-contentful-paint").length) {
+          w.__xs.push(Math.round(r.x));
+        }
+        if (performance.now() < 1500) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.goto("/");
+    await page.waitForTimeout(1500);
+    const xs = await page.evaluate(() => (window as unknown as { __xs: number[] }).__xs);
+    expect(xs.length).toBeGreaterThan(0);
+    expect(new Set(xs).size).toBe(1);
+    // Ningún desplazamiento en la fila de la búsqueda (lo que provocaba el botón). Los cambios de
+    // ancho por la fuente web (swap del menú, ~0,0002) no cuentan: van en el análisis de rendimiento.
+    const moved = await page.evaluate(
+      () =>
+        new Promise<number>((done) => {
+          let n = 0;
+          new PerformanceObserver((list) => {
+            for (const e of list.getEntries()) {
+              const sources = (e as unknown as { sources?: { node?: Node | null }[] }).sources;
+              for (const src of sources ?? []) {
+                let el = src.node ?? null;
+                while (el && el.nodeType !== 1) el = el.parentNode;
+                if ((el as Element | null)?.closest("[role=search], [data-theme-toggle]")) n++;
+              }
+            }
+          }).observe({ type: "layout-shift", buffered: true });
+          setTimeout(() => done(n), 200);
+        }),
+    );
+    expect(moved).toBe(0);
+  });
+});
+
 test.describe("sin JS", () => {
   test.use({ javaScriptEnabled: false, colorScheme: "dark" });
 

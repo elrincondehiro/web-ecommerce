@@ -10,7 +10,8 @@
 //   - ↑/↓ recorren las opciones (aria-activedescendant), Enter abre la marcada (si no hay
 //     ninguna, envía el formulario), Escape cierra; al perder el foco se cierra;
 //   - el recuento se anuncia en [data-suggest-live].
-// También el selector de tema claro/oscuro (I-Marca): botón [data-theme-toggle], oculto sin JS.
+// También el selector de tema claro/oscuro (I-Marca): botón [data-theme-toggle], oculto sin JS
+// por CSS (<html data-js>, global.css: visible desde el primer pintado, sin desplazar nada).
 // Sin elección guardada la web sigue al sistema (CSS); al pulsar se fija el contrario del
 // efectivo y se guarda en localStorage ("tema"; src/lib/theme-init.ts lo aplica antes de pintar).
 // Cabecera que se oculta al bajar y reaparece al subir (I-Interficie, D1): data-hide en
@@ -113,7 +114,6 @@
   const label = () => {
     for (const b of themeBtns) {
       b.setAttribute("aria-label", isDark() ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
-      b.hidden = false;
     }
   };
   label();

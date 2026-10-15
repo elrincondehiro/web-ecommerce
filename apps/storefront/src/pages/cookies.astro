@@ -1,11 +1,102 @@
 ---
+// Política de cookies (texto provisional, LegalPage). Lista COMPLETA de lo que la web guarda en
+// el navegador: cookies y localStorage (la LSSI art. 22.2 cubre ambos). Todo es técnico y
+// necesario para un servicio que pide el usuario → exento de consentimiento, pero se informa.
+// Si se añade una cookie o una clave de localStorage, añadirla aquí.
 import LegalPage from "../components/legal/LegalPage.astro";
+
+const cookies = [
+  ["cart_id", "Tu carrito.", "30 días"],
+  ["customer_token", "La sesión de tu cuenta.", "7 días (o hasta que salgas)"],
+  [
+    "wish_pending",
+    "El producto que querías guardar en tu lista de deseos mientras entras.",
+    "10 minutos",
+  ],
+  ["last_order", "Mostrarte el resumen de tu último pedido.", "1 hora"],
+  ["checkout_flash", "Avisos del proceso de compra (por ejemplo, un campo que falta).", "1 minuto"],
+  ["account_flash", "Avisos de tu cuenta.", "1 minuto"],
+];
+const storage = [
+  ["tema", "El modo claro u oscuro que eliges con el botón.", "Hasta que lo borres"],
+  [
+    "cabecera",
+    "Si tienes la sesión iniciada y algo en tu lista de deseos, para que los iconos de la cabecera no parpadeen al cargar. No guarda tu identidad ni el contenido de la lista.",
+    "Hasta que salgas de tu cuenta",
+  ],
+];
+const th = "border-b-2 border-line px-2 py-2 text-left font-semibold";
+const td = "border-b border-line px-2 py-2 align-top";
 ---
 
-<LegalPage title="Política de cookies" description="Política de cookies de El Rincón de Hiro.">
+<LegalPage
+  title="Política de cookies"
+  description="Política de cookies de El Rincón de Hiro."
+  filler={false}
+>
   <p>
-    Usamos solo cookies técnicas necesarias: carrito (cart_id), sesión de tu cuenta (customer_token,
-    7 días), último pedido (last_order), avisos del checkout (checkout_flash) y de la cuenta
-    (account_flash); y las del procesador de pagos Stripe en el paso de pago.
+    Solo usamos cookies y almacenamiento del navegador <strong>técnicos y necesarios</strong> para
+    que la tienda funcione: no usamos cookies de publicidad ni de analítica, y no compartimos estos
+    datos con nadie. Por eso no te pedimos consentimiento, pero te contamos cuáles son.
+  </p>
+
+  <h2 class="mt-4 text-xl font-semibold">Cookies propias</h2>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr>
+          <th class={th}>Nombre</th>
+          <th class={th}>Para qué</th>
+          <th class={th}>Duración</th>
+        </tr>
+      </thead>
+      <tbody>
+        {cookies.map(([name, what, time]) => (
+          <tr>
+            <td class={td}>
+              <code>{name}</code>
+            </td>
+            <td class={td}>{what}</td>
+            <td class={td}>{time}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="mt-4 text-xl font-semibold">Almacenamiento local del navegador</h2>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr>
+          <th class={th}>Clave</th>
+          <th class={th}>Para qué</th>
+          <th class={th}>Duración</th>
+        </tr>
+      </thead>
+      <tbody>
+        {storage.map(([name, what, time]) => (
+          <tr>
+            <td class={td}>
+              <code>{name}</code>
+            </td>
+            <td class={td}>{what}</td>
+            <td class={td}>{time}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="mt-4 text-xl font-semibold">Pagos</h2>
+  <p>
+    En el paso de pago, nuestro procesador de pagos, Stripe, usa sus propias cookies para procesar
+    el pago de forma segura y prevenir el fraude.
+  </p>
+
+  <h2 class="mt-4 text-xl font-semibold">Cómo borrarlas</h2>
+  <p>
+    Puedes borrarlas desde la configuración de tu navegador. Si lo haces, se vaciará tu carrito y
+    tendrás que volver a entrar en tu cuenta.
   </p>
 </LegalPage>

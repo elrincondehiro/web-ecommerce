@@ -284,6 +284,16 @@
 }
 
 /*
+ * Selector de tema (I-Marca): sin JS no sirve → oculto. Por CSS con <html data-js> (lo pone el
+ * script del <head>, theme-init.ts, ANTES de pintar) y no con `hidden` + SiteClient: si no, el
+ * botón aparecía al cargar SiteClient (~100 ms) y empujaba la búsqueda 40 px (CLS medido).
+ * `!important`: el botón lleva utilidades de display (inline-flex / flex) de Tailwind.
+ */
+:root:not([data-js]) [data-theme-toggle] {
+  display: none !important;
+}
+
+/*
  * Cantidad − / + (Fase D, 3.3, QuantityField.astro). Sin JS: solo el campo numérico con sus
  * flechas. Con JS (<html data-js>, SiteClient): botones visibles y sin flechas nativas.
  */

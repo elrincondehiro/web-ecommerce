@@ -222,6 +222,17 @@ test.describe("lista de deseos con JS: estado guardado", () => {
     // Al recargar sigue rojo (estado de la island de la cabecera).
     await page.reload();
     await expect(red).toBeVisible();
+
+    // Sin parpadeo (fix antes de la fase 11): la pista de localStorage marca la cabecera ANTES
+    // de que llegue la island. Se bloquea la island para ver solo lo que aplica el <head>.
+    expect(await page.evaluate(() => localStorage.getItem("cabecera"))).toBe("aw");
+    await page.route("**/_server-islands/**", (r) => r.abort());
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("data-auth", "");
+    await expect(page.locator("html")).toHaveAttribute("data-wish-any", "");
+    await page.unroute("**/_server-islands/**");
+    await page.goto("/productos/");
+    await expect(red).toBeVisible();
     // Pulsar el ♥ rojo NO quita: lleva a la lista (decisión A).
     await red.click();
     await expect(page).toHaveURL(/\/cuenta\/deseos\/$/);
@@ -236,6 +247,25 @@ test.describe("lista de deseos con JS: estado guardado", () => {
     await row.getByRole("button", { name: `Añadir ${title} al carrito` }).click();
     await expect(page.getByRole("status").getByText(/^Añadido/)).toBeVisible();
     await expect(heartLink).toBeVisible();
+  });
+
+  test("cerrar sesión borra la pista de la cabecera; sesión caducada: la island la corrige", async ({
+    page,
+  }) => {
+    await page.goto("/cuenta/entrar/");
+    await fillLogin(page, email);
+    await expect(page).toHaveURL(/\/cuenta\/$/);
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("cabecera"))).toBe("aw");
+    await page.getByRole("button", { name: "Cerrar sesión" }).click();
+    await expect(page).toHaveURL(/\/cuenta\/entrar\//);
+    expect(await page.evaluate(() => localStorage.getItem("cabecera"))).toBeNull();
+
+    // Pista vieja sin sesión (cookie caducada): el <head> la aplica y la island la corrige.
+    await page.evaluate(() => localStorage.setItem("cabecera", "aw"));
+    await page.goto("/productos/");
+    await expect(page.locator("html")).not.toHaveAttribute("data-auth", "");
+    await expect(page.locator("html")).not.toHaveAttribute("data-wish-any", "");
+    expect(await page.evaluate(() => localStorage.getItem("cabecera"))).toBeNull();
   });
 
   test("ficha con variantes: el ♡ del título sigue a la variante elegida", async ({ page }) => {

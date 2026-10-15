@@ -7,7 +7,7 @@
 // Los datos de la lista van en un <template data-wish-state> con JSON (inerte, compatible con la
 // CSP): los aplica CartClient (no se inyecta ningún <script> desde la island, AGENTS §3.2).
 // Formato: { a: 1 (sesión), p: ["prod_…"] (productos guardados sin variante),
-//   v: ["variant_…"] (variantes guardadas), n: nº de entradas }.
+//   v: ["variant_…"] (variantes guardadas), n: nº de entradas }; sin sesión, { a: 0 }.
 import { CART_COOKIE, isValidId, itemCount } from "$lib/cart";
 import { listWishlist, retrieveCart } from "$lib/medusa";
 import { STOREFRONT_DATA } from "astro:env/server";
@@ -33,6 +33,8 @@ const wishP =
     : Promise.resolve(null);
 const [count, wish] = await Promise.all([countP, wishP]);
 
+// Sin sesión también se envía (`{a:0}`): CartClient corrige la pista de la cabecera que el
+// script del <head> aplicó antes de pintar (localStorage "cabecera", lib/theme-init.ts).
 const state = wish
   ? JSON.stringify({
       a: 1,
@@ -40,8 +42,8 @@ const state = wish
       v: wish.flatMap((i) => (i.variant_id ? [i.variant_id] : [])),
       n: wish.length,
     })
-  : null;
+  : '{"a":0}';
 ---
 
 <CartCountBadge count={count} />
-{state && <template data-wish-state set:html={state} />}
+<template data-wish-state set:html={state} />

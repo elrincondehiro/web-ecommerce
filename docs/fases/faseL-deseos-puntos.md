@@ -750,6 +750,49 @@ pnpm --filter backend points:adjust <email> credit 5 "prueba"   # saldo de prueb
 pnpm --filter backend points:accrue                             # abono a mano (lo hace el job a las 4:00)
 ```
 
+## 6.7 Fix posterior: cabecera sin parpadeo (`fix/cabecera-sin-parpadeo`, 15-oct-2026)
+
+**Problema** (detectado por el usuario tras el merge):
+
+- En las páginas estáticas, los iconos de cuenta y ♡ salían vacíos y cambiaban a rellenos al llegar la island `HeaderState`.
+- No había desplazamiento (medido: misma caja), pero se veía el cambio.
+
+**Solución:**
+
+- **Pista en `localStorage`:** CartClient guarda la clave `cabecera`.
+  - `"a"`: con sesión.
+  - `"aw"`: con sesión y algo guardado.
+  - Sin clave: sin sesión.
+  - Sin datos personales ni token.
+- **Antes de pintar:** el script del tema (`lib/theme-init.ts`, inline con hash para la CSP) aplica la pista en `<html data-auth / data-wish-any>`.
+- **Corrección:** la island siempre manda. Ahora también envía `{a:0}` sin sesión, así que una pista vieja (sesión caducada, lista vaciada en otro dispositivo) se corrige y se borra.
+- **Cerrar sesión** borra la pista.
+- **Elegí `localStorage` y no cookies:** no viaja en cada petición ni obliga a tocar las actions de entrar, salir y lista.
+- **Coste:** CartClient 1833 → 1923 B gzip (≤ 2048); JS inline 1231 → 1259 B (≤ 1434). AGENTS §3.4 actualizado.
+
+**Política de cookies (`/cookies/`, provisional):**
+
+- Ahora con tablas:
+  - las 6 cookies, con su finalidad y duración; antes faltaba `wish_pending`;
+  - el almacenamiento local: `tema`, que faltaba, y `cabecera`;
+  - Stripe.
+- **Base:** técnicas y necesarias (LSSI art. 22.2, guía de cookies de la AEPD): exentas de consentimiento, pero informadas. A confirmar con la gestoría junto al resto de textos.
+
+**Tests:** e2e nuevos en `deseos.spec.ts`:
+
+- con la island bloqueada, la cabecera sale marcada por la pista;
+- cerrar sesión borra la pista;
+- una pista vieja sin sesión la corrige la island.
+- En total, 168 e2e pasados.
+
+**Segundo arreglo (salto de la búsqueda al recargar):**
+
+- **Causa:** el selector de tema salía con `hidden` y SiteClient lo mostraba a los ~100 ms. En escritorio, al aparecer, empujaba la búsqueda 40 px (medido: x 776 → 736, layout shift).
+- **Ahora:** lo oculta solo el CSS sin JS (`:root:not([data-js]) [data-theme-toggle]`, `global.css`). `data-js` lo pone el script del `<head>` antes de pintar, así que el botón ocupa su sitio desde el primer pintado.
+- **SiteClient** ya no lo muestra: 1562 → 1495 B, dentro del límite de 1536.
+- **e2e** (`tema.spec.ts`, «cabecera estable al cargar»): la posición de la búsqueda no cambia en ningún frame durante 1,5 s, y ningún layout shift afecta a la búsqueda ni al botón. Comprobado que **falla** con el código anterior.
+- **Queda** un desplazamiento mínimo (~0,0002) en el menú de escritorio por el cambio a la fuente web: va al análisis de rendimiento.
+
 ## 7. Plan por subfases (después de aprobar)
 
 | Subfase                                      | Contenido                                                                                                                                                                                                                                                                                                                                                                                        | Depende de     |
