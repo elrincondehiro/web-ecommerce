@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 15-oct-2026 · Fases L (#52, #53) y P (#54) cerradas. **Análisis del JS** ([analisis-js.md](./analisis-js.md): cerca de lo óptimo; SiteClient a 2 KB). **Fase R (relacionados y venta cruzada) cerrada** en `feat/faseR-relacionados` ([faseR-relacionados.md](./fases/faseR-relacionados.md)): 4 relacionados en la ficha (hoja + relleno de la categoría), y en el carrito «De tu lista de deseos» y «Completa tu pedido». Pendiente: textos de la gestoría, hoy provisionales. Siguiente: fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 15-oct-2026 · Fases L, P y R cerradas (#52–#57); análisis del JS hecho ([analisis-js.md](./analisis-js.md)). **Siguiente: fase 11 (despliegue de PRUEBA en Hetzner)** → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -119,12 +119,80 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 ## 5. Infra del usuario (contexto)
 
-- Gitea **28.0.0** en un LXC Debian 13 (Proxmox, homelab), SSH en el puerto 2222 (`gitea:jacknoddy/web-ecommerce.git`). GitHub: `elrincondehiro/web-ecommerce` (réplica).
+- Gitea **28.1.0** (actualizado el 15-oct-2026: ya salta bien los jobs con `needs:` sobre uno saltado; reparto del CI reaplicado en #56) en un LXC Debian 13 (Proxmox, homelab), SSH en el puerto 2222 (`gitea:jacknoddy/web-ecommerce.git`). GitHub: `elrincondehiro/web-ecommerce` (réplica).
 - **gitea-runner 4.0.1** de **usuario**, binario en el mismo LXC (4 GB RAM + 1 GB swap), `capacity: 2`. La etiqueta `ubuntu-latest` = `docker://node:24.21.0-trixie` (Debian 13 + Node 24; **no** es la imagen Ubuntu de GitHub).
 - ⚠️ El build del backend llega a unos 3,7 GB de pico: dos builds a la vez pueden agotar la memoria. El usuario lo deja así de momento.
 - Producción futura: VPS **Hetzner** (Debian 13). Monitorización híbrida (README §12); red privada **WireGuard** preferida (se decide en la fase 12).
 
 ## 6. Siguiente
+
+## 6.0 Handover → sesión nueva: fase 11 (despliegue de prueba en Hetzner) — LEER PRIMERO
+
+**Estado del repo (15-oct-2026):** `main` = `c06ea99`, igual en local, Gitea y GitHub. No quedan ramas pendientes. Todo lo hablado está mergeado:
+
+| PR        | Qué                                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| #52 / #53 | Lista de deseos y programa de puntos (Fase L)                                                                                                |
+| #54       | Códigos descuento (Fase P)                                                                                                                   |
+| #55       | Cabecera sin parpadeo ni saltos y política de cookies completa                                                                               |
+| #56       | CI: en Gitea solo en el PR y sin Lighthouse; GitHub corre todo                                                                               |
+| #57       | Relacionados y venta cruzada (Fase R), con el análisis del JS (SiteClient a 2 KB, fixtures fuera de producción, sesión en el HTML on-demand) |
+
+**Qué quiere el usuario:**
+
+- **Fase 11 = despliegue de prueba**, no producción definitiva:
+  - un **dominio de pruebas** que ya tiene en Cloudflare (no es el definitivo); pedirle los dominios y subdominios al empezar;
+  - **todo funcionando:** emails (Resend), imágenes (R2), Caddy, panel de Admin, pagos;
+  - **Stripe en modo TEST**;
+  - **productos mock**;
+  - medir la **latencia** del servidor.
+- **Guiarle paso a paso:** él hace lo de los paneles (Hetzner, Cloudflare, Resend, Stripe) y ejecuta los comandos que le diga en el VPS. Explicarle cada paso.
+- **Prueba de carga** del pico del anuncio: unos 40 000 seguidores, del 1 al 5 % que entra a curiosear → 10–15 páginas/s; objetivo con margen, **50 páginas/s durante 10 min**. Con **k6** desde el homelab o el portátil, nunca desde el VPS. k6 es una herramienta nueva: **pedirle aprobación**.
+
+**Plan propuesto y aceptado en general** (detallarlo en `docs/fases/fase11.md` desde `PLANTILLA.md`; REGLA Nº 1 en cada subfase):
+
+| Subfase | Contenido                                                                                                                                                                                                                                                                                                 |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 11-0    | Requisitos del usuario: dominio y subdominios (tienda, `api.`, `admin.`, `img.`), dominio verificado en Resend (SPF/DKIM), VPS creado.                                                                                                                                                                    |
+| 11-1    | VPS: usuario sin root, solo SSH con clave, actualizaciones automáticas, Docker, swap. **Firewall de Hetzner:** 80/443 solo desde las IP de Cloudflare; SSH desde su IP o la VPN.                                                                                                                          |
+| 11-2    | Cloudflare: Full (strict) + certificado Origin CA, Always HTTPS, **Access delante de `admin.`** (y, si quiere, de toda la tienda de prueba), rate limiting (entrar, registro, checkout, búsqueda y `POST /store/carts/:id/code`; en el plan gratuito, periodo de 10 s y acción «bloquear»).               |
+| 11-3    | Caddy (`docker/Caddyfile`, ahora mínimo): Origin CA, `trusted_proxies` de Cloudflare + `CF-Connecting-IP`, cabeceras de seguridad, CSP que permita Stripe (`CSP_ENABLED` en `astro.config.mjs` está en `false`).                                                                                          |
+| 11-4    | R2 (bucket, dominio `img.`, token) y `RESEND_API_KEY`. En producción no hay Mailpit: los emails llegan de verdad (a sus direcciones).                                                                                                                                                                     |
+| 11-5    | Datos: migraciones, usuario del Admin, `catalog:mock` + `catalog:import`, `correas:sync`, imágenes a R2, índice de Meilisearch, `stripe:region`. Webhook de Stripe test → `https://api.<dominio>/hooks/payment/stripe_stripe` + `STRIPE_WEBHOOK_SECRET`.                                                  |
+| 11-6    | Storefront real: se genera el catálogo en el build contra la API pública. **Recomendado:** construir la imagen en el portátil u homelab (la key como build secret) y subirla a GHCR; el VPS va justo (2 vCPU, 4 GB). Ahora `images.yml` publica el storefront con fixtures (`-fixtures`, no desplegable). |
+| 11-7    | Backups: `pg_dump` → R2, con heartbeat y **restauración probada**.                                                                                                                                                                                                                                        |
+| 11-8    | Monitorización (README §12): agentes Beszel y Dozzle en el VPS, Uptime Kuma en el homelab con `/health`. Preguntar si ya tiene Tailscale o WireGuard.                                                                                                                                                     |
+| 11-9    | Lista de comprobación de punta a punta: pago 4242 y 3DS, emails, imágenes, Admin detrás de Access, puntos, códigos, lista de deseos, relacionados, búsqueda, sin JS, Lighthouse contra el dominio real.                                                                                                   |
+| 11-10   | Prueba de carga con k6 (recorridos home → listado → ficha; un 10 % añade al carrito; un 2 % llega al checkout sin pagar). Dos tandas: a través de Cloudflare (regla temporal que deje pasar su IP) y directa al origen.                                                                                   |
+
+**Puntos técnicos a no olvidar:**
+
+- **Caché de Cloudflare:**
+  - el HTML estático sale con `public, max-age=0` y Cloudflare **no** cachea HTML por defecto: hace falta una **regla de caché** para las páginas estáticas, respetando el `private, no-store` de las rutas por usuario;
+  - **`LiveSyncData`** ya manda `s-maxage=60, swr=300`: comprobar `CF-Cache-Status: HIT`;
+  - es lo que de verdad importa para el pico (`docs/analisis-js.md` §5 P5).
+- **Variables:** las del backend están en `docker/compose.prod.yml` (bloque común de server y worker) y en `docker/.env.prod.example`. Antes de abrir de verdad, `CART_CLEANUP_DAYS` a 30 (hoy 5).
+- **Stock:** los e2e de checkout gastan el cordón `CUERDA-AZUL-NYLON`, y `stock:mock` no repone las piezas de las correas. En local se repone con `updateInventoryLevelsWorkflow` en un script temporal.
+- **CI:** Gitea 28.1.0 con el reparto de #56. Comprobar que el push a `main` en Gitea no deja jobs «Waiting» (si pasa, revertir). `lighthouse` no es check obligatorio en Gitea.
+
+**Pendientes que no son de la fase 11** (no bloquean):
+
+- **Textos de la gestoría**, todos provisionales: condiciones de compra (con el apartado de códigos), condiciones del programa de puntos, privacidad, cookies y el aviso de puntos del email de confirmación.
+- **Fase R:**
+  - envío gratis: con regla de precio `item_total`, y el «te faltan X €» saldría de ahí (faseR §4);
+  - upselling;
+  - alertas de bajada de precio y reposición en la lista de deseos (R8).
+- **Fase L:** automatizar la devolución de los puntos canjeados en devoluciones (faseL §6.4); revisar a mano el widget de puntos del Admin.
+- **Fase P:** no crear códigos sobre el envío ni promociones automáticas sin revisarlo (faseP §7).
+
+**Cómo se trabaja con este usuario:**
+
+- En español.
+- Plan + confirmación antes de cada subfase (REGLA Nº 1); preguntar las dudas.
+- Varias subfases por PR, porque Gitea es lento.
+- Él crea las PR y hace el merge con squash; yo hago commit y push de la rama y dejo la descripción de la PR en `/tmp/pr-*.md`.
+- Antes de cada PR, la batería completa: lint, formato, typecheck, unitarios, build, `check:budget`, HTTP del backend y e2e. Los e2e necesitan el build completo del storefront servido con `pnpm start` y su `medusa develop` con `EMAIL_TRANSPORT=smtp`.
+- No tocar sus procesos (su `medusa develop` en :9000); parar los míos al terminar.
 
 - **Fase 4 (carrito): cerrada** (PR #18, `ce526aa`). Detalle, medidas y pendientes en [fase4.md](./fases/fase4.md) §5–8.
 - **Fase 5 (checkout + Stripe): cerrada** (PR #20, `72dd7e4`). Resultados en [fase5.md](./fases/fase5.md) §5.1 y pendientes en §7.
