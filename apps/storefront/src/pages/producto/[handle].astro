@@ -13,7 +13,7 @@ import { categoryHref, deepestCategory } from "$lib/categories";
 import { getEntry } from "astro:content";
 import { CORREA_GROUP_HANDLE, CORREA_GROUP_PATH, correaSwatch, isCorrea } from "$lib/correa";
 import { getAllProducts } from "$lib/medusa";
-import { getShopTree } from "$lib/shop";
+import { getRelatedByProduct, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
@@ -24,6 +24,7 @@ import CorreaBuilder from "../../components/correa/CorreaBuilder.astro";
 import ProductGallery from "../../components/ProductGallery.astro";
 import LiveSync from "../../components/LiveSync.astro";
 import WishButton from "../../components/WishButton.astro";
+import RelatedProducts from "../../components/RelatedProducts.astro";
 
 // Todas las fichas, también las descatalogadas (Fase E, opción i): su URL sigue respondiendo.
 export const getStaticPaths = (async () => {
@@ -35,17 +36,24 @@ export const getStaticPaths = (async () => {
   const titles = new Map(products.map((p) => [p.handle, p.title]));
   // Correas a medida: enlaces a los otros colores y materiales (sin descatalogadas)
   const correas = products.filter((p) => isCorrea(p) && !isDiscontinued(p)).map(correaSwatch);
+  // Relacionados (Fase R): de la hoja + relleno de su categoría, calculados una vez por build
+  const relatedBy = await getRelatedByProduct();
   return products.map((product) => {
     const handle = isDiscontinued(product) ? replacementHandle(product) : null;
     const replacement =
       handle && titles.has(handle) ? { handle, title: titles.get(handle)! } : null;
     const siblings = isCorrea(product) ? correas : [];
-    return { params: { handle: product.handle }, props: { product, replacement, siblings } };
+    // Descatalogado: su propio enlace al sustituto; sin bloque de relacionados.
+    const related = isDiscontinued(product) ? [] : (relatedBy.get(product.id) ?? []);
+    return {
+      params: { handle: product.handle },
+      props: { product, replacement, siblings, related },
+    };
   });
 }) satisfies GetStaticPaths;
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
-const { product, replacement, siblings } = Astro.props as Props;
+const { product, replacement, siblings, related } = Astro.props as Props;
 const discontinued = isDiscontinued(product);
 const correa = isCorrea(product);
 // Migas: cadena completa de la categoría más concreta del producto (Fase S)
@@ -161,4 +169,5 @@ const onward = replacement
     </div>
   </div>
   {!discontinued && <LiveSync productId={product.id} />}
+  <RelatedProducts products={related} back={`/producto/${product.handle}/`} />
 </BaseLayout>

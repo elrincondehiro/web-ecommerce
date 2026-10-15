@@ -163,10 +163,12 @@ async function loadSnapshot(
     for (const p of data as Row[]) dbProducts.push(toDbProduct(p));
   }
 
-  // Sustitutos de productos descatalogados (Fase E) que no están en la hoja
+  // Sustitutos (Fase E) y relacionados (Fase R) que no están en la hoja
   const sheetHandles = new Set(products.map((p) => p.handle));
   const wanted = [
-    ...new Set(products.flatMap((p) => (p.replacement ? [p.replacement] : []))),
+    ...new Set(
+      products.flatMap((p) => [...(p.replacement ? [p.replacement] : []), ...(p.related ?? [])]),
+    ),
   ].filter((h) => !sheetHandles.has(h));
   const replacementHandles: string[] = [];
   for (const part of chunks(wanted)) {

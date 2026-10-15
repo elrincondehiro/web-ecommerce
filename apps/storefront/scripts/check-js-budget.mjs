@@ -1,7 +1,7 @@
 // Presupuesto de JS del storefront (AGENTS.md §3.4). Se ejecuta tras `pnpm build`.
 // Home, listados y fichas: 0 bundles /_astro/*.js salvo, sin imports a otros chunks:
 //   - UN bundle de carrito (CartClient, ≤ 2 KB gzip, fase 4);
-//   - UN bundle común de la web (SiteClient, ≤ 1,5 KB gzip, fase 7-2: sugerencias), OBLIGATORIO
+//   - UN bundle común de la web (SiteClient, ≤ 2 KB gzip, fase 7-2: sugerencias), OBLIGATORIO
 //     (va en BaseLayout; también en carrito/checkout/pedido, comprobado en e2e/sugerencias);
 //   - UN bundle de arrastre de carruseles (ScrollDrag, ≤ 1 KB gzip, Fase D) SOLO en páginas con
 //     un [data-drag-scroll] y obligatorio en ellas (un carrusel nuevo debe incluir <ScrollDrag />);
@@ -39,7 +39,8 @@ const INLINE_GZIP_MAX = 1434; // 1,4 KB: runtime de islands + LiveSync + script 
 /** Bundles permitidos en esas páginas (máx. uno de cada; `required`: en todas). */
 const PAGE_BUNDLES = [
   { name: "carrito", re: /^CartClient\.[^/]*\.js$/, max: 2048, required: false },
-  { name: "común", re: /^SiteClient\.[^/]*\.js$/, max: 1536, required: true },
+  // 1,5 → 2 KB (análisis del JS, docs/analisis-js.md §6): margen para lo común sin forzar repartos.
+  { name: "común", re: /^SiteClient\.[^/]*\.js$/, max: 2048, required: true },
   { name: "arrastre", re: /^ScrollDrag\.[^/]*\.js$/, max: 1024, required: "drag" },
   { name: "correa", re: /^CorreaLive\.[^/]*\.js$/, max: 1024, required: "correa" },
 ];

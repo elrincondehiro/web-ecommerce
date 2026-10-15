@@ -8,9 +8,10 @@
 //   manifiesto: en `astro dev` se calcula; en producción, árbol completo de Medusa (sin podar).
 import { getEntry } from "astro:content";
 import { readBuildManifest } from "./build-manifest";
-import type { StoreProduct } from "./catalog";
+import { isDiscontinued, type StoreProduct } from "./catalog";
 import {
   buildCategoryTree,
+  deepestCategory,
   productsInSubtree,
   pruneEmpty,
   type CategoryNode,
@@ -19,7 +20,9 @@ import {
 } from "./categories";
 import { groupCorreas, isCorrea, tableProducts } from "./correa";
 import { listingPagesManifest, LISTING_PAGES_MANIFEST } from "./listing-pages";
+import { productRelated } from "./related";
 import {
+  getAllProducts,
   getCategoryList,
   getCollectionByHandle,
   getListedProducts,
@@ -102,14 +105,42 @@ export async function getFeaturedProducts(): Promise<StoreProduct[]> {
     .slice(0, home.destacados.maximo);
 }
 
+let relatedPromise: Promise<Map<string, StoreProduct[]>> | undefined;
+
+/**
+ * Relacionados de cada ficha (Fase R, lib/related.ts), por id de producto. Una vez por build: el
+ * catálogo ya está en memoria. Relleno: la categoría más concreta del producto (en el orden de
+ * los listados, sin descatalogados).
+ */
+export function getRelatedByProduct(): Promise<Map<string, StoreProduct[]>> {
+  return (relatedPromise ??= (async () => {
+    const [all, tree] = await Promise.all([getAllProducts(), computeShopTree()]);
+    const listed = all.filter((p) => !isDiscontinued(p));
+    const byHandle = new Map(listed.map((p) => [p.handle, p]));
+    const byCategory = new Map<string, StoreProduct[]>();
+    const out = new Map<string, StoreProduct[]>();
+    for (const product of all) {
+      const node = deepestCategory(tree, product);
+      let same: StoreProduct[] = [];
+      if (node) {
+        same = byCategory.get(node.id) ?? productsInSubtree(listed, node);
+        byCategory.set(node.id, same);
+      }
+      out.set(product.id, productRelated(product, byHandle, same));
+    }
+    return out;
+  })());
+}
+
 /** Manifiesto { clave → ids } de TODOS los listados del build (D-S1). */
 export async function buildListingManifest(): Promise<Record<string, string[]>> {
-  const [tree, products, sale, featured, correas] = await Promise.all([
+  const [tree, products, sale, featured, correas, related] = await Promise.all([
     computeShopTree(),
     getListingProducts(),
     getSaleProducts(),
     getFeaturedProducts(),
     getCorreaProducts(),
+    getRelatedByProduct(),
   ]);
   const ids = (list: StoreProduct[]) => list.map((p) => p.id);
   return listingPagesManifest([
@@ -119,6 +150,8 @@ export async function buildListingManifest(): Promise<Record<string, string[]>> 
     // Landing de la correa a medida (E-2c): las correas de la tabla de precios (una por material)
     { ids: ids(tableProducts(correas)), size: Infinity },
     ...tree.all.map((n) => ({ ids: ids(productsInSubtree(products, n)) })),
+    // Relacionados de cada ficha (Fase R): un bloque sin paginar por ficha
+    ...[...related.values()].map((list) => ({ ids: ids(list), size: Infinity })),
   ]);
 }
 

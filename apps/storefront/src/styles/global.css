@@ -1041,6 +1041,12 @@
 .carousel__item {
   scroll-snap-align: start;
 }
+/* Relacionados de la ficha (Fase R): 4 tarjetas → en escritorio caben todas (sin desplazar). */
+@media (min-width: 64rem) {
+  .carousel--related .carousel__track {
+    grid-auto-columns: calc((100% - 3rem) / 4);
+  }
+}
 /* Arrastre con ratón (Fase D, 3.4, ScrollDrag.astro): cursor de mano solo con JS y ratón; sin
    snap mientras se arrastra (al soltar vuelve y encaja). */
 @media (hover: hover) and (pointer: fine) {

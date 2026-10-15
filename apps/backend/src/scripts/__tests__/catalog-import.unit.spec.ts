@@ -558,3 +558,38 @@ describe("sin_puntos (Fase L-2, K3)", () => {
     expect(read(['a,quizá,A-1,"9,95"']).errors.map((e) => e.column)).toEqual(["sin_puntos"]);
   });
 });
+
+describe("relacionados (Fase R)", () => {
+  const refs = {
+    salesChannelId: "sc",
+    shippingProfileId: "sp",
+    categoryIds: {},
+    collectionIds: {},
+    tagIds: {},
+    typeIds: {},
+  } as unknown as Parameters<typeof productCreateInput>[1];
+  const read = (rows: string[]) => readProducts(csv(["handle,relacionados,sku,precio", ...rows]));
+
+  it("lista con «|» (con espacios), «-» la borra y vacío no la toca", () => {
+    const { products, errors } = read(['a,b | c,A-1,"9,95"', 'b,-,B-1,"9,95"', 'c,,C-1,"9,95"']);
+    expect(errors).toEqual([]);
+    expect(products.map((p) => p.related)).toEqual([["b", "c"], null, undefined]);
+    expect(productCreateInput(products[0]!, refs).metadata).toMatchObject({ relacionados: "b|c" });
+    expect(productCreateInput(products[1]!, refs).metadata).toMatchObject({ relacionados: "" });
+    expect(productCreateInput(products[2]!, refs).metadata?.relacionados).toBeUndefined();
+  });
+
+  it("handle no válido, propio, repetido o demasiados; inexistente en el plan", () => {
+    const cols = (rows: string[]) => read(rows).errors.map((e) => e.message);
+    expect(cols(['a,B C,A-1,"9,95"'])[0]).toMatch(/no válido/);
+    expect(cols(['a,a|b,A-1,"9,95"'])[0]).toMatch(/sí mismo/);
+    expect(cols(['a,b|b,A-1,"9,95"'])[0]).toMatch(/repetido/);
+    expect(cols([`a,${"bcdefghij".split("").join("|")},A-1,"9,95"`])[0]).toMatch(/Como mucho 8/);
+    const { products } = read(['a,b|zz,A-1,"9,95"', 'b,,B-1,"9,95"']);
+    const plan = planCatalog({ categories: [], products }, emptyDb());
+    const rel = (p: typeof plan) => p.errors.filter((e) => e.column === "relacionados");
+    expect(rel(plan).map((e) => e.message)).toEqual(["No existe el producto «zz»."]);
+    const ok = planCatalog({ categories: [], products }, emptyDb({ replacementHandles: ["zz"] }));
+    expect(rel(ok)).toEqual([]);
+  });
+});

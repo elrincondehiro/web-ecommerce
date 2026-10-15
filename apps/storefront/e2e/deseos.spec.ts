@@ -76,7 +76,10 @@ test.describe("lista de deseos sin JS", () => {
     await createAccount(page, email);
     const { href, title } = await firstProduct(page);
     await page.goto(href);
-    await page.getByRole("button", { name: `Guardar ${title} en mi lista de deseos` }).click();
+    await page
+      .locator("button[name=wish]")
+      .and(page.getByRole("button", { name: `Guardar ${title} en mi lista de deseos` }))
+      .click();
     await expect(page).toHaveURL(/\/cuenta\/entrar\/\?next=/);
     await expect(page.getByText(/Entra en tu cuenta para guardar productos/)).toBeVisible();
     await fillLogin(page, email);
@@ -128,13 +131,19 @@ test.describe("lista de deseos sin JS", () => {
     const id = (await second.getAttribute("id"))!;
     const variantTitle = (await page.locator(`label[for="${id}"]`).textContent())!.trim();
     await second.check();
-    await page.getByRole("button", { name: `Guardar ${title} en mi lista de deseos` }).click();
+    await page
+      .locator("button[name=wish]")
+      .and(page.getByRole("button", { name: `Guardar ${title} en mi lista de deseos` }))
+      .click();
     await expect(page).toHaveURL(/#deseos-wish_(added|already)$/);
 
     // Correa a medida: un color (producto), sin variante.
     await page.goto("/producto/correa-azul-nylon/");
     const correa = (await page.getByRole("heading", { level: 1 }).textContent())!.trim();
-    await page.getByRole("button", { name: `Guardar ${correa} en mi lista de deseos` }).click();
+    await page
+      .locator("button[name=wish]")
+      .and(page.getByRole("button", { name: `Guardar ${correa} en mi lista de deseos` }))
+      .click();
     await expect(page).toHaveURL(/\/producto\/correa-azul-nylon\/#deseos-wish_(added|already)$/);
 
     await page.goto("/cuenta/deseos/");
@@ -249,6 +258,24 @@ test.describe("lista de deseos con JS: estado guardado", () => {
     await expect(heartLink).toBeVisible();
   });
 
+  test("P6: tras entrar, la cuenta sale con sesión en el HTML y la pista ya está puesta", async ({
+    page,
+  }) => {
+    await page.goto("/cuenta/entrar/");
+    await page.evaluate(() => localStorage.clear());
+    await fillLogin(page, email);
+    await expect(page).toHaveURL(/\/cuenta\/$/);
+    // El HTML del servidor (on-demand) ya trae <html data-auth>: no depende del JS.
+    const html = await (await page.request.get("/cuenta/")).text();
+    expect(html).toMatch(/<html[^>]*\sdata-auth[\s>=]/);
+    // La primera página estática tras entrar: con la island bloqueada, la pista lo marca.
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("cabecera"))).not.toBeNull();
+    await page.route("**/_server-islands/**", (r) => r.abort());
+    await page.goto("/condiciones/");
+    await expect(page.locator("html")).toHaveAttribute("data-auth", "");
+    await page.unroute("**/_server-islands/**");
+  });
+
   test("cerrar sesión borra la pista de la cabecera; sesión caducada: la island la corrige", async ({
     page,
   }) => {
@@ -277,7 +304,9 @@ test.describe("lista de deseos con JS: estado guardado", () => {
     await page.goto((await choose.getAttribute("href"))!);
     const title = (await page.getByRole("heading", { level: 1 }).textContent())!.trim();
     const radios = page.locator("input[name=variant_id]:visible");
-    const save = page.getByRole("button", { name: `Guardar ${title} en mi lista de deseos` });
+    const save = page
+      .locator("button[name=wish]")
+      .and(page.getByRole("button", { name: `Guardar ${title} en mi lista de deseos` }));
     const red = page.getByRole("link", {
       name: `${title} está en tu lista de deseos: ver mi lista`,
     });

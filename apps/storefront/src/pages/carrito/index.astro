@@ -7,6 +7,7 @@ import { currentCart } from "$lib/cart-server";
 import { itemCount } from "$lib/cart";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CartView from "../../components/CartView.astro";
+import CartSuggestions from "../../components/CartSuggestions.astro";
 import CartLive from "../../components/CartLive.astro";
 
 export const prerender = false;
@@ -23,6 +24,8 @@ const cart = await currentCart(Astro.cookies);
   cartClient={false}
 >
   <h1 class="mb-6 text-3xl font-semibold tracking-tight">Carrito</h1>
-  <CartView cart={cart} />
+  <CartView cart={cart}>
+    <CartSuggestions slot="suggestions" cart={cart} token={Astro.locals.customerToken ?? null} />
+  </CartView>
   <CartLive />
 </BaseLayout>

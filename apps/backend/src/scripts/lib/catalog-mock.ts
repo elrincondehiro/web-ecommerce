@@ -151,6 +151,7 @@ export const MOCK_HEADER = [
   "granel",
   "descatalogado",
   "sustituto",
+  "relacionados",
   "opcion:Talla",
   "opcion:Color",
   "opcion:Peso",
@@ -314,6 +315,8 @@ export interface MockCatalog {
  *   - oferta (−20 %): i % 12 === 5 · agotado entero: i % 23 === 7 · primera variante agotada: i % 9 === 4
  *   - destacados: i % 25 === 1 (y con stock) · granel: 1 de cada 3 productos de snacks
  *   - descatalogado (Fase E): i % 50 === 46, con sustituto = el primer producto de su hoja
+ *   - relacionados (Fase R): i % 4 === 1, los 2 productos generados justo antes de OTRAS hojas
+ *     (lo que se pone a mano: un collar sugiere una correa); el resto se rellena en la ficha
  */
 export function buildMockCatalog(categories: CategorySheet[], count: number): MockCatalog {
   const leaves = leafCategories(categories);
@@ -323,6 +326,7 @@ export function buildMockCatalog(categories: CategorySheet[], count: number): Mo
   );
   const perLeaf = new Map<string, number>();
   const firstOfLeaf = new Map<string, string>();
+  const generated: { handle: string; leaf: string }[] = [];
   const rows: Row[] = [];
   const stats = { products: 0, variants: 0, bulk: 0, sale: 0, featured: 0, discontinued: 0 };
 
@@ -339,6 +343,14 @@ export function buildMockCatalog(categories: CategorySheet[], count: number): Mo
     const replacement = firstOfLeaf.get(leaf.handle);
     if (!replacement) firstOfLeaf.set(leaf.handle, handle);
     const discontinued = i % 50 === 46 && Boolean(replacement);
+    const related =
+      i % 4 === 1
+        ? generated
+            .filter((g) => g.leaf !== leaf.handle)
+            .slice(-2)
+            .map((g) => g.handle)
+        : [];
+    generated.push({ handle, leaf: leaf.handle });
     const skuBase = `MOCK-${num}`;
     const bulk = profile.kind === "snack" && k % 3 === 2;
     const soldOut = i % 23 === 7;
@@ -362,6 +374,7 @@ export function buildMockCatalog(categories: CategorySheet[], count: number): Mo
       estado: "publicado",
       marca: i % 3 ? "Hiro" : "Rincón",
       ...(discontinued ? { descatalogado: "sí", sustituto: replacement } : {}),
+      ...(related.length ? { relacionados: related.join("|") } : {}),
       ...analyticsFor(profile.kind, i),
     };
     stats.products++;

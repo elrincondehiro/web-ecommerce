@@ -5,7 +5,7 @@
 // Con JS:
 //   - al cambiar la cantidad (− / +, teclado), 500 ms después del último cambio se envía el
 //     formulario de esa línea con fetch (Accept: JSON → middleware) y "Actualizar" se oculta;
-//   - "Quitar" también por fetch;
+//   - "Quitar" también por fetch, y «Añadir» de la venta cruzada (Fase R, data-cart-add);
 //   - después se pide /carrito/parcial/ y se sustituye [data-cart-view] (lista y totales) sin
 //     recargar; el foco vuelve al mismo control de la misma línea; contador de la cabecera y
 //     aviso (región aria-live) con la respuesta. Error de stock → aviso y la cantidad buena.
@@ -22,7 +22,11 @@
   const send = async (form: HTMLFormElement) => {
     const view = document.querySelector<HTMLElement>("[data-cart-view]");
     const line = (form.elements.namedItem("line_id") as HTMLInputElement | null)?.value;
-    const kind = form.hasAttribute("data-cart-remove") ? "remove" : "update";
+    const kind = form.hasAttribute("data-cart-remove")
+      ? "remove"
+      : form.hasAttribute("data-cart-add")
+        ? "add"
+        : "update";
     if (view) view.ariaBusy = "true";
     try {
       const res = await fetch(form.action, {
@@ -54,7 +58,8 @@
 
   addEventListener("submit", (e) => {
     const form = e.target as HTMLFormElement;
-    if (!form.matches("form[data-cart-update], form[data-cart-remove]")) return;
+    if (!form.matches("form[data-cart-update], form[data-cart-remove], form[data-cart-add]"))
+      return;
     e.preventDefault();
     clearTimeout(timer);
     void send(form);

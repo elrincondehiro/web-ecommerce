@@ -102,7 +102,7 @@ export interface CatalogSnapshot {
   types: string[];
   /** Productos de la hoja que ya existen. */
   products: DbProduct[];
-  /** Handles de `sustituto` que ya existen en Medusa (los que no están en la hoja). */
+  /** Handles de `sustituto` y `relacionados` que ya existen en Medusa (no están en la hoja). */
   replacementHandles?: string[];
   /** SKU y EAN de la hoja que ya usa alguna variante → handle de su producto. */
   skuOwners: Record<string, string>;
@@ -122,6 +122,8 @@ export const META = {
   replacement: "sustituto",
   /** No genera puntos (Fase L-2; lo lee lib/points.ts NO_POINTS_KEY). */
   noPoints: "sin_puntos",
+  /** Relacionados (Fase R): handles separados por «|» (lo lee el storefront, lib/related.ts). */
+  related: "relacionados",
   stepG: "paso_g",
   minG: "min_g",
   netG: "neto_g",
@@ -331,6 +333,11 @@ export function planCatalog(
     ) {
       e(p.line, "sustituto", `No existe el producto «${p.replacement}».`);
     }
+    for (const h of p.related ?? []) {
+      if (!sheetHandles.has(h) && !(db.replacementHandles ?? []).includes(h)) {
+        e(p.line, "relacionados", `No existe el producto «${h}».`);
+      }
+    }
     if (p.collection && !db.collections.includes(p.collection)) {
       e(p.line, "coleccion", `No existe la colección «${p.collection}» (créala en el Admin).`);
     }
@@ -404,10 +411,11 @@ export function planCatalog(
     if (textChanged(p.brand, existing.brand)) changes.push("marca");
     const meta = productMetadata(p);
     const changedKeys = Object.keys(meta).filter((k) => metaChanged(meta[k], existing.metadata[k]));
-    const own = [META.discontinued, META.replacement, META.noPoints] as string[];
+    const own = [META.discontinued, META.replacement, META.noPoints, META.related] as string[];
     if (changedKeys.includes(META.discontinued)) changes.push("descatalogado");
     if (changedKeys.includes(META.noPoints)) changes.push("sin puntos");
     if (changedKeys.includes(META.replacement)) changes.push("sustituto");
+    if (changedKeys.includes(META.related)) changes.push("relacionados");
     if (changedKeys.some((k) => !own.includes(k))) changes.push("analíticos");
     if (p.status && p.status !== existing.status) changes.push("estado");
     if (p.iva && IVA_TYPE[p.iva] !== existing.type) changes.push("iva");
@@ -532,6 +540,7 @@ export function productMetadata(p: ProductSheet): Record<string, unknown> {
   if (p.discontinued !== undefined) meta[META.discontinued] = p.discontinued ? true : "";
   if (p.replacement !== undefined) meta[META.replacement] = p.replacement ?? "";
   if (p.noPoints !== undefined) meta[META.noPoints] = p.noPoints ? true : "";
+  if (p.related !== undefined) meta[META.related] = p.related ? p.related.join("|") : "";
   if (p.brand !== undefined) meta[BRAND_KEY] = p.brand ?? "";
   return meta;
 }

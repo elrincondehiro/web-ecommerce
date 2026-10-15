@@ -118,7 +118,10 @@ test.describe("cuenta sin JS", () => {
     await expect(page.getByText("Predeterminada", { exact: true })).toBeVisible();
 
     await page.goto("/producto/mock-clicker-esencial-018/");
-    await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
+    await page
+      .locator("#comprar")
+      .getByRole("button", { name: /^Añadir .* al carrito$/ })
+      .click();
     await page.goto("/checkout/");
     const datos = page.locator("#datos");
     await expect(datos.getByLabel("Email")).toHaveValue(email);
@@ -159,7 +162,10 @@ test.describe("cuenta sin JS", () => {
     await login(page, email, "Nueva-4567");
     await page.context().clearCookies({ name: "cart_id" });
     await page.goto("/producto/mock-clicker-esencial-018/");
-    await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
+    await page
+      .locator("#comprar")
+      .getByRole("button", { name: /^Añadir .* al carrito$/ })
+      .click();
     await page.goto("/cuenta/");
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
     await page.goto("/carrito/");

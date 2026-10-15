@@ -47,23 +47,24 @@ Una fila por categoría.
 
 ### Datos del producto (primera fila)
 
-| Columna         | Obligatoria | Ejemplo                | Notas                                                                                   |
-| --------------- | ----------- | ---------------------- | --------------------------------------------------------------------------------------- |
-| `handle`        | sí          | `collar-nylon`         | En todas las filas del producto.                                                        |
-| `titulo`        | al crear    | `Collar de nailon`     | Empieza en mayúscula: la tienda ordena distinguiendo mayúsculas (aviso si no).          |
-| `subtitulo`     | no          | `Hebilla rápida`       |                                                                                         |
-| `descripcion`   | no          |                        | Admite saltos de línea (entre comillas, como hace Excel).                               |
-| `categorias`    | no          | `collares-perro`       | Handles separados por `\|`. Si tiene valor, **sustituye** las actuales. `-` = ninguna.  |
-| `etiquetas`     | no          | `novedad\|reflectante` | Separadas por `\|`. Las que no existan se crean. Sustituye las actuales. `-` = ninguna. |
-| `iva`           | no          | `reducido`             | `general` (21 %), `reducido` (10 %), `superreducido` (4 %). Por defecto, general.       |
-| `coleccion`     | no          | `destacados`           | Handle de una colección creada en el Admin. `-` = quitarla.                             |
-| `estado`        | no          | `publicado`            | `publicado` / `borrador`. Por defecto `publicado`.                                      |
-| `material`      | no          | `Nailon`               |                                                                                         |
-| `marca`         | no          | `Hiro`                 | Se guarda en `metadata.marca`.                                                          |
-| `granel`        | no          | `sí`                   | Producto a granel: ver [Granel](#granel).                                               |
-| `descatalogado` | no          | `sí`                   | `sí` / `no`. Ver [Descatalogar un producto](#descatalogar-un-producto).                 |
-| `sustituto`     | no          | `collar-nylon-2`       | Handle del producto que lo sustituye. `-` = quitarlo.                                   |
-| `sin_puntos`    | no          | `sí`                   | El producto no genera puntos del programa de fidelización (Fase L). Vacío = no tocar.   |
+| Columna         | Obligatoria | Ejemplo                       | Notas                                                                                                                                                                                                                                        |
+| --------------- | ----------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handle`        | sí          | `collar-nylon`                | En todas las filas del producto.                                                                                                                                                                                                             |
+| `titulo`        | al crear    | `Collar de nailon`            | Empieza en mayúscula: la tienda ordena distinguiendo mayúsculas (aviso si no).                                                                                                                                                               |
+| `subtitulo`     | no          | `Hebilla rápida`              |                                                                                                                                                                                                                                              |
+| `descripcion`   | no          |                               | Admite saltos de línea (entre comillas, como hace Excel).                                                                                                                                                                                    |
+| `categorias`    | no          | `collares-perro`              | Handles separados por `\|`. Si tiene valor, **sustituye** las actuales. `-` = ninguna.                                                                                                                                                       |
+| `etiquetas`     | no          | `novedad\|reflectante`        | Separadas por `\|`. Las que no existan se crean. Sustituye las actuales. `-` = ninguna.                                                                                                                                                      |
+| `iva`           | no          | `reducido`                    | `general` (21 %), `reducido` (10 %), `superreducido` (4 %). Por defecto, general.                                                                                                                                                            |
+| `coleccion`     | no          | `destacados`                  | Handle de una colección creada en el Admin. `-` = quitarla.                                                                                                                                                                                  |
+| `estado`        | no          | `publicado`                   | `publicado` / `borrador`. Por defecto `publicado`.                                                                                                                                                                                           |
+| `material`      | no          | `Nailon`                      |                                                                                                                                                                                                                                              |
+| `marca`         | no          | `Hiro`                        | Se guarda en `metadata.marca`.                                                                                                                                                                                                               |
+| `granel`        | no          | `sí`                          | Producto a granel: ver [Granel](#granel).                                                                                                                                                                                                    |
+| `descatalogado` | no          | `sí`                          | `sí` / `no`. Ver [Descatalogar un producto](#descatalogar-un-producto).                                                                                                                                                                      |
+| `sustituto`     | no          | `collar-nylon-2`              | Handle del producto que lo sustituye. `-` = quitarlo.                                                                                                                                                                                        |
+| `sin_puntos`    | no          | `sí`                          | El producto no genera puntos del programa de fidelización (Fase L). Vacío = no tocar.                                                                                                                                                        |
+| `relacionados`  | no          | `collar-cuero \| correa-roja` | Fase R. Handles de otros productos, separados por `\|`, en el orden en que quieres verlos (máx. 8). La ficha muestra 4: si hay menos, completa con otros de su categoría. El carrito sugiere los relacionados de lo que lleva. `-` = borrar. |
 
 ### Componentes analíticos (primera fila)
 

@@ -97,12 +97,19 @@ export interface ProductSheet {
   replacement?: Text;
   /** No genera puntos (Fase L-2, K3). `undefined` = no tocar. */
   noPoints?: boolean;
+  /**
+   * Productos relacionados (Fase R): handles en orden, máx. RELATED_MAX. `null` = borrar,
+   * `undefined` = no tocar.
+   */
+  related?: string[] | null;
   /** Títulos de las opciones del producto, en el orden de las columnas. */
   options: string[];
   variants: VariantSheet[];
 }
 
 export const CATEGORIES_FILE = "categorias.csv";
+/** Máximo de relacionados por producto (Fase R; la ficha muestra 4). */
+export const RELATED_MAX = 8;
 export const PRODUCTS_FILE = "productos.csv";
 export const OPTION_PREFIX = "opcion:";
 export const CLEAR = "-";
@@ -140,6 +147,7 @@ const PRODUCT_COLUMNS = [
   "descatalogado",
   "sustituto",
   "sin_puntos",
+  "relacionados",
   "sku",
   "ean",
   "precio",
@@ -175,6 +183,7 @@ const PRODUCT_LEVEL: ProductColumn[] = [
   "descatalogado",
   "sustituto",
   "sin_puntos",
+  "relacionados",
 ];
 /** Columnas de variante que heredan el valor de la fila de arriba (mismo producto). */
 type Inherited =
@@ -603,6 +612,26 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
         } else if (sustituto === handle) {
           err("sustituto", "Un producto no puede ser su propio sustituto.");
         } else if (sustituto !== undefined) p.replacement = sustituto;
+      }
+
+      // Relacionados (Fase R): handles separados por «|», sin repetir, máx. RELATED_MAX.
+      const rel = cell("relacionados");
+      if (rel === CLEAR) p.related = null;
+      else if (rel) {
+        const list = rel
+          .split("|")
+          .map((h) => h.trim())
+          .filter(Boolean);
+        const bad = list.filter((h) => !HANDLE_RE.test(h));
+        if (bad.length) {
+          err("relacionados", `Handle de producto no válido: «${bad[0]}» (separa con «|»).`);
+        } else if (list.includes(handle)) {
+          err("relacionados", "Un producto no puede ser relacionado de sí mismo.");
+        } else if (new Set(list).size !== list.length) {
+          err("relacionados", "Hay un producto repetido.");
+        } else if (list.length > RELATED_MAX) {
+          err("relacionados", `Como mucho ${RELATED_MAX} productos.`);
+        } else p.related = list;
       }
 
       // Componentes analíticos (% sobre producto tal cual)

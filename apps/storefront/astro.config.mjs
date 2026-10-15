@@ -33,6 +33,15 @@ const IMAGE_BASE_URL = new URL(
 const CSP_ENABLED = false;
 
 /**
+ * Datos de prueba (P4 del análisis del JS, docs/analisis-js.md): con `STOREFRONT_DATA=fixtures`
+ * (CI sin backend) el catálogo sale de src/lib/__fixtures__. Se sustituye en el build como
+ * constante (`import.meta.env.USE_FIXTURES`): con `medusa` los `import()` de las fixtures son
+ * código muerto y no entran en `dist/server` (271 KB de products.json, solo limpieza). Mismo valor
+ * que `astro:env` (variable de entorno > .env; por defecto `medusa`).
+ */
+const USE_FIXTURES = (process.env.STOREFRONT_DATA || dotenv.STOREFRONT_DATA) === "fixtures";
+
+/**
  * Hosts de confianza para las rutas on-demand (`security.allowedDomains`, fase 10). Detrás de Caddy,
  * Astro solo acepta `Host`/`X-Forwarded-Host`/`X-Forwarded-Proto` que coincidan; si no, usa
  * `localhost` y las URL generadas (redirecciones, `Astro.url`) llevarían el host interno.
@@ -303,7 +312,10 @@ export default defineConfig({
     ...(CSP_ENABLED ? { csp: true } : {}),
   },
   vite: {
-    define: { "import.meta.env.CSP_ENABLED": JSON.stringify(CSP_ENABLED) },
+    define: {
+      "import.meta.env.CSP_ENABLED": JSON.stringify(CSP_ENABLED),
+      "import.meta.env.USE_FIXTURES": JSON.stringify(USE_FIXTURES),
+    },
     plugins: [tailwindcss()],
     build: {
       // Scripts propios que van como bundle en /_astro/ (caché inmutable, se descargan una vez)

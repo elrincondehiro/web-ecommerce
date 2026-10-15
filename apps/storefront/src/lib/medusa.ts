@@ -36,7 +36,9 @@ const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.c
 const CATEGORY_FIELDS = "id,name,handle,description,rank,parent_category_id";
 const PAGE = 100;
 
-const useFixtures = STOREFRONT_DATA === "fixtures";
+// Constante de build (astro.config.mjs, vite.define): sin fixtures, sus import() son código muerto
+// y no entran en dist/server. `STOREFRONT_DATA` (astro:env) sigue siendo la fuente para el resto.
+const useFixtures = import.meta.env.USE_FIXTURES && STOREFRONT_DATA === "fixtures";
 
 let sdkInstance: Medusa | undefined;
 function sdk(): Medusa {
@@ -277,7 +279,11 @@ export const CART_FULL_FIELDS =
   "items.thumbnail,items.unit_price,items.compare_at_unit_price,items.total,items.variant_id," +
   "items.metadata,*items.variant," +
   // Puntos (L-3): líneas antes de descuentos + ajuste PTS- («Puntos −X €» en el carrito).
-  "original_item_total,items.original_total,items.adjustments.code,items.adjustments.amount";
+  "original_item_total,items.original_total,items.adjustments.code,items.adjustments.amount," +
+  // Relacionados (Fase R): «Completa tu pedido» en /carrito/. Como con los ajustes en los pedidos
+  // (L-3), la Store API 2.21.2 omite `items.product.metadata` como campo suelto: hace falta el
+  // comodín de la relación.
+  "items.product_id,*items.product";
 
 function cartSdk(): Medusa {
   if (useFixtures) throw new Error("El carrito no está disponible con STOREFRONT_DATA=fixtures.");
@@ -831,6 +837,23 @@ const WISHLIST_PRODUCT_FIELDS =
  * devuelve los publicados del canal de la tienda: un producto despublicado desaparece de la lista
  * (la entrada sigue en la BD y vuelve si se publica otra vez).
  */
+/**
+ * Productos por handle con precio y stock actuales (Fase R: «Completa tu pedido» del carrito).
+ * Solo publicados del canal de la tienda (como getWishlistProducts).
+ */
+export async function getProductsByHandle(handles: string[]): Promise<StoreProduct[]> {
+  if (!handles.length) return [];
+  const region = await getRegionES();
+  const { products } = await cartSdk().store.product.list({
+    handle: handles,
+    limit: handles.length,
+    region_id: region.id,
+    country_code: COUNTRY_CODE,
+    fields: WISHLIST_PRODUCT_FIELDS,
+  });
+  return products;
+}
+
 export async function getWishlistProducts(ids: string[]): Promise<StoreProduct[]> {
   if (!ids.length) return [];
   const region = await getRegionES();

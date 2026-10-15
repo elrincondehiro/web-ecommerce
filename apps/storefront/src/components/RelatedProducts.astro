@@ -1,0 +1,50 @@
+---
+// «También te puede interesar» (Fase R, R1): relacionados de la ficha (lib/related.ts; los
+// calcula el build con getRelatedByProduct). Estático, 0 JS propio: las tarjetas de siempre
+// (Añadir, ♡) y, en móvil, carrusel con arrastre (ScrollDrag, AGENTS §3.4). Precio y stock los
+// corrige un LiveSync con la clave del bloque (manifiesto de listados, como el carrusel de la home).
+import type { StoreProduct } from "$lib/catalog";
+import { CAROUSEL_CARD_SIZES } from "$lib/images";
+import { listingPageKey } from "$lib/listing-pages";
+import LiveSync from "./LiveSync.astro";
+import ProductCard from "./ProductCard.astro";
+import ScrollDrag from "./ScrollDrag.astro";
+
+interface Props {
+  products: StoreProduct[];
+  /** Ruta de vuelta tras añadir sin JS (la ficha). */
+  back: string;
+}
+const { products, back } = Astro.props;
+---
+
+{products.length > 0 && (
+  <section aria-labelledby="relacionados" class="mt-14">
+    <h2 id="relacionados" class="mb-4 text-2xl font-semibold tracking-tight">
+      También te puede interesar
+    </h2>
+    {/* La región con nombre es el carrusel (como en la home): con teclado, se desplaza. */}
+    <div
+      role="region"
+      aria-labelledby="relacionados"
+      tabindex="0"
+      class="carousel carousel--related -mx-4 px-4"
+      data-drag-scroll
+    >
+      <ul class="carousel__track">
+        {products.map((p) => (
+          <li class="carousel__item flex">
+            <ProductCard
+              product={p}
+              headingLevel={3}
+              back={back}
+              imageSizes={CAROUSEL_CARD_SIZES}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
+    <LiveSync pageKey={listingPageKey(products.map((p) => p.id))} />
+    <ScrollDrag />
+  </section>
+)}

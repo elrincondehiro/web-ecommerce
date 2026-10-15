@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 15-oct-2026 · **Fase L cerrada** (#52, #53). **Fase P (códigos descuento) cerrada** en `feat/faseP-codigos` ([faseP-codigos.md](./fases/faseP-codigos.md): solo con cuenta, uno por pedido, combinables con puntos con ≥ 0,50 € por pagar; guía del Admin en §3). Pendiente: textos de la gestoría (condiciones de puntos y de compra, privacidad, cookies, aviso del email), hoy provisionales. Siguiente: fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 15-oct-2026 · Fases L (#52, #53) y P (#54) cerradas. **Análisis del JS** ([analisis-js.md](./analisis-js.md): cerca de lo óptimo; SiteClient a 2 KB). **Fase R (relacionados y venta cruzada) cerrada** en `feat/faseR-relacionados` ([faseR-relacionados.md](./fases/faseR-relacionados.md)): 4 relacionados en la ficha (hoja + relleno de la categoría), y en el carrito «De tu lista de deseos» y «Completa tu pedido». Pendiente: textos de la gestoría, hoy provisionales. Siguiente: fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -30,6 +30,7 @@
 | E URL, descatalogados y especiales          | ✅     | [faseE-urls-correas.md](./fases/faseE-urls-correas.md)               |
 | L Lista de deseos y puntos                  | ✅     | [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md)             |
 | P Códigos descuento                         | ✅     | [faseP-codigos.md](./fases/faseP-codigos.md)                         |
+| R Relacionados y venta cruzada              | ✅     | [faseR-relacionados.md](./fases/faseR-relacionados.md)               |
 
 Roadmap completo y tiempos: README §13.
 
@@ -104,6 +105,7 @@ CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos
 pnpm --filter backend points:accrue                        # abono de puntos a mano (el job lo hace a las 4:00, Fase L)
 pnpm --filter backend points:adjust <email|cus_…> <credit|debit> <importe> <motivo>   # ajuste manual
 pnpm --filter backend points:close-account <cus_…>         # baja de la cuenta: el saldo se pierde (G6)
+# relacionados (Fase R): columna `relacionados` de productos.csv (handles separados por |)
 pnpm --filter backend codes:create <CODIGO> <pct|eur> <valor> [usos_total] [por_cliente]   # código de prueba (Fase P; lo normal: Admin → Promociones)
 pnpm --filter backend catalog:import <carpeta> [dry-run]   # categorias.csv + productos.csv (plantilla en apps/backend/catalog/plantilla)
 pnpm --filter backend images:import <carpeta> [dry-run] [replace]
@@ -492,5 +494,6 @@ Documento de fase con: opciones (con pros/contras y fuentes), propuesta recomend
 - **Fase 11/13**: CSS crítico (~110 ms), LCP variable de la ficha (ancho de 720 px) y logos del pie/cabecera más pequeños ([auditoría](./fases/auditoria-pre-fase10.md) §6).
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.
+- **Fase R:** upselling (`mejor_opcion`), avisos de bajada de precio y reposición en la lista de deseos (R8) y «te faltan X € para el envío gratis» (cuando haya envío gratis por reglas de precio): faseR-relacionados.md §4–§5.
 - **Fase P:** rate limiting de `POST /store/carts/:id/code` en Cloudflare (fase 11); no crear códigos sobre el envío ni automáticos sin revisar (faseP-codigos.md §7).
 - **Fase L (gestoría):** sustituir los textos provisionales de `/condiciones-puntos/` y del párrafo de puntos de `/privacidad/`, y validar el aviso de puntos del email de confirmación (G4/G5).

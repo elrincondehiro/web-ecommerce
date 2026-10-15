@@ -1,0 +1,178 @@
+---
+// Venta cruzada en /carrito/ (Fase R, R4–R7): on-demand, por usuario, 0 JS propio.
+//   1. «De tu lista de deseos» (con sesión): lo guardado que está disponible ahora (variante
+//      guardada con stock), sin lo que ya está en el carrito, lo más reciente primero (máx. 3).
+//   2. «Completa tu pedido»: relacionados (hoja del catálogo) de lo que lleva, por relevancia,
+//      con stock (máx. 3). Sin repetir lo del bloque 1.
+// «Añadir» = formulario de siempre (cart.add, PRG a /carrito/); con JS, CartLive lo envía y
+// refresca [data-cart-view] (que incluye este bloque, /carrito/parcial/). Producto guardado sin
+// variante y con varias → «Elegir opciones» (su ficha). Si algo falla, no se muestra nada.
+import { actionUrl, CART_PATH } from "$lib/cart";
+import { buttonVariants } from "$lib/components/ui/button";
+import { formatPrice } from "$lib/format";
+import { getProductsByHandle, getWishlist, getWishlistProducts, type StoreCart } from "$lib/medusa";
+import { getProductPricing, type StoreProduct } from "$lib/catalog";
+import { isCorrea } from "$lib/correa";
+import {
+  availableNow,
+  cartRelatedHandles,
+  RELATED_IN_CART,
+  wishlistAvailable,
+  type WishCandidate,
+} from "$lib/related";
+import { WISHLIST_PATH } from "$lib/wishlist";
+
+interface Props {
+  cart: StoreCart | null;
+  /** JWT del cliente (null = sin sesión: sin bloque de la lista). */
+  token: string | null;
+}
+const { cart, token } = Astro.props;
+const items = cart?.items ?? [];
+const inCart = {
+  productIds: new Set(items.map((i) => i.product_id).filter((x): x is string => !!x)),
+  variantIds: new Set(items.map((i) => i.variant_id).filter((x): x is string => !!x)),
+};
+const cartHandles = new Set(items.map((i) => i.product_handle).filter((x): x is string => !!x));
+const cartProducts = items
+  .map((i) => (i.product ? { handle: i.product_handle ?? "", metadata: i.product.metadata } : null))
+  .filter((p): p is { handle: string; metadata: Record<string, unknown> | null } => !!p);
+
+async function wishBlock(): Promise<WishCandidate[]> {
+  if (!token) return [];
+  const { items: saved } = await getWishlist(token);
+  const products = await getWishlistProducts([...new Set(saved.map((i) => i.product_id))]);
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const candidates = saved.flatMap((i) => {
+    const product = byId.get(i.product_id);
+    return product && !isCorrea(product)
+      ? [{ product, variantId: i.variant_id, createdAt: i.created_at }]
+      : [];
+  });
+  return wishlistAvailable(candidates, inCart);
+}
+
+/** Candidatos (sin cortar): con stock, sin correas; los de la lista se quitan después. */
+async function relatedBlock(): Promise<StoreProduct[]> {
+  const handles = cartRelatedHandles(cartProducts as never, cartHandles).slice(0, 12);
+  if (!handles.length) return [];
+  const fresh = await getProductsByHandle(handles);
+  const byHandle = new Map(fresh.map((p) => [p.handle, p]));
+  return handles
+    .map((h) => byHandle.get(h))
+    .filter((p): p is StoreProduct => !!p && !isCorrea(p) && availableNow(p));
+}
+
+let wish: WishCandidate[] = [];
+let related: StoreProduct[] = [];
+if (items.length) {
+  // En paralelo: la lista de deseos y los relacionados. Si falla una parte, se omite (el carrito
+  // sigue). Sin datos personales en el log.
+  const [w, r] = await Promise.allSettled([wishBlock(), relatedBlock()]);
+  if (w.status === "fulfilled") wish = w.value;
+  else Astro.logger.error(`carrito sugerencias (lista): ${String(w.reason)}`);
+  if (r.status === "fulfilled") related = r.value;
+  else Astro.logger.error(`carrito sugerencias (relacionados): ${String(r.reason)}`);
+  const shown = new Set(wish.map((c) => c.product.id));
+  related = related.filter((p) => !shown.has(p.id)).slice(0, RELATED_IN_CART);
+}
+
+/** Variante que añade «Añadir»: la guardada, o la única; null = varias → «Elegir opciones». */
+function addVariant(product: StoreProduct, variantId: string | null): string | null {
+  if (variantId) return variantId;
+  const sellable = getProductPricing(product).variants.filter((v) => v.inStock);
+  return getProductPricing(product).variants.length === 1 ? (sellable[0]?.id ?? null) : null;
+}
+function priceOf(product: StoreProduct, variantId: string | null): string | null {
+  const pricing = getProductPricing(product);
+  const v = variantId ? pricing.variants.find((x) => x.id === variantId) : null;
+  const amount = v?.amount ?? pricing.fromAmount;
+  if (amount == null || !pricing.currencyCode) return null;
+  const text = formatPrice(amount, pricing.currencyCode);
+  return !v && pricing.hasPriceRange ? `desde ${text}` : text;
+}
+const variantTitle = (product: StoreProduct, variantId: string | null) =>
+  variantId ? product.variants?.find((x) => x.id === variantId)?.title : undefined;
+
+const blocks = [
+  {
+    id: "sugerencias-deseos",
+    title: "De tu lista de deseos",
+    note: "Disponibles ahora.",
+    link: { href: WISHLIST_PATH, text: "Ver toda mi lista" },
+    rows: wish.map((c) => ({ product: c.product, variantId: c.variantId })),
+  },
+  {
+    id: "sugerencias-relacionados",
+    title: "Completa tu pedido",
+    note: null,
+    link: null,
+    rows: related.map((p) => ({ product: p, variantId: null })),
+  },
+].filter((b) => b.rows.length > 0);
+---
+
+{blocks.map((b) => (
+  <section aria-labelledby={b.id} class="flex flex-col gap-3" data-cart-suggestions>
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 id={b.id} class="text-lg font-semibold">
+        {b.title}
+      </h2>
+      {b.link && (
+        <a href={b.link.href} class="text-sm underline underline-offset-4">
+          {b.link.text}
+        </a>
+      )}
+    </div>
+    {b.note && <p class="-mt-2 text-sm text-muted-foreground">{b.note}</p>}
+    <ul class="grid gap-3 sm:grid-cols-3">
+      {b.rows.map(({ product, variantId }) => {
+        const add = addVariant(product, variantId);
+        const price = priceOf(product, variantId);
+        const vt = variantTitle(product, variantId);
+        const href = `/producto/${product.handle}/`;
+        return (
+          <li class="flex gap-3 rounded-md border-2 border-line bg-card p-3 shadow-xs sm:flex-col">
+            {product.thumbnail ? (
+              <img
+                src={product.thumbnail}
+                alt=""
+                width="64"
+                height="64"
+                loading="lazy"
+                decoding="async"
+                class="size-16 shrink-0 rounded-md border-2 border-line bg-muted object-cover"
+              />
+            ) : (
+              <span class="size-16 shrink-0 rounded-md border-2 border-line bg-muted" />
+            )}
+            <div class="flex min-w-0 flex-1 flex-col gap-1">
+              <a href={href} class="font-semibold leading-snug hover:underline">
+                {product.title}
+              </a>
+              {vt && vt !== "Única" && <span class="text-xs text-muted-foreground">{vt}</span>}
+              {price && <span class="text-sm tabular-nums">{price}</span>}
+              {add ? (
+                <form method="post" action={actionUrl("cart.add")} data-cart-add class="mt-auto">
+                  <input type="hidden" name="back" value={CART_PATH} />
+                  <input type="hidden" name="variant_id" value={add} />
+                  <button
+                    type="submit"
+                    class={buttonVariants({ variant: "outline", size: "sm" })}
+                    aria-label={`Añadir ${product.title} al carrito`}
+                  >
+                    Añadir
+                  </button>
+                </form>
+              ) : (
+                <a href={href} class="mt-auto text-sm underline underline-offset-4">
+                  Elegir opciones
+                </a>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  </section>
+))}

@@ -18,10 +18,15 @@ type Props = Parameters<typeof Seo>[0] & {
 };
 
 const { cartCount, cartClient = true, ...seo } = Astro.props;
+// P6 (docs/analisis-js.md): en páginas on-demand el servidor ya sabe si hay sesión (cookie leída
+// en el middleware, sin red): <html data-auth> sale en el HTML y el icono de cuenta no espera a la
+// island ni a la pista de localStorage (p. ej. la primera página tras entrar). Las estáticas no
+// tienen cookies: ahí siguen la pista (theme-init.ts) y HeaderState.
+const auth = !Astro.isPrerendered && Boolean(Astro.locals.customerToken);
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang="es" data-auth={auth ? "" : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

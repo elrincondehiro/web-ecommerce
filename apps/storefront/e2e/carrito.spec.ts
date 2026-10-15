@@ -15,9 +15,13 @@ const EXTRA = [
   "/producto/mock-alfombra-olfativa-original-027/",
 ];
 
-const addButton = (page: Page) => page.getByRole("button", { name: /^Añadir .* al carrito$/ });
+// En la ficha, el formulario de compra (#comprar): las tarjetas de relacionados (Fase R) tienen
+// sus propios «Añadir», «Cantidad» y − / +. En listados y en /carrito/ se acota en cada test.
+const buy = (page: Page) => page.locator("#comprar");
+const addButton = (page: Page) =>
+  page.getByRole("button", { name: /^Añadir .* al carrito$/ }).and(page.locator("#comprar *"));
 const addBulk = (page: Page) =>
-  page.getByRole("button", { name: "Añadir Premios Plus al carrito", exact: true });
+  buy(page).getByRole("button", { name: "Añadir Premios Plus al carrito", exact: true });
 const cartCount = (page: Page) => page.locator("header [data-cart-count]");
 
 test.describe("sin JS", () => {
@@ -25,13 +29,13 @@ test.describe("sin JS", () => {
 
   test("cantidad: campo numérico normal, sin botones − / +", async ({ page }) => {
     await page.goto(SINGLE);
-    await expect(page.getByLabel("Cantidad")).toBeVisible();
-    await expect(page.getByRole("button", { name: /una unidad/i })).toHaveCount(0);
+    await expect(buy(page).getByLabel("Cantidad")).toBeVisible();
+    await expect(buy(page).getByRole("button", { name: /una unidad/i })).toHaveCount(0);
   });
 
   test("añadir desde la ficha, cambiar cantidad y quitar hasta vaciar", async ({ page }) => {
     await page.goto(SINGLE);
-    await page.getByLabel("Cantidad").fill("2");
+    await buy(page).getByLabel("Cantidad").fill("2");
     await addButton(page).click();
 
     // PRG: vuelve a la ficha con el aviso (:target)
@@ -80,7 +84,7 @@ test.describe("sin JS", () => {
     await page.goto("/productos/3/");
     const card = page
       .locator("article")
-      .filter({ has: addButton(page) })
+      .filter({ has: page.getByRole("button", { name: /^Añadir .* al carrito$/ }) })
       .first();
     const title = (await card.getByRole("heading").textContent())?.trim() ?? "";
     await card.getByRole("button", { name: /^Añadir / }).click();
@@ -91,7 +95,7 @@ test.describe("sin JS", () => {
 
   test("error de stock", async ({ page }) => {
     await page.goto(SINGLE);
-    await page.getByLabel("Cantidad").fill("99");
+    await buy(page).getByLabel("Cantidad").fill("99");
     await addButton(page).click();
     await expect(page).toHaveURL(new RegExp(`${SINGLE}#carrito-stock$`));
     await expect(page.locator("#carrito-stock")).toHaveText("No hay stock suficiente");
@@ -104,7 +108,7 @@ test.describe("sin JS", () => {
     await page.goto(BULK);
     await expect(page.locator("main")).toContainText("20,00 €/kg · mínimo 100 g");
     await expect(page.locator("main")).toContainText(/Quedan \d+(,\d)?\skg/);
-    const grams = page.getByLabel("Cantidad (g)");
+    const grams = buy(page).getByLabel("Cantidad (g)");
     await expect(grams).toHaveValue("100");
     await grams.fill("250");
     await addBulk(page).click();
@@ -134,7 +138,7 @@ test.describe("sin JS", () => {
   test("granel: por debajo del mínimo, no múltiplo del paso y por encima del máximo", async ({
     page,
   }) => {
-    const grams = page.getByLabel("Cantidad (g)");
+    const grams = buy(page).getByLabel("Cantidad (g)");
     for (const [value, code] of [
       ["95", "minimum"],
       ["252", "invalid"],
@@ -191,7 +195,7 @@ test.describe("con JS", () => {
       if (f === page.mainFrame()) navigated = true;
     });
 
-    await page.getByLabel("Cantidad").fill("2");
+    await buy(page).getByLabel("Cantidad").fill("2");
     await addButton(page).click();
 
     await expect(cartCount(page)).toHaveText("2");
@@ -224,9 +228,9 @@ test.describe("con JS", () => {
   test("cantidad con − / +: respeta el mínimo y añade lo elegido", async ({ page }) => {
     await page.goto(SINGLE);
     await expect(cartCount(page)).toBeHidden();
-    const qty = page.getByLabel("Cantidad");
-    const plus = page.getByRole("button", { name: /^Una unidad más/ });
-    const minus = page.getByRole("button", { name: /^Una unidad menos/ });
+    const qty = buy(page).getByLabel("Cantidad");
+    const plus = buy(page).getByRole("button", { name: /^Una unidad más/ });
+    const minus = buy(page).getByRole("button", { name: /^Una unidad menos/ });
     await minus.click();
     await expect(qty).toHaveValue("1");
     await plus.click();
@@ -301,7 +305,7 @@ test.describe("con JS", () => {
   }) => {
     await page.goto(BULK);
     await expect(cartCount(page)).toBeHidden();
-    const grams = page.getByLabel("Cantidad (g)");
+    const grams = buy(page).getByLabel("Cantidad (g)");
     const total = page.locator("[data-bulk-total]");
     await expect(total).toHaveText("Total: 2,00 €");
     await page.getByRole("button", { name: "5 g más de Premios Plus" }).click();
@@ -327,7 +331,7 @@ test.describe("con JS", () => {
 
   test("error de stock como toast de alerta", async ({ page }) => {
     await page.goto(SINGLE);
-    await page.getByLabel("Cantidad").fill("99");
+    await buy(page).getByLabel("Cantidad").fill("99");
     await addButton(page).click();
     await expect(page.getByRole("alert")).toContainText("No hay stock suficiente");
     await expect(page.locator("#cart-flyout")).toBeHidden();

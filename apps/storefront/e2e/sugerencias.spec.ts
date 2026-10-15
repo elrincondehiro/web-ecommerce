@@ -73,7 +73,7 @@ test.describe("sin JS", () => {
     await expect(page).toHaveURL(/\/buscar\/\?q=abrijo$/);
   });
 
-  test("endpoint: 301 canónica, caché, noindex; SiteClient ≤ 1,5 KB", async ({ page }) => {
+  test("endpoint: 301 canónica, caché, noindex; SiteClient ≤ 2 KB", async ({ page }) => {
     const r = await page.request.get("/buscar/sugerencias/?q=%20BUF%20%20N", { maxRedirects: 0 });
     expect(r.status()).toBe(301);
     expect(r.headers()["location"]).toBe("/buscar/sugerencias/?q=buf+n");
@@ -89,7 +89,7 @@ test.describe("sin JS", () => {
         .filter((s) => /\/_astro\/SiteClient\.[^/]+\.js$/.test(s));
       expect(site, path).toHaveLength(1);
       const code = await (await page.request.get(site[0]!)).body();
-      expect(gzipSync(code).length).toBeLessThanOrEqual(1536);
+      expect(gzipSync(code).length).toBeLessThanOrEqual(2048);
     }
   });
 });

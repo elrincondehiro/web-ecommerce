@@ -267,5 +267,8 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
         </a>
       </div>
     )}
+    {/* Venta cruzada (Fase R): solo en la página; dentro de [data-cart-view] para que CartLive la
+        refresque con la lista al cambiar o añadir. */}
+    {isPage && <slot name="suggestions" />}
   </div>
 )}

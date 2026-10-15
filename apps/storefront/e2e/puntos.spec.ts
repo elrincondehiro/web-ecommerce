@@ -76,7 +76,10 @@ async function login(page: Page, email: string) {
 /** Producto al carrito → checkout → dirección → envío (sin JS: todo POST + PRG). */
 async function toPayment(page: Page, email?: string) {
   await page.goto(PRODUCT);
-  await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
+  await page
+    .locator("#comprar")
+    .getByRole("button", { name: /^Añadir .* al carrito$/ })
+    .click();
   await expect(page.locator("#carrito-added:target, .toast").first()).toBeVisible();
   await page.goto("/checkout/");
   const step = page.locator("#datos");

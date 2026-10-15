@@ -19,10 +19,16 @@ async function addAndGoToCheckout(page: Page, bulkGrams?: string) {
     await form.getByLabel(/Observaciones/).fill("Para Hiro");
     await form.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
   } else if (bulkGrams) {
-    await page.getByLabel("Cantidad (g)").fill(bulkGrams);
-    await page.getByRole("button", { name: "Añadir Premios Plus al carrito", exact: true }).click();
+    await page.locator("#comprar").getByLabel("Cantidad (g)").fill(bulkGrams);
+    await page
+      .locator("#comprar")
+      .getByRole("button", { name: "Añadir Premios Plus al carrito", exact: true })
+      .click();
   } else {
-    await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
+    await page
+      .locator("#comprar")
+      .getByRole("button", { name: /^Añadir .* al carrito$/ })
+      .click();
   }
   // Con JS: toast + contador; sin JS: 303 a la ficha con #carrito-added.
   await expect(page.locator("#carrito-added:target, .toast").first()).toBeVisible();
@@ -53,7 +59,10 @@ test.describe("sin JS", () => {
 
   test("datos → envío; el pago avisa de que necesita JS", async ({ page }) => {
     await page.goto(PRODUCT);
-    await page.getByRole("button", { name: /^Añadir .* al carrito$/ }).click();
+    await page
+      .locator("#comprar")
+      .getByRole("button", { name: /^Añadir .* al carrito$/ })
+      .click();
     await page.goto("/carrito/");
     await page.getByRole("link", { name: "Ir a pagar" }).click();
 

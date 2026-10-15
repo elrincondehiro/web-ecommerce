@@ -2,6 +2,8 @@
 interface ImportMetaEnv {
   /** CSP por hashes activa (fase 11): los scripts inline propios registran su hash. */
   readonly CSP_ENABLED: boolean;
+  /** STOREFRONT_DATA=fixtures en el build (astro.config.mjs): si no, las fixtures no entran. */
+  readonly USE_FIXTURES: boolean;
 }
 
 // Datos por petición que pone src/middleware.ts (astro-docs: guides/middleware#middleware-types).
