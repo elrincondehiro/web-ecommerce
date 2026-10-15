@@ -37,7 +37,9 @@
 >
 > Fuente: código de Gitea v28.0.0 (`services/actions/run.go`, `job_emitter.go`, `commit_status.go`).
 >
-> Lo que sigue describe lo que se probó:
+> **Reaplicado (15-oct-2026)** tras actualizar Gitea a **28.1.0** (rama `chore/ci-gitea-solo-pr`, `ci.yml` = el de #48). En 28.1 `resolveCheckNeeds` da por terminado un need saltado y el job dependiente se salta también (context7 /go-gitea/gitea, `services/actions/job_emitter.go`). **Comprobar tras el merge** que el push a `main` en Gitea queda sin jobs pendientes (commit en verde o gris, no naranja). Si no, revertir otra vez.
+>
+> Lo que sigue describe lo que se probó (y lo que vuelve a estar vigente):
 
 - Disparadores: `pull_request` a `main` y `push` de **cualquier rama** (`"**"`, no tags).
 - `quality`, `integration` y `audit`: `if: github.server_url == 'https://github.com' || github.event_name == 'pull_request'`.

@@ -1,24 +1,41 @@
-# CI de PR (fase 1; ampliado en la fase 10-3). Mismo fichero para Gitea Actions y GitHub Actions.
+# CI de PR (fase 1; ampliado en la fase 10-3; reparto Gitea/GitHub en la Fase E). Mismo fichero
+# para Gitea Actions y GitHub Actions.
 # - Gitea: runner de usuario en el homelab; la etiqueta `ubuntu-latest` apunta a
 #   docker://node:24.21.0-trixie (Debian 13 + Node 24). Ver docs/fases/fase1.md.
-# - GitHub: runner hospedado ubuntu-latest.
+# - GitHub: runner hospedado ubuntu-latest (repo público, minutos ilimitados).
 # Actions fijadas por SHA (tag en comentario); Renovate las actualiza.
-# Jobs (todos son checks obligatorios en la protección de main):
+# Jobs:
 #   quality      lint, formato, build, typecheck, tests unitarios, presupuesto de JS
 #   integration  tests de integración HTTP del backend (Postgres + Redis como `services:`)
 #   audit        pnpm audit --prod (altos y críticos; excepciones en pnpm-workspace.yaml)
 #   lighthouse   Lighthouse CI móvil sobre el build de fixtures (apps/storefront/lighthouserc.cjs)
+# Reparto (Fase E §E-0, revertido en #49 por Gitea 28.0.0 y reaplicado con Gitea 28.1.0: un job
+# con `needs:` sobre uno saltado ya no se queda «Waiting for needed jobs», se salta también;
+# docs/fases/faseE-urls-correas.md §E-0). El runner del homelab va justo y sus
+# notas de Lighthouse no son representativas; GitHub recibe cada push por el push mirror (sync on
+# commit) y corre más rápido:
+#   Gitea  → solo en `pull_request`: quality + integration + audit (checks obligatorios del PR).
+#            El push (rama o `main` tras el squash) no ejecuta nada: ya se validó en el PR.
+#   GitHub → en el push de CUALQUIER rama (llega por el mirror) y de `main`: los cuatro jobs.
+#            `lighthouse` solo corre aquí (check obligatorio del ruleset de GitHub).
+# Un job saltado por `if:` cuenta como «skipped» (no como fallo); en Gitea `lighthouse` NO es
+# check obligatorio. Fuentes: context7 /websites/github_en_actions (control-jobs-with-conditions:
+# «A job that is skipped will report its status as Success») y /websites/gitea (commit status
+# `skipped`).
 # En Gitea el runner tiene `capacity: 2`: corren como mucho dos jobs a la vez (fase 1 §capacidad).
 name: CI
 
 on:
   pull_request:
     branches: [main]
+  # Todas las ramas (no los tags): en GitHub es el único disparador; en Gitea los jobs se saltan.
   push:
-    branches: [main]
+    branches: ["**"]
 
+# Un push nuevo a la misma rama (o al mismo PR) cancela la ejecución anterior. `main` nunca se
+# cancela (cada commit de main se valida entero).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.head_ref || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -30,9 +47,10 @@ env:
 
 jobs:
   # Nombre estable: es el check obligatorio en la protección de main (Gitea) y en el ruleset (GitHub).
-  # Sin filtros `paths:` → un job saltado no cumple un check obligatorio.
+  # Sin filtros `paths:`: un workflow no disparado deja el check «pendiente» y bloquea el PR.
   quality:
     name: quality
+    if: ${{ github.server_url == 'https://github.com' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -88,6 +106,7 @@ jobs:
   integration:
     name: integration
     needs: quality
+    if: ${{ github.server_url == 'https://github.com' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container: node:24.21.0-trixie
@@ -142,6 +161,7 @@ jobs:
   # motivo) en pnpm-workspace.yaml → `audit`.
   audit:
     name: audit
+    if: ${{ github.server_url == 'https://github.com' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -164,6 +184,8 @@ jobs:
   lighthouse:
     name: lighthouse
     needs: quality
+    # Solo GitHub: en el homelab tarda mucho y sus notas no son representativas (Fase E).
+    if: ${{ github.server_url == 'https://github.com' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
