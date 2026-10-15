@@ -100,6 +100,40 @@ describe("emails: datos de Medusa → props", () => {
     expect(guest.orderUrl).toBeNull();
   });
 
+  it("puntos (L-3): usados en su línea, «Descuentos» sin ellos y ganados solo con cuenta", () => {
+    const withPoints: OrderLike = {
+      ...order,
+      customer: { has_account: true },
+      original_item_total: big(56.1),
+      item_total: big(51.1),
+      discount_total: big(5),
+      items: [
+        {
+          ...order.items![0]!,
+          total: big(21.9),
+          original_total: big(24.9),
+          adjustments: [{ code: "PTS-ABC", amount: big(3) }],
+        },
+        {
+          ...order.items![1]!,
+          total: big(29.2),
+          adjustments: [{ code: "VERANO", amount: big(2) }],
+          product: { metadata: { sin_puntos: true } },
+        },
+      ],
+    };
+    const p = buildOrderPlacedProps(withPoints, links);
+    expect(p.itemTotal).toBe(56.1);
+    expect(p.items[0]!.total).toBe(24.9); // línea antes de descuentos
+    expect(p.pointsUsed).toBe(3);
+    expect(p.discountTotal).toBe(2);
+    // 0,8 % de 21,90 € (sin la línea sin_puntos) = 0,17 al céntimo hacia abajo
+    expect(p.pointsEarned).toBe(0.17);
+    expect(p.pointsDays).toBe(14);
+    const guest = buildOrderPlacedProps({ ...withPoints, customer: { has_account: false } }, links);
+    expect(guest.pointsEarned).toBeNull();
+  });
+
   it("IVA: suma los tax_lines de cada línea", () => {
     expect(orderTaxLines(order).map((l) => l.rate)).toEqual([21, 4, 21]);
   });

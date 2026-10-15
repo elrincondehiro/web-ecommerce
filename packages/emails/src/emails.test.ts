@@ -18,7 +18,21 @@ describe("renderEmail", () => {
     expect(subject).toBe("Hemos recibido tu pedido n.º 1042");
     expect(text).toContain("IVA 21 %");
     expect(text).toContain("IVA 4 %");
-    expect(text).toMatch(/103,05\s€/);
+    expect(text).toMatch(/100,55\s€/);
+  });
+
+  it("puntos (L-3): usados como descuento y los que ganará (con cuenta)", async () => {
+    const { text } = await renderEmail("order-placed", previewProps("order-placed"));
+    expect(text).toMatch(/Puntos usados\s+−2,50\s€/);
+    expect(text).toMatch(/ganarás 0,76\s€ en puntos/);
+    expect(text).toContain("14 días después del envío");
+    const guest = await renderEmail("order-placed", {
+      ...previewProps("order-placed"),
+      pointsUsed: 0,
+      pointsEarned: null,
+    });
+    expect(guest.text).not.toContain("en puntos");
+    expect(guest.text).not.toContain("Puntos usados");
   });
 
   it("granel (S-3): gramos y precio por kilo en vez de unidades", async () => {

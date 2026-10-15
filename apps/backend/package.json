@@ -21,7 +21,10 @@
     "stripe:region": "medusa exec ./src/scripts/stripe-region.ts",
     "stock:mock": "medusa exec ./src/scripts/stock-mock.ts",
     "correas:sync": "medusa exec ./src/scripts/correas-sync.ts",
-    "carts:cleanup": "medusa exec ./src/scripts/delete-stale-carts.ts"
+    "carts:cleanup": "medusa exec ./src/scripts/delete-stale-carts.ts",
+    "points:accrue": "medusa exec ./src/scripts/points-accrue.ts",
+    "points:adjust": "medusa exec ./src/scripts/points-adjust.ts",
+    "points:close-account": "medusa exec ./src/scripts/points-close-account.ts"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "2.21.2",

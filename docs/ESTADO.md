@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 14-oct-2026 · **Fase E cerrada** (#48-#51). **Fase L (lista de deseos y puntos) en curso** en `feat/faseL-deseos-puntos`: análisis cerrado, decisiones en [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md) §0.1; L-0 (spike) ✅, el canje como promoción funciona (IVA y reparto correctos); L-1 (lista de deseos) ✅ (doc §6.2: módulo `wishlist` + migración, `/cuenta/deseos/`, ♥ rojo si está guardado, ♡ sobre la imagen de las tarjetas y junto al título de la ficha, ♡ e icono de cuenta con estado en la cabecera (island `HeaderState`), tema al menú en móvil; `CartClient` 1 666 B); L-1b (compartir por enlace) ✅ (doc §6.3: token aleatorio revocable, `/deseos/<token>/` sin datos personales); siguiente, L-2 (puntos, backend). Varias subfases en la misma rama y un solo PR. Después, fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 15-oct-2026 · **Fase L cerrada** (lista de deseos #52; puntos L-2…L-4 en `feat/faseL-puntos`, PR 2). Detalle en [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md) §6.1-§6.6. Pendiente: los textos de la gestoría (condiciones del programa, privacidad, aviso del email), hoy provisionales. Siguiente: fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -28,7 +28,7 @@
 | C Importador de catálogo (CSV)              | ✅     | [faseC-catalogo.md](./fases/faseC-catalogo.md)                       |
 | S Catálogo en el storefront                 | ✅     | [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) |
 | E URL, descatalogados y especiales          | ✅     | [faseE-urls-correas.md](./fases/faseE-urls-correas.md)               |
-| L Lista de deseos y puntos                  | 🚧     | [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md)             |
+| L Lista de deseos y puntos                  | ✅     | [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md)             |
 
 Roadmap completo y tiempos: README §13.
 
@@ -100,6 +100,9 @@ pnpm --filter backend catalog:import catalog/mock  # idempotente; antes: catalog
 pnpm --filter backend images:mock && pnpm --filter backend images:import .cache/mock-images
 pnpm backend:stock:mock      # idempotente: repone stock libre de los mock (los e2e de checkout lo gastan)
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos a mano (borrado suave, fase 10-4)
+pnpm --filter backend points:accrue                        # abono de puntos a mano (el job lo hace a las 4:00, Fase L)
+pnpm --filter backend points:adjust <email|cus_…> <credit|debit> <importe> <motivo>   # ajuste manual
+pnpm --filter backend points:close-account <cus_…>         # baja de la cuenta: el saldo se pierde (G6)
 pnpm --filter backend catalog:import <carpeta> [dry-run]   # categorias.csv + productos.csv (plantilla en apps/backend/catalog/plantilla)
 pnpm --filter backend images:import <carpeta> [dry-run] [replace]
 pnpm --filter backend exec medusa db:migrate
@@ -406,6 +409,27 @@ Doc: [faseE-urls-correas.md](./fases/faseE-urls-correas.md).
   - Pendientes (doc de fase §7): fotos de mosquetones (rejilla en vez de desplegable), plazo de fabricación provisional, desistimiento de personalizados (gestoría).
 - **BD local**: catálogo mock con 6 descatalogados, categoría `correas-perro` y las 6 correas de la plantilla (`correas:sync catalog/plantilla/correas`).
 
+## 6.12 Fase L ✅ cerrada
+
+Doc: [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md).
+
+- **Lista de deseos** (#52): módulo `wishlist`, ♡ en tarjetas, ficha y cabecera (island `HeaderState`), `/cuenta/deseos/` y compartir por enlace con un token revocable (`/deseos/<token>/`).
+- **Puntos** (PR 2, `feat/faseL-puntos`):
+  - **Backend:**
+    - módulo `points` (saldo calculado de los movimientos);
+    - canje como promoción de un uso, con IVA y un tope de 0,50 € por pagar;
+    - abono con el job `points-accrue` a los `POINTS_CONSOLIDATE_DAYS` días del envío;
+    - cancelaciones y devoluciones;
+    - rutas Store y Admin, informe de saldos y widget en la ficha del cliente;
+    - scripts `points:*`.
+  - **Storefront:** `/cuenta/puntos/`, «Usar mis puntos» en el pago (PRG, sin JS), «Puntos −X €» en los resúmenes, «ganarías» para invitados.
+  - **Email de confirmación:** puntos usados y los que ganará.
+  - **Legal:** `/condiciones-puntos/` y el párrafo de privacidad, **provisionales**.
+- **Pendiente:**
+  - textos de la gestoría;
+  - automatizar la devolución de los puntos canjeados en devoluciones (plan en el doc §6.4);
+  - revisar el widget del Admin a mano.
+
 ## 6.11 Handover → análisis: lista de deseos y programa de puntos
 
 > ✅ **Análisis hecho**: [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md). Las decisiones (§0.1) mandan sobre lo de abajo: puntos solo web, sin migrar, sin caducidad, canje como **promoción** (P-B, sin plugin).
@@ -466,3 +490,4 @@ Documento de fase con: opciones (con pros/contras y fuentes), propuesta recomend
 - **Fase 11/13**: CSS crítico (~110 ms), LCP variable de la ficha (ancho de 720 px) y logos del pie/cabecera más pequeños ([auditoría](./fases/auditoria-pre-fase10.md) §6).
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.
+- **Fase L (gestoría):** sustituir los textos provisionales de `/condiciones-puntos/` y del párrafo de puntos de `/privacidad/`, y validar el aviso de puntos del email de confirmación (G4/G5).

@@ -1,0 +1,145 @@
+---
+// Mis puntos (Fase L-3): saldo, pendiente y movimientos (paginados). On-demand, noindex, 0 JS.
+// Datos: GET /store/customers/me/points (backend, L-2). Las reglas viven en el backend.
+import { accountOrderPath } from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { formatPrice } from "$lib/format";
+import { getPointsSummary } from "$lib/medusa";
+import {
+  POINTS_CONSOLIDATE_DAYS,
+  POINTS_PATH,
+  POINTS_TERMS_PATH,
+  transactionLabel,
+} from "$lib/points";
+import AccountLayout from "../../components/account/AccountLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+
+export const prerender = false;
+
+const PAGE_SIZE = 20;
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const pageParam = Number.parseInt(Astro.url.searchParams.get("pagina") ?? "1", 10);
+const page = Number.isFinite(pageParam) && pageParam > 0 && pageParam < 1000 ? pageParam : 1;
+const summary = await getPointsSummary(session.token, {
+  limit: PAGE_SIZE,
+  offset: (page - 1) * PAGE_SIZE,
+});
+const pages = Math.max(1, Math.ceil(summary.count / PAGE_SIZE));
+const pageUrl = (n: number) => (n === 1 ? POINTS_PATH : `${POINTS_PATH}?pagina=${n}`);
+const dateFmt = new Intl.DateTimeFormat("es-ES", {
+  dateStyle: "medium",
+  timeZone: "Europe/Madrid",
+});
+const eur = (n: number) => formatPrice(n, "eur");
+---
+
+<AccountLayout title="Mis puntos">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Mis puntos</h1>
+  <AccountNotice code={flash.code} />
+
+  <section
+    aria-labelledby="puntos-saldo"
+    class="mb-6 flex flex-col gap-2 rounded-md border-2 border-line bg-card p-4 shadow-sm sm:p-6"
+  >
+    <h2 id="puntos-saldo" class="text-sm font-medium text-muted-foreground">
+      Tu saldo
+    </h2>
+    <p class="text-3xl font-semibold tabular-nums" data-points-balance>
+      {eur(summary.balance)} en puntos
+    </p>
+    {summary.pending > 0 && (
+      <p class="text-sm text-muted-foreground" data-points-pending>
+        Y <strong class="text-foreground tabular-nums">{eur(summary.pending)}</strong> más cuando se
+        consoliden tus pedidos ({POINTS_CONSOLIDATE_DAYS} días después del envío).
+      </p>
+    )}
+    <p class="text-sm text-muted-foreground">
+      Úsalos como descuento en el paso de pago de tu próxima compra.
+    </p>
+  </section>
+
+  <section aria-labelledby="puntos-movimientos" class="mb-6">
+    <h2 id="puntos-movimientos" class="mb-3 text-lg font-semibold">
+      Movimientos
+    </h2>
+    {summary.transactions.length === 0 ? (
+      <p class="text-muted-foreground">
+        {page > 1 ? "No hay más movimientos." : "Aún no tienes movimientos."}
+      </p>
+    ) : (
+      <ul
+        data-points-transactions
+        class="flex flex-col divide-y-2 divide-line rounded-md border-2 border-line bg-card shadow-sm"
+      >
+        {summary.transactions.map((t) => (
+          <li class="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 p-4 text-sm">
+            <span class="font-medium">
+              {t.order_id && t.order_display_id ? (
+                <a href={accountOrderPath(t.order_id)} class="underline underline-offset-4">
+                  {transactionLabel(t)}
+                </a>
+              ) : (
+                transactionLabel(t)
+              )}
+            </span>
+            <span
+              class:list={[
+                "text-right font-semibold tabular-nums",
+                t.type === "credit" && "text-success",
+              ]}
+            >
+              {t.type === "credit" ? "+" : "−"}
+              {eur(t.amount)}
+            </span>
+            <span class="col-span-2 text-muted-foreground">
+              {dateFmt.format(new Date(t.created_at))}
+              {t.reference === "adjustment" && t.note && ` · ${t.note}`}
+            </span>
+          </li>
+        ))}
+      </ul>
+    )}
+    {pages > 1 && (
+      <nav aria-label="Páginas de movimientos" class="mt-6 flex items-center gap-4 text-sm">
+        {page > 1 && (
+          <a href={pageUrl(page - 1)} rel="prev" class="underline underline-offset-4">
+            ← Más recientes
+          </a>
+        )}
+        <span class="text-muted-foreground">
+          Página {page} de {pages}
+        </span>
+        {page < pages && (
+          <a href={pageUrl(page + 1)} rel="next" class="underline underline-offset-4">
+            Más antiguos →
+          </a>
+        )}
+      </nav>
+    )}
+  </section>
+
+  <section
+    aria-labelledby="puntos-como"
+    class="rounded-md border-2 border-line bg-muted/40 p-4 text-sm"
+  >
+    <h2 id="puntos-como" class="mb-2 text-base font-semibold">
+      Cómo funcionan
+    </h2>
+    <ul class="list-disc space-y-1 pl-5">
+      <li>
+        Cada compra en la web te da el 0,8 % de los productos en puntos (IVA incluido, sin el
+        envío).
+      </li>
+      <li>1 punto = 1 €. Se suman {POINTS_CONSOLIDATE_DAYS} días después del envío del pedido.</li>
+      <li>No caducan. Si se cancela o devuelves el pedido, se ajustan.</li>
+      <li>Solo para compras en la web: los puntos de la tienda física van aparte.</li>
+    </ul>
+    <p class="mt-3">
+      <a href={POINTS_TERMS_PATH} class="underline underline-offset-4">
+        Condiciones del programa de puntos
+      </a>
+    </p>
+  </section>
+</AccountLayout>

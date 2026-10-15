@@ -10,6 +10,13 @@ import { bulkMinimumError, bulkRule } from "../../lib/granel";
 import { DISCONTINUED_MESSAGE, isDiscontinued } from "../../lib/descatalogado";
 import { isCorrea, lineMetadataError, variantLength } from "../../lib/correas";
 import { KIT_SHORTAGE_MESSAGE, kitShortages, type DemandLine } from "../../lib/kit-demand";
+import { pointsDiscount } from "../../lib/points";
+import { POINTS_MODULE } from "../../modules/points";
+import type PointsModuleService from "../../modules/points/service";
+
+/** Puntos (Fase L-2): el saldo cambió entre aplicar y pagar (otro pedido, ajuste…). */
+export const POINTS_BALANCE_MESSAGE =
+  "Tu saldo de puntos ha cambiado. Vuelve a aplicar los puntos en el pago.";
 
 /**
  * Validaciones del carrito con los hooks `validate` oficiales. Medusa admite UN solo handler por
@@ -17,6 +24,7 @@ import { KIT_SHORTAGE_MESSAGE, kitShortages, type DemandLine } from "../../lib/k
  * ejecutan antes de tocar el carrito, así que un error lo deja como estaba.
  * - Descatalogados (Fase E): no se pueden añadir (sí cambiar la cantidad o quitar una línea que ya
  *   estaba en el carrito).
+ * - Puntos (Fase L-2, al completar): el descuento de puntos no puede superar el saldo actual.
  * - Granel (S-3): la cantidad total de una variante en el carrito × `paso_g` no puede quedar por
  *   debajo de `min_g` (metadata de la variante, la escribe `catalog:import`).
  * - Metadata de la línea (E-2): solo las correas la admiten, y solo `observaciones` y
@@ -175,6 +183,7 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
   // Reintento de un carrito ya completado (webhook de Stripe + vuelta del cliente): sus reservas
   // ya restan del stock libre y la comprobación daría un falso «no queda material».
   if (c.completed_at) return;
+  await checkPointsBalance(container as MedusaContainer, cart);
   const lines = demandLines(c.items ?? []);
   if ((await kitShortages(container as MedusaContainer, lines, c.sales_channel_id)).length) {
     throw new MedusaError(
@@ -184,3 +193,24 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
     );
   }
 });
+
+/**
+ * Puntos (Fase L-2): si el carrito canjea puntos, el descuento REAL (ajustes con código PTS-) no
+ * puede superar el saldo AHORA (dos carritos del mismo cliente podían aplicar el mismo saldo).
+ * El cargo lo hace el subscriber de `order.placed`. El carrito del hook trae
+ * `items.adjustments.*` (completeCartFields de core-flows 2.21.2).
+ */
+async function checkPointsBalance(container: MedusaContainer, cart: unknown): Promise<void> {
+  const c = cart as {
+    customer_id?: string | null;
+    items?: { adjustments?: { code?: string | null; amount?: unknown }[] | null }[] | null;
+  };
+  const { code, amount } = pointsDiscount(c.items as never);
+  if (!code || !(amount > 0)) return;
+  const service = container.resolve<PointsModuleService>(POINTS_MODULE);
+  const account = c.customer_id ? await service.findAccount(c.customer_id) : null;
+  const balance = account ? await service.getBalance(account.id) : 0;
+  if (amount > balance + 0.001) {
+    throw new MedusaError(MedusaError.Types.NOT_ALLOWED, POINTS_BALANCE_MESSAGE);
+  }
+}

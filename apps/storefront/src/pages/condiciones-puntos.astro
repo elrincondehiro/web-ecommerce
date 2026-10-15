@@ -1,0 +1,104 @@
+---
+// Condiciones del programa de puntos (Fase L-4). Texto PROVISIONAL redactado a partir de las
+// reglas implementadas (docs/fases/faseL-deseos-puntos.md §0.1, §6.4 y §6.5) hasta tener el de la
+// gestoría (G5). noindex y fuera del sitemap (LEGAL_PATHS), estática, 0 JS.
+// Si cambian las reglas (backend `src/lib/points.ts`, POINTS_CONSOLIDATE_DAYS), revisar este texto.
+import { POINTS_CONSOLIDATE_DAYS, POINTS_PATH } from "$lib/points";
+import LegalPage from "../components/legal/LegalPage.astro";
+
+const h2 = "mt-4 text-xl font-semibold";
+const list = "list-disc space-y-1 pl-5";
+---
+
+<LegalPage
+  title="Condiciones del programa de puntos"
+  description="Cómo se ganan y se usan los puntos de las compras en la web de El Rincón de Hiro."
+  filler={false}
+>
+  <p>
+    El programa de puntos de El Rincón de Hiro es una forma de agradecer la confianza de quienes
+    compran en nuestra web. Es gratuito, no exige ninguna compra mínima y los puntos no caducan.
+  </p>
+
+  <h2 class={h2}>1. Quién puede participar</h2>
+  <ul class={list}>
+    <li>
+      Cualquier persona con una{" "}
+      <a href="/cuenta/registro/" class="underline underline-offset-4">
+        cuenta
+      </a>{" "}
+      en la web. Se participa automáticamente al comprar con la sesión iniciada.
+    </li>
+    <li>Las compras como invitado no generan puntos.</li>
+  </ul>
+
+  <h2 class={h2}>2. Cómo se ganan</h2>
+  <ul class={list}>
+    <li>
+      Cada pedido genera el <strong>0,8 %</strong> del importe de los productos, IVA incluido y
+      después de descuentos. Los gastos de envío no generan puntos, ni tampoco la parte del pedido
+      pagada con puntos.
+    </li>
+    <li>
+      <strong>1 punto equivale a 1 €</strong>. Los puntos se calculan con céntimos y se redondean al
+      céntimo inferior (por ejemplo, un pedido de 30 € genera 0,24 €).
+    </li>
+    <li>Algunos productos pueden quedar excluidos; si es así, se indicará.</li>
+    <li>
+      Los puntos se suman al saldo <strong>{POINTS_CONSOLIDATE_DAYS} días después del envío</strong>
+      del pedido, si no se ha cancelado. Hasta entonces aparecen como «pendientes» en tu cuenta.
+    </li>
+  </ul>
+
+  <h2 class={h2}>3. Cómo se usan</h2>
+  <ul class={list}>
+    <li>
+      En el paso de pago puedes usar todo tu saldo o una parte. Se aplica como un
+      <strong>descuento</strong> sobre el precio de los productos (IVA incluido).
+    </li>
+    <li>
+      Siempre queda un mínimo de 0,50 € por pagar con tarjeta: es el importe mínimo que admite
+      nuestro proveedor de pagos.
+    </li>
+    <li>Los puntos no se pueden canjear por dinero ni transferir a otra persona.</li>
+  </ul>
+
+  <h2 class={h2}>4. Cancelaciones y devoluciones</h2>
+  <ul class={list}>
+    <li>Si se cancela un pedido, se devuelven a tu saldo los puntos que usaste en él.</li>
+    <li>
+      Si devuelves productos después de haber recibido los puntos de ese pedido, se retiran los
+      puntos correspondientes a lo devuelto, sin que el saldo quede nunca en negativo.
+    </li>
+    <li>
+      Los puntos usados en un pedido que se devuelve se revisan caso por caso y se devuelven a tu
+      saldo en la parte que corresponda.
+    </li>
+  </ul>
+
+  <h2 class={h2}>5. Saldo, web y tienda física</h2>
+  <ul class={list}>
+    <li>
+      Puedes consultar tu saldo y todos los movimientos en
+      <a href={POINTS_PATH} class="underline underline-offset-4">
+        Mi cuenta → Mis puntos
+      </a>
+      .
+    </li>
+    <li>
+      Por ahora, los puntos de la web solo se usan en la web y los de la tienda física, en la
+      tienda. Si más adelante se unifican, te lo comunicaremos.
+    </li>
+    <li>
+      Si eliminas tu cuenta, se pierde el saldo. Los movimientos se conservan el tiempo que exige la
+      normativa contable y fiscal.
+    </li>
+  </ul>
+
+  <h2 class={h2}>6. Cambios en el programa</h2>
+  <p>
+    Podemos modificar o terminar el programa avisando con antelación en esta página. Los puntos ya
+    sumados a tu saldo se respetarán. Si detectamos un uso fraudulento, podremos anular los puntos
+    afectados.
+  </p>
+</LegalPage>

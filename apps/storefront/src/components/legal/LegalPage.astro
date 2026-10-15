@@ -7,8 +7,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 interface Props {
   title: string;
   description: string;
+  /** Párrafos de relleno (lorem). `false` si el texto provisional ya es descriptivo (L-4). */
+  filler?: boolean;
 }
-const { title, description } = Astro.props;
+const { title, description, filler = true } = Astro.props;
 const LOREM =
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut " +
   "labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco " +
@@ -25,7 +27,11 @@ const LOREM =
       Texto provisional. Esta página se completará con el texto legal definitivo.
     </p>
     <slot />
-    <p class="text-muted-foreground">{LOREM}</p>
-    <p class="text-muted-foreground">{LOREM}</p>
+    {filler && (
+      <>
+        <p class="text-muted-foreground">{LOREM}</p>
+        <p class="text-muted-foreground">{LOREM}</p>
+      </>
+    )}
   </article>
 </BaseLayout>

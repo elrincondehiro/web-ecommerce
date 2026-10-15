@@ -206,6 +206,12 @@ describe("pedido", () => {
         Object.assign(new Error("Cart with id 'c' not found"), { status: 404 }),
       ),
     ).toBe("expired");
+    // Hook propio del backend (Fase L-2, POINTS_BALANCE_MESSAGE)
+    expect(
+      classifyCompleteError(
+        "Tu saldo de puntos ha cambiado. Vuelve a aplicar los puntos en el pago.",
+      ),
+    ).toBe("points_changed");
     expect(classifyCompleteError(new Error("boom"))).toBe("error");
   });
 });

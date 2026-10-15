@@ -209,6 +209,8 @@ module.exports = defineConfig({
     ...notificationModule,
     // Lista de deseos (Fase L-1, docs/fases/faseL-deseos-puntos.md §2).
     { resolve: "./src/modules/wishlist" },
+    // Programa de puntos (Fase L-2, docs/fases/faseL-deseos-puntos.md).
+    { resolve: "./src/modules/points" },
     {
       resolve: "@medusajs/medusa/caching",
       options: {

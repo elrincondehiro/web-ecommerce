@@ -66,7 +66,13 @@ const DEV_ALLOWED_HOSTS = (process.env.DEV_ALLOWED_HOSTS || dotenv.DEV_ALLOWED_H
 /** @type {Array<{ hostname: string; protocol: string; port?: string }>} */
 const ALLOWED_DOMAINS = [...(SITE_URL ? [domainPattern(SITE_URL)] : []), ...DEV_ALLOWED_HOSTS];
 
-const LEGAL_PATHS = ["/condiciones/", "/privacidad/", "/cookies/", "/aviso-legal/"];
+const LEGAL_PATHS = [
+  "/condiciones/",
+  "/condiciones-puntos/",
+  "/privacidad/",
+  "/cookies/",
+  "/aviso-legal/",
+];
 
 /**
  * Manifiestos del build FUERA de lo público. Endpoints prerenderizados los escriben en dist/client

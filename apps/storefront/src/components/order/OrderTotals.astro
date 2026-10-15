@@ -1,0 +1,56 @@
+---
+// Totales de un carrito o pedido (Fase L-3: checkout, /pedido/<id>/ y «Mi cuenta»). HTML de
+// servidor, 0 JS. «Productos» es ANTES de descuentos (original_item_total) y las líneas se
+// muestran también antes de descuentos (items.original_total): así cuadra
+//   Productos − Descuentos − Puntos + Envío = Total.
+// Los puntos son un ajuste con código PTS- (lib/points.ts); «Descuentos» = el resto.
+import { formatPrice } from "$lib/format";
+import { pointsUsed } from "$lib/points";
+
+interface Props {
+  totals: {
+    item_total?: number | null;
+    original_item_total?: number | null;
+    discount_total?: number | null;
+    shipping_total?: number | null;
+    total?: number | null;
+    tax_total?: number | null;
+    items?: { adjustments?: { code?: string | null; amount?: number | null }[] | null }[] | null;
+  };
+  currency: string;
+  /** Etiqueta del envío («Envío (Estándar)»); `null` = aún sin elegir («—»). */
+  shippingLabel: string | null;
+}
+const { totals, currency, shippingLabel } = Astro.props;
+const points = pointsUsed(totals.items);
+const products = totals.original_item_total ?? totals.item_total ?? 0;
+const otherDiscounts = Math.max(0, Math.round(((totals.discount_total ?? 0) - points) * 100) / 100);
+---
+
+<dl class="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t-2 border-line pt-3 text-sm tabular-nums">
+  <dt class="text-muted-foreground">Productos</dt>
+  <dd class="text-right">{formatPrice(products, currency)}</dd>
+  {otherDiscounts > 0 && (
+    <>
+      <dt class="text-muted-foreground">Descuentos</dt>
+      <dd class="text-right">−{formatPrice(otherDiscounts, currency)}</dd>
+    </>
+  )}
+  {points > 0 && (
+    <>
+      <dt class="text-muted-foreground">Puntos</dt>
+      <dd class="text-right" data-points-used>
+        −{formatPrice(points, currency)}
+      </dd>
+    </>
+  )}
+  <dt class="text-muted-foreground">{shippingLabel ?? "Envío"}</dt>
+  <dd class="text-right">
+    {shippingLabel === null ? "—" : formatPrice(totals.shipping_total ?? 0, currency)}
+  </dd>
+  <dt class="text-base font-semibold">Total</dt>
+  <dd class="text-right text-base font-semibold">{formatPrice(totals.total ?? 0, currency)}</dd>
+  <dt class="text-muted-foreground">IVA incluido</dt>
+  <dd class="text-right text-muted-foreground">{formatPrice(totals.tax_total ?? 0, currency)}</dd>
+  <slot />
+</dl>

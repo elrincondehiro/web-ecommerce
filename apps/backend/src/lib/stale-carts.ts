@@ -1,5 +1,5 @@
 import type { MedusaContainer } from "@medusajs/framework/types";
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import { deleteStaleCartsWorkflow } from "../workflows/delete-stale-carts";
 
 /**
@@ -100,6 +100,8 @@ export async function deleteStaleCarts(
   for (let i = 0; i < ids.length; i += PAGE) {
     await deleteStaleCartsWorkflow(container).run({ input: { ids: ids.slice(i, i + PAGE) } });
   }
+  const promos = await deleteStalePointsPromotions(container, cutoff);
+  if (promos) logger.info(`[cart-cleanup] ${promos} promociones de puntos sin usar borradas.`);
   // Solo el número: nunca ids ni datos de los carritos en los logs.
   if (ids.length) {
     logger.info(
@@ -107,4 +109,45 @@ export async function deleteStaleCarts(
     );
   }
   return { deleted: ids.length, cutoff };
+}
+
+/**
+ * Promociones de canje de puntos (Fase L-2, código PTS-) que ya no sirven: sin usar
+ * (`budget.used` = 0) y cuyo carrito no existe, está completado (el pedido usó otra) o lleva sin
+ * cambios desde antes del corte. Las usadas se conservan (están enlazadas al pedido). Borrado
+ * suave (`softDeletePromotions`).
+ */
+export async function deleteStalePointsPromotions(
+  container: MedusaContainer,
+  cutoff: Date,
+): Promise<number> {
+  const promotionModule = container.resolve(Modules.PROMOTION);
+  const query = container.resolve(ContainerRegistrationKeys.QUERY);
+  const promos = await promotionModule.listPromotions({ code: { $like: "PTS-%" } } as never, {
+    relations: ["campaign", "campaign.budget"],
+    take: CART_CLEANUP_MAX_PER_RUN,
+  });
+  const unused = promos.filter((p) => !(Number(p.campaign?.budget?.used ?? 0) > 0));
+  if (!unused.length) return 0;
+  const cartIds = [
+    ...new Set(
+      unused
+        .map((p) => (p.metadata as { cart_id?: unknown } | null)?.cart_id)
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+  const { data: carts } = cartIds.length
+    ? await query.graph({
+        entity: "cart",
+        fields: ["id", "completed_at", "updated_at"],
+        filters: { id: cartIds },
+      })
+    : { data: [] };
+  const byId = new Map(carts.map((c) => [c.id, c]));
+  const stale = unused.filter((p) => {
+    const cart = byId.get(String((p.metadata as { cart_id?: unknown } | null)?.cart_id));
+    return !cart || cart.completed_at || new Date(cart.updated_at as Date) < cutoff;
+  });
+  if (stale.length) await promotionModule.softDeletePromotions(stale.map((p) => p.id));
+  return stale.length;
 }

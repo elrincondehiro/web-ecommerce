@@ -10,6 +10,7 @@ import {
   accountActionUrl,
 } from "$lib/account";
 import { WISHLIST_PATH } from "$lib/wishlist";
+import { POINTS_PATH } from "$lib/points";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 interface Props {
@@ -22,6 +23,7 @@ const links = [
   { href: ACCOUNT_PATH, name: "Resumen" },
   { href: ORDERS_PATH, name: "Mis pedidos" },
   { href: WISHLIST_PATH, name: "Lista de deseos" },
+  { href: POINTS_PATH, name: "Mis puntos" },
   { href: ADDRESSES_PATH, name: "Direcciones" },
   { href: PROFILE_PATH, name: "Mis datos" },
 ];

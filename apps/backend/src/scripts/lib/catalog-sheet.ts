@@ -95,6 +95,8 @@ export interface ProductSheet {
   discontinued?: boolean;
   /** Handle del producto que lo sustituye (enlace en su ficha): `null` = borrar. */
   replacement?: Text;
+  /** No genera puntos (Fase L-2, K3). `undefined` = no tocar. */
+  noPoints?: boolean;
   /** Títulos de las opciones del producto, en el orden de las columnas. */
   options: string[];
   variants: VariantSheet[];
@@ -137,6 +139,7 @@ const PRODUCT_COLUMNS = [
   "granel",
   "descatalogado",
   "sustituto",
+  "sin_puntos",
   "sku",
   "ean",
   "precio",
@@ -171,6 +174,7 @@ const PRODUCT_LEVEL: ProductColumn[] = [
   "granel",
   "descatalogado",
   "sustituto",
+  "sin_puntos",
 ];
 /** Columnas de variante que heredan el valor de la fila de arriba (mismo producto). */
 type Inherited =
@@ -586,6 +590,11 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
       if (descatalogado) {
         if (descatalogado in BOOL) p.discontinued = BOOL[descatalogado];
         else err("descatalogado", "Valores válidos: sí / no.");
+      }
+      const sinPuntos = fold(cell("sin_puntos"));
+      if (sinPuntos) {
+        if (sinPuntos in BOOL) p.noPoints = BOOL[sinPuntos];
+        else err("sin_puntos", "Valores válidos: sí / no.");
       }
       if (has("sustituto")) {
         const sustituto = text(cell("sustituto"));

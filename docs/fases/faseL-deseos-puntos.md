@@ -1,7 +1,7 @@
 # Fase L — Lista de deseos y programa de puntos (análisis)
 
-> **Estado:** 🚧 en curso: análisis cerrado el 14-oct-2026 (decisiones en §0.1). L-0 (spike) ✅ (§6.1). L-1 (lista de deseos) ✅ (§6.2). L-1b (compartir) ✅ (§6.3). Siguiente: L-2 (puntos, backend).
-> **Rama/PR:** `feat/faseL-deseos-puntos`: varias subfases por PR (decisión del usuario: los PR largos tardan en Gitea). **PR 1**: análisis + L-0 + L-1 + L-1b (lista de deseos completa). **PR 2**: puntos (L-2…L-4).
+> **Estado:** ✅ cerrada el 15-oct-2026 (pendiente de los textos de la gestoría, §6.6). Análisis y decisiones en §0.1. L-0 (spike) ✅ (§6.1). L-1 (lista de deseos) ✅ (§6.2). L-1b (compartir) ✅ (§6.3). L-2 (puntos, backend) ✅ (§6.4). L-3 (storefront y emails) ✅ (§6.5). L-4 (legal y cierre) ✅ (§6.6).
+> **Rama/PR:** `feat/faseL-deseos-puntos`: varias subfases por PR (decisión del usuario: los PR largos tardan en Gitea). **PR 1** (#52, mergeado): análisis + L-0 + L-1 + L-1b (lista de deseos completa). **PR 2** (rama `feat/faseL-puntos`): puntos (L-2…L-4).
 > **Anterior:** [Fase E](./faseE-urls-correas.md) · **Siguiente:** fase 11 (producción, ESTADO §6.5)
 > Nombre provisional. Origen: handover en ESTADO §6.11; antecedentes en fase9.md §7.
 
@@ -492,20 +492,287 @@ Fuentes: context7 `/medusajs/medusa` (guía _wishlist_, compartir; _protected-ro
 
 **Decisiones para L-2** (usuario, 14-oct): K1 abono con un job diario al consolidar el pedido (entregado, o enviado hace 14 días o más, y sin cancelar), y hasta entonces «pendiente»; K3 ningún producto excluido, con opción `sin_puntos` en la hoja; G4 el email de confirmación dice «ganarás X puntos» y, en letra pequeña, cuándo se consolidan (se quita si la gestoría lo ve comercial).
 
+## 6.4 L-2 ✅ Puntos: backend (15-oct-2026)
+
+**Decisiones del usuario:**
+
+- **P1:** se consolidan a los **14 días del último envío**, aunque ya se haya entregado.
+- **P2:** los puntos canjeados en un pedido **devuelto** se devuelven a mano desde el Admin. El plan para automatizarlo está más abajo.
+- **P3:** widget del Admin en esta subfase.
+- **P4:** redondeo al céntimo **hacia abajo**.
+- Ya estaban decididos K1-K6, U1-U6, M1, M2 y G1-G8 (§0.1 y §3).
+
+**Fuentes:**
+
+- context7 `/medusajs/medusa`: tutorial _loyalty-points_ (aplicar y quitar como promoción, con lock), _workflows/locks_, _scheduled jobs_, subscriber de `order.canceled` y _admin widgets_.
+- Código de `@medusajs/core-flows` 2.21.2:
+  - `completeCartWorkflow`: hooks `validate` / `beforePaymentAuthorization` / `orderCreated`, `registerUsageStep`; el carrito del hook trae `items.adjustments.*`;
+  - `cancelOrderWorkflow`: no revierte el uso de las promociones;
+  - las devoluciones: `confirm-receive-return-request` emite `order.return_received` y `createAndCompleteReturn` lo emite solo con `receive_now`;
+  - el modelo `fulfillment`: `shipped_at`, `canceled_at`.
+- Spike L-0 (§6.1).
+
+**Modelo** (módulo `src/modules/points`, migración aditiva `Migration20261014221841`):
+
+- **`points_account`:** una cuenta por cliente (índice único parcial). Link de solo lectura al cliente.
+- **`points_transaction`:**
+  - `type` credit/debit, `amount` en € (> 0), `reference` + `reference_id`;
+  - `channel` = `web` (la tienda física irá aparte, M2), `note`, `metadata`;
+  - **índice único (reference, reference_id, type)**, que garantiza la idempotencia;
+  - la clave foránea a la cuenta es **sin cascada** (G6: los movimientos se conservan).
+- **El saldo no se guarda:** se calcula como Σ abonos − Σ cargos, así que cada saldo se puede auditar desde sus movimientos.
+- **Referencias** (`lib/points.ts` `REF`):
+  - `order`: abono;
+  - `order_redeem`: canje;
+  - `order_canceled`: devolución de lo canjeado al cancelar;
+  - `return`: retirada por devolución;
+  - `adjustment`: ajuste manual;
+  - `account_deleted`: baja de la cuenta.
+
+**Reglas** (`src/lib/points.ts`, funciones puras con 9 tests unitarios):
+
+- `pointsFor` = 0,8 % al céntimo hacia abajo (con tolerancia de coma flotante: 36,25 € → 0,29).
+- `accrualBase` = suma de `items.total` (con IVA, después de descuentos **incluido el de puntos** y neto de lo devuelto y recibido), sin productos `metadata.sin_puntos`.
+- `isConsolidated`: sin cancelar, último envío no cancelado hace 14 días o más.
+- `maxRedeemable` = `min(saldo, productos − máx(0, 0,50 − envío))`.
+- `pointsDiscount`: descuento **real**, la suma de los ajustes con código `PTS-`.
+
+**Hallazgos de Medusa 2.21.2** (comprobados en los tests):
+
+- En un pedido, Query **no calcula `items.total`** (ni `items.quantity` en algunos casos) si no se piden también `total` o `item_total` del pedido.
+- Tras recibir una devolución, `items.total` **ya queda neto** de lo devuelto (70 € devueltos → total 0 y `return_received_total` 70): no hay que restarlo otra vez.
+
+**Workflows** (`src/workflows/points`, pasos con compensación):
+
+- **`applyPointsWorkflow`:**
+  - lock por **cliente** (`points:<customer_id>`);
+  - valida: carrito propio y sin completar; importe > 0, ≤ saldo y ≤ tope;
+  - crea la promoción `PTS-<24 hex>`: `fixed`, `order`, `across`, `is_tax_inclusive`, regla `customer_id`, budget de 1 uso, `metadata { points, cart_id }`;
+  - quita la anterior si la había y la borra (suave);
+  - la aplica con `force_refresh_payment_collection` (lección de L-0: si no, Stripe cobraría el importe viejo).
+- **`removePointsWorkflow`:** quita la promoción y la borra.
+- **`pointsMovementWorkflow`:** movimiento idempotente con lock por cliente. Crea la cuenta si no existe. Con `clampToBalance`, un cargo no deja el saldo negativo.
+
+**Al completar el pedido:** el hook `validate` de `validar-carrito.ts` (el único handler de `completeCartWorkflow.hooks.validate`) comprueba que el descuento real de puntos ≤ saldo actual. Si no, error `POINTS_BALANCE_MESSAGE`. Así se cubren dos carritos del mismo cliente con el mismo saldo.
+
+**Subscribers:**
+
+- `order.placed`: cargo `order_redeem` por el descuento **real** del pedido.
+- `order.canceled`: abono `order_canceled` por lo canjeado. Idempotente.
+- `order.return_received`: si el pedido ya tenía abono, retira `abonado − puntos que genera ahora − lo ya retirado en devoluciones anteriores`, sin dejar el saldo negativo. Idempotente por `return_id`. Si aún no tenía abono, nada: el job calcula sobre lo que quede.
+
+**Job** `points-accrue` (worker, `POINTS_ACCRUE_CRON`, por defecto `0 4 * * *`) y `pnpm --filter backend points:accrue`:
+
+- recorre por páginas los pedidos de los últimos 120 días de clientes con cuenta;
+- abona los consolidados que aún no tienen abono `order`;
+- `POINTS_CONSOLIDATE_DAYS` (14).
+
+**Limpieza:** el job de carritos (`deleteStalePointsPromotions` en `lib/stale-carts.ts`) borra en suave las promociones `PTS-` **sin usar** cuyo carrito no existe, ya está completado o está inactivo desde antes del corte. Las usadas se conservan.
+
+**Rutas:**
+
+| Ruta                                                        | Para qué                                                                                                                                   |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /store/customers/me/points`                            | `{ balance, pending, transactions, count }`. `pending` = estimación de los pedidos sin cancelar y sin abonar. Paginado. Sin ids de cuenta. |
+| `POST /store/carts/:id/points` `{ amount }`                 | Aplicar puntos. Sesión de cliente (middleware), zod.                                                                                       |
+| `DELETE /store/carts/:id/points`                            | Quitar puntos.                                                                                                                             |
+| `GET /admin/points/report` (G3)                             | Saldo vivo, cuentas con saldo, abonado, canjeado, devuelto, ajustes, perdido en bajas.                                                     |
+| `GET /admin/customers/:id/points`                           | Saldo, pendiente y movimientos.                                                                                                            |
+| `POST /admin/customers/:id/points` `{ type, amount, note }` | Ajuste manual. Nota obligatoria; un cargo se recorta al saldo; guarda `user_id` en `metadata`.                                             |
+
+**Admin:**
+
+- Widget `src/admin/widgets/customer-points.tsx` (zona `customer.details.after`): saldo, pendiente, movimientos con su concepto y formulario de ajuste.
+- Sin `@medusajs/ui`, que no es dependencia directa: HTML con las clases del dashboard.
+- Entra en el build del Admin. **Revisarlo a mano** (necesita sesión del Admin).
+
+**Catálogo:** columna **`sin_puntos`** (sí/no) en `productos.csv` → `metadata.sin_puntos`, con tests en `catalog-import.unit.spec.ts` y documentada en la plantilla y su LEEME.
+
+**Baja (G6):** `pnpm --filter backend points:close-account <cus_…>` hace un cargo `account_deleted` por todo el saldo y conserva los movimientos. Se ejecuta al tramitar la baja, que sigue siendo manual (fase 9).
+
+**Variables nuevas:** `POINTS_ACCRUE_CRON` y `POINTS_CONSOLIDATE_DAYS`, en `apps/backend/.env.example`, `docker/compose.prod.yml` (bloque común de server y worker) y `docker/.env.prod.example`.
+
+**Tests de integración** (`integration-tests/http/puntos.spec.ts`, 6, en total 41 en la suite):
+
+- **canje:** baja el IVA (`tax_total` menor), tope por saldo, 401 sin sesión, 404 con carrito ajeno, sustituir (una sola `PTS-`) y quitar;
+- **tope de 0,50 €:** 30,01 € con 30 € de productos da 400 con «como máximo 30,00 €»;
+- **pedido:** se carga el descuento real; el segundo carrito con el mismo saldo no se completa; la limpieza conserva la promoción usada y borra la del carrito abandonado;
+- **abono:** a los 13 días nada; a los 14 sí. 0,74 € = (100 € menos su parte de los 10 € canjeados) × 0,8 %, sin la línea `sin_puntos` ni el envío. Idempotente;
+- **cancelar:** devuelve lo canjeado una sola vez, aunque el evento se repita, y no abona. **Devolución** de 70 € tras abonar 0,80 € → −0,56, idempotente;
+- **admin:** nota obligatoria, cargo recortado al saldo, informe, 401 sin sesión del Admin.
+
+**Probado contra el backend local:**
+
+- abono manual de 5 €;
+- carrito de 70,90 € → aplicar 3 € → 67,90 € (IVA de 6,45 a 6,17);
+- pedir 6 € → «como máximo 5,00 €»;
+- quitar → 70,90 €;
+- `points:close-account` deja el saldo a 0, y repetirlo no hace nada.
+
+### Plan para automatizar los puntos canjeados en pedidos devueltos (P2)
+
+Hoy se hace a mano (widget del Admin → «Abonar», con nota). Propuesta para cuando se quiera automatizar (subfase propia, con aprobación):
+
+1. **Regla:** al recibir una devolución, devolver la parte proporcional de lo canjeado: `canjeado × (importe devuelto de los productos / productos del pedido)`, redondeado al céntimo hacia abajo. Si se devuelve todo, se devuelve todo lo canjeado.
+2. **Dónde:** el subscriber de `order.return_received` que ya existe (`points-return-received.ts`) añade un segundo movimiento `credit` con `reference: "return_redeem"` y `reference_id: return_id`, idempotente con el mismo índice único. El importe devuelto sale de los `items.return_received_total` del pedido, y lo ya devuelto en devoluciones anteriores, de la suma de los `return_redeem` previos (`metadata.order_id`), igual que ya se hace con `return`.
+3. **Coordinarlo con el reembolso de Stripe:** el canje es un **descuento** (G1). Si la tienda reembolsa con Stripe lo que el cliente **pagó** por la línea devuelta (precio con descuento), devolver además los puntos de esa línea completa el importe sin pagar dos veces. Hay que confirmar con la gestoría que la factura rectificativa usa ese mismo reparto (G2).
+4. **Interruptor** `POINTS_REFUND_REDEEMED_ON_RETURN` (por defecto `false`) para activarlo sin desplegar, y un test de integración: canjeo 10 € en 150 € de productos, devuelvo 70 € y se devuelven 4,66 €; una segunda devolución del resto completa los 10 €.
+5. **Admin:** el movimiento aparece en el widget como «Devolución de puntos canjeados».
+
+## 6.5 L-3 ✅ Puntos: storefront y emails (15-oct-2026)
+
+**Decisiones del usuario:**
+
+- **Q1:** «12,34 € en puntos». Se puede cambiar más adelante.
+- **Q2:** el cliente decide, con el botón «Usar Y €» destacado.
+- **Q3:** el saldo solo en «Mi cuenta» y en el checkout, que son on-demand. Nada en las islands ni en la cabecera, para no añadir JS ni datos.
+
+**Fuentes:**
+
+- astro-docs: actions con `accept: "form"` y PRG con el middleware (como en las fases 5 y 9).
+- El patrón de emails de la fase 8.
+- Las rutas y reglas de L-2. Las reglas **solo están en el backend**: el storefront presenta lo que le devuelve.
+
+**Backend:**
+
+- **`GET /store/carts/:id/points`** (`lib/points-cart.ts`), con sesión **opcional** (`allowUnauthenticated`):
+  - devuelve `{ earn, applied, balance, max }`;
+  - si el carrito no es del cliente con sesión, o no hay sesión, `balance` y `max` son `null`;
+  - `max` usa la misma fórmula que `applyPointsWorkflow`.
+- **`pointsSummary`** añade `order_display_id`, para mostrar «Pedido #123».
+- **Email de confirmación** (`buildOrderPlacedProps`):
+  - `pointsUsed` = ajustes `PTS-`; `discountTotal` = el resto de descuentos;
+  - `pointsEarned`: solo con cuenta, G4;
+  - `pointsDays`;
+  - `itemTotal` y las líneas van **antes de descuentos** (`original_*`), así que cuadra «Productos − Descuentos − Puntos + Envío = Total».
+  - `ORDER_EMAIL_FIELDS` añade `original_item_total`, `items.original_total`, `items.adjustments.*` e `items.product.metadata`.
+- **`toNumber`** se mueve a `lib/numeric.ts`, para evitar el ciclo `emails` ↔ `points`. `emails.ts` lo reexporta.
+- **Script `points:adjust <email|cus_…> <credit|debit> <importe> <motivo>`:**
+  - es el ajuste del Admin desde la terminal; lo usan los e2e;
+  - solo el cargo se recorta al saldo.
+
+**Storefront** (0 JS nuevo: todo HTML de servidor y formularios PRG):
+
+- **`/cuenta/puntos/`:**
+  - saldo, «Y X € más cuando se consoliden…»;
+  - movimientos paginados (20), con enlace al pedido; la nota solo en los ajustes;
+  - «Cómo funcionan».
+- **Menú y resumen de la cuenta:** «Mis puntos» en el menú y una tarjeta con el saldo en el resumen.
+- **Checkout, paso 3:**
+  - bloque «Usar mis puntos» (solo con sesión y algo que usar): «Tienes X €» → **«Usar Y €»** (botón principal);
+  - «Usar otro importe» en un `<details>`, con importe y «Aplicar»;
+  - con puntos aplicados: «Usas Z €» y «Quitar»;
+  - actions `checkout.applyPoints` / `checkout.removePoints`: llaman al backend, preparan Stripe con el total nuevo y vuelven a `#pago`;
+  - avisos `points_invalid`, `points_max`, `points_login`;
+  - `points_changed`: el hook de L-2 al completar, clasificado en `classifyCompleteError`.
+- **Resumen:**
+  - con cuenta: «Con este pedido ganarás X € en puntos» y, en pequeño, cuándo se suman;
+  - **invitado:** «Con una cuenta ganarías X € en puntos» y «Crear cuenta».
+- **`OrderTotals.astro`:** los totales de checkout, `/pedido/<id>/` y «Mi cuenta → pedido» en un solo componente. «Productos» va antes de descuentos, luego «Descuentos», «**Puntos −X €**» (`data-points-used`), envío, total e IVA. Las líneas también van antes de descuentos.
+- **Carrito (`CartView`):** si vuelves con puntos aplicados, las líneas se muestran antes del descuento, con «Puntos −X €» aparte, para que el total cuadre.
+
+**Hallazgo de Medusa 2.21.2:** en los **pedidos**, la Store API omite `items.adjustments.code` si se pide como campo suelto (solo devuelve `amount`). Con `*items.adjustments` sí llega. En los carritos y en Query (servidor) funciona.
+
+**Email:**
+
+- «Puntos usados −Z €» entre los totales;
+- con cuenta, «Con este pedido ganarás X € en puntos» y, en letra pequeña, «Se suman a tu saldo 14 días después del envío, si el pedido no se cancela ni se devuelve…» (G4: informativo, a revisar con la gestoría);
+- `PreviewProps` actualizadas.
+
+**Tests:**
+
+- **Unitarios:** storefront 230 (`points.test.ts` y `points_changed`), backend 90 (props de puntos del email) y emails 17.
+- **HTTP:** 41 (`GET …/points` para el dueño, un invitado, un carrito ajeno y uno que no existe).
+- **e2e** `e2e/puntos.spec.ts`:
+  - sin JS: invitado («ganarías»), «Mis puntos», checkout (usar el máximo → total −5 €, carrito con «Puntos», quitar, importe no válido, por encima del tope, 1,50 €);
+  - con JS y Stripe test: pagar con 3 € → `/pedido/` con «Puntos −3,00 €» → email con «Puntos usados» y «ganarás» → saldo 0 y «Usados en el pedido #N».
+  - En total, **166 e2e pasados** (8 omitidos: los 7 de siempre y el pago en móvil).
+
+**JS:** sin cambios. `check:budget` OK: CartClient 1833 B, SiteClient 1500 B, sin bundles nuevos.
+
+**Comandos para probar:**
+
+```bash
+pnpm --filter backend points:adjust <email> credit 5 "prueba"   # saldo de prueba
+# /cuenta/puntos/ → checkout → «Usar 5,00 €» → pagar (4242…) → /pedido/ y Mailpit (:8025)
+pnpm --filter storefront exec playwright test e2e/puntos.spec.ts
+```
+
+## 6.6 L-4 ✅ Legal y cierre (15-oct-2026)
+
+**Decisión del usuario:** como la gestoría tardará unos días, se pone un **texto provisional** ajustado a lo que hace el programa, para no frenar la fase. Se sustituirá por el suyo (G5).
+
+**Hecho** (0 JS: páginas estáticas):
+
+- **`/condiciones-puntos/`** (`LegalPage` con aviso de «Texto provisional», `noindex` y fuera del sitemap en `LEGAL_PATHS`). Seis apartados con las reglas reales:
+  - quién participa: solo con cuenta;
+  - cómo se ganan: 0,8 % con IVA tras descuentos, sin envío ni la parte pagada con puntos; 1 punto = 1 €; redondeo hacia abajo; exclusiones; `POINTS_CONSOLIDATE_DAYS` días tras el envío;
+  - cómo se usan: descuento con IVA, mínimo de 0,50 € con tarjeta, sin canje por dinero;
+  - cancelaciones y devoluciones: lo canjeado en una devolución, caso por caso (P2);
+  - saldo, web y tienda física: separados (M2), y la baja de la cuenta (G6);
+  - cambios del programa y fraude.
+  - `LegalPage` admite `filler={false}`, para no añadir el lorem.
+- **Privacidad:** párrafo provisional del programa:
+  - qué se guarda;
+  - base: relación contractual;
+  - no se usa para publicidad;
+  - qué pasa al eliminar la cuenta.
+- **Enlaces:** desde «Mis puntos», el bloque del checkout («Condiciones») y el pie («Programa de puntos»).
+- **e2e:** «Mis puntos» → condiciones → `h1` y `noindex`.
+
+**Para revisar con la gestoría** (cuando llegue su texto):
+
+- condiciones y privacidad completas;
+- el aviso del email de confirmación (G4);
+- si la retirada por devolución y la pérdida del saldo en la baja de la cuenta son aceptables tal cual.
+
+**Cierre:**
+
+- **README:** §13, Fase L ✅. §4 sin cambios: no hay dependencias nuevas.
+- **ESTADO:** actualizado.
+- **AGENTS:** sin cambios. No hay bundles nuevos y los tamaños son los mismos (CartClient 1833 B, SiteClient 1500 B).
+
+**Criterio de salida:**
+
+- ✅ lista de deseos (con y sin JS, compartir);
+- ✅ puntos de punta a punta: acumular, consolidar, canjear, cancelar, devolver, Admin y email;
+- ✅ lint, typecheck, test y build; `check:budget`;
+- ✅ 41 tests HTTP y 166 e2e.
+
+**Comandos para testear la fase:**
+
+```bash
+pnpm infra:up && pnpm --filter backend exec medusa db:migrate   # tablas wishlist y points
+pnpm lint && pnpm typecheck && pnpm test && pnpm build
+pnpm --filter backend test:integration:http -- puntos.spec.ts deseos.spec.ts
+pnpm --filter storefront exec playwright test e2e/puntos.spec.ts e2e/deseos.spec.ts
+pnpm --filter backend points:adjust <email> credit 5 "prueba"   # saldo de prueba
+pnpm --filter backend points:accrue                             # abono a mano (lo hace el job a las 4:00)
+```
+
 ## 7. Plan por subfases (después de aprobar)
 
-| Subfase                            | Contenido                                                                                                                                                                                                                                                                                                                                                                                        | Depende de     |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
-| **L-0 spike** ✅ (§6.1)            | Medir en local, contra la BD de desarrollo:<br>• si se elige P-A: instalar el plugin y comprobar `tax_total`, el recálculo del Payment Intent, la línea obsoleta al cambiar el carrito, el admin y el subscriber de gift cards;<br>• si se elige P-B: promoción `is_tax_inclusive` sobre un carrito con IVA mixto, desglose `buildTaxBreakdown` y concurrencia (lock).<br>Resultado en este doc. | §5.12, G1      |
-| **L-1 lista de deseos** ✅ (§6.2)  | Backend: módulo `wishlist`, links, workflows, rutas y tests HTTP. Storefront: botón ♡ en `ProductCard` y `BuyBox`, actions `wishlist.add/remove`, flujo de entrar con `next`, `/cuenta/deseos/`, ajuste de `CartClient`, e2e con y sin JS.                                                                                                                                                       | W1-W7          |
-| L-1b compartir ✅ (§6.3)           | Token, página pública, revocar                                                                                                                                                                                                                                                                                                                                                                   | W4             |
-| **L-2 puntos backend**             | Cuenta y movimientos (P-A o P-B), canje con tope, subscriber `order.placed` (débito), job de abono (K1) y cancelaciones y devoluciones (K5), idempotencia (K6), script de migración (M1), tests de integración                                                                                                                                                                                   | L-0, G1, M1/M2 |
-| **L-3 puntos storefront y emails** | `/cuenta/puntos/`, bloque del checkout (PRG), `OrderSummary`, «ganarías X» para invitados, plantillas de email y campos de `ORDER_EMAIL_FIELDS`                                                                                                                                                                                                                                                  | L-2, G4        |
-| **L-4 legal y cierre**             | Condiciones (G5), privacidad, README §4/§13, ESTADO, cierre de este doc                                                                                                                                                                                                                                                                                                                          | G5             |
+| Subfase                                      | Contenido                                                                                                                                                                                                                                                                                                                                                                                        | Depende de     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| **L-0 spike** ✅ (§6.1)                      | Medir en local, contra la BD de desarrollo:<br>• si se elige P-A: instalar el plugin y comprobar `tax_total`, el recálculo del Payment Intent, la línea obsoleta al cambiar el carrito, el admin y el subscriber de gift cards;<br>• si se elige P-B: promoción `is_tax_inclusive` sobre un carrito con IVA mixto, desglose `buildTaxBreakdown` y concurrencia (lock).<br>Resultado en este doc. | §5.12, G1      |
+| **L-1 lista de deseos** ✅ (§6.2)            | Backend: módulo `wishlist`, links, workflows, rutas y tests HTTP. Storefront: botón ♡ en `ProductCard` y `BuyBox`, actions `wishlist.add/remove`, flujo de entrar con `next`, `/cuenta/deseos/`, ajuste de `CartClient`, e2e con y sin JS.                                                                                                                                                       | W1-W7          |
+| L-1b compartir ✅ (§6.3)                     | Token, página pública, revocar                                                                                                                                                                                                                                                                                                                                                                   | W4             |
+| **L-2 puntos backend** ✅ (§6.4)             | Cuenta y movimientos (P-A o P-B), canje con tope, subscriber `order.placed` (débito), job de abono (K1) y cancelaciones y devoluciones (K5), idempotencia (K6), script de migración (M1), tests de integración                                                                                                                                                                                   | L-0, G1, M1/M2 |
+| **L-3 puntos storefront y emails** ✅ (§6.5) | `/cuenta/puntos/`, bloque del checkout (PRG), `OrderSummary`, «ganarías X» para invitados, plantillas de email y campos de `ORDER_EMAIL_FIELDS`                                                                                                                                                                                                                                                  | L-2, G4        |
+| **L-4 legal y cierre** ✅ (§6.6)             | Condiciones (G5), privacidad, README §4/§13, ESTADO, cierre de este doc                                                                                                                                                                                                                                                                                                                          | G5             |
 
 Cada subfase tendrá su propio plan y confirmación (REGLA Nº 1).
 
 ## 8. Riesgos y pendientes
+
+**Pendientes al cerrar (15-oct-2026):**
+
+- **Textos de la gestoría:** condiciones del programa, privacidad y el aviso del email de confirmación (G4/G5). Hoy son provisionales (§6.6).
+- **Automatizar la devolución de los puntos canjeados** en pedidos devueltos (P2): plan en §6.4, pendiente de aprobar.
+- **Widget del Admin:** revisarlo a mano con sesión (§6.4).
+- **Unificar con la tienda física** (M2) cuando exista el POS contra Medusa: `channel: "tienda"`.
+
+**Riesgos del análisis** (ya resueltos con P-B, L-0 y L-2):
 
 - P-A: línea de puntos obsoleta al cambiar el carrito (§3.2 ⚠️). Total 0 imposible con Stripe (U2). 4 hooks del checkout ocupados.
 - P-B: una promoción por canje. Hace falta limpiar las de carritos abandonados (cabe en el job de limpieza de carritos pendiente, fase9 §7).

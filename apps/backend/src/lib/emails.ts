@@ -1,3 +1,4 @@
+import { toNumber, type Numeric } from "./numeric";
 import {
   buildTaxBreakdown,
   type EmailAddress,
@@ -10,6 +11,14 @@ import {
 } from "emails";
 import { bulkRule } from "./granel";
 import { CORREA_LINE_META } from "./correas";
+import {
+  accrualBase,
+  consolidateDays,
+  pointsDiscount,
+  pointsFor,
+  roundCents,
+  type AccrualItem,
+} from "./points";
 
 /**
  * Datos de Medusa → props de las plantillas de `packages/emails` (fase 8). Funciones puras para
@@ -28,6 +37,7 @@ export const ORDER_EMAIL_FIELDS = [
   "total",
   "tax_total",
   "item_total",
+  "original_item_total",
   "shipping_total",
   "discount_total",
   "items.id",
@@ -37,6 +47,7 @@ export const ORDER_EMAIL_FIELDS = [
   "items.quantity",
   "items.unit_price",
   "items.total",
+  "items.original_total",
   "items.tax_total",
   "items.thumbnail",
   // Correa a medida (E-2): medida exacta y observaciones del cliente
@@ -59,17 +70,15 @@ export const ORDER_EMAIL_FIELDS = [
   "shipping_address.phone",
   // Cuenta del cliente (fase 9): solo si tiene cuenta se enlaza el pedido en "Mi cuenta".
   "customer.has_account",
+  // Puntos (Fase L-3): descuento de puntos (ajustes PTS-) y productos `sin_puntos`.
+  "items.adjustments.code",
+  "items.adjustments.amount",
+  "items.product.metadata",
 ] as const;
 
-type Numeric = number | string | { toJSON(): unknown } | { valueOf(): unknown } | null | undefined;
-
-export function toNumber(value: Numeric): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === "number") return value;
-  if (typeof value === "string") return Number(value) || 0;
-  const n = Number(value.valueOf());
-  return Number.isFinite(n) ? n : 0;
-}
+// `toNumber` vive en lib/numeric.ts (Fase L-3: también lo usan las reglas de puntos, que este
+// módulo importa para el email). Se reexporta por compatibilidad.
+export { toNumber };
 
 type TaxLineLike = { rate?: Numeric } | null;
 
@@ -81,11 +90,14 @@ type ItemLike = {
   quantity?: Numeric;
   unit_price?: Numeric;
   total?: Numeric;
+  original_total?: Numeric;
   tax_total?: Numeric;
   thumbnail?: string | null;
   tax_lines?: TaxLineLike[] | null;
   variant?: { metadata?: Record<string, unknown> | null } | null;
   metadata?: Record<string, unknown> | null;
+  product?: { metadata?: Record<string, unknown> | null } | null;
+  adjustments?: ({ code?: string | null; amount?: Numeric } | null)[] | null;
 };
 
 type ShippingMethodLike = {
@@ -116,6 +128,7 @@ export type OrderLike = {
   total?: Numeric;
   tax_total?: Numeric;
   item_total?: Numeric;
+  original_item_total?: Numeric;
   shipping_total?: Numeric;
   discount_total?: Numeric;
   items?: (ItemLike | null)[] | null;
@@ -217,6 +230,7 @@ const firstName = (order: OrderLike) => order.shipping_address?.first_name?.trim
 export function buildOrderPlacedProps(order: OrderLike, links: EmailLinks): OrderPlacedProps {
   const items = (order.items ?? []).filter((i): i is ItemLike => !!i);
   const method = (order.shipping_methods ?? []).find(Boolean);
+  const pointsUsed = pointsDiscount(items).amount;
   const createdAt = order.created_at
     ? new Date(order.created_at).toISOString()
     : new Date().toISOString();
@@ -226,11 +240,24 @@ export function buildOrderPlacedProps(order: OrderLike, links: EmailLinks): Orde
     createdAt,
     customerName: firstName(order),
     currencyCode: order.currency_code ?? "eur",
-    items: items.map((i) => toEmailItem(i)),
-    itemTotal: toNumber(order.item_total),
+    // Líneas ANTES de descuentos (L-3): los descuentos y puntos se restan en su línea, así cuadra
+    // «Productos − Descuentos − Puntos + Envío = Total».
+    items: items.map((i) => ({
+      ...toEmailItem(i),
+      total: toNumber(i.original_total ?? i.total),
+    })),
+    // Antes de descuentos (L-3): «Productos − Descuentos − Puntos + Envío = Total».
+    itemTotal: toNumber(order.original_item_total ?? order.item_total),
     shippingTotal: toNumber(order.shipping_total),
     shippingMethod: method?.name ?? null,
-    discountTotal: toNumber(order.discount_total),
+    // Los puntos van en su propia línea (L-3); «Descuentos» = el resto.
+    discountTotal: Math.max(0, roundCents(toNumber(order.discount_total) - pointsUsed)),
+    pointsUsed,
+    // Solo con cuenta: un invitado no acumula puntos (G4: informativo, no comercial).
+    pointsEarned: order.customer?.has_account
+      ? pointsFor(accrualBase(items as AccrualItem[]))
+      : null,
+    pointsDays: consolidateDays(process.env.POINTS_CONSOLIDATE_DAYS),
     total: toNumber(order.total),
     taxTotal: toNumber(order.tax_total),
     taxBreakdown: buildTaxBreakdown(orderTaxLines(order)),

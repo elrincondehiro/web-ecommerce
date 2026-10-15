@@ -15,8 +15,11 @@ import {
   type Flash,
 } from "$lib/checkout";
 import { sameAddress } from "$lib/account";
+import { parsePointsAmount } from "$lib/points";
 import {
   CHECKOUT_FIELDS,
+  applyCartPoints,
+  removeCartPoints,
   createAddress,
   initiateStripeSession,
   retrieveCustomer,
@@ -140,19 +143,71 @@ export const checkout = {
     },
   }),
 
+  /**
+   * Usar puntos (Fase L-3): `amount` = el máximo (botón «Usar Y €») o el importe escrito. El
+   * tope y el saldo los comprueba el backend (applyPointsWorkflow). Después se prepara Stripe
+   * con el total nuevo (Medusa borra la sesión anterior al cambiar el total).
+   */
+  applyPoints: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<CheckoutResult> => {
+      const cartId = cartIdOf(ctx);
+      if (!cartId) return { step: "carrito" };
+      const token = ctx.locals.customerToken;
+      if (!token) return { step: "pago", flash: { code: "points_login" } };
+      const amount = parsePointsAmount(form.get("amount"));
+      if (amount === null) return { step: "pago", flash: { code: "points_invalid" } };
+      try {
+        await applyCartPoints(token, cartId, amount);
+      } catch (err) {
+        const status = (err as { status?: unknown } | null)?.status;
+        if (status === 400) return { step: "pago", flash: { code: "points_max" } };
+        const code = classifyCompleteError(err);
+        if (code === "expired") return { step: "carrito" };
+        logError(ctx, "puntos", err);
+        return { step: "pago", flash: { code: "error" } };
+      }
+      return preparePayment(ctx, cartId);
+    },
+  }),
+
+  removePoints: defineAction({
+    accept: "form",
+    handler: async (_form, ctx): Promise<CheckoutResult> => {
+      const cartId = cartIdOf(ctx);
+      if (!cartId) return { step: "carrito" };
+      const token = ctx.locals.customerToken;
+      if (!token) return { step: "pago", flash: { code: "points_login" } };
+      try {
+        await removeCartPoints(token, cartId);
+      } catch (err) {
+        const code = classifyCompleteError(err);
+        if (code === "expired") return { step: "carrito" };
+        logError(ctx, "puntos", err);
+        return { step: "pago", flash: { code: "error" } };
+      }
+      return preparePayment(ctx, cartId);
+    },
+  }),
+
   /** Reintento manual de la sesión de pago (si no se pudo crear o caducó). */
   payment: defineAction({
     accept: "form",
     handler: async (_form, ctx): Promise<CheckoutResult> => {
       const cartId = cartIdOf(ctx);
       if (!cartId) return { step: "carrito" };
-      try {
-        await prepareStripe(cartId);
-        return { step: "pago" };
-      } catch (err) {
-        logError(ctx, "payment", err);
-        return { step: "pago", flash: { code: "error" } };
-      }
+      return preparePayment(ctx, cartId);
     },
   }),
 };
+
+/** Sesión de Stripe para el total actual y vuelta a #pago (si falla, el botón «Preparar el pago»). */
+async function preparePayment(ctx: ActionAPIContext, cartId: string): Promise<CheckoutResult> {
+  try {
+    await prepareStripe(cartId);
+    return { step: "pago" };
+  } catch (err) {
+    logError(ctx, "payment", err);
+    return { step: "pago", flash: { code: "error" } };
+  }
+}

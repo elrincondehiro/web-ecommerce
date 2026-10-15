@@ -8,7 +8,12 @@ export const CHECKOUT_PATH = "/checkout/";
 export const COMPLETE_PATH = "/checkout/completar/";
 export const STRIPE_PROVIDER_ID = "pp_stripe_stripe";
 
-export type CheckoutActionName = "checkout.address" | "checkout.shipping" | "checkout.payment";
+export type CheckoutActionName =
+  | "checkout.address"
+  | "checkout.shipping"
+  | "checkout.payment"
+  | "checkout.applyPoints"
+  | "checkout.removePoints";
 
 /** URL de un formulario sin JS: `?_action=<nombre>` (ACTION_QUERY_PARAMS de Astro). */
 export function checkoutActionUrl(name: CheckoutActionName): string {
@@ -48,6 +53,11 @@ export const CHECKOUT_NOTICES = {
   payment_failed: "El pago no se ha completado. Prueba de nuevo o usa otro método de pago.",
   payment_pending: "El pago aún no está confirmado. Completa el pago para realizar el pedido.",
   error: "Ha ocurrido un error. Inténtalo de nuevo.",
+  // Puntos (Fase L-3). `points_changed`: el backend rechaza completar (validar-carrito.ts).
+  points_invalid: "Escribe un importe válido, por ejemplo 2,50.",
+  points_max: "Ese importe supera lo que puedes usar en este pedido.",
+  points_changed: "Tu saldo de puntos ha cambiado. Vuelve a aplicar los puntos.",
+  points_login: "Entra en tu cuenta para usar tus puntos.",
 } as const;
 export type CheckoutNoticeCode = keyof typeof CHECKOUT_NOTICES;
 
@@ -365,6 +375,7 @@ export function stripeSession(cart: CheckoutCartLike): StripeSessionState {
  *   400 "Session: … was not authorized with the provider."  → payment_pending
  *   400 "Some variant does not have the required inventory"  → stock
  *   404 "Cart … not found"                                  → expired
+ *   400 "Tu saldo de puntos ha cambiado…" (hook propio)       → points_changed
  */
 export function classifyCompleteError(err: unknown): CheckoutNoticeCode | "expired" {
   const status = (err as { status?: unknown } | null)?.status;
@@ -373,6 +384,8 @@ export function classifyCompleteError(err: unknown): CheckoutNoticeCode | "expir
   if (/not authorized with the provider|requires_more|authoriz/i.test(message))
     return "payment_pending";
   if (/required inventory|insufficient_inventory/i.test(message)) return "stock";
+  // POINTS_BALANCE_MESSAGE del backend (Fase L-2).
+  if (/saldo de puntos ha cambiado/i.test(message)) return "points_changed";
   if (status === 404 || /^cart (with id|id not found)/i.test(message)) return "expired";
   return "error";
 }

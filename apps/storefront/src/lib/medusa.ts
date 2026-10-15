@@ -15,6 +15,7 @@ import {
 import { CardCache } from "./card-cache";
 import { isDiscontinued, type StoreProduct, type StoreVariant } from "./catalog";
 import { isCorrea, maxLength } from "./correa";
+import type { CartPoints, PointsSummary } from "./points";
 import type { RawSearchResult, SearchQueryBody } from "./search";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
@@ -274,7 +275,9 @@ export const CART_FULL_FIELDS =
   "id,completed_at,currency_code,item_total,item_subtotal,item_tax_total," +
   "items.id,items.quantity,items.product_title,items.variant_title,items.product_handle," +
   "items.thumbnail,items.unit_price,items.compare_at_unit_price,items.total,items.variant_id," +
-  "items.metadata,*items.variant";
+  "items.metadata,*items.variant," +
+  // Puntos (L-3): líneas antes de descuentos + ajuste PTS- («Puntos −X €» en el carrito).
+  "original_item_total,items.original_total,items.adjustments.code,items.adjustments.amount";
 
 function cartSdk(): Medusa {
   if (useFixtures) throw new Error("El carrito no está disponible con STOREFRONT_DATA=fixtures.");
@@ -382,7 +385,7 @@ export const CHECKOUT_FIELDS =
   "shipping_methods.amount,shipping_methods.shipping_option_id,payment_collection.id," +
   "payment_collection.payment_sessions.id,payment_collection.payment_sessions.status," +
   "payment_collection.payment_sessions.amount,payment_collection.payment_sessions.provider_id," +
-  "payment_collection.payment_sessions.data";
+  "payment_collection.payment_sessions.data,discount_total";
 
 export async function updateCartContact(
   cartId: string,
@@ -440,7 +443,10 @@ export const ORDER_FIELDS =
   "id,display_id,email,created_at,currency_code,total,subtotal,tax_total,shipping_total," +
   "item_total,payment_status,*shipping_address,shipping_methods.name,shipping_methods.amount," +
   "items.id,items.quantity,items.product_title,items.variant_title,items.unit_price,items.total," +
-  "items.metadata,*items.variant";
+  "items.metadata,*items.variant,original_item_total,discount_total,items.original_total," +
+  // Puntos (L-3). En los PEDIDOS, Medusa 2.21.2 omite `items.adjustments.code` si se pide como
+  // campo suelto (solo devuelve `amount`); con `*items.adjustments` sí llega el código.
+  "*items.adjustments";
 
 export async function retrieveOrder(id: string): Promise<StoreOrder> {
   const { order } = await cartSdk().store.order.retrieve(id, { fields: ORDER_FIELDS });
@@ -750,6 +756,49 @@ export async function removeFromWishlist(token: string, itemId: string): Promise
     { method: "DELETE", headers: bearer(token) },
   );
   return deleted;
+}
+
+// ── Puntos (Fase L-3): rutas propias del backend (lib/points.ts tiene los tipos) ─────────────
+
+/** Saldo, pendiente y movimientos del cliente (paginado). */
+export async function getPointsSummary(
+  token: string,
+  page: { limit: number; offset: number },
+): Promise<PointsSummary> {
+  return cartSdk().client.fetch<PointsSummary>("/store/customers/me/points", {
+    headers: bearer(token),
+    query: { limit: page.limit, offset: page.offset },
+  });
+}
+
+/**
+ * Puntos del carrito para el checkout: lo que generaría y, con sesión y si es suyo, saldo, máximo
+ * usable y lo aplicado. Sin token, solo `earn`.
+ */
+export async function getCartPoints(cartId: string, token: string | null): Promise<CartPoints> {
+  return cartSdk().client.fetch<CartPoints>(`/store/carts/${encodeURIComponent(cartId)}/points`, {
+    headers: token ? bearer(token) : {},
+  });
+}
+
+/** Usa `amount` € de puntos en el carrito (sustituye lo anterior). Errores 400 con el tope. */
+export async function applyCartPoints(
+  token: string,
+  cartId: string,
+  amount: number,
+): Promise<void> {
+  await cartSdk().client.fetch(`/store/carts/${encodeURIComponent(cartId)}/points`, {
+    method: "POST",
+    headers: bearer(token),
+    body: { amount },
+  });
+}
+
+export async function removeCartPoints(token: string, cartId: string): Promise<void> {
+  await cartSdk().client.fetch(`/store/carts/${encodeURIComponent(cartId)}/points`, {
+    method: "DELETE",
+    headers: bearer(token),
+  });
 }
 
 const WISHLIST_PRODUCT_FIELDS =

@@ -1,4 +1,5 @@
 import {
+  authenticate,
   configureStoreSearch,
   defineMiddlewares,
   validateAndTransformBody,
@@ -8,6 +9,8 @@ import { StoreDeletionRequestBody } from "./store/customers/me/deletion-request/
 import { StoreCorreasQuery } from "./store/correas/disponibilidad/route";
 import { StoreOfertasQuery } from "./store/ofertas/route";
 import { StoreAddWishlistItemBody } from "./store/customers/me/wishlist/items/route";
+import { StoreApplyPointsBody } from "./store/carts/[id]/points/route";
+import { AdminAdjustPointsBody } from "./admin/customers/[id]/points/route";
 
 /**
  * Fuente: docs.medusajs.com/llms-full.txt ("Store Search API Route").
@@ -38,6 +41,30 @@ export default defineMiddlewares({
       matcher: "/store/customers/me/deletion-request",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(StoreDeletionRequestBody)],
+    },
+    // Puntos (Fase L-2): usar/quitar en el carrito, solo con sesión de cliente (el workflow
+    // comprueba que el carrito es suyo). /admin* lo protege Medusa.
+    {
+      matcher: "/store/carts/:id/points",
+      methods: ["POST", "DELETE"],
+      middlewares: [authenticate("customer", ["bearer", "session"])],
+    },
+    {
+      matcher: "/store/carts/:id/points",
+      methods: ["GET"],
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], { allowUnauthenticated: true }),
+      ],
+    },
+    {
+      matcher: "/store/carts/:id/points",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreApplyPointsBody)],
+    },
+    {
+      matcher: "/admin/customers/:id/points",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminAdjustPointsBody)],
     },
     // Lista de deseos (Fase L-1). La autenticación la pone Medusa (`/store/customers/me*`).
     {

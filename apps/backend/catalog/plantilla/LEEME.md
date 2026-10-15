@@ -63,6 +63,7 @@ Una fila por categoría.
 | `granel`        | no          | `sí`                   | Producto a granel: ver [Granel](#granel).                                               |
 | `descatalogado` | no          | `sí`                   | `sí` / `no`. Ver [Descatalogar un producto](#descatalogar-un-producto).                 |
 | `sustituto`     | no          | `collar-nylon-2`       | Handle del producto que lo sustituye. `-` = quitarlo.                                   |
+| `sin_puntos`    | no          | `sí`                   | El producto no genera puntos del programa de fidelización (Fase L). Vacío = no tocar.   |
 
 ### Componentes analíticos (primera fila)
 

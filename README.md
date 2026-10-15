@@ -687,7 +687,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | C Importador de catálogo (CSV)         | [faseC-catalogo.md](./docs/fases/faseC-catalogo.md)                                              | ✅     |
 | S Catálogo en el storefront            | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | ✅     |
 | E URL, descatalogados y especiales     | [faseE-urls-correas.md](./docs/fases/faseE-urls-correas.md)                                      | ✅     |
-| L Lista de deseos y puntos             | [faseL-deseos-puntos.md](./docs/fases/faseL-deseos-puntos.md)                                    | 🚧     |
+| L Lista de deseos y puntos             | [faseL-deseos-puntos.md](./docs/fases/faseL-deseos-puntos.md)                                    | ✅     |
 | 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

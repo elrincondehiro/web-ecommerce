@@ -20,10 +20,18 @@ import {
   stripeSession,
 } from "$lib/checkout";
 import { formatPrice } from "$lib/format";
-import { LOGIN_PATH, defaultAddress } from "$lib/account";
+import { LOGIN_PATH, REGISTER_PATH, defaultAddress } from "$lib/account";
+import {
+  POINTS_CONSOLIDATE_DAYS,
+  POINTS_PATH,
+  POINTS_TERMS_PATH,
+  amountInputValue,
+  type CartPoints,
+} from "$lib/points";
 import { isValidId } from "$lib/cart";
 import {
   CHECKOUT_FIELDS,
+  getCartPoints,
   listShippingOptions,
   retrieveCustomer,
   type StoreCart,
@@ -107,6 +115,17 @@ if (step1) {
 const selectedOption = cart.shipping_methods?.[0]?.shipping_option_id ?? "";
 const session = step2 ? stripeSession(cart) : { state: "none" as const };
 const currency = cart.currency_code ?? "eur";
+
+// Puntos (Fase L-3): lo que generaría el pedido y, con sesión, saldo y máximo usable. Las reglas
+// las aplica el backend (`GET /store/carts/:id/points`); si falla, el checkout sigue sin puntos.
+let points: CartPoints | null = null;
+try {
+  points = await getCartPoints(cart.id, customer ? (Astro.locals.customerToken ?? null) : null);
+} catch (err) {
+  Astro.logger.error(`checkout puntos: ${err instanceof Error ? err.message : String(err)}`);
+}
+const canUsePoints =
+  step2 && customer !== null && points !== null && (points.applied > 0 || (points.max ?? 0) > 0);
 ---
 
 <BaseLayout
@@ -305,6 +324,88 @@ const currency = cart.currency_code ?? "eur";
           <h2 id="pago-titulo" class="mb-4 text-xl font-semibold">
             3. Pago
           </h2>
+          {canUsePoints && points && (
+            <section
+              id="puntos"
+              aria-labelledby="puntos-titulo"
+              class="mb-6 rounded-md border-2 border-line bg-muted/40 p-4"
+            >
+              <h3 id="puntos-titulo" class="text-base font-semibold">
+                Usar mis puntos
+              </h3>
+              {points.applied > 0 ? (
+                <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                  <p>
+                    Usas{" "}
+                    <strong class="tabular-nums">{formatPrice(points.applied, currency)}</strong> en
+                    puntos en este pedido.
+                  </p>
+                  <form method="post" action={checkoutActionUrl("checkout.removePoints")}>
+                    <button
+                      type="submit"
+                      class={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      Quitar
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div class="mt-2 flex flex-col gap-3 text-sm">
+                  <p>
+                    Tienes{" "}
+                    <strong class="tabular-nums">
+                      {formatPrice(points.balance ?? 0, currency)} en puntos
+                    </strong>
+                    .
+                    {(points.max ?? 0) < (points.balance ?? 0) &&
+                      ` En este pedido puedes usar hasta ${formatPrice(points.max ?? 0, currency)}.`}
+                  </p>
+                  <form method="post" action={checkoutActionUrl("checkout.applyPoints")}>
+                    <input type="hidden" name="amount" value={amountInputValue(points.max ?? 0)} />
+                    <button type="submit" class={buttonVariants()}>
+                      Usar {formatPrice(points.max ?? 0, currency)}
+                    </button>
+                  </form>
+                  <details>
+                    <summary class="cursor-pointer underline underline-offset-4">
+                      Usar otro importe
+                    </summary>
+                    <form
+                      method="post"
+                      action={checkoutActionUrl("checkout.applyPoints")}
+                      class="mt-3 flex flex-wrap items-end gap-2"
+                    >
+                      <label class="flex flex-col gap-1">
+                        Importe en €
+                        <input
+                          name="amount"
+                          required
+                          inputmode="decimal"
+                          autocomplete="off"
+                          pattern="[0-9]{1,6}([.,][0-9]{1,2})?"
+                          placeholder={amountInputValue(points.max ?? 0)}
+                          class="h-9 w-28 rounded-md border-2 border-line bg-background px-3 tabular-nums"
+                        />
+                      </label>
+                      <button type="submit" class={buttonVariants({ variant: "outline" })}>
+                        Aplicar
+                      </button>
+                    </form>
+                  </details>
+                </div>
+              )}
+              <p class="mt-3 text-xs text-muted-foreground">
+                Se descuentan del total, IVA incluido.{" "}
+                <a href={POINTS_PATH} class="underline underline-offset-4">
+                  Ver mis puntos
+                </a>
+                {" · "}
+                <a href={POINTS_TERMS_PATH} class="underline underline-offset-4">
+                  Condiciones
+                </a>
+              </p>
+            </section>
+          )}
           {!step2 ? (
             <p class="text-sm text-muted-foreground">Elige antes el método de envío.</p>
           ) : !PUBLIC_STRIPE_PUBLISHABLE_KEY ? (
@@ -352,7 +453,31 @@ const currency = cart.currency_code ?? "eur";
     </ol>
 
     <aside class="lg:sticky lg:top-4">
-      <OrderSummary cart={cart} />
+      <OrderSummary cart={cart}>
+        {points && points.earn > 0 && (
+          <p class="mt-3 border-t-2 border-line pt-3 text-sm" data-points-earn>
+            {customer ? (
+              <>
+                Con este pedido ganarás{" "}
+                <strong class="tabular-nums">{formatPrice(points.earn, currency)} en puntos</strong>
+                .
+                <span class="mt-1 block text-xs text-muted-foreground">
+                  Se suman a tu saldo {POINTS_CONSOLIDATE_DAYS} días después del envío.
+                </span>
+              </>
+            ) : (
+              <>
+                Con una cuenta ganarías{" "}
+                <strong class="tabular-nums">{formatPrice(points.earn, currency)} en puntos</strong>{" "}
+                con este pedido.{" "}
+                <a href={REGISTER_PATH} class="underline underline-offset-4">
+                  Crear cuenta
+                </a>
+              </>
+            )}
+          </p>
+        )}
+      </OrderSummary>
       <a href="/carrito/" class="mt-3 inline-block text-sm underline underline-offset-4">
         Modificar el carrito
       </a>

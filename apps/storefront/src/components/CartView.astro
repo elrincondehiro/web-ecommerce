@@ -19,6 +19,7 @@ import { CART_PATH, MAX_QUANTITY, actionUrl, itemCount } from "$lib/cart";
 import { discountPercent } from "$lib/catalog";
 import { formatPrice } from "$lib/format";
 import type { StoreCart } from "$lib/medusa";
+import { pointsUsed } from "$lib/points";
 import Price from "./Price.astro";
 import QuantityField from "./QuantityField.astro";
 import { lineDetails } from "$lib/correa";
@@ -33,6 +34,8 @@ const items = [...(cart?.items ?? [])].sort((a, b) =>
 );
 const currency = cart?.currency_code ?? "eur";
 const count = itemCount(cart);
+// Puntos aplicados en el checkout (L-3): líneas antes del descuento y «Puntos −X €» aparte.
+const points = pointsUsed(cart?.items);
 const isPage = variant === "page";
 const thumb = isPage ? 80 : 56;
 // Marco retro (Fase D, 1.5). Tamaño con clases, no con style= (la CSP prevista lo bloquearía).
@@ -201,7 +204,7 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
                 )}
               </div>
               <p class="shrink-0 font-semibold tabular-nums">
-                {formatPrice(item.total ?? 0, currency)}
+                {formatPrice(item.original_total ?? item.total ?? 0, currency)}
               </p>
             </li>
           );
@@ -216,6 +219,12 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
       >
         <dt class="text-muted-foreground">Artículos</dt>
         <dd class="text-right">{count}</dd>
+        {points > 0 && (
+          <>
+            <dt class="text-muted-foreground">Puntos</dt>
+            <dd class="text-right">−{formatPrice(points, currency)}</dd>
+          </>
+        )}
         <dt class="text-base font-semibold">Total</dt>
         <dd class="text-right text-base font-semibold">
           {formatPrice(cart?.item_total ?? 0, currency)}

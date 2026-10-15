@@ -59,6 +59,9 @@ x-backend: &backend
     # Limpieza de carritos (fase 10-4): el job solo corre en el worker
     CART_CLEANUP_DAYS: ${CART_CLEANUP_DAYS:-30}
     CART_CLEANUP_CRON: ${CART_CLEANUP_CRON:-0 3 * * *}
+    # Puntos (Fase L-2): abono diario (job del worker) a los N días del último envío
+    POINTS_ACCRUE_CRON: ${POINTS_ACCRUE_CRON:-0 4 * * *}
+    POINTS_CONSOLIDATE_DAYS: ${POINTS_CONSOLIDATE_DAYS:-14}
     # Emails
     EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:?}
     EMAIL_FROM: ${EMAIL_FROM:?}

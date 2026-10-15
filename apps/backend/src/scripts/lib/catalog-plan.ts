@@ -120,6 +120,8 @@ export const META = {
   bulk: "granel",
   discontinued: "descatalogado",
   replacement: "sustituto",
+  /** No genera puntos (Fase L-2; lo lee lib/points.ts NO_POINTS_KEY). */
+  noPoints: "sin_puntos",
   stepG: "paso_g",
   minG: "min_g",
   netG: "neto_g",
@@ -402,8 +404,9 @@ export function planCatalog(
     if (textChanged(p.brand, existing.brand)) changes.push("marca");
     const meta = productMetadata(p);
     const changedKeys = Object.keys(meta).filter((k) => metaChanged(meta[k], existing.metadata[k]));
-    const own = [META.discontinued, META.replacement] as string[];
+    const own = [META.discontinued, META.replacement, META.noPoints] as string[];
     if (changedKeys.includes(META.discontinued)) changes.push("descatalogado");
+    if (changedKeys.includes(META.noPoints)) changes.push("sin puntos");
     if (changedKeys.includes(META.replacement)) changes.push("sustituto");
     if (changedKeys.some((k) => !own.includes(k))) changes.push("analíticos");
     if (p.status && p.status !== existing.status) changes.push("estado");
@@ -528,6 +531,7 @@ export function productMetadata(p: ProductSheet): Record<string, unknown> {
   if (p.bulk !== undefined) meta[META.bulk] = p.bulk ? true : "";
   if (p.discontinued !== undefined) meta[META.discontinued] = p.discontinued ? true : "";
   if (p.replacement !== undefined) meta[META.replacement] = p.replacement ?? "";
+  if (p.noPoints !== undefined) meta[META.noPoints] = p.noPoints ? true : "";
   if (p.brand !== undefined) meta[BRAND_KEY] = p.brand ?? "";
   return meta;
 }

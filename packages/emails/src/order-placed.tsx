@@ -13,11 +13,18 @@ export type OrderPlacedProps = EmailLinks & {
   customerName?: string | null;
   currencyCode: string;
   items: EmailLineItem[];
-  /** Suma de productos con IVA, tras descuentos. */
+  /** Suma de productos con IVA, ANTES de descuentos y puntos (que se restan en su línea). */
   itemTotal: number;
   shippingTotal: number;
   shippingMethod?: string | null;
+  /** Descuentos que NO son puntos (los puntos van en `pointsUsed`). */
   discountTotal: number;
+  /** Puntos usados en el pedido (Fase L-3), en €. */
+  pointsUsed?: number;
+  /** Puntos que generará (solo con cuenta; null = invitado). Informativo (G4). */
+  pointsEarned?: number | null;
+  /** Días desde el envío hasta que se suman (POINTS_CONSOLIDATE_DAYS). */
+  pointsDays?: number;
   total: number;
   taxTotal: number;
   /** IVA agrupado por tipo (`buildTaxBreakdown`). */
@@ -53,6 +60,9 @@ export function OrderPlaced(props: OrderPlacedProps) {
         {props.discountTotal > 0 ? (
           <AmountRow label="Descuentos" value={`−${formatMoney(props.discountTotal, c)}`} />
         ) : null}
+        {props.pointsUsed && props.pointsUsed > 0 ? (
+          <AmountRow label="Puntos usados" value={`−${formatMoney(props.pointsUsed, c)}`} />
+        ) : null}
         <AmountRow
           label={props.shippingMethod ? `Envío (${props.shippingMethod})` : "Envío"}
           value={props.shippingTotal > 0 ? formatMoney(props.shippingTotal, c) : "Gratis"}
@@ -75,6 +85,18 @@ export function OrderPlaced(props: OrderPlacedProps) {
         <>
           <SectionLabel>Dirección de envío</SectionLabel>
           <AddressBlock address={props.shippingAddress} />
+        </>
+      ) : null}
+
+      {props.pointsEarned && props.pointsEarned > 0 ? (
+        <>
+          <Paragraph>
+            Con este pedido ganarás <strong>{formatMoney(props.pointsEarned, c)} en puntos</strong>.
+          </Paragraph>
+          <Muted>
+            Se suman a tu saldo {props.pointsDays ?? 14} días después del envío, si el pedido no se
+            cancela ni se devuelve. Puedes usarlos como descuento en tus próximas compras en la web.
+          </Muted>
         </>
       ) : null}
 
@@ -131,7 +153,10 @@ OrderPlaced.PreviewProps = {
   shippingTotal: 4.95,
   shippingMethod: "Estándar",
   discountTotal: 0,
-  total: 103.05,
+  pointsUsed: 2.5,
+  pointsEarned: 0.76,
+  pointsDays: 14,
+  total: 100.55,
   taxTotal: 13.25,
   taxBreakdown: [
     { rate: 21, base: 55.25, tax: 11.6 },

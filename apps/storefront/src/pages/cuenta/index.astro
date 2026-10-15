@@ -12,7 +12,8 @@ import {
 } from "$lib/account";
 import { accountPage, requireCustomer } from "$lib/account-page";
 import { formatPrice } from "$lib/format";
-import { listCustomerOrders } from "$lib/medusa";
+import { getPointsSummary, listCustomerOrders } from "$lib/medusa";
+import { POINTS_PATH } from "$lib/points";
 import AccountLayout from "../../components/account/AccountLayout.astro";
 import AccountNotice from "../../components/account/AccountNotice.astro";
 
@@ -22,7 +23,11 @@ const flash = accountPage(Astro);
 const session = await requireCustomer(Astro);
 if (!session.ok) return session.redirect;
 const { customer, token } = session;
-const { orders } = await listCustomerOrders(token, { limit: 1, offset: 0 });
+const [{ orders }, points] = await Promise.all([
+  listCustomerOrders(token, { limit: 1, offset: 0 }),
+  // Si falla, la tarjeta de puntos no muestra el saldo (el resto de la página sigue).
+  getPointsSummary(token, { limit: 1, offset: 0 }).catch(() => null),
+]);
 const last = orders[0];
 const address = defaultAddress(customer.addresses);
 const name = customer.first_name?.trim();
@@ -97,6 +102,28 @@ const card = "flex flex-col gap-2 rounded-md border-2 border-line bg-card shadow
       </p>
       <a href={WISHLIST_PATH} class="mt-auto text-sm underline underline-offset-4">
         Ver mi lista
+      </a>
+    </section>
+
+    <section aria-labelledby="resumen-puntos" class={card}>
+      <h2 id="resumen-puntos" class="text-lg font-semibold">
+        Mis puntos
+      </h2>
+      {points ? (
+        <p class="text-sm">
+          <strong class="tabular-nums">{formatPrice(points.balance, "eur")} en puntos</strong>
+          {points.pending > 0 && (
+            <span class="text-muted-foreground">
+              {" "}
+              · {formatPrice(points.pending, "eur")} pendientes
+            </span>
+          )}
+        </p>
+      ) : (
+        <p class="text-sm text-muted-foreground">Tu saldo y tus movimientos de puntos.</p>
+      )}
+      <a href={POINTS_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Ver mis puntos
       </a>
     </section>
 

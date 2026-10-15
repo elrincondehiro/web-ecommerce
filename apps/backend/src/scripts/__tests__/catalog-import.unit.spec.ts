@@ -533,3 +533,28 @@ describe("descatalogado y sustituto (Fase E)", () => {
     expect(ok.errors.map((e) => e.column)).not.toContain("sustituto");
   });
 });
+
+describe("sin_puntos (Fase L-2, K3)", () => {
+  const refs = {
+    salesChannelId: "sc",
+    shippingProfileId: "sp",
+    categoryIds: {},
+    collectionIds: {},
+    tagIds: {},
+    typeIds: {},
+  } as unknown as Parameters<typeof productCreateInput>[1];
+  const read = (rows: string[]) => readProducts(csv(["handle,sin_puntos,sku,precio", ...rows]));
+
+  it("sí → metadata.sin_puntos = true; no → se borra; vacío → no se toca", () => {
+    const { products, errors } = read(['a,sí,A-1,"9,95"', 'b,no,B-1,"9,95"', 'c,,C-1,"9,95"']);
+    expect(errors).toEqual([]);
+    expect(products.map((p) => p.noPoints)).toEqual([true, false, undefined]);
+    expect(productCreateInput(products[0]!, refs).metadata).toMatchObject({ sin_puntos: true });
+    expect(productCreateInput(products[1]!, refs).metadata).toMatchObject({ sin_puntos: "" });
+    expect(productCreateInput(products[2]!, refs).metadata?.sin_puntos).toBeUndefined();
+  });
+
+  it("valor no válido", () => {
+    expect(read(['a,quizá,A-1,"9,95"']).errors.map((e) => e.column)).toEqual(["sin_puntos"]);
+  });
+});
