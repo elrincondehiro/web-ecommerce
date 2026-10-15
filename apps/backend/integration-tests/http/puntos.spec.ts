@@ -275,9 +275,23 @@ medusaIntegrationTestRunner({
       // L-3: GET para el checkout. Dueño: saldo, máximo y aplicado; invitado/ajeno: solo `earn`.
       // earn = 0,8 % de (100 − 5) = 0,76
       const info = await api.get(`/store/carts/${cartId}/points`, ana.auth);
-      expect(info.data).toEqual({ earn: 0.76, applied: 5, balance: 10, max: 10 });
+      expect(info.data).toEqual({
+        earn: 0.76,
+        applied: 5,
+        balance: 10,
+        max: 10,
+        code: null,
+        code_amount: 0,
+      });
       const anon = await api.get(`/store/carts/${cartId}/points`, { headers });
-      expect(anon.data).toEqual({ earn: 0.76, applied: 0, balance: null, max: null });
+      expect(anon.data).toEqual({
+        earn: 0.76,
+        applied: 0,
+        balance: null,
+        max: null,
+        code: null,
+        code_amount: 0,
+      });
       const other = await api.get(`/store/carts/${cartId}/points`, luis.auth);
       expect(other.data.balance).toBeNull();
       expect(

@@ -11,6 +11,7 @@ import { DISCONTINUED_MESSAGE, isDiscontinued } from "../../lib/descatalogado";
 import { isCorrea, lineMetadataError, variantLength } from "../../lib/correas";
 import { KIT_SHORTAGE_MESSAGE, kitShortages, type DemandLine } from "../../lib/kit-demand";
 import { pointsDiscount } from "../../lib/points";
+import { CODE_MESSAGES, customerCodes } from "../../lib/codes";
 import { POINTS_MODULE } from "../../modules/points";
 import type PointsModuleService from "../../modules/points/service";
 
@@ -25,6 +26,8 @@ export const POINTS_BALANCE_MESSAGE =
  * - Descatalogados (Fase E): no se pueden añadir (sí cambiar la cantidad o quitar una línea que ya
  *   estaba en el carrito).
  * - Puntos (Fase L-2, al completar): el descuento de puntos no puede superar el saldo actual.
+ * - Códigos (Fase P, al completar): como mucho UNO, y solo con cuenta (segunda barrera: la Store
+ *   API estándar de promociones está cerrada en middlewares.ts).
  * - Granel (S-3): la cantidad total de una variante en el carrito × `paso_g` no puede quedar por
  *   debajo de `min_g` (metadata de la variante, la escribe `catalog:import`).
  * - Metadata de la línea (E-2): solo las correas la admiten, y solo `observaciones` y
@@ -184,6 +187,7 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
   // ya restan del stock libre y la comprobación daría un falso «no queda material».
   if (c.completed_at) return;
   await checkPointsBalance(container as MedusaContainer, cart);
+  checkCodes(cart);
   const lines = demandLines(c.items ?? []);
   if ((await kitShortages(container as MedusaContainer, lines, c.sales_channel_id)).length) {
     throw new MedusaError(
@@ -193,6 +197,22 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
     );
   }
 });
+
+/** Códigos (Fase P): uno por pedido y solo clientes con cuenta. */
+function checkCodes(cart: unknown): void {
+  // El carrito del hook trae `items.adjustments.*` y `customer.*`, no `promotions.code`
+  // (completeCartFields de core-flows 2.21.2): los códigos salen de los ajustes.
+  const c = cart as {
+    customer?: { has_account?: boolean | null } | null;
+    items?: { adjustments?: { code?: string | null }[] | null }[] | null;
+  };
+  const codes = [...new Set(customerCodes((c.items ?? []).flatMap((i) => i.adjustments ?? [])))];
+  if (!codes.length) return;
+  if (codes.length > 1) throw new MedusaError(MedusaError.Types.NOT_ALLOWED, CODE_MESSAGES.one);
+  if (!c.customer?.has_account) {
+    throw new MedusaError(MedusaError.Types.NOT_ALLOWED, CODE_MESSAGES.account);
+  }
+}
 
 /**
  * Puntos (Fase L-2): si el carrito canjea puntos, el descuento REAL (ajustes con código PTS-) no

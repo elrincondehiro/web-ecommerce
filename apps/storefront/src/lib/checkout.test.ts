@@ -212,6 +212,10 @@ describe("pedido", () => {
         "Tu saldo de puntos ha cambiado. Vuelve a aplicar los puntos en el pago.",
       ),
     ).toBe("points_changed");
+    // Fase P: barrera al completar (más de un código, sin cuenta)
+    expect(classifyCompleteError("Solo se puede usar un código descuento por pedido.")).toBe(
+      "code_one",
+    );
     expect(classifyCompleteError(new Error("boom"))).toBe("error");
   });
 });

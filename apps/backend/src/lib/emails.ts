@@ -11,6 +11,7 @@ import {
 } from "emails";
 import { bulkRule } from "./granel";
 import { CORREA_LINE_META } from "./correas";
+import { codeDiscount } from "./codes";
 import {
   accrualBase,
   consolidateDays,
@@ -231,6 +232,7 @@ export function buildOrderPlacedProps(order: OrderLike, links: EmailLinks): Orde
   const items = (order.items ?? []).filter((i): i is ItemLike => !!i);
   const method = (order.shipping_methods ?? []).find(Boolean);
   const pointsUsed = pointsDiscount(items).amount;
+  const code = codeDiscount(items);
   const createdAt = order.created_at
     ? new Date(order.created_at).toISOString()
     : new Date().toISOString();
@@ -250,8 +252,13 @@ export function buildOrderPlacedProps(order: OrderLike, links: EmailLinks): Orde
     itemTotal: toNumber(order.original_item_total ?? order.item_total),
     shippingTotal: toNumber(order.shipping_total),
     shippingMethod: method?.name ?? null,
-    // Los puntos van en su propia línea (L-3); «Descuentos» = el resto.
-    discountTotal: Math.max(0, roundCents(toNumber(order.discount_total) - pointsUsed)),
+    // Los puntos (L-3) y el código (Fase P) van en su propia línea; «Descuentos» = el resto.
+    discountTotal: Math.max(
+      0,
+      roundCents(toNumber(order.discount_total) - pointsUsed - code.amount),
+    ),
+    discountCode: code.code,
+    discountCodeAmount: code.amount,
     pointsUsed,
     // Solo con cuenta: un invitado no acumula puntos (G4: informativo, no comercial).
     pointsEarned: order.customer?.has_account

@@ -126,7 +126,10 @@ describe("emails: datos de Medusa → props", () => {
     expect(p.itemTotal).toBe(56.1);
     expect(p.items[0]!.total).toBe(24.9); // línea antes de descuentos
     expect(p.pointsUsed).toBe(3);
-    expect(p.discountTotal).toBe(2);
+    // El código (Fase P) en su línea; «Descuentos» = el resto (nada aquí)
+    expect(p.discountCode).toBe("VERANO");
+    expect(p.discountCodeAmount).toBe(2);
+    expect(p.discountTotal).toBe(0);
     // 0,8 % de 21,90 € (sin la línea sin_puntos) = 0,17 al céntimo hacia abajo
     expect(p.pointsEarned).toBe(0.17);
     expect(p.pointsDays).toBe(14);

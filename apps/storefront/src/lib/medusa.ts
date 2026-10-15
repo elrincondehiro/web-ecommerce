@@ -801,6 +801,28 @@ export async function removeCartPoints(token: string, cartId: string): Promise<v
   });
 }
 
+// ── Códigos descuento (Fase P): ruta propia del backend (uno por pedido, solo con cuenta) ───
+
+/** Aplica un código (sustituye el anterior). `points_adjusted`: puntos recortados (0 = quitados). */
+export async function applyCartCode(
+  token: string,
+  cartId: string,
+  code: string,
+): Promise<{ code: string; points_adjusted: number | null }> {
+  return cartSdk().client.fetch(`/store/carts/${encodeURIComponent(cartId)}/code`, {
+    method: "POST",
+    headers: bearer(token),
+    body: { code },
+  });
+}
+
+export async function removeCartCode(token: string, cartId: string): Promise<void> {
+  await cartSdk().client.fetch(`/store/carts/${encodeURIComponent(cartId)}/code`, {
+    method: "DELETE",
+    headers: bearer(token),
+  });
+}
+
 const WISHLIST_PRODUCT_FIELDS =
   "id,handle,title,subtitle,thumbnail,metadata,*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity";
 

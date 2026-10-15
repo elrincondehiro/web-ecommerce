@@ -25,6 +25,15 @@ function credit(email: string, amount: number) {
   if (!out.includes("points:adjust: credit")) throw new Error("points:adjust no abonó");
 }
 
+/** Código descuento de prueba (script del backend, idempotente). */
+function createCode(code: string, kind: "pct" | "eur", value: number) {
+  execFileSync("pnpm", ["--filter", "backend", "codes:create", code, kind, String(value)], {
+    cwd: REPO,
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+}
+
 async function mailText(page: Page, to: string, match: RegExp): Promise<string> {
   for (let i = 0; i < 40; i++) {
     const res = await page.request.get(
@@ -173,6 +182,56 @@ test.describe("puntos sin JS", () => {
   });
 });
 
+test.describe("códigos descuento sin JS (Fase P)", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("invitado: para usar un código hay que entrar", async ({ page }) => {
+    await toPayment(page, "invitado-codigo@example.com");
+    const block = page.locator("#codigo");
+    await expect(block.getByRole("link", { name: "Entra en tu cuenta" })).toBeVisible();
+    await expect(block.getByLabel("Código")).toHaveCount(0);
+  });
+
+  test("con cuenta: aplicar, combinar con puntos (recorte con aviso), quitar", async ({ page }) => {
+    createCode("E2E5", "eur", 5);
+    const block = page.locator("#codigo");
+    const email = `e2e-codigo-${Date.now()}@example.com`;
+    await createAccount(page, email);
+    await login(page, email);
+    credit(email, 5);
+    await toPayment(page);
+    // 6,90 € de productos + envío. Primero 5 € de puntos (cabe todo: el envío cubre los 0,50 €).
+    await page.locator("#puntos").getByRole("button", { name: "Usar 5,00 €" }).click();
+    await expect(page.locator("[data-points-used]")).toHaveText(/−5,00\s€/);
+    // Código no válido → aviso
+    await block.getByLabel("Código").fill("NOEXISTE");
+    await block.getByRole("button", { name: "Aplicar" }).click();
+    await expect(page.getByText("Ese código no existe o no es válido.")).toBeVisible();
+
+    // E2E5 (5 €): con los puntos ya no cabe todo → puntos recortados a 1,90 € con aviso
+    await block.getByLabel("Código").fill("e2e5");
+    await block.getByRole("button", { name: "Aplicar" }).click();
+    await expect(page.locator("[data-checkout-info]")).toHaveText(/Hemos ajustado tus puntos/);
+    await expect(block).toContainText(/Código E2E5: −5,00\s€/);
+    await expect(page.locator("[data-code-used]")).toHaveText(/−5,00\s€/);
+    await expect(page.locator("#resumen-titulo ~ dl")).toContainText("Código E2E5");
+    await expect(page.locator("[data-points-used]")).toHaveText(/−1,90\s€/);
+    // 6,90 € de productos − 5 € de código − 1,90 € de puntos = 0 → queda el envío (≥ 0,50 €)
+    expect(await total(page)).toBe(4.95);
+
+    // El carrito también lo muestra
+    await page.goto("/carrito/");
+    await expect(page.locator("main dl")).toContainText(/Código E2E5\s*−5,00\s€/);
+    await page.goto("/checkout/");
+
+    // Quitar el código: los puntos se quedan como estaban (1,90 €)
+    await block.getByRole("button", { name: "Quitar" }).click();
+    await expect(block.getByLabel("Código")).toBeVisible();
+    await expect(page.locator("[data-code-used]")).toHaveCount(0);
+    await page.locator("#puntos").getByRole("button", { name: "Quitar" }).click();
+  });
+});
+
 test.describe("puntos con JS (Stripe test)", () => {
   test.skip(({ isMobile }) => isMobile, "el pago se prueba en escritorio");
   test.setTimeout(120_000);
@@ -213,5 +272,40 @@ test.describe("puntos con JS (Stripe test)", () => {
       /Usados en el pedido #\d+/,
     );
     await expect(page.locator("[data-points-pending]")).toBeVisible();
+  });
+
+  test("pagar con código y puntos: pedido y email con las dos líneas (Fase P)", async ({
+    page,
+  }) => {
+    createCode("E2E10", "pct", 10);
+    const email = `e2e-codigo-pago-${Date.now()}@example.com`;
+    await createAccount(page, email);
+    await login(page, email);
+    credit(email, 2);
+    await toPayment(page);
+    const block = page.locator("#codigo");
+    await block.getByLabel("Código").fill("E2E10");
+    await block.getByRole("button", { name: "Aplicar" }).click();
+    await expect(page.locator("[data-code-used]")).toHaveText(/−0,69\s€/);
+    await page.locator("#puntos").getByRole("button", { name: "Usar 2,00 €" }).click();
+    await expect(page.locator("[data-points-used]")).toHaveText(/−2,00\s€/);
+    const pay = page.getByRole("button", { name: /^Pagar y realizar pedido/ });
+    await expect(pay).toBeEnabled({ timeout: 30_000 });
+    const frame = page
+      .locator('#pago-element iframe[name^="__privateStripeFrame"]')
+      .first()
+      .contentFrame();
+    await frame
+      .getByRole("textbox", { name: /Número de (la )?tarjeta|Card number/i })
+      .fill("4242 4242 4242 4242");
+    await frame.getByRole("textbox", { name: /caducidad|Expiration/i }).fill("12 / 34");
+    await frame.getByRole("textbox", { name: /Código de seguridad|CVC/i }).fill("123");
+    await pay.click();
+    await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 30_000 });
+    await expect(page.locator("[data-code-used]")).toHaveText(/−0,69\s€/);
+    await expect(page.locator("[data-points-used]")).toHaveText(/−2,00\s€/);
+    const text = await mailText(page, email, /Hemos recibido|Gracias por tu pedido/);
+    expect(text).toMatch(/Código E2E10\s+−0,69\s€/);
+    expect(text).toMatch(/Puntos usados\s+−2,00\s€/);
   });
 });

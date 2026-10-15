@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 15-oct-2026 · **Fase L cerrada** (lista de deseos #52; puntos L-2…L-4 en `feat/faseL-puntos`, PR 2). Detalle en [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md) §6.1-§6.6. Pendiente: los textos de la gestoría (condiciones del programa, privacidad, aviso del email), hoy provisionales. Siguiente: fase 11 (producción en Hetzner, §6.5).
+> Última actualización: 15-oct-2026 · **Fase L cerrada** (#52, #53). **Fase P (códigos descuento) cerrada** en `feat/faseP-codigos` ([faseP-codigos.md](./fases/faseP-codigos.md): solo con cuenta, uno por pedido, combinables con puntos con ≥ 0,50 € por pagar; guía del Admin en §3). Pendiente: textos de la gestoría (condiciones de puntos y de compra, privacidad, cookies, aviso del email), hoy provisionales. Siguiente: fase 11 (producción en Hetzner, §6.5).
 
 ## 1. Dónde estamos
 
@@ -29,6 +29,7 @@
 | S Catálogo en el storefront                 | ✅     | [faseS-catalogo-storefront.md](./fases/faseS-catalogo-storefront.md) |
 | E URL, descatalogados y especiales          | ✅     | [faseE-urls-correas.md](./fases/faseE-urls-correas.md)               |
 | L Lista de deseos y puntos                  | ✅     | [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md)             |
+| P Códigos descuento                         | ✅     | [faseP-codigos.md](./fases/faseP-codigos.md)                         |
 
 Roadmap completo y tiempos: README §13.
 
@@ -103,6 +104,7 @@ CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos
 pnpm --filter backend points:accrue                        # abono de puntos a mano (el job lo hace a las 4:00, Fase L)
 pnpm --filter backend points:adjust <email|cus_…> <credit|debit> <importe> <motivo>   # ajuste manual
 pnpm --filter backend points:close-account <cus_…>         # baja de la cuenta: el saldo se pierde (G6)
+pnpm --filter backend codes:create <CODIGO> <pct|eur> <valor> [usos_total] [por_cliente]   # código de prueba (Fase P; lo normal: Admin → Promociones)
 pnpm --filter backend catalog:import <carpeta> [dry-run]   # categorias.csv + productos.csv (plantilla en apps/backend/catalog/plantilla)
 pnpm --filter backend images:import <carpeta> [dry-run] [replace]
 pnpm --filter backend exec medusa db:migrate
@@ -490,4 +492,5 @@ Documento de fase con: opciones (con pros/contras y fuentes), propuesta recomend
 - **Fase 11/13**: CSS crítico (~110 ms), LCP variable de la ficha (ancho de 720 px) y logos del pie/cabecera más pequeños ([auditoría](./fases/auditoria-pre-fase10.md) §6).
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.
+- **Fase P:** rate limiting de `POST /store/carts/:id/code` en Cloudflare (fase 11); no crear códigos sobre el envío ni automáticos sin revisar (faseP-codigos.md §7).
 - **Fase L (gestoría):** sustituir los textos provisionales de `/condiciones-puntos/` y del párrafo de puntos de `/privacidad/`, y validar el aviso de puntos del email de confirmación (G4/G5).

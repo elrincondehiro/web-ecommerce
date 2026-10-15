@@ -3,9 +3,11 @@
 // servidor, 0 JS. «Productos» es ANTES de descuentos (original_item_total) y las líneas se
 // muestran también antes de descuentos (items.original_total): así cuadra
 //   Productos − Descuentos − Puntos + Envío = Total.
-// Los puntos son un ajuste con código PTS- (lib/points.ts); «Descuentos» = el resto.
+// Los puntos son un ajuste con código PTS- (lib/points.ts); el código descuento (Fase P), su
+// propia línea; «Descuentos» = el resto.
 import { formatPrice } from "$lib/format";
 import { pointsUsed } from "$lib/points";
+import { codeUsed } from "$lib/codes";
 
 interface Props {
   totals: {
@@ -24,12 +26,25 @@ interface Props {
 const { totals, currency, shippingLabel } = Astro.props;
 const points = pointsUsed(totals.items);
 const products = totals.original_item_total ?? totals.item_total ?? 0;
-const otherDiscounts = Math.max(0, Math.round(((totals.discount_total ?? 0) - points) * 100) / 100);
+// Código descuento (Fase P): «Código HIRO10 −X €». Lo que quede (no debería haber) → «Descuentos».
+const code = codeUsed(totals.items);
+const otherDiscounts = Math.max(
+  0,
+  Math.round(((totals.discount_total ?? 0) - points - code.amount) * 100) / 100,
+);
 ---
 
 <dl class="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t-2 border-line pt-3 text-sm tabular-nums">
   <dt class="text-muted-foreground">Productos</dt>
   <dd class="text-right">{formatPrice(products, currency)}</dd>
+  {code.code && code.amount > 0 && (
+    <>
+      <dt class="text-muted-foreground">Código {code.code}</dt>
+      <dd class="text-right" data-code-used>
+        −{formatPrice(code.amount, currency)}
+      </dd>
+    </>
+  )}
   {otherDiscounts > 0 && (
     <>
       <dt class="text-muted-foreground">Descuentos</dt>

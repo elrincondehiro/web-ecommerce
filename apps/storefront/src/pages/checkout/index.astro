@@ -126,6 +126,9 @@ try {
 }
 const canUsePoints =
   step2 && customer !== null && points !== null && (points.applied > 0 || (points.max ?? 0) > 0);
+// Avisos informativos (no errores): se ven en el paso de pago, con otro estilo (Fase P).
+const INFO_NOTICES = new Set(["points_adjusted", "points_removed"]);
+const infoNotice = flash.code && INFO_NOTICES.has(flash.code) ? CHECKOUT_NOTICES[flash.code] : null;
 ---
 
 <BaseLayout
@@ -137,7 +140,7 @@ const canUsePoints =
 >
   <h1 class="mb-6 text-3xl font-semibold tracking-tight">Finalizar compra</h1>
 
-  {flash.code && (
+  {flash.code && !infoNotice && (
     <p
       role="alert"
       class="mb-6 rounded-md border-2 border-destructive px-4 py-3 text-sm text-destructive"
@@ -324,6 +327,80 @@ const canUsePoints =
           <h2 id="pago-titulo" class="mb-4 text-xl font-semibold">
             3. Pago
           </h2>
+          {infoNotice && (
+            <p
+              role="status"
+              class="mb-4 rounded-md border-2 border-line bg-muted px-4 py-3 text-sm"
+              data-checkout-info
+            >
+              {infoNotice}
+            </p>
+          )}
+          {step2 && (
+            <section
+              id="codigo"
+              aria-labelledby="codigo-titulo"
+              class="mb-4 rounded-md border-2 border-line bg-muted/40 p-4"
+            >
+              <h3 id="codigo-titulo" class="text-base font-semibold">
+                Código descuento
+              </h3>
+              {!customer ? (
+                <p class="mt-2 text-sm">
+                  <a
+                    href={`${LOGIN_PATH}?next=${encodeURIComponent("/checkout/")}`}
+                    class="underline underline-offset-4"
+                  >
+                    Entra en tu cuenta
+                  </a>{" "}
+                  para usar un código descuento.
+                </p>
+              ) : points?.code ? (
+                <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                  <p>
+                    Código <strong>{points.code}</strong>: −
+                    <span class="tabular-nums">{formatPrice(points.code_amount, currency)}</span>
+                  </p>
+                  <form method="post" action={checkoutActionUrl("checkout.removeCode")}>
+                    <button
+                      type="submit"
+                      class={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      Quitar
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <form
+                  method="post"
+                  action={checkoutActionUrl("checkout.applyCode")}
+                  class="mt-2 flex flex-wrap items-end gap-2 text-sm"
+                >
+                  <label class="flex flex-col gap-1">
+                    Código
+                    <input
+                      name="code"
+                      required
+                      autocomplete="off"
+                      autocapitalize="characters"
+                      spellcheck="false"
+                      maxlength="40"
+                      class="h-9 w-44 rounded-md border-2 border-line bg-background px-3 uppercase"
+                    />
+                  </label>
+                  <button type="submit" class={buttonVariants({ variant: "outline" })}>
+                    Aplicar
+                  </button>
+                </form>
+              )}
+              <p class="mt-3 text-xs text-muted-foreground">
+                Un código por pedido. Se puede combinar con tus puntos.{" "}
+                <a href="/condiciones/#codigos" class="underline underline-offset-4">
+                  Condiciones
+                </a>
+              </p>
+            </section>
+          )}
           {canUsePoints && points && (
             <section
               id="puntos"

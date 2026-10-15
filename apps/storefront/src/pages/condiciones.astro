@@ -1,4 +1,7 @@
 ---
+// Condiciones de compra (texto PROVISIONAL, LegalPage). Fase P: apartado de códigos descuento
+// (#codigos) con el orden real de Medusa 2.21.2 (spike P-0: primero la promoción de mayor valor
+// numérico, sin distinguir % y €), por decisión del usuario (Q1 = A, avisado).
 import LegalPage from "../components/legal/LegalPage.astro";
 ---
 
@@ -7,4 +10,37 @@ import LegalPage from "../components/legal/LegalPage.astro";
   description="Condiciones generales de compra de El Rincón de Hiro."
 >
   <p>Condiciones de compra, envíos, devoluciones y derecho de desistimiento.</p>
+
+  <h2 id="codigos" class="mt-4 scroll-mt-4 text-xl font-semibold">
+    Códigos descuento
+  </h2>
+  <ul class="list-disc space-y-1 pl-5">
+    <li>Solo se pueden usar con una cuenta y con la sesión iniciada.</li>
+    <li>
+      Se puede usar <strong>un código por pedido</strong>. Si aplicas otro, sustituye al anterior.
+    </li>
+    <li>
+      Cada código tiene sus propias condiciones (fechas, número de usos, productos a los que se
+      aplica…), que se indican al darlo a conocer. Si no se cumplen, el código no se aplica.
+    </li>
+    <li>
+      Se pueden combinar con los{" "}
+      <a href="/condiciones-puntos/" class="underline underline-offset-4">
+        puntos
+      </a>
+      . Siempre queda un mínimo de 0,50 € por pagar con tarjeta: si hace falta, ajustamos los puntos
+      y te avisamos.
+    </li>
+    <li>
+      <strong>Orden de los descuentos:</strong> el sistema aplica primero el descuento de mayor
+      valor, sea un porcentaje o un importe fijo. Por eso, cuando combinas un código de porcentaje
+      con puntos por un importe mayor, el porcentaje se calcula sobre lo que queda después de los
+      puntos y el descuento total puede ser algo menor que si se aplicara antes el código. El
+      resumen del pedido muestra siempre el importe exacto antes de pagar.
+    </li>
+    <li>
+      Si cancelamos o cancelas el pedido, el código vuelve a estar disponible según sus condiciones.
+    </li>
+    <li>Los códigos no se pueden canjear por dinero.</li>
+  </ul>
 </LegalPage>

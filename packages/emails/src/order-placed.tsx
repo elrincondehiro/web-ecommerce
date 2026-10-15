@@ -17,8 +17,11 @@ export type OrderPlacedProps = EmailLinks & {
   itemTotal: number;
   shippingTotal: number;
   shippingMethod?: string | null;
-  /** Descuentos que NO son puntos (los puntos van en `pointsUsed`). */
+  /** Descuentos que NO son puntos ni el código (los puntos van en `pointsUsed`). */
   discountTotal: number;
+  /** Código descuento usado (Fase P) y su descuento. */
+  discountCode?: string | null;
+  discountCodeAmount?: number;
   /** Puntos usados en el pedido (Fase L-3), en €. */
   pointsUsed?: number;
   /** Puntos que generará (solo con cuenta; null = invitado). Informativo (G4). */
@@ -57,6 +60,12 @@ export function OrderPlaced(props: OrderPlacedProps) {
 
       <Section style={{ marginTop: 12 }}>
         <AmountRow label="Productos" value={formatMoney(props.itemTotal, c)} />
+        {props.discountCode && props.discountCodeAmount && props.discountCodeAmount > 0 ? (
+          <AmountRow
+            label={`Código ${props.discountCode}`}
+            value={`−${formatMoney(props.discountCodeAmount, c)}`}
+          />
+        ) : null}
         {props.discountTotal > 0 ? (
           <AmountRow label="Descuentos" value={`−${formatMoney(props.discountTotal, c)}`} />
         ) : null}
@@ -153,10 +162,12 @@ OrderPlaced.PreviewProps = {
   shippingTotal: 4.95,
   shippingMethod: "Estándar",
   discountTotal: 0,
+  discountCode: "HIRO10",
+  discountCodeAmount: 9.81,
   pointsUsed: 2.5,
-  pointsEarned: 0.76,
+  pointsEarned: 0.68,
   pointsDays: 14,
-  total: 100.55,
+  total: 90.74,
   taxTotal: 13.25,
   taxBreakdown: [
     { rate: 21, base: 55.25, tax: 11.6 },

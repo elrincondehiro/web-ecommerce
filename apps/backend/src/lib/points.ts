@@ -108,8 +108,10 @@ export function isConsolidated(
  * Máximo canjeable en un carrito: lo que quede por pagar debe ser ≥ 0,50 €, y el descuento solo
  * se aplica a los productos (la promoción `order` no toca el envío; spike L-0).
  *   max = min(saldo, productos − máx(0, 0,50 − envío))
- * `itemTotal` es el de los productos SIN el descuento de puntos (original_item_total menos
- * otros descuentos; con un solo descuento posible hoy, `original_item_total`).
+ * `itemTotal` es el de los productos SIN el descuento de puntos pero CON el del código descuento
+ * (Fase P): `original_item_total − descuento del código`. Así el mínimo se cumple aunque Medusa
+ * aplique los puntos antes que un código en % (lo ordena por valor, spike P-0): el % sobre lo que
+ * queda descuenta menos, nunca más.
  */
 export function maxRedeemable(balance: number, itemTotal: number, shippingTotal: number): number {
   const room = itemTotal - Math.max(0, MIN_CHARGE_EUR - Math.max(0, shippingTotal));

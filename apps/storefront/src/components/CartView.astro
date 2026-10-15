@@ -20,6 +20,7 @@ import { discountPercent } from "$lib/catalog";
 import { formatPrice } from "$lib/format";
 import type { StoreCart } from "$lib/medusa";
 import { pointsUsed } from "$lib/points";
+import { codeUsed } from "$lib/codes";
 import Price from "./Price.astro";
 import QuantityField from "./QuantityField.astro";
 import { lineDetails } from "$lib/correa";
@@ -36,6 +37,7 @@ const currency = cart?.currency_code ?? "eur";
 const count = itemCount(cart);
 // Puntos aplicados en el checkout (L-3): líneas antes del descuento y «Puntos −X €» aparte.
 const points = pointsUsed(cart?.items);
+const code = codeUsed(cart?.items);
 const isPage = variant === "page";
 const thumb = isPage ? 80 : 56;
 // Marco retro (Fase D, 1.5). Tamaño con clases, no con style= (la CSP prevista lo bloquearía).
@@ -219,6 +221,12 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
       >
         <dt class="text-muted-foreground">Artículos</dt>
         <dd class="text-right">{count}</dd>
+        {code.code && code.amount > 0 && (
+          <>
+            <dt class="text-muted-foreground">Código {code.code}</dt>
+            <dd class="text-right">−{formatPrice(code.amount, currency)}</dd>
+          </>
+        )}
         {points > 0 && (
           <>
             <dt class="text-muted-foreground">Puntos</dt>

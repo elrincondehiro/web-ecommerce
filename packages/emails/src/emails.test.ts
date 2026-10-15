@@ -18,13 +18,24 @@ describe("renderEmail", () => {
     expect(subject).toBe("Hemos recibido tu pedido n.º 1042");
     expect(text).toContain("IVA 21 %");
     expect(text).toContain("IVA 4 %");
-    expect(text).toMatch(/100,55\s€/);
+    expect(text).toMatch(/90,74\s€/);
+  });
+
+  it("código descuento (Fase P): su propia línea con el código", async () => {
+    const { text } = await renderEmail("order-placed", previewProps("order-placed"));
+    expect(text).toMatch(/Código HIRO10\s+−9,81\s€/);
+    const none = await renderEmail("order-placed", {
+      ...previewProps("order-placed"),
+      discountCode: null,
+      discountCodeAmount: 0,
+    });
+    expect(none.text).not.toContain("Código ");
   });
 
   it("puntos (L-3): usados como descuento y los que ganará (con cuenta)", async () => {
     const { text } = await renderEmail("order-placed", previewProps("order-placed"));
     expect(text).toMatch(/Puntos usados\s+−2,50\s€/);
-    expect(text).toMatch(/ganarás 0,76\s€ en puntos/);
+    expect(text).toMatch(/ganarás 0,68\s€ en puntos/);
     expect(text).toContain("14 días después del envío");
     const guest = await renderEmail("order-placed", {
       ...previewProps("order-placed"),

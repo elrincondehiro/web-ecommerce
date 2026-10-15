@@ -35,6 +35,9 @@ export type CartPoints = {
   applied: number;
   balance: number | null;
   max: number | null;
+  /** Código descuento aplicado (Fase P) y su descuento real. */
+  code: string | null;
+  code_amount: number;
 };
 
 const REFERENCE_LABELS: Record<string, string> = {

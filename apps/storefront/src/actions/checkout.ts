@@ -16,8 +16,11 @@ import {
 } from "$lib/checkout";
 import { sameAddress } from "$lib/account";
 import { parsePointsAmount } from "$lib/points";
+import { classifyCodeError, normalizeCode } from "$lib/codes";
 import {
   CHECKOUT_FIELDS,
+  applyCartCode,
+  removeCartCode,
   applyCartPoints,
   removeCartPoints,
   createAddress,
@@ -184,6 +187,53 @@ export const checkout = {
         const code = classifyCompleteError(err);
         if (code === "expired") return { step: "carrito" };
         logError(ctx, "puntos", err);
+        return { step: "pago", flash: { code: "error" } };
+      }
+      return preparePayment(ctx, cartId);
+    },
+  }),
+
+  /**
+   * Código descuento (Fase P): solo con sesión; uno por pedido (el backend sustituye el anterior
+   * y recorta los puntos que ya no quepan → aviso `points_adjusted` / `points_removed`).
+   */
+  applyCode: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<CheckoutResult> => {
+      const cartId = cartIdOf(ctx);
+      if (!cartId) return { step: "carrito" };
+      const token = ctx.locals.customerToken;
+      if (!token) return { step: "pago", flash: { code: "code_login" } };
+      const code = normalizeCode(form.get("code"));
+      if (!code) return { step: "pago", flash: { code: "code_invalid" } };
+      let adjusted: number | null;
+      try {
+        ({ points_adjusted: adjusted } = await applyCartCode(token, cartId, code));
+      } catch (err) {
+        const kind = classifyCodeError(err);
+        if (kind === "expired") return { step: "carrito" };
+        if (kind === "error") logError(ctx, "codigo", err);
+        return { step: "pago", flash: { code: kind } };
+      }
+      const result = await preparePayment(ctx, cartId);
+      if (adjusted === null || result.flash) return result;
+      return { step: "pago", flash: { code: adjusted > 0 ? "points_adjusted" : "points_removed" } };
+    },
+  }),
+
+  removeCode: defineAction({
+    accept: "form",
+    handler: async (_form, ctx): Promise<CheckoutResult> => {
+      const cartId = cartIdOf(ctx);
+      if (!cartId) return { step: "carrito" };
+      const token = ctx.locals.customerToken;
+      if (!token) return { step: "pago", flash: { code: "code_login" } };
+      try {
+        await removeCartCode(token, cartId);
+      } catch (err) {
+        const code = classifyCompleteError(err);
+        if (code === "expired") return { step: "carrito" };
+        logError(ctx, "codigo", err);
         return { step: "pago", flash: { code: "error" } };
       }
       return preparePayment(ctx, cartId);

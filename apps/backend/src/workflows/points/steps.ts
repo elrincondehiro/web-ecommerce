@@ -6,10 +6,10 @@ import {
   POINTS_CHANNEL_WEB,
   POINTS_PROMO_PREFIX,
   isPointsPromoCode,
-  maxRedeemable,
   roundCents,
 } from "../../lib/points";
 import { toNumber } from "../../lib/numeric";
+import { maxForRoom, pointsRoom } from "../../lib/points-room";
 import { POINTS_MODULE } from "../../modules/points";
 import type PointsModuleService from "../../modules/points/service";
 
@@ -132,11 +132,9 @@ export const validateRedeemStep = createStep(
     const service = points(container);
     const account = await service.findAccount(input.customer_id);
     const balance = account ? await service.getBalance(account.id) : 0;
-    const max = maxRedeemable(
-      balance,
-      toNumber(cart.original_item_total as never),
-      toNumber(cart.shipping_total as never),
-    );
+    // Tope sobre los productos TRAS el código descuento (Fase P, lib/points-room.ts).
+    const room = await pointsRoom(container as MedusaContainer, input.cart_id);
+    const max = room ? maxForRoom(balance, room) : 0;
     const amount = roundCents(input.amount);
     if (!(amount > 0) || amount > max) {
       throw new MedusaError(

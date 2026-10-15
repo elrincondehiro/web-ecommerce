@@ -13,7 +13,9 @@ export type CheckoutActionName =
   | "checkout.shipping"
   | "checkout.payment"
   | "checkout.applyPoints"
-  | "checkout.removePoints";
+  | "checkout.removePoints"
+  | "checkout.applyCode"
+  | "checkout.removeCode";
 
 /** URL de un formulario sin JS: `?_action=<nombre>` (ACTION_QUERY_PARAMS de Astro). */
 export function checkoutActionUrl(name: CheckoutActionName): string {
@@ -58,6 +60,14 @@ export const CHECKOUT_NOTICES = {
   points_max: "Ese importe supera lo que puedes usar en este pedido.",
   points_changed: "Tu saldo de puntos ha cambiado. Vuelve a aplicar los puntos.",
   points_login: "Entra en tu cuenta para usar tus puntos.",
+  // Códigos descuento (Fase P). `points_adjusted` lleva el importe en `values.points`.
+  code_invalid: "Ese código no existe o no es válido.",
+  code_not_applied:
+    "Ese código no se puede usar en este pedido: puede haber caducado, estar agotado, haberlo usado ya o no aplicarse a estos productos.",
+  code_login: "Entra en tu cuenta para usar un código descuento.",
+  code_one: "Solo se puede usar un código descuento por pedido.",
+  points_adjusted: "Hemos ajustado tus puntos para que el código quepa en el pedido.",
+  points_removed: "Hemos quitado tus puntos: con el código ya no queda importe para usarlos.",
 } as const;
 export type CheckoutNoticeCode = keyof typeof CHECKOUT_NOTICES;
 
@@ -376,6 +386,7 @@ export function stripeSession(cart: CheckoutCartLike): StripeSessionState {
  *   400 "Some variant does not have the required inventory"  → stock
  *   404 "Cart … not found"                                  → expired
  *   400 "Tu saldo de puntos ha cambiado…" (hook propio)       → points_changed
+ *   400 "Solo se puede usar un código…" / "Entra en tu cuenta…" (Fase P) → code_one / code_login
  */
 export function classifyCompleteError(err: unknown): CheckoutNoticeCode | "expired" {
   const status = (err as { status?: unknown } | null)?.status;
@@ -386,6 +397,9 @@ export function classifyCompleteError(err: unknown): CheckoutNoticeCode | "expir
   if (/required inventory|insufficient_inventory/i.test(message)) return "stock";
   // POINTS_BALANCE_MESSAGE del backend (Fase L-2).
   if (/saldo de puntos ha cambiado/i.test(message)) return "points_changed";
+  // Hook propio (Fase P): más de un código o sin cuenta (barrera al completar).
+  if (/un código descuento por pedido/i.test(message)) return "code_one";
+  if (/Entra en tu cuenta para usar un código/i.test(message)) return "code_login";
   if (status === 404 || /^cart (with id|id not found)/i.test(message)) return "expired";
   return "error";
 }

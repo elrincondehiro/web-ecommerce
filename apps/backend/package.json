@@ -22,6 +22,7 @@
     "stock:mock": "medusa exec ./src/scripts/stock-mock.ts",
     "correas:sync": "medusa exec ./src/scripts/correas-sync.ts",
     "carts:cleanup": "medusa exec ./src/scripts/delete-stale-carts.ts",
+    "codes:create": "medusa exec ./src/scripts/codes-create.ts",
     "points:accrue": "medusa exec ./src/scripts/points-accrue.ts",
     "points:adjust": "medusa exec ./src/scripts/points-adjust.ts",
     "points:close-account": "medusa exec ./src/scripts/points-close-account.ts"
