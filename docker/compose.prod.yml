@@ -79,7 +79,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp"
+      # Sin 443/udp (HTTP/3): Cloudflare llega al origen por TCP y el firewall de Hetzner solo
+      # abre 80/443 TCP a sus rangos (fase 11-1).
     environment:
       STORE_DOMAIN: ${STORE_DOMAIN:?}
       API_DOMAIN: ${API_DOMAIN:?}
