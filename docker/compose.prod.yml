@@ -4,7 +4,7 @@
 #   docker compose --env-file docker/.env.prod -f docker/compose.prod.yml pull
 #   docker compose --env-file docker/.env.prod -f docker/compose.prod.yml up -d --wait
 #
-# - Solo Caddy publica puertos (80/443). El resto, en la red interna del proyecto, sin puertos.
+# - Solo Caddy publica puertos (443). El resto, en la red interna del proyecto, sin puertos.
 # - backend-server y backend-worker: MISMA imagen (MEDUSA_WORKER_MODE). Solo el server migra.
 # - Imágenes: ${REGISTRY}/${IMAGE_NAMESPACE}/ecommerce-<app>:${IMAGE_TAG} (GHCR o Gitea). Los
 #   `build:` permiten la alternativa "build en el VPS" (README §11).
@@ -76,18 +76,23 @@ services:
   caddy:
     image: caddy:2.11.7-alpine
     restart: unless-stopped
+    # Solo 443/tcp: con Full (strict) Cloudflare siempre llega al origen por https (el paso de
+    # http a https lo hace Cloudflare) y sin HTTP/3 (443/udp). El firewall de Hetzner solo abre
+    # 443/tcp a los rangos de Cloudflare (fase 11-1/11-3).
     ports:
-      - "80:80"
       - "443:443"
-      # Sin 443/udp (HTTP/3): Cloudflare llega al origen por TCP y el firewall de Hetzner solo
-      # abre 80/443 TCP a sus rangos (fase 11-1).
     environment:
       STORE_DOMAIN: ${STORE_DOMAIN:?}
       API_DOMAIN: ${API_DOMAIN:?}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN:?}
-      CADDY_TLS: ${CADDY_TLS:-}
+      # cloudflare: Origin CA + mTLS de Cloudflare (AOP de zona) · internal: prueba local (fase 10)
+      CADDY_TLS_MODE: ${CADDY_TLS_MODE:-cloudflare}
+      # noindex: X-Robots-Tag en la tienda (entorno de prueba) · index: tienda abierta
+      ROBOTS: ${ROBOTS:-noindex}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # origin.pem, origin.key y aop-ca.pem (fase11.md §4.3). Fuera de git (docker/certs/).
+      - ${CERTS_DIR:-./certs}:/certs:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

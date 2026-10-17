@@ -20,6 +20,7 @@ import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import AnalyticsTable from "../../components/AnalyticsTable.astro";
 import BuyBox from "../../components/BuyBox.astro";
 import ColorPicker from "../../components/correa/ColorPicker.astro";
+import SwatchStyles from "../../components/correa/SwatchStyles.astro";
 import CorreaBuilder from "../../components/correa/CorreaBuilder.astro";
 import ProductGallery from "../../components/ProductGallery.astro";
 import LiveSync from "../../components/LiveSync.astro";
@@ -56,6 +57,8 @@ type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 const { product, replacement, siblings, related } = Astro.props as Props;
 const discontinued = isDiscontinued(product);
 const correa = isCorrea(product);
+// Selector de color (ficha de una correa): sus estilos van al <head> (SwatchStyles, CSP)
+const showPicker = !discontinued && correa && siblings.length > 1;
 // Migas: cadena completa de la categoría más concreta del producto (Fase S)
 const category = deepestCategory(await getShopTree(true), product);
 const crumbs = [
@@ -102,6 +105,7 @@ const onward = replacement
         ]
   }
 >
+  <SwatchStyles slot="head" swatches={showPicker ? siblings : []} />
   <Breadcrumbs items={crumbs} />
   <div class="grid gap-8 md:grid-cols-2">
     <ProductGallery images={gallery} alt={product.title} />
@@ -135,9 +139,7 @@ const onward = replacement
         </div>
       ) : correa ? (
         <>
-          {siblings.length > 1 && (
-            <ColorPicker swatches={siblings} mode="link" current={product.handle} />
-          )}
+          {showPicker && <ColorPicker swatches={siblings} mode="link" current={product.handle} />}
           {plazo && <p class="font-semibold">{plazo}</p>}
           <CorreaBuilder product={product} />
         </>

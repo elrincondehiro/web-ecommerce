@@ -8,9 +8,10 @@
 // Disponibilidad («hasta 8 m» / «Agotada», landing): texto y data-stock del build con la clave
 // `<handle>_max` (data-price / data-pid); los corrige <LiveSync correaLanding> con el aplicador
 // de siempre (lib/live-sync.ts), sin script nuevo.
+// Los colores (clases .sw-*) los pinta <SwatchStyles slot="head"> desde la página (fase 11-3: su
+// hash de CSP tiene que registrarse antes de que Astro escriba el <head>).
 import { buttonVariants } from "$lib/components/ui/button";
 import { maxKey, maxText, swatchClass, swatchesByMaterial, type CorreaSwatch } from "$lib/correa";
-import SwatchStyles from "./SwatchStyles.astro";
 
 interface Props {
   swatches: CorreaSwatch[];
@@ -28,7 +29,6 @@ const label = (s: CorreaSwatch) => `${s.color} · ${s.material}`;
 const swatchBase = "swatch size-9 shrink-0 rounded-full border-2 border-line shadow-xs";
 ---
 
-<SwatchStyles swatches={swatches} picker={mode === "radio"} />
 {mode === "link" ? (
   <nav aria-label="Color y material" class="flex flex-col gap-3">
     {groups.map(([material, list]) => (

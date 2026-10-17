@@ -26,6 +26,10 @@ playwright-report/
 !**/.env.example
 !**/.env.*.example
 
+# Certificados del origen (Origin CA, CA de Authenticated Origin Pulls; fase 11-3)
+docker/certs/
+*.key
+
 # Logs
 *.log
 npm-debug.log*

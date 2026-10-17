@@ -1,7 +1,9 @@
 ---
 // Colores de las muestras de correa (Fase E-2c): un <style> con una regla por handle
-// (lib/correa.ts swatchCss). Su hash se registra en la CSP cuando esté activa (fase 11;
-// astro-docs: `Astro.csp.insertStyleHash` con `kind: "element"`), como el script de LiveSync.
+// (lib/correa.ts swatchCss). Su hash se registra en la CSP (fase 11-3; astro-docs:
+// `Astro.csp.insertStyleHash`). Usar SIEMPRE con `slot="head"` del layout: un componente del
+// <body> se ejecuta después de que Astro haya escrito el <meta> de la CSP y su hash se perdería
+// (comprobado con astro 7.3.8: solo llegan a tiempo el <head> y las server islands).
 import { createHash } from "node:crypto";
 import { swatchCss, type CorreaSwatch } from "$lib/correa";
 
@@ -13,7 +15,7 @@ interface Props {
 const css = swatchCss(Astro.props.swatches, Astro.props.picker);
 if (css && import.meta.env.CSP_ENABLED) {
   const hash = `sha256-${createHash("sha256").update(css).digest("base64")}` as const;
-  Astro.csp?.insertStyleHash({ hash, kind: "element" });
+  Astro.csp?.insertStyleHash(hash);
 }
 ---
 

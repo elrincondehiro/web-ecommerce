@@ -9,7 +9,7 @@
 # Publica en 127.0.0.1 (puertos distintos a los de compose.dev.yml, que puede seguir en marcha):
 #   - backend-server :19000 → para que el BUILD del storefront lea el catálogo;
 #   - SeaweedFS :18333      → URL pública de las imágenes (build y navegador).
-# Caddy usa `tls internal` (CADDY_TLS) con tienda/api/admin.localhost.
+# Caddy usa `tls internal` (CADDY_TLS_MODE=internal) con tienda/api/admin.localhost.
 # El storefront se construye aparte (lee el catálogo de http://localhost:19000 con la red del
 # host, que `docker compose build` 5.x no permite sin bake --allow); docs/fases/fase10.md §5.
 name: web-ecommerce-prodlocal

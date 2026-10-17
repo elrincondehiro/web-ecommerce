@@ -77,17 +77,23 @@ Despliegue **de prueba**, no la producción definitiva: dominio de pruebas, **St
 
 ## 3. Decisiones tomadas
 
-| Decisión                                                                        | Motivo                                                                                                               | Fuente consultada                                       |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Tienda en la raíz, `api.`, `admin.`, `imagenes.`; emails desde `develop.`       | Primer nivel = certificados gratuitos (Universal SSL + Origin CA)                                                    | cloudflare-docs; usuario                                |
-| Reinstalar el VPS (Rebuild de Hetzner)                                          | Estado desconocido tras meses con otro despliegue                                                                    | usuario                                                 |
-| SSH solo por WireGuard (túnel directo portátil ↔ VPS)                           | IP dinámica del usuario; no exponer SSH a Internet                                                                   | usuario                                                 |
-| Access en `admin.` y en la tienda; `api.` sin Access; `X-Robots-Tag: noindex`   | Dominio de prueba que no debe indexarse; los webhooks y el navegador necesitan `api.`                                | cloudflare-docs; usuario                                |
-| `api.` solo para el webhook de Stripe (WAF); build del storefront por WireGuard | El navegador no llama a la Store API; menos superficie (probar códigos o vaciar stock sin el límite de `/checkout/`) | código del storefront; usuario                          |
-| Authenticated Origin Pulls + firewall solo Cloudflare                           | Aunque se conozca la IP, el origen solo acepta peticiones que pasan por Cloudflare (y su WAF)                        | cloudflare-docs (authenticated-origin-pull)             |
-| Caché: manda el origen (`Cache-Control`); sin cabecera, no se cachea            | `private, no-store` → BYPASS; nada por usuario puede quedar en la CDN                                                | cloudflare-docs (cache-rules settings, cache-responses) |
-| Sin Rocket Loader, Email Obfuscation, RUM, Speed Brain ni Bot Fight Mode        | Inyectan JS (presupuesto y CSP), precargan por su cuenta o bloquean webhooks sin poder saltarse                      | cloudflare-docs                                         |
-| Imagen del storefront construida y publicada por el usuario                     | El VPS va justo para el build (2 vCPU, 4 GB)                                                                         | ESTADO §6.0; usuario                                    |
+| Decisión                                                                                                            | Motivo                                                                                                                                  | Fuente consultada                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Tienda en la raíz, `api.`, `admin.`, `imagenes.`; emails desde `develop.`                                           | Primer nivel = certificados gratuitos (Universal SSL + Origin CA)                                                                       | cloudflare-docs; usuario                                                                                 |
+| Reinstalar el VPS (Rebuild de Hetzner)                                                                              | Estado desconocido tras meses con otro despliegue                                                                                       | usuario                                                                                                  |
+| SSH solo por WireGuard (túnel directo portátil ↔ VPS)                                                               | IP dinámica del usuario; no exponer SSH a Internet                                                                                      | usuario                                                                                                  |
+| Access en `admin.` y en la tienda; `api.` sin Access; `X-Robots-Tag: noindex`                                       | Dominio de prueba que no debe indexarse; los webhooks y el navegador necesitan `api.`                                                   | cloudflare-docs; usuario                                                                                 |
+| `api.` solo para el webhook de Stripe (WAF); build del storefront por WireGuard                                     | El navegador no llama a la Store API; menos superficie (probar códigos o vaciar stock sin el límite de `/checkout/`)                    | código del storefront; usuario                                                                           |
+| Authenticated Origin Pulls + firewall solo Cloudflare                                                               | Aunque se conozca la IP, el origen solo acepta peticiones que pasan por Cloudflare (y su WAF)                                           | cloudflare-docs (authenticated-origin-pull)                                                              |
+| Caché: manda el origen (`Cache-Control`); sin cabecera, no se cachea                                                | `private, no-store` → BYPASS; nada por usuario puede quedar en la CDN                                                                   | cloudflare-docs (cache-rules settings, cache-responses)                                                  |
+| Sin Rocket Loader, Email Obfuscation, RUM, Speed Brain ni Bot Fight Mode                                            | Inyectan JS (presupuesto y CSP), precargan por su cuenta o bloquean webhooks sin poder saltarse                                         | cloudflare-docs                                                                                          |
+| AOP **de zona** con CA propia (10 años) y certificado de cliente (5 años); la clave de la CA fuera del VPS          | El certificado global es común a todas las cuentas de Cloudflare: otra zona podría llegar a nuestro origen sin pasar por nuestro Access | cloudflare-docs (authenticated-origin-pull/set-up/zone-level, global)                                    |
+| Caddy: mTLS `require_and_verify` + Origin CA; `trusted_proxies` estático con los rangos de Cloudflare               | Imagen oficial sin módulos extra; los rangos se revisan junto al firewall                                                               | context7 `/websites/caddyserver` (directives/tls, caddyfile/options)                                     |
+| HTML estático `s-maxage=86400` (Caddy) + purga en cada despliegue                                                   | Lo que de verdad aguanta el pico (analisis-js §5 P5); el navegador revalida siempre                                                     | cloudflare-docs (cache-rules: «use cache-control header if present»); usuario                            |
+| CSP por hashes de Astro (`<meta>`) + cabecera de Caddy para `frame-ancestors`/`base-uri`/`form-action`/`object-src` | `<meta>` no admite esas directivas; `staticHeaders` del adapter Node asigna mal las rutas                                               | astro-docs (security.csp); MCP stripe (security/guide, CSP de Stripe.js); código de @astrojs/node 11.1.7 |
+| Solo 443/tcp (sin 80 ni HTTP/3)                                                                                     | Full (strict): Cloudflare siempre conecta por 443; el 80 lo redirige Cloudflare                                                         | cloudflare-docs (full-strict); usuario                                                                   |
+| HSTS 1 año sin `includeSubDomains`                                                                                  | El dominio tendrá otros usos                                                                                                            | usuario                                                                                                  |
+| Imagen del storefront construida y publicada por el usuario                                                         | El VPS va justo para el build (2 vCPU, 4 GB)                                                                                            | ESTADO §6.0; usuario                                                                                     |
 
 ## 4. Cómo usarlo
 
@@ -131,6 +137,24 @@ Todo en el panel (lo hace el usuario). Fuentes: cloudflare-docs (ssl/origin-conf
 - El código de descuento se aplica con `/checkout/?_action=checkout.applyCode` (no llega `POST /store/carts/:id/code` desde fuera): entra en el rate limiting de `/checkout/`.
 - La búsqueda no cabe en la única regla del plan Free: sugerencias y filtros van con `s-maxage=60` en la CDN; se mide con k6 (11-10).
 
+### 4.3 Caddy y CSP (11-3)
+
+**Caddy** (`docker/Caddyfile`, imagen `caddy:2.11.7-alpine`):
+
+- **TLS** (`CADDY_TLS_MODE`): `cloudflare` (por defecto) = certificado Origin CA (`/certs/origin.pem` + `origin.key`) y **mTLS**: `client_auth { mode require_and_verify; trust_pool file /certs/aop-ca.pem }`. Sin el certificado de cliente que presenta Cloudflare (Authenticated Origin Pulls **de zona**, firmado por nuestra CA), el handshake falla. `internal` = CA local de Caddy (prueba local de la fase 10).
+- **IP real**: `trusted_proxies static <rangos de Cloudflare>` + `client_ip_headers CF-Connecting-IP` (los mismos rangos que el firewall de Hetzner, §4.1).
+- **Cabeceras** (los tres dominios): HSTS 1 año (sin `includeSubDomains` ni `preload`), `X-Content-Type-Options`, `Referrer-Policy`, sin `Server`. Tienda: `X-Frame-Options DENY` y una CSP en cabecera con lo que no admite el `<meta>` (`frame-ancestors`, `base-uri`, `form-action`, `object-src`). `X-Robots-Tag: noindex, nofollow` en la tienda según `ROBOTS` (`noindex` por defecto) y siempre en `api.` y `admin.`.
+- **Caché**: `/_astro/*` inmutable 1 año; el **HTML prerenderizado** (`public, max-age=0` de `@astrojs/node`) pasa a `public, max-age=0, s-maxage=86400`: Cloudflare lo guarda 24 h y el navegador revalida (ETag → 304). Las rutas por usuario (`private, no-store`), las server islands (`s-maxage=60`) y los 404 no se tocan.
+- **Solo 443/tcp** publicado (sin 80 ni 443/udp).
+- **Tras cada despliegue: purgar la caché de Cloudflare** (Caching → Configuration → **Purge Everything**). El HTML viejo apunta a ficheros de `/_astro/` que ya no existen en la imagen nueva.
+
+**CSP del storefront** (`astro.config.mjs`, `CSP_ENABLED = true`, se fija en el build):
+
+- Astro escribe en cada página un `<meta http-equiv="content-security-policy">` con `script-src`/`style-src` = `'self'` + hashes de los scripts/estilos inline (runtime de server islands, LiveSync, ThemeInit, `@font-face`, SwatchStyles), más `CSP_DIRECTIVES`: `default-src 'self'`, `img-src 'self' data: <origen de IMAGE_BASE_URL> https://*.stripe.com`, `font-src 'self'`, `connect-src 'self' https://api.stripe.com`, `frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com`. `script-src` añade `https://js.stripe.com https://*.js.stripe.com`. En las rutas on-demand Astro la manda también en cabecera.
+- `markdown.syntaxHighlight: false`: Shiki usa estilos en línea (incompatibles con la CSP) y el contenido no tiene bloques de código.
+- **Regla nueva**: un `<style>`/`<script>` inline que registre su hash con `Astro.csp` debe ir en el `<head>` (`slot="head"` del layout) o en una server island. Desde un componente del `<body>` el hash llega tarde (Astro ya ha escrito el `<meta>`) y el navegador lo bloquea. Por eso `SwatchStyles` sale ahora de `ColorPicker` y lo pone cada página con `slot="head"`. Nada de `style="…"` ni `on*=` en el HTML.
+- El `<meta>` va detrás de los primeros scripts/estilos del `<head>`, pero sus hashes los cubren: el navegador aplica la política a medida que la lee y estos están en ella (comprobado con Chromium: 0 violaciones). `staticHeaders` de `@astrojs/node` (CSP en cabecera también en lo estático) se probó y no vale: su búsqueda por ruta (`pathname.includes`) asigna mal la home y las páginas sin barra final.
+
 ## 5. Cómo testear esta fase
 
 ### 5.1 VPS base (11-1)
@@ -170,6 +194,30 @@ openssl x509 -in /opt/ecommerce/certs/cloudflare-aop-ca.pem -noout -enddate -fin
 
 Resultado (16-oct-2026): todo como se espera. El rate limiting cuenta también las peticiones que Access responde con 302.
 
+### 5.3 Caddy y CSP (11-3)
+
+```bash
+# Repo (portátil)
+pnpm lint && pnpm format:check && pnpm typecheck && pnpm test
+pnpm --filter storefront build && pnpm --filter storefront check:budget
+pnpm --filter storefront test:e2e                    # 187 passed, 9 skipped (con CSP)
+pnpm --filter backend test:integration:http          # 44 passed
+docker run --rm -v $PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro caddy:2.11.7-alpine caddy fmt /etc/caddy/Caddyfile >/dev/null   # sin aviso
+```
+
+Resultado en local (17-oct-2026), con Caddy y certificados de prueba (CA propia + certificado de cliente, `curl --resolve`):
+
+| Petición                                                                    | Resultado                                                                                                          |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| sin certificado de cliente / de otra CA                                     | el handshake falla (`curl` exit 55)                                                                                |
+| home (estático)                                                             | 200, `public, max-age=0, s-maxage=86400`, zstd, HSTS, nosniff, Referrer-Policy, X-Frame, X-Robots, CSP de cabecera |
+| `/_astro/*.css`                                                             | `public, max-age=31536000, immutable` (una vez)                                                                    |
+| `/carrito/`                                                                 | `private, no-store`, CSP de Astro + la de Caddy                                                                    |
+| `/productos/` con `If-None-Match`                                           | 304                                                                                                                |
+| `api.…/health` · `admin.…/`                                                 | 200 + `X-Robots-Tag` · 302 → `/app/` + `X-Frame-Options`                                                           |
+| `LiveSyncData` (sin Caddy)                                                  | `public, max-age=30, s-maxage=60, stale-while-revalidate=300` (Caddy no lo toca: no es `max-age=0`)                |
+| Chromium: home, listado, ficha, correa y landing, búsqueda, carrito, entrar | 0 violaciones de CSP                                                                                               |
+
 ## 6. Criterio de salida
 
 - [ ] Tienda, API y Admin por HTTPS (Full strict) detrás de Cloudflare; Admin y tienda detrás de Access.
@@ -179,9 +227,10 @@ Resultado (16-oct-2026): todo como se espera. El rate limiting cuenta también l
 
 ## 7. Pendientes / riesgos
 
-- **CA de Authenticated Origin Pulls** (`/opt/ecommerce/certs/cloudflare-aop-ca.pem`, `CN=origin-pull.cloudflare.net`) **caduca el 1-nov-2029** (el Origin CA, en 2041): renovarla antes o la tienda deja de responder.
-- AOP **global** usa un certificado común a todas las cuentas de Cloudflare: otra zona podría apuntar a nuestra IP y pasar el mTLS (sin nuestro Access). Se decide en 11-3: AOP de zona (certificado propio) y/o validar el JWT de Access (`Cf-Access-Jwt-Assertion`) en el origen. Fuente: cloudflare-docs (authenticated-origin-pull/set-up/global; self-hosted-public-app «Validate the Access token»).
+- **AOP de zona**: el certificado de cliente que se sube a Cloudflare caduca a los **5 años** y la CA propia a los **10** (fechas exactas en §4.4 al crearlos). Renovar antes o la tienda deja de responder (handshake rechazado). La CA global (`cloudflare-aop-ca.pem`, 2029) deja de usarse.
 - **Logo de los emails**: con la tienda detrás de Access, Gmail/Outlook no pueden descargarlo de `STOREFRONT_URL`. En 11-4: subir `email/logo.png` a R2 y `EMAIL_ASSETS_URL=https://imagenes.hirobordercollie.es`.
 - Antes de producción: borrar `ssh.`, endpoint de WireGuard por IP e IP primaria nueva (§4.1).
+- **Purga de Cloudflare en cada despliegue** (a mano hasta tener `deploy`): automatizarla con un token de solo «Cache Purge».
+- `ROBOTS=index` y quitar Access de la tienda al abrir de verdad.
 - README §4 al cerrar la fase: Docker Engine **29.9.1** en el VPS y en local (antes 29.8.2).
 - Antes de abrir de verdad: `CART_CLEANUP_DAYS` a 30, quitar Access y `X-Robots-Tag` de la tienda, dominio y emails definitivos.
