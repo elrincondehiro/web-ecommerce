@@ -1,0 +1,13 @@
+# Override SOLO para construir la imagen del storefront contra el backend del VPS (fase 11-6).
+# Publica la Store API en el loopback del VPS (127.0.0.1:19000), nunca hacia fuera: el portátil
+# llega con un túnel SSH por WireGuard (`ssh -N -L 19000:127.0.0.1:19000 deploy@10.77.0.1`) y el
+# build lee http://localhost:19000. Al terminar, recrear el backend SIN este fichero.
+#
+#   ./dc -f compose.prod.build.yml up -d --wait backend-server   # abrir
+#   ./dc up -d --wait backend-server                              # cerrar
+#
+# docs/fases/fase11.md §4.7.
+services:
+  backend-server:
+    ports:
+      - "127.0.0.1:19000:9000"

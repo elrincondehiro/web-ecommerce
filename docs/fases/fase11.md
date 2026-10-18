@@ -1,6 +1,6 @@
 # Fase 11 — Despliegue de prueba en Hetzner
 
-> **Estado:** 🚧 en curso (11-0 a 11-3 hechas; siguiente 11-4)
+> **Estado:** 🚧 en curso (11-0 a 11-6 hechas; siguiente 11-7)
 > **Rama/PR:** `feat/fase11-despliegue-prueba` · PR #…
 > **Anterior:** [Fase R](./faseR-relacionados.md) · **Siguiente:** fase 12 (monitorización)
 
@@ -14,9 +14,9 @@ Despliegue **de prueba**, no la producción definitiva: dominio de pruebas, **St
 - [x] **11-1** VPS: sistema limpio, usuario sin root, SSH solo con clave y **solo por WireGuard**, actualizaciones automáticas, Docker, swap; firewall de Hetzner (80/443 solo desde Cloudflare).
 - [x] **11-2** Cloudflare: Full (strict) + Origin CA, Always HTTPS, Access (Admin y tienda), reglas de caché, rate limiting.
 - [x] **11-3** Caddy: Origin CA, `trusted_proxies` + `CF-Connecting-IP`, cabeceras de seguridad, `X-Robots-Tag: noindex`, CSP con Stripe.
-- [ ] **11-4** R2 (bucket de imágenes de prueba, token) y Resend (`RESEND_API_KEY`).
-- [ ] **11-5** Datos: migraciones, usuario del Admin, catálogo mock, imágenes en R2, Meilisearch, `stripe:region`, webhook de Stripe test.
-- [ ] **11-6** Storefront real: build en el portátil contra `api.`, publicado en GHCR por el usuario.
+- [x] **11-4** R2 (bucket de imágenes de prueba, token) y Resend (`RESEND_API_KEY`).
+- [x] **11-5** Datos: migraciones, usuario del Admin, catálogo mock, imágenes en R2, Meilisearch, `stripe:region`, webhook de Stripe test.
+- [x] **11-6** Storefront real: build en el portátil contra `api.`, publicado en GHCR por el usuario.
 - [ ] **11-7** Backups `pg_dump` → bucket R2 privado, con heartbeat y **restauración probada**.
 - [ ] **11-8** Monitorización: agentes Beszel y Dozzle, Uptime Kuma con `/health` (a través de WireGuard).
 - [ ] **11-9** Lista de comprobación de punta a punta y Lighthouse contra el dominio real.
@@ -179,6 +179,54 @@ openssl x509 -req -in aop-client.csr -CA aop-ca.pem -CAkey aop-ca.key -CAserial 
 
 Comprobado (18-oct-2026): `openssl s_client` en el VPS → Origin CA y `Acceptable client certificate CA names: CN=Hiro AOP CA`; `curl` sin certificado de cliente → handshake rechazado (exit 56); a través de Cloudflare `POST api./hooks/payment/…` → **502** (TLS + mTLS correctos, backend aún apagado); puerto 80 cerrado.
 
+### 4.5 R2 y Resend (11-4)
+
+| Pieza                        | Configuración                                                                                                                                                                                                                                                                 |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bucket `imagenes`            | Location hint WEUR (sin jurisdicción → endpoint `https://<account_id>.r2.cloudflarestorage.com`, **sin** `/imagenes` al final). Vaciado. Dominio `imagenes.hirobordercollie.es` activo; `r2.dev` desactivado. Sin CORS (solo `<img>` y descargas del build desde el servidor) |
+| Token `vps-pruebas-imagenes` | Object Read & Write **solo** `imagenes`, 1 año → `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` en `.env.prod`                                                                                                                                                                   |
+| Bucket `hiro-backups`        | Jurisdicción **EU** (endpoint `https://<account_id>.eu.r2.cloudflarestorage.com`), privado, regla de ciclo de vida «borrar a los 30 días»                                                                                                                                     |
+| Token `vps-pruebas-backups`  | Object Read & Write **solo** `hiro-backups`, 1 año; en el gestor de contraseñas del usuario hasta la 11-7                                                                                                                                                                     |
+| Resend `vps-pruebas`         | Sending access, solo `develop.hirobordercollie.es` → `RESEND_API_KEY`. Seguimiento de aperturas/clics desactivado (por defecto)                                                                                                                                               |
+| Logo de los emails           | `imagenes/email/logo.png` (`image/png`, `Cache-Control: public, max-age=86400`) → `EMAIL_ASSETS_URL=https://imagenes.hirobordercollie.es`                                                                                                                                     |
+
+- Subir/borrar objetos sin instalar nada: `curl --aws-sigv4 "aws:amz:auto:s3" --user "$KEY:$SECRET" -T fichero "$S3_ENDPOINT/<bucket>/<clave>"`.
+- Las fotos de los productos las sube Medusa (`images:import`, 11-5): guarda la referencia en la BD.
+- **UTF-8**: `EMAIL_FROM` lleva «ó». Comprobar con `grep -a '^EMAIL_FROM=' .env.prod | od -c` (`303 263`). Para JSON a mano, `\u00f3` y `--data-binary @fichero` (una línea larga pegada en la terminal dio 400 «Request body must be valid JSON»).
+
+Fuentes: cloudflare-docs (r2/api/tokens, r2/reference/data-location, r2/buckets/public-buckets, object-lifecycles, bucket-locks, cors; changelog «Empty a bucket»); resend-docs (api-keys/create-api-key: `sending_access` + `domain_id`; dashboard/domains/tracking; emails/send-email: `Idempotency-Key`); código de `@medusajs/file-s3` 2.21.2.
+
+### 4.6 Datos en el VPS (11-5)
+
+Todo con `./dc` (`/opt/ecommerce/dc`: `docker compose --env-file .env.prod -f compose.prod.yml` con el entorno **vacío**, `env -i`). **Regla**: nunca `export`/`source .env.prod` ni variables con secretos en la shell del VPS. Compose da prioridad a las variables de la shell sobre `--env-file` (Docker docs, _variable-interpolation → precedence_): una `MEILISEARCH_API_KEY=pendiente` que se quedó en la shell tapaba la buena y el backend no arrancaba («The provided API key is invalid»). Un contenedor guarda las variables de cuando se creó: tras cambiar `.env.prod`, `./dc up -d --wait <servicio>` (lo recrea). Ver valores sin mostrarlos: `grep -c '^VAR=prefijo' .env.prod` o `./dc exec -T <svc> sh -c 'printenv VAR | cut -c1-8'`.
+
+| Paso        | Comando / acción                                                                                                                                                                                                                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Stripe test | Endpoint `vps-pruebas` → `https://api.hirobordercollie.es/hooks/payment/stripe_stripe`, eventos `payment_intent.amount_capturable_updated`, `.succeeded`, `.payment_failed`, `.partially_funded`. `STRIPE_API_KEY` (la `sk_test` de siempre), `STRIPE_WEBHOOK_SECRET` (el del endpoint, no el de la CLI) y `PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| Infra       | `IMAGE_TAG=sha-4ad9972`; `./dc up -d --wait postgres redis meilisearch`; key propia de Meilisearch con la master key (`POST /keys`, fase10 §4.3) → `MEILISEARCH_API_KEY`                                                                                                                                                                   |
+| Backend     | `./dc up -d --wait backend-server` (migra) y `backend-worker` (no migra)                                                                                                                                                                                                                                                                   |
+| Seed        | `./dc exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/seed.js` → publishable key a `MEDUSA_PUBLISHABLE_KEY`; `stripe-region.js`                                                                                                                                                                                       |
+| Catálogo    | `catalog/mock` y `catalog/plantilla/correas` por `scp` y `./dc cp` al contenedor (no van en la imagen: `.dockerignore`); `import-catalog.js catalog/mock` (dry-run antes) y `correas-sync.js catalog/correas`                                                                                                                              |
+| Fotos       | `mock-images.js` (picsum, ~460 MB, en el contenedor) e `import-images.js .cache/mock-images` → R2. Después se borran `.cache/mock-images` y `catalog` del contenedor y `datos/` del VPS                                                                                                                                                    |
+| Admin       | `medusa user -e <email> --invite` → token en la terminal (no se envía email; caduca en 24 h) → `https://admin.hirobordercollie.es/app/invite?token=…`                                                                                                                                                                                      |
+
+Resultado (18-oct-2026): 306 productos (`/store/products` con la publishable key), fotos desde `imagenes.hirobordercollie.es`, región España solo con Stripe, índice `product` en Meilisearch, Admin con usuario propio. «Send test event» de Stripe → **200** y 0 errores de firma en el worker. Medusa responde 200 a todo POST en `/hooks/payment/*` y verifica la firma después, en el worker (`payment-webhook` → `constructEvent`; código de `@medusajs/medusa` 2.21.2): mirar siempre los logs del worker. Memoria en reposo: server ~280 MB, worker ~330 MB, Postgres ~50 MB, Meilisearch ~70 MB, Redis ~13 MB, Caddy ~15 MB.
+
+Fuentes: context7 `/medusajs/medusa` (medusa-cli `user --invite`, deployment/general, Stripe provider «Setup Stripe Webhooks»); meilisearch-docs (create API key); código de `@medusajs/payment-stripe` 2.21.2.
+
+### 4.7 Storefront real (11-6)
+
+- **Build en el portátil** contra el backend del VPS por un túnel SSH (por WireGuard) al loopback: `docker/compose.prod.build.yml` publica la Store API solo en `127.0.0.1:19000` del VPS.
+  1. VPS: `./dc -f compose.prod.build.yml up -d --wait backend-server`.
+  2. Portátil: `ssh -N -L 19000:127.0.0.1:19000 deploy@10.77.0.1` (terminal aparte).
+  3. `git worktree add /tmp/build-main main` (la imagen = el commit del tag).
+  4. Publishable key del VPS a un fichero temporal (`ssh … grep … > /tmp/pk`, `chmod 600`) y `docker build --network host -f apps/storefront/Dockerfile --build-arg SITE_URL=https://hirobordercollie.es --build-arg IMAGE_BASE_URL=https://imagenes.hirobordercollie.es --build-arg MEDUSA_BACKEND_URL=http://localhost:19000 --secret id=medusa_publishable_key,src=/tmp/pk -t ghcr.io/elrincondehiro/ecommerce-storefront:sha-<7> .`; `shred -u /tmp/pk`.
+  5. `docker push` (login en GHCR con el PAT del usuario, `write:packages`); `git worktree remove`.
+  6. VPS: `./dc pull storefront && ./dc up -d --wait storefront`; `./dc up -d --wait backend-server` (sin el override: cierra el 19000).
+  7. Cloudflare → **Purge Everything**.
+- Sin `ASTRO_KEY` fija (cada build tiene la suya; con la purga en cada despliegue no hace falta).
+- **Tags**: durante la fase, `sha-<7>` (mismo tag para backend y storefront). `v0.1.0` al cerrar la fase 11; lo crea el usuario (AGENTS §8.3).
+
 ## 5. Cómo testear esta fase
 
 ### 5.1 VPS base (11-1)
@@ -242,6 +290,43 @@ Resultado en local (17-oct-2026), con Caddy y certificados de prueba (CA propia 
 | `LiveSyncData` (sin Caddy)                                                  | `public, max-age=30, s-maxage=60, stale-while-revalidate=300` (Caddy no lo toca: no es `max-age=0`)                |
 | Chromium: home, listado, ficha, correa y landing, búsqueda, carrito, entrar | 0 violaciones de CSP                                                                                               |
 
+### 5.4 R2 y Resend (11-4)
+
+En el VPS, leyendo `.env.prod` sin mostrarlo (`get() { grep -E "^$1=" .env.prod | cut -d= -f2-; }`):
+
+| Comprobación                                                   | Resultado (18-oct-2026)                                                                          |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `PUT` del logo con el token de imágenes                        | 200                                                                                              |
+| `curl -sI https://imagenes.hirobordercollie.es/email/logo.png` | 200, `image/png`, `public, max-age=86400`                                                        |
+| `PUT` en `hiro-backups` con el token de imágenes               | **403** (el token solo vale para su bucket)                                                      |
+| `POST https://api.resend.com/emails` desde `pedidos@develop.…` | 200; email recibido con el logo (al principio sin imagen: tardó en estar disponible en el borde) |
+
+### 5.5 Datos y storefront (11-5, 11-6)
+
+Comprobaciones de máquina a través de Cloudflare Access con un **service token** (`pruebas-portatil`, 1 año; política «Service Auth» solo en la aplicación de la tienda, no en el Admin). En el portátil, fuera del repo: `~/.config/hiro-cf-token` (id y secret, `600`) y `~/.local/bin/cfcurl` (`curl -H "CF-Access-Client-Id: …" -H "CF-Access-Client-Secret: …" "$@"`).
+
+```bash
+cfcurl -s -o /dev/null -D - https://hirobordercollie.es/productos/ | grep -iE "^(cf-cache-status|cache-control)"   # ×2: MISS → HIT
+cfcurl -s -o /dev/null -D - https://hirobordercollie.es/carrito/ | grep -i cf-cache-status                      # BYPASS
+ISL=$(cfcurl -s https://hirobordercollie.es/productos/ | grep -oE '/_server-islands/LiveSyncData[^"]*' | head -1 | sed 's/&amp;/\&/g')
+cfcurl -s -o /dev/null -D - "https://hirobordercollie.es$ISL" | grep -i cf-cache-status                         # ×2: MISS → HIT
+cfcurl -s https://hirobordercollie.es/ | grep -ciE "cloudflareinsights|email-decode|rocket-loader|speculation"  # 0
+curl -s -o /dev/null -w "%{http_code}\n" https://hirobordercollie.es/                                           # 302 (Access)
+```
+
+Resultado (18-oct-2026):
+
+| Comprobación                                               | Resultado                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Imagen `ecommerce-storefront:sha-4ad9972`                  | ~300 fichas, `https://hirobordercollie.es/` en el HTML                                                                                                                                                                                     |
+| HTML estático (`/productos/`)                              | MISS → **HIT**                                                                                                                                                                                                                             |
+| `LiveSyncData`                                             | MISS → **HIT**                                                                                                                                                                                                                             |
+| `/carrito/`                                                | **BYPASS**                                                                                                                                                                                                                                 |
+| Cabeceras                                                  | HSTS, nosniff, Referrer-Policy, X-Frame-Options, X-Robots-Tag, CSP de cabecera; `content-encoding: zstd`; `server: cloudflare` (el del origen se quita en Caddy). `alt-svc: h3` es el borde de Cloudflare hacia el visitante, no el origen |
+| Scripts inyectados por Cloudflare                          | 0                                                                                                                                                                                                                                          |
+| Navegador (home, listado, ficha, búsqueda, carrito, Admin) | todo correcto, sin errores de CSP                                                                                                                                                                                                          |
+| Puertos publicados en el VPS                               | solo `0.0.0.0:443` (Caddy); el 19000 cerrado tras el build                                                                                                                                                                                 |
+
 ## 6. Criterio de salida
 
 - [ ] Tienda, API y Admin por HTTPS (Full strict) detrás de Cloudflare; Admin y tienda detrás de Access.
@@ -256,5 +341,8 @@ Resultado en local (17-oct-2026), con Caddy y certificados de prueba (CA propia 
 - Antes de producción: borrar `ssh.`, endpoint de WireGuard por IP e IP primaria nueva (§4.1).
 - **Purga de Cloudflare en cada despliegue** (a mano hasta tener `deploy`): automatizarla con un token de solo «Cache Purge».
 - `ROBOTS=index` y quitar Access de la tienda al abrir de verdad.
+- **Caducan en oct-2027**: tokens R2 `vps-pruebas-imagenes` y `vps-pruebas-backups` (1 año) y, si se puso caducidad, la API key de Resend `vps-pruebas`. Antes de producción: tokens y key nuevos para el entorno definitivo.
+- Bucket lock en `hiro-backups` (protección frente a borrado malicioso): valorarlo para producción.
+- Service token de Access `pruebas-portatil` caduca en oct-2027.
 - README §4 al cerrar la fase: Docker Engine **29.9.1** en el VPS y en local (antes 29.8.2).
 - Antes de abrir de verdad: `CART_CLEANUP_DAYS` a 30, quitar Access y `X-Robots-Tag` de la tienda, dominio y emails definitivos.
