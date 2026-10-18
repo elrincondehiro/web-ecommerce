@@ -33,6 +33,7 @@ import { breadcrumbJsonLd, productGroupJsonLd } from "$lib/seo";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import ColorPicker from "../../components/correa/ColorPicker.astro";
+import SwatchStyles from "../../components/correa/SwatchStyles.astro";
 import LiveSync from "../../components/LiveSync.astro";
 
 const entry = (await getEntry("correa", "correa"))!;
@@ -84,6 +85,7 @@ const from = Math.min(...tables.map((t) => t.model.lengths[0]?.base ?? Infinity)
       : []),
   ]}
 >
+  <SwatchStyles slot="head" swatches={swatches} picker />
   <Breadcrumbs items={crumbs} />
 
   <section class="mb-12 grid items-start gap-8 md:grid-cols-2">

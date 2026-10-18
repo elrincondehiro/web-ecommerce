@@ -169,7 +169,7 @@ Con `NODE_ENV=production` el proveedor rechaza `EMAIL_TRANSPORT=smtp` (Mailpit e
 ```bash
 # 1. Variables de prueba (ignorado por git): copiar docker/.env.prod.example a docker/.env.prod.local y
 #    rellenar con valores de prueba: REGISTRY=local IMAGE_NAMESPACE=web-ecommerce IMAGE_TAG=prodlocal,
-#    dominios tienda/api/admin.localhost, CADDY_TLS="tls internal", S3_ENDPOINT=http://seaweedfs:8333,
+#    dominios tienda/api/admin.localhost, CADDY_TLS_MODE=internal (fase 11-3; antes CADDY_TLS="tls internal"), S3_ENDPOINT=http://seaweedfs:8333,
 #    S3_FORCE_PATH_STYLE=true, S3_FILE_URL=IMAGE_BASE_URL=http://localhost:18333/medusa,
 #    STOREFRONT_BUILD_BACKEND_URL=http://localhost:19000, secretos con `openssl rand -hex 24`.
 C="docker compose --env-file docker/.env.prod.local -f docker/compose.prod.yml -f docker/compose.prod.local.yml"

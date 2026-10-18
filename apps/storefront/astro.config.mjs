@@ -25,12 +25,31 @@ const IMAGE_BASE_URL = new URL(
 );
 
 /**
- * CSP por hashes de Astro (`security.csp`), prevista para la fase 11. Una sola constante activa la
- * CSP y, vía `import.meta.env.CSP_ENABLED`, el registro de hashes de los scripts inline propios
- * (LiveSync, ThemeInit). Sin CSP no se toca `Astro.csp`: Astro avisa en cada página del build si
- * se usa sin CSP configurada (astro 7.3.5, core/fetch/fetch-state.js getCsp).
+ * CSP por hashes de Astro (`security.csp`, fase 11-3). Una sola constante activa la CSP y, vía
+ * `import.meta.env.CSP_ENABLED`, el registro de hashes de los scripts/estilos inline propios
+ * (LiveSync, ThemeInit, SwatchStyles). Sin CSP no se toca `Astro.csp`: Astro avisa en cada página
+ * del build si se usa sin CSP configurada (astro 7.3.5, core/fetch/fetch-state.js getCsp).
+ * Astro la pone en un `<meta>` (script-src/style-src con hashes + `CSP_DIRECTIVES`); lo que no vale
+ * en `<meta>` (frame-ancestors, base-uri, form-action, object-src) va en cabecera desde Caddy.
  */
-const CSP_ENABLED = false;
+const CSP_ENABLED = true;
+
+/**
+ * Directivas de la CSP además de script-src/style-src (que Astro rellena con 'self' + hashes).
+ * Stripe.js: docs.stripe.com/security/guide#content-security-policy (MCP stripe). Sin
+ * maps.googleapis.com (no usamos Address Element) ni link.com (Link no está activado).
+ * img-src: imágenes de producto (IMAGE_BASE_URL: R2 en producción) e iconos de Stripe.
+ * Fuente: astro-docs (configuration-reference#securitycsp, directives, scriptDirective.resources).
+ * @type {Extract<NonNullable<import("astro").AstroUserConfig["security"]>["csp"], object>["directives"] & {}}
+ */
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  `img-src 'self' data: ${IMAGE_BASE_URL.origin} https://*.stripe.com`,
+  "font-src 'self'",
+  "connect-src 'self' https://api.stripe.com",
+  "frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com",
+];
+const CSP_SCRIPT_RESOURCES = ["'self'", "https://js.stripe.com", "https://*.js.stripe.com"];
 
 /**
  * Datos de prueba (P4 del análisis del JS, docs/analisis-js.md): con `STOREFRONT_DATA=fixtures`
@@ -164,6 +183,9 @@ export default defineConfig({
   // Estático por defecto; las server islands y rutas on-demand las sirve el adapter.
   adapter: node({ mode: "standalone" }),
   trailingSlash: "always",
+  // Sin Shiki: sus estilos inline no son compatibles con la CSP (astro-docs, security.csp) y el
+  // contenido (src/content) no tiene bloques de código.
+  markdown: { syntaxHighlight: false },
   // Redirecciones 301 (Fase E): src/lib/redirects.mjs. El build falla si el mapa no es válido.
   redirects: astroRedirects(),
   // Sitemap sin páginas legales provisionales (noindex hasta tener el texto definitivo, fase 5),
@@ -309,7 +331,14 @@ export default defineConfig({
   },
   security: {
     ...(ALLOWED_DOMAINS.length ? { allowedDomains: ALLOWED_DOMAINS } : {}),
-    ...(CSP_ENABLED ? { csp: true } : {}),
+    ...(CSP_ENABLED
+      ? {
+          csp: {
+            directives: CSP_DIRECTIVES,
+            scriptDirective: { resources: CSP_SCRIPT_RESOURCES },
+          },
+        }
+      : {}),
   },
   vite: {
     define: {

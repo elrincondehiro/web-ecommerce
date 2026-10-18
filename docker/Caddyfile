@@ -1,42 +1,119 @@
-# Caddy de PRODUCCIÓN (fase 10: mínimo funcional). Proxy inverso a los contenedores internos.
-# La configuración fina es la fase 11: Origin CA de Cloudflare (Full strict), trusted_proxies
-# con los rangos de Cloudflare + client_ip_headers CF-Connecting-IP, cabeceras de seguridad, CSP
-# y rate limiting.
+# Caddy de PRODUCCIÓN (fase 11-3). Proxy inverso a los contenedores internos, detrás de Cloudflare
+# (proxy naranja, SSL Full (strict), Authenticated Origin Pulls de zona). docs/fases/fase11.md §4.3.
 #
-# Dominios por variable (docker/.env.prod): STORE_DOMAIN, API_DOMAIN, ADMIN_DOMAIN.
-# CADDY_TLS: vacío = certificados automáticos de Caddy; `tls internal` = CA local de Caddy
-# (prueba en local con *.localhost). En la fase 11 → `tls /certs/origin.pem /certs/origin.key`.
-# Fuente: context7 /websites/caddyserver (caddyfile/concepts: {$VAR:default}; directives encode,
-# reverse_proxy, tls).
-
+# Variables (docker/.env.prod):
+#   STORE_DOMAIN, API_DOMAIN, ADMIN_DOMAIN  dominios públicos.
+#   CADDY_TLS_MODE  cloudflare (por defecto): certificado Origin CA + mTLS de Cloudflare (AOP).
+#                   internal: CA local de Caddy (prueba local de la fase 10, *.localhost).
+#   ROBOTS          noindex (por defecto, entorno de prueba) | index (tienda abierta).
+# Ficheros (montados en /certs, solo lectura): origin.pem + origin.key (Origin CA de Cloudflare) y
+# aop-ca.pem (CA propia que firma el certificado de cliente que Cloudflare presenta, AOP de zona).
+#
+# Fuentes: context7 /websites/caddyserver (caddyfile/options: servers trusted_proxies,
+# client_ip_headers; directives/tls: client_auth, trust_pool file; directives/header: match;
+# caddyfile/concepts: {$VAR:default}, snippets); cloudflare-docs (ssl/origin-configuration:
+# origin-ca, full-strict, authenticated-origin-pull/set-up/zone-level; cloudflare.com/ips-v4|v6).
 {
 	admin off
+	servers {
+		# IP real del visitante: solo se cree CF-Connecting-IP si la conexión viene de Cloudflare.
+		# Rangos de https://www.cloudflare.com/ips-v4 y /ips-v6 (16-oct-2026). Los mismos que el
+		# firewall de Hetzner (fase11.md §4.1): revisarlos juntos.
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		client_ip_headers CF-Connecting-IP
+	}
 }
 
+# ── TLS ──────────────────────────────────────────────────────────────────────────────────────────
+# Cloudflare (Full strict): Origin CA (válido para la raíz y *.dominio) y, además, solo se acepta la
+# conexión si presenta el certificado de cliente firmado por nuestra CA (AOP de zona). Sin él, el
+# handshake falla: nadie que conozca la IP llega a las apps saltándose Cloudflare (ni su Access/WAF).
+(tls_cloudflare) {
+	tls /certs/origin.pem /certs/origin.key {
+		client_auth {
+			mode require_and_verify
+			trust_pool file /certs/aop-ca.pem
+		}
+	}
+}
+
+(tls_internal) {
+	tls internal
+}
+
+# ── Indexado ─────────────────────────────────────────────────────────────────────────────────────
+(robots_noindex) {
+	header X-Robots-Tag "noindex, nofollow"
+}
+
+(robots_index) {
+}
+
+# ── Común a los tres dominios ────────────────────────────────────────────────────────────────────
 (comun) {
-	{$CADDY_TLS}
+	import tls_{$CADDY_TLS_MODE:cloudflare}
 	encode zstd gzip
+	header {
+		# Sin includeSubDomains ni preload: el dominio tendrá otros usos (fase11.md §3).
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
 }
 
+# ── Tienda ───────────────────────────────────────────────────────────────────────────────────────
 {$STORE_DOMAIN:tienda.localhost} {
 	import comun
-	# Assets con hash de Astro: inmutables 1 año (AGENTS §3.3). El resto de Cache-Control lo
-	# pone el storefront (estático, server islands, rutas por usuario `private, no-store`).
+	import robots_{$ROBOTS:noindex}
+
+	# Directivas que no valen en el <meta> de la CSP de Astro (security.csp): van en cabecera. Se
+	# AÑADE (+): en las rutas on-demand Astro manda su CSP (hashes) también en cabecera, y el
+	# navegador aplica todas las políticas a la vez (la de Astro lleva script/style/img/connect/frame).
+	header {
+		+Content-Security-Policy "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		X-Frame-Options "DENY"
+	}
+
+	# Assets con hash de Astro: inmutables 1 año (AGENTS §3.3). `>` = al escribir la respuesta (si
+	# no, la cabecera del adapter, que ya es la misma, se añadía y salía duplicada).
 	@astro path /_astro/*
-	header @astro Cache-Control "public, max-age=31536000, immutable"
+	header @astro >Cache-Control "public, max-age=31536000, immutable"
+
+	# HTML prerenderizado: @astrojs/node lo sirve con `public, max-age=0` (serve-static, `send`).
+	# Cloudflare lo guarda 24 h (s-maxage) y el navegador revalida siempre (ETag → 304). Las rutas por
+	# usuario salen con `private, no-store` y las server islands con su propio s-maxage: no coinciden
+	# con el matcher y no se tocan. Tras cada despliegue: purgar la caché de Cloudflare (fase11.md
+	# §4.3; el HTML viejo apunta a /_astro/ que ya no existen).
+	header Cache-Control "public, max-age=0, s-maxage=86400" {
+		match {
+			status 200
+			header Cache-Control "public, max-age=0"
+			header Content-Type text/html*
+		}
+	}
+
 	reverse_proxy storefront:4321
 }
 
+# ── API (Store API y webhooks) ───────────────────────────────────────────────────────────────────
+# En Cloudflare, el WAF solo deja pasar POST /hooks/payment/* (fase11.md §4.2): el navegador no la
+# usa y el storefront habla con el backend por la red interna.
 {$API_DOMAIN:api.localhost} {
 	import comun
+	header X-Robots-Tag "noindex, nofollow"
 	reverse_proxy backend-server:9000
 }
 
-# Admin de Medusa en su propio dominio (protegible con Cloudflare Access, fase 11). La imagen se
-# compila sin `admin.backendUrl`: el Admin llama a su mismo origen (/admin, /auth), que se reenvía
-# al backend. La Store API pública va por API_DOMAIN.
+# ── Admin de Medusa (detrás de Cloudflare Access) ────────────────────────────────────────────────
+# La imagen se compila sin `admin.backendUrl`: el Admin llama a su mismo origen (/admin, /auth), que
+# se reenvía al backend. Nunca se indexa.
 {$ADMIN_DOMAIN:admin.localhost} {
 	import comun
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		X-Frame-Options "DENY"
+	}
 	redir / /app/ 302
 	reverse_proxy backend-server:9000
 }
