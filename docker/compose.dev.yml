@@ -36,7 +36,7 @@ services:
       retries: 20
 
   meilisearch:
-    image: getmeili/meilisearch:v1.54.3
+    image: getmeili/meilisearch:v1.55.0
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
@@ -86,7 +86,7 @@ services:
 
   # Captura de emails en local (SMTP :1025, UI :8025)
   mailpit:
-    image: axllent/mailpit:v1.31.5
+    image: axllent/mailpit:v1.31.6
     restart: unless-stopped
     ports:
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
@@ -97,7 +97,7 @@ services:
   # El whsec_ para STRIPE_WEBHOOK_SECRET (apps/backend/.env):
   #   docker compose --env-file docker/.env -f docker/compose.dev.yml run --rm stripe-cli listen --print-secret
   stripe-cli:
-    image: stripe/stripe-cli:v1.53.1
+    image: stripe/stripe-cli:v1.54.1
     profiles: ["stripe"]
     command:
       - listen

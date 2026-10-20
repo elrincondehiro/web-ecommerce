@@ -11,7 +11,7 @@
 # El Admin se compila SIN `admin.backendUrl` (MEDUSA_BACKEND_URL vacío en el build): usa el
 # origen del navegador, así la imagen no queda atada a un dominio.
 
-ARG NODE_IMAGE=node:24.21.0-alpine3.24
+ARG NODE_IMAGE=node:24.22.0-alpine3.24
 
 # ── base: Node + pnpm (versión de `packageManager`, vía corepack) ────────────────────────────────
 FROM ${NODE_IMAGE} AS base

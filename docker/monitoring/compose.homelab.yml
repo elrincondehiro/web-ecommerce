@@ -56,7 +56,7 @@ services:
       TOKEN: ${BESZEL_TOKEN_VM:-}
 
   dozzle:
-    image: amir20/dozzle:v11.3.2
+    image: amir20/dozzle:v11.3.4
     restart: unless-stopped
     environment:
       # Agente del VPS por el túnel; `|nombre` = cómo sale en la interfaz
