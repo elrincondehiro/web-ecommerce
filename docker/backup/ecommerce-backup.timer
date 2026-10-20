@@ -1,0 +1,12 @@
+# Cada día a las 03:30 (hora de Madrid), antes del reinicio automático de las 04:30 (fase 11-1).
+# Persistent: si el VPS estaba apagado a esa hora, se ejecuta al arrancar.
+[Unit]
+Description=Backup diario de la tienda
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Europe/Madrid
+Persistent=yes
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

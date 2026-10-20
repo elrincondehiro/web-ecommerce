@@ -5,6 +5,8 @@
 // responda de forma estable y se avisa del stock; no se ejecuta nada en el backend (un
 // `medusa exec` desde aquí reiniciaría el `medusa develop` en marcha).
 // Fuente: context7 /microsoft/playwright (global setup).
+import { REMOTE } from "./_remote";
+
 const BACKEND = process.env.E2E_BACKEND_URL ?? "http://localhost:9000";
 
 async function healthy(): Promise<boolean> {
@@ -16,6 +18,17 @@ async function healthy(): Promise<boolean> {
 }
 
 export default async function globalSetup(): Promise<void> {
+  // Contra un despliegue (e2e/_remote.ts): basta con que la tienda responda.
+  if (REMOTE) {
+    const res = await fetch(new URL("/health/", process.env.E2E_BASE_URL)).catch(() => null);
+    if (!res?.ok) {
+      throw new Error(
+        `${process.env.E2E_BASE_URL}/health/ → ${res?.status ?? "sin respuesta"}: ¿Bypass de ` +
+          "Access para esta IP?",
+      );
+    }
+    return;
+  }
   // 3 respuestas seguidas con 1 s de separación: un develop que se está reiniciando falla alguna.
   const deadline = Date.now() + 90_000;
   let streak = 0;

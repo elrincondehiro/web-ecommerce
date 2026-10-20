@@ -15,7 +15,8 @@
     "fixtures:update": "node ./scripts/update-fixtures.mjs",
     "start": "HOST=0.0.0.0 PORT=4321 node --env-file-if-exists=.env ./dist/server/entry.mjs",
     "test:e2e": "playwright test",
-    "lhci": "lhci autorun"
+    "lhci": "lhci autorun",
+    "lhci:remote": "lhci autorun --config=./lighthouserc.remote.cjs"
   },
   "engines": {
     "node": "24.21.0"

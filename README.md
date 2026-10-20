@@ -140,10 +140,12 @@ web-ecommerce/
 ├── docker/
 │   ├── compose.dev.yml          # SOLO infraestructura para desarrollo local
 │   ├── compose.prod.yml         # stack completo para el VPS
-│   ├── caddy/Caddyfile
+│   ├── Caddyfile                # Caddy de producción (Origin CA, mTLS de Cloudflare, cabeceras, caché)
 │   ├── .env.example             # credenciales/puertos de la infra local (copiar a .env)
-│   ├── monitoring/              # compose.homelab.yml (Kuma, Beszel hub, Dozzle, GlitchTip, cloudflared)
+│   ├── monitoring/              # compose.homelab.yml (Kuma, Beszel hub, Dozzle) y compose.agents.yml (VPS)
+│   ├── backup/                  # backup.sh + timer de systemd (pg_dump cifrado con age → R2) y restore-test.sh
 │   └── postgres/init/           # scripts init opcionales
+├── loadtest/k6/                 # prueba de carga (k6 2.3.0, fase 11-10)
 ├── .github/workflows/           # CI (Gitea Actions también los lee)
 ├── docs/fases/                  # prefase.md, fase0.md … faseN.md (qué se hizo y cómo testearlo)
 ├── .pi/mcp.json                 # MCPs de documentación del proyecto (sin secretos)
@@ -158,7 +160,7 @@ web-ecommerce/
 
 ## 4. Versiones fijadas
 
-**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 14-oct-2026 (cierre de la Fase E; sin cambios de dependencias desde la Fase C).
+**Tabla de referencia**, no fuente de verdad. Las versiones vigentes son las de los ficheros (`package.json` + `pnpm-lock.yaml`, `docker/*.yml`, `.github/workflows/*`, `.node-version`), que actualiza **Renovate** mediante PR. Esta tabla se **sincroniza al cerrar cada fase**. Verificación inicial: 30-sep-2026 · última sincronización: 21-oct-2026 (cierre de la fase 11).
 
 Política:
 
@@ -174,31 +176,32 @@ Política:
 | Node.js (LTS "Krypton")           | **24.21.0**                             | `.node-version` (fnm) y `engines`                                                                                                                |
 | pnpm                              | **12.10.1**                             | `packageManager` en `package.json` raíz                                                                                                          |
 | fnm                               | 1.39.0                                  | host                                                                                                                                             |
-| Docker Engine                     | 29.8.2                                  | host / VPS                                                                                                                                       |
+| Docker Engine                     | 29.9.1                                  | host / VPS                                                                                                                                       |
 | Docker Compose                    | 5.6.0                                   | host / VPS                                                                                                                                       |
 | git                               | 2.56.0                                  | host                                                                                                                                             |
-| Gitea                             | **28.0.0** (nuevo esquema: 1.27.x → 28) | servidor Gitea (LXC Debian 13, binario)                                                                                                          |
+| Gitea                             | **28.1.0** (nuevo esquema: 1.27.x → 28) | servidor Gitea (LXC Debian 13, binario)                                                                                                          |
 | gitea-runner (antes `act_runner`) | 4.0.1                                   | binario en el LXC (≥ 4 GB RAM + 1 GB swap: Renovate usa ~1 GB), runner **de usuario**; etiqueta `ubuntu-latest` → `docker://node:24.21.0-trixie` |
 
 ### 4.2 Imágenes Docker
 
-| Servicio                | Imagen                            | Uso                                                                           |
-| ----------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
-| Node (base Dockerfiles) | `node:24.21.0-alpine3.24`         | build y runtime de backend y storefront (sintaxis `docker/dockerfile:1.28.0`) |
-| PostgreSQL              | `postgres:17.11-alpine`           | dev + prod                                                                    |
-| Redis                   | `redis:8.10.2-alpine`             | dev + prod                                                                    |
-| Meilisearch             | `getmeili/meilisearch:v1.54.3`    | dev + prod                                                                    |
-| Caddy                   | `caddy:2.11.4-alpine`             | prod                                                                          |
-| SeaweedFS (S3 local)    | `chrislusf/seaweedfs:4.48`        | solo dev (en prod → Cloudflare R2)                                            |
-| Mailpit                 | `axllent/mailpit:v1.31.4`         | solo dev                                                                      |
-| Stripe CLI              | `stripe/stripe-cli:v1.53.1`       | solo dev (webhooks)                                                           |
-| Renovate                | `renovate/renovate:44.149.0`      | CI (Gitea Actions, workflow `renovate.yml`)                                   |
-| Uptime Kuma             | `louislam/uptime-kuma:2.5.5`      | monitorización · homelab                                                      |
-| Beszel hub              | `henrygd/beszel:0.20.0`           | monitorización · homelab                                                      |
-| Beszel agent            | `henrygd/beszel-agent:0.20.0`     | monitorización · VPS Hetzner (y homelab)                                      |
-| Dozzle                  | `amir20/dozzle:v11.1.3`           | logs · homelab (UI) + VPS (modo agent)                                        |
-| GlitchTip               | `glitchtip/glitchtip:6.2.6`       | errores de aplicación · homelab                                               |
-| cloudflared             | `cloudflare/cloudflared:2026.9.3` | túnel para exponer GlitchTip/Beszel del homelab sin abrir puertos             |
+| Servicio                                            | Imagen                            | Uso                                                                           |
+| --------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
+| Node (base Dockerfiles)                             | `node:24.21.0-alpine3.24`         | build y runtime de backend y storefront (sintaxis `docker/dockerfile:1.28.0`) |
+| PostgreSQL                                          | `postgres:17.11-alpine`           | dev + prod                                                                    |
+| Redis                                               | `redis:8.10.2-alpine`             | dev + prod                                                                    |
+| Meilisearch                                         | `getmeili/meilisearch:v1.54.3`    | dev + prod                                                                    |
+| Caddy                                               | `caddy:2.11.7-alpine`             | prod                                                                          |
+| SeaweedFS (S3 local)                                | `chrislusf/seaweedfs:4.48`        | solo dev (en prod → Cloudflare R2)                                            |
+| Mailpit                                             | `axllent/mailpit:v1.31.5`         | solo dev                                                                      |
+| Stripe CLI                                          | `stripe/stripe-cli:v1.53.1`       | solo dev (webhooks)                                                           |
+| Renovate                                            | `renovate/renovate:44.151.2`      | CI (Gitea Actions, workflow `renovate.yml`)                                   |
+| Uptime Kuma                                         | `louislam/uptime-kuma:2.5.6`      | monitorización · homelab (VM `monitor-kbd`, fase 11-8)                        |
+| Beszel hub                                          | `henrygd/beszel:0.21.0`           | monitorización · homelab                                                      |
+| Beszel agent                                        | `henrygd/beszel-agent:0.21.0`     | monitorización · VPS Hetzner (y homelab)                                      |
+| Dozzle                                              | `amir20/dozzle:v11.3.2`           | logs · homelab (UI) + VPS (modo agent)                                        |
+| k6                                                  | `grafana/k6:2.3.0`                | prueba de carga (`loadtest/`, fase 11-10) · desde la VM del homelab           |
+| GlitchTip _(propuesto)_                             | `glitchtip/glitchtip:6.2.6`       | errores de aplicación · homelab                                               |
+| cloudflared _(descartado en la fase 11: WireGuard)_ | `cloudflare/cloudflared:2026.9.3` | —                                                                             |
 
 > MinIO se descarta: ha dejado de publicar imágenes en Docker Hub.
 
@@ -635,9 +638,9 @@ Modelo **híbrido autoalojado en dos máquinas**: el VPS de la tienda solo ejecu
 
 | Necesidad                                                                                | Herramienta                                     | Dónde                                     | RAM aprox.                |
 | ---------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------- | ------------------------- |
-| Disponibilidad (tienda, API, admin, certificado, tiempo de respuesta) + página de estado | **Uptime Kuma** 2.5.5                           | homelab                                   | ~150 MB                   |
-| Métricas de host y contenedores (CPU, RAM, disco, red), histórico y alertas              | **Beszel** 0.20.0 (hub + agent)                 | hub: homelab · agent: VPS y homelab       | hub ~50 MB · agent ~15 MB |
-| Logs de contenedores en vivo                                                             | **Dozzle** v11.1.3                              | UI: homelab · agent: VPS                  | ~30 MB por nodo           |
+| Disponibilidad (tienda, API, admin, certificado, tiempo de respuesta) + página de estado | **Uptime Kuma** 2.5.6                           | homelab                                   | ~150 MB                   |
+| Métricas de host y contenedores (CPU, RAM, disco, red), histórico y alertas              | **Beszel** 0.21.0 (hub + agent)                 | hub: homelab · agent: VPS y homelab       | hub ~50 MB · agent ~15 MB |
+| Logs de contenedores en vivo                                                             | **Dozzle** v11.3.2                              | UI: homelab · agent: VPS                  | ~30 MB por nodo           |
 | Errores de aplicación (traza, release, usuario afectado)                                 | **GlitchTip** 6.2.6 (API compatible con Sentry) | homelab (con su propio Postgres + Valkey) | ~500 MB–1 GB              |
 | Heartbeats de jobs (backup diario, rebuild)                                              | Uptime Kuma (monitor _push_)                    | homelab                                   | —                         |
 | Vigilar al homelab                                                                       | UptimeRobot o Healthchecks.io (free)            | externo                                   | —                         |
@@ -651,7 +654,7 @@ El homelab está detrás de un router doméstico (DuckDNS). Dos necesidades:
 1. **VPS → homelab** (Beszel agent y SDK de errores empujan datos): exponer **Beszel hub** y **GlitchTip** con **Cloudflare Tunnel** (`cloudflared`, sin abrir puertos en el router) en subdominios propios (p. ej. `status.`, `errors.`, `metrics.`), protegidos con **Cloudflare Access** salvo los endpoints de ingesta.
 2. **Homelab → VPS** (Dozzle UI lee logs del agente): **red privada** entre ambas máquinas — **Tailscale** (más simple) o **WireGuard** (sin terceros). El agente de Dozzle solo escucha en la interfaz privada.
 
-> Decisión pendiente antes de la fase 12: **Tailscale o WireGuard**.
+> **Hecho en la fase 11-8** ([fase11.md](./docs/fases/fase11.md) §4.9): **WireGuard** (sin terceros) y sin `cloudflared`. El hub de Beszel conecta por SSH al agente del VPS (no al revés) y el heartbeat del backup llega a Kuma por el túnel: no hace falta exponer nada del homelab. Lo que queda para la fase 12: GlitchTip + SDK de errores y el vigilante externo del homelab.
 
 ### 12.2 Integración con la aplicación
 
@@ -690,7 +693,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | L Lista de deseos y puntos             | [faseL-deseos-puntos.md](./docs/fases/faseL-deseos-puntos.md)                                    | ✅     |
 | P Códigos descuento                    | [faseP-codigos.md](./docs/fases/faseP-codigos.md)                                                | ✅     |
 | R Relacionados y venta cruzada         | [faseR-relacionados.md](./docs/fases/faseR-relacionados.md)                                      | ✅     |
-| 11 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| 11 Despliegue de prueba (Hetzner)      | [fase11.md](./docs/fases/fase11.md)                                                              | ✅     |
+| 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 

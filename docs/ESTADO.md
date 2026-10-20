@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 15-oct-2026 · Fases L, P y R cerradas (#52–#57); análisis del JS hecho ([analisis-js.md](./analisis-js.md)). **Siguiente: fase 11 (despliegue de PRUEBA en Hetzner)** → empezar por **§6.0 Handover**.
+> Última actualización: 21-oct-2026 · **Fase 11 (despliegue de prueba en Hetzner) cerrada**. **Siguiente: a decidir** (fase 12, pedidos de invitado o fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -31,6 +31,7 @@
 | L Lista de deseos y puntos                  | ✅     | [faseL-deseos-puntos.md](./fases/faseL-deseos-puntos.md)             |
 | P Códigos descuento                         | ✅     | [faseP-codigos.md](./fases/faseP-codigos.md)                         |
 | R Relacionados y venta cruzada              | ✅     | [faseR-relacionados.md](./fases/faseR-relacionados.md)               |
+| 11 Despliegue de prueba (Hetzner)           | ✅     | [fase11.md](./fases/fase11.md)                                       |
 
 Roadmap completo y tiempos: README §13.
 
@@ -122,66 +123,39 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - Gitea **28.1.0** (actualizado el 15-oct-2026: ya salta bien los jobs con `needs:` sobre uno saltado; reparto del CI reaplicado en #56) en un LXC Debian 13 (Proxmox, homelab), SSH en el puerto 2222 (`gitea:jacknoddy/web-ecommerce.git`). GitHub: `elrincondehiro/web-ecommerce` (réplica).
 - **gitea-runner 4.0.1** de **usuario**, binario en el mismo LXC (4 GB RAM + 1 GB swap), `capacity: 2`. La etiqueta `ubuntu-latest` = `docker://node:24.21.0-trixie` (Debian 13 + Node 24; **no** es la imagen Ubuntu de GitHub).
 - ⚠️ El build del backend llega a unos 3,7 GB de pico: dos builds a la vez pueden agotar la memoria. El usuario lo deja así de momento.
-- Producción futura: VPS **Hetzner** (Debian 13). Monitorización híbrida (README §12); red privada **WireGuard** preferida (se decide en la fase 12).
+- VPS **Hetzner** CPX22 (Debian 13) con el despliegue de prueba (fase 11). Monitorización híbrida en la VM `monitor-kbd` del homelab (Proxmox), unida al VPS por **WireGuard** (README §12, fase11 §4.9).
 
 ## 6. Siguiente
 
-## 6.0 Handover → sesión nueva: fase 11 (despliegue de prueba en Hetzner) — LEER PRIMERO
+## 6.0 Handover → sesión nueva tras la fase 11 — LEER PRIMERO
 
-**Estado del repo (15-oct-2026):** `main` = `c06ea99`, igual en local, Gitea y GitHub. No quedan ramas pendientes. Todo lo hablado está mergeado:
+**Fase 11 (despliegue de PRUEBA en Hetzner): ✅ cerrada** (21-oct-2026). Todo el detalle en [fase11.md](./fases/fase11.md); aquí solo lo necesario para seguir.
 
-| PR        | Qué                                                                                                                                          |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| #52 / #53 | Lista de deseos y programa de puntos (Fase L)                                                                                                |
-| #54       | Códigos descuento (Fase P)                                                                                                                   |
-| #55       | Cabecera sin parpadeo ni saltos y política de cookies completa                                                                               |
-| #56       | CI: en Gitea solo en el PR y sin Lighthouse; GitHub corre todo                                                                               |
-| #57       | Relacionados y venta cruzada (Fase R), con el análisis del JS (SiteClient a 2 KB, fixtures fuera de producción, sesión en el HTML on-demand) |
+- **PRs**: #59 (11-0 a 11-2), #60 (Caddy + CSP), #61 (R2, Resend, datos, storefront real) y el de `feat/fase11-backups-monitorizacion` (backups, monitorización, e2e/Lighthouse remotos, k6 y cierre). **Tag `v0.1.0`**: lo crea el usuario tras el merge.
+- **Qué hay desplegado** (`https://hirobordercollie.es`, `api.`, `admin.`, `imagenes.`): VPS Hetzner CPX22 Debian 13, Docker 29.9.1, `docker/compose.prod.yml` con imágenes `sha-4ad9972` (storefront construido en el portátil, fase11 §4.7). Stripe **test**, 306 productos mock, emails reales por Resend desde `develop.`, fotos en R2. Tienda y Admin detrás de Cloudflare Access; `X-Robots-Tag: noindex`.
+- **Acceso**: SSH **solo por WireGuard** (`wg-vps` en el portátil → `deploy@10.77.0.1`); en el VPS, siempre `./dc` (compose con `env -i`; nunca exportar variables de `.env.prod`). Monitorización en la VM `monitor-kbd` del homelab (`./dcm`): Kuma, Beszel, Dozzle; agentes del VPS solo en la IP del túnel.
+- **Cloudflare**: Full (strict) + Origin CA, **AOP de zona con CA propia** (mTLS: el origen solo acepta Cloudflare), WAF en `api.` (solo `POST /hooks/payment/*`), caché manda el origen (HTML `s-maxage=86400`, purgar en cada despliegue), rate limiting. Las reglas **temporales** de las pruebas (Bypass por IP y Skip del rate limiting) se quitan al cerrar: para repetir e2e/Lighthouse/k6 hay que volver a crearlas mientras duren.
+- **Backups**: diario 03:30 cifrado con age → R2 `hiro-backups`, heartbeat a Kuma; restauración probada (`docker/backup/restore-test.sh`, en el portátil).
+- **Medidas**: Lighthouse móvil 99–100 en Rend./A11y/BP (SEO 61 esperado por `noindex`); LCP de fichas ~1,8–2 s (foto principal). Carga (k6, fase11 §5.7): **50 páginas/s durante 10 min vía Cloudflare con 0 errores** y el VPS al 60 % de CPU; **sin Cloudflare el VPS aguanta ~20 páginas/s** (Medusa satura la CPU con las server islands).
 
-**Qué quiere el usuario:**
+**Comandos de pruebas contra el despliegue** (con las reglas temporales de Cloudflare activas):
 
-- **Fase 11 = despliegue de prueba**, no producción definitiva:
-  - un **dominio de pruebas** que ya tiene en Cloudflare (no es el definitivo); pedirle los dominios y subdominios al empezar;
-  - **todo funcionando:** emails (Resend), imágenes (R2), Caddy, panel de Admin, pagos;
-  - **Stripe en modo TEST**;
-  - **productos mock**;
-  - medir la **latencia** del servidor.
-- **Guiarle paso a paso:** él hace lo de los paneles (Hetzner, Cloudflare, Resend, Stripe) y ejecuta los comandos que le diga en el VPS. Explicarle cada paso.
-- **Prueba de carga** del pico del anuncio: unos 40 000 seguidores, del 1 al 5 % que entra a curiosear → 10–15 páginas/s; objetivo con margen, **50 páginas/s durante 10 min**. Con **k6** desde el homelab o el portátil, nunca desde el VPS. k6 es una herramienta nueva: **pedirle aprobación**.
+```bash
+E2E_BASE_URL=https://hirobordercollie.es pnpm --filter storefront test:e2e
+CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromium.executablePath()') pnpm --filter storefront lhci:remote
+# k6 desde la VM: loadtest/README.md
+```
 
-**Plan propuesto y aceptado en general** (detallarlo en `docs/fases/fase11.md` desde `PLANTILLA.md`; REGLA Nº 1 en cada subfase):
+**Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
 
-| Subfase | Contenido                                                                                                                                                                                                                                                                                                 |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 11-0    | Requisitos del usuario: dominio y subdominios (tienda, `api.`, `admin.`, `img.`), dominio verificado en Resend (SPF/DKIM), VPS creado.                                                                                                                                                                    |
-| 11-1    | VPS: usuario sin root, solo SSH con clave, actualizaciones automáticas, Docker, swap. **Firewall de Hetzner:** 80/443 solo desde las IP de Cloudflare; SSH desde su IP o la VPN.                                                                                                                          |
-| 11-2    | Cloudflare: Full (strict) + certificado Origin CA, Always HTTPS, **Access delante de `admin.`** (y, si quiere, de toda la tienda de prueba), rate limiting (entrar, registro, checkout, búsqueda y `POST /store/carts/:id/code`; en el plan gratuito, periodo de 10 s y acción «bloquear»).               |
-| 11-3    | Caddy (`docker/Caddyfile`, ahora mínimo): Origin CA, `trusted_proxies` de Cloudflare + `CF-Connecting-IP`, cabeceras de seguridad, CSP que permita Stripe (`CSP_ENABLED` en `astro.config.mjs` está en `false`).                                                                                          |
-| 11-4    | R2 (bucket, dominio `img.`, token) y `RESEND_API_KEY`. En producción no hay Mailpit: los emails llegan de verdad (a sus direcciones).                                                                                                                                                                     |
-| 11-5    | Datos: migraciones, usuario del Admin, `catalog:mock` + `catalog:import`, `correas:sync`, imágenes a R2, índice de Meilisearch, `stripe:region`. Webhook de Stripe test → `https://api.<dominio>/hooks/payment/stripe_stripe` + `STRIPE_WEBHOOK_SECRET`.                                                  |
-| 11-6    | Storefront real: se genera el catálogo en el build contra la API pública. **Recomendado:** construir la imagen en el portátil u homelab (la key como build secret) y subirla a GHCR; el VPS va justo (2 vCPU, 4 GB). Ahora `images.yml` publica el storefront con fixtures (`-fixtures`, no desplegable). |
-| 11-7    | Backups: `pg_dump` → R2, con heartbeat y **restauración probada**.                                                                                                                                                                                                                                        |
-| 11-8    | Monitorización (README §12): agentes Beszel y Dozzle en el VPS, Uptime Kuma en el homelab con `/health`. Preguntar si ya tiene Tailscale o WireGuard.                                                                                                                                                     |
-| 11-9    | Lista de comprobación de punta a punta: pago 4242 y 3DS, emails, imágenes, Admin detrás de Access, puntos, códigos, lista de deseos, relacionados, búsqueda, sin JS, Lighthouse contra el dominio real.                                                                                                   |
-| 11-10   | Prueba de carga con k6 (recorridos home → listado → ficha; un 10 % añade al carrito; un 2 % llega al checkout sin pagar). Dos tandas: a través de Cloudflare (regla temporal que deje pasar su IP) y directa al origen.                                                                                   |
+**Fase propia pendiente — pedidos de invitado en la cuenta** (antes del despliegue definitivo): Medusa deja los pedidos de invitado en un cliente aparte (`has_account=false`); al registrarse con el mismo email no salen en «Mis pedidos» ni dan puntos. Decidir A (pasarlos al verificar el email: subscriber + workflow) o B (transferencia oficial de Medusa con aceptación), puntos retroactivos y el caso «cliente con cuenta que compra sin entrar». Consultar context7 `/medusajs/medusa` (_customer-accounts_, _order transfer_).
 
-**Puntos técnicos a no olvidar:**
-
-- **Caché de Cloudflare:**
-  - el HTML estático sale con `public, max-age=0` y Cloudflare **no** cachea HTML por defecto: hace falta una **regla de caché** para las páginas estáticas, respetando el `private, no-store` de las rutas por usuario;
-  - **`LiveSyncData`** ya manda `s-maxage=60, swr=300`: comprobar `CF-Cache-Status: HIT`;
-  - es lo que de verdad importa para el pico (`docs/analisis-js.md` §5 P5).
-- **Variables:** las del backend están en `docker/compose.prod.yml` (bloque común de server y worker) y en `docker/.env.prod.example`. Antes de abrir de verdad, `CART_CLEANUP_DAYS` a 30 (hoy 5).
-- **Stock:** los e2e de checkout gastan el cordón `CUERDA-AZUL-NYLON`, y `stock:mock` no repone las piezas de las correas. En local se repone con `updateInventoryLevelsWorkflow` en un script temporal.
-- **CI:** Gitea 28.1.0 con el reparto de #56. Comprobar que el push a `main` en Gitea no deja jobs «Waiting» (si pasa, revertir). `lighthouse` no es check obligatorio en Gitea.
+**Siguiente** (a decidir con el usuario): fase 12 (resto de monitorización: GlitchTip + SDK de errores solo en servidor, vigilante externo del homelab), la fase de pedidos de invitado, o la 13 (rendimiento: LCP de fichas, capacidad sin CDN, rebuild por webhook).
 
 **Pendientes que no son de la fase 11** (no bloquean):
 
 - **Textos de la gestoría**, todos provisionales: condiciones de compra (con el apartado de códigos), condiciones del programa de puntos, privacidad, cookies y el aviso de puntos del email de confirmación.
-- **Fase R:**
-  - envío gratis: con regla de precio `item_total`, y el «te faltan X €» saldría de ahí (faseR §4);
-  - upselling;
-  - alertas de bajada de precio y reposición en la lista de deseos (R8).
+- **Fase R:** envío gratis por regla de precio `item_total` («te faltan X €»), upselling, alertas de bajada de precio y reposición en la lista de deseos (R8).
 - **Fase L:** automatizar la devolución de los puntos canjeados en devoluciones (faseL §6.4); revisar a mano el widget de puntos del Admin.
 - **Fase P:** no crear códigos sobre el envío ni promociones automáticas sin revisarlo (faseP §7).
 
@@ -191,8 +165,10 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 - Plan + confirmación antes de cada subfase (REGLA Nº 1); preguntar las dudas.
 - Varias subfases por PR, porque Gitea es lento.
 - Él crea las PR y hace el merge con squash; yo hago commit y push de la rama y dejo la descripción de la PR en `/tmp/pr-*.md`.
+- En el VPS y la VM los comandos los ejecuta él: **cortos, uno por línea**, sin variables sueltas en la shell; los secretos los escribe él directamente (`nano`), nunca por el chat. El repo es público: nada de IP, puertos de SSH ni datos personales.
 - Antes de cada PR, la batería completa: lint, formato, typecheck, unitarios, build, `check:budget`, HTTP del backend y e2e. Los e2e necesitan el build completo del storefront servido con `pnpm start` y su `medusa develop` con `EMAIL_TRANSPORT=smtp`.
 - No tocar sus procesos (su `medusa develop` en :9000); parar los míos al terminar.
+- Context7: si el MCP se queda sin cuota, la API REST con la clave de `~/.pi/agent/mcp.json`.
 
 - **Fase 4 (carrito): cerrada** (PR #18, `ce526aa`). Detalle, medidas y pendientes en [fase4.md](./fases/fase4.md) §5–8.
 - **Fase 5 (checkout + Stripe): cerrada** (PR #20, `72dd7e4`). Resultados en [fase5.md](./fases/fase5.md) §5.1 y pendientes en §7.

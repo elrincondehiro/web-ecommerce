@@ -149,7 +149,9 @@ test("tarjetas.json no es público; un solo panel de filtros; fragmento", async 
   expect(html).toMatch(/<source srcset="\/_astro\/[^"]+\.avif/);
   // Fragmento del modelo híbrido: sin <html>, mismos resultados, canónico (301) y noindex
   const part = await page.request.get("/buscar/parcial/?q=abrijo");
-  expect(part.headers()["x-robots-tag"]).toBe("noindex");
+  // En un despliegue Caddy añade `noindex, nofollow` al de la app (ROBOTS=noindex): basta con que
+  // diga noindex.
+  expect(part.headers()["x-robots-tag"]).toMatch(/\bnoindex\b/);
   const body = await part.text();
   expect(body).not.toContain("<html");
   expect(body.match(/data-filter-panel/g)).toHaveLength(1);

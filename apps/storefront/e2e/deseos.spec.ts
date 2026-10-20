@@ -4,6 +4,7 @@
 //   a la página; guardar con sesión (aviso :target, idempotente); /cuenta/deseos/ con quitar.
 // - Con JS: toast sin recargar; sin sesión navega a «Entrar»; la página no carga bundles nuevos.
 import { expect, test, type Page } from "@playwright/test";
+import { skipIfRemote, testEmail } from "./_remote";
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "Secreta-123";
@@ -68,9 +69,10 @@ async function firstProduct(page: Page) {
 }
 
 test.describe("lista de deseos sin JS", () => {
+  skipIfRemote();
   test.use({ javaScriptEnabled: false });
   test.describe.configure({ mode: "serial" });
-  const email = `e2e-deseos-${Date.now()}@example.com`;
+  const email = testEmail("e2e-deseos");
 
   test("sin sesión → entrar → se guarda solo y vuelve a la ficha", async ({ page }) => {
     await createAccount(page, email);
@@ -169,7 +171,8 @@ test.describe("lista de deseos con JS", () => {
   });
 
   test("con sesión: toast sin recargar y sin bundles nuevos", async ({ page }) => {
-    const email = `e2e-deseos-js-${Date.now()}@example.com`;
+    skipIfRemote();
+    const email = testEmail("e2e-deseos-js");
     await createAccount(page, email);
     await page.goto("/cuenta/entrar/");
     await fillLogin(page, email);
@@ -195,8 +198,9 @@ test.describe("lista de deseos con JS", () => {
 });
 
 test.describe("lista de deseos con JS: estado guardado", () => {
+  skipIfRemote();
   test.describe.configure({ mode: "serial" });
-  const email = `e2e-deseos-rojo-${Date.now()}@example.com`;
+  const email = testEmail("e2e-deseos-rojo");
 
   test("♥ rojo en tarjetas y ficha, iconos de la cabecera y lista con cantidad", async ({
     page,
@@ -347,8 +351,9 @@ test.describe("cabecera", () => {
 });
 
 test.describe("compartir la lista (L-1b)", () => {
+  skipIfRemote();
   test.describe.configure({ mode: "serial" });
-  const email = `e2e-deseos-share-${Date.now()}@example.com`;
+  const email = testEmail("e2e-deseos-share");
   let shareUrl = "";
 
   test("sin JS: crear enlace, ver la lista sin sesión (noindex, sin email) y añadir al carrito", async ({

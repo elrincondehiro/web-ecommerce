@@ -42,3 +42,8 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+docker/monitoring/dozzle-certs/
+docker/monitoring/dozzle-data/
+
+# Informes de k6 (loadtest/README.md)
+loadtest/k6/informe-*.html

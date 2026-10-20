@@ -79,7 +79,7 @@ test.describe("sin JS", () => {
     expect(r.headers()["location"]).toBe("/buscar/sugerencias/?q=buf+n");
     const ok = await page.request.get("/buscar/sugerencias/?q=buf");
     expect(ok.headers()["cache-control"]).toContain("s-maxage=60");
-    expect(ok.headers()["x-robots-tag"]).toBe("noindex");
+    expect(ok.headers()["x-robots-tag"]).toMatch(/\bnoindex\b/); // + el de Caddy en un despliegue
     expect(await ok.text()).not.toMatch(/<html|€/);
 
     for (const path of ["/", "/carrito/"]) {

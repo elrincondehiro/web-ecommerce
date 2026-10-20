@@ -2,6 +2,7 @@
 // Requisitos (además de los de playwright.config.ts): backend con EMAIL_TRANSPORT=smtp (Mailpit
 // en :8025) para leer los enlaces de verificación y de restablecer contraseña.
 import { expect, test, type Page } from "@playwright/test";
+import { skipIfRemote, testEmail } from "./_remote";
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "Secreta-123";
@@ -41,10 +42,11 @@ async function login(page: Page, email: string, password = PASSWORD) {
 }
 
 test.describe("cuenta sin JS", () => {
+  skipIfRemote();
   test.use({ javaScriptEnabled: false });
   // Comparten la cuenta creada en el primer test.
   test.describe.configure({ mode: "serial" });
-  const email = `e2e-${Date.now()}@example.com`;
+  const email = testEmail("e2e");
 
   test("registro → verificar email → entrar (bienvenida) → salir", async ({ page }) => {
     await page.goto("/");

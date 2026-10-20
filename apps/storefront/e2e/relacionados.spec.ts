@@ -6,6 +6,7 @@
 //   - Carrito: «Completa tu pedido» (relacionados de lo que lleva) y, con sesión, «De tu lista de
 //     deseos» (disponibles ahora); «Añadir» con y sin JS; lo añadido deja de sugerirse.
 import { expect, test, type Page } from "@playwright/test";
+import { skipIfRemote, testEmail } from "./_remote";
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "Secreta-123";
@@ -111,6 +112,7 @@ test.describe("carrito con JS", () => {
 });
 
 test.describe("carrito con sesión: lista de deseos", () => {
+  skipIfRemote();
   test.use({ javaScriptEnabled: false });
 
   async function createAccount(page: Page, email: string) {
@@ -147,7 +149,7 @@ test.describe("carrito con sesión: lista de deseos", () => {
   test("guardados disponibles, lo más reciente primero; sin lo que ya está en el carrito", async ({
     page,
   }) => {
-    await createAccount(page, `e2e-rel-${Date.now()}@example.com`);
+    await createAccount(page, testEmail("e2e-rel"));
     for (const [path, title] of [
       [NO_SHEET, "Clicker Esencial"],
       ["/producto/mock-taza-sport-038/", "Taza Sport"],

@@ -1,0 +1,56 @@
+# Agentes de monitorización en el VPS (fase 11-8). Separado de compose.prod.yml: la tienda no
+# depende de ellos y se pueden parar sin tocarla. Solo escuchan en la IP del túnel WireGuard
+# (10.77.0.1): el firewall de Hetzner no abre esos puertos y la IP pública no los ve.
+#
+#   cd /opt/monitor-agents && ./dcm up -d
+#   (`dcm`: docker compose --env-file monitor.env -f compose.agents.yml con el entorno vacío, como
+#   `./dc` de la tienda; fase11.md §4.9)
+#
+# - beszel-agent: métricas de host y contenedores; el hub (homelab) conecta por SSH a
+#   10.77.0.1:45876 con su clave (KEY). No ejecuta comandos aunque se filtrara la clave.
+# - dozzle agent: logs de los contenedores; la interfaz del homelab conecta a 10.77.0.1:7007 con
+#   TLS mutuo (mismo certificado propio en los dos lados, ./dozzle-certs).
+# ~50 MB de RAM entre los dos (README §12). Tags fijos (AGENTS §6).
+# Fuentes: context7 /henrygd/beszel-docs (agent-installation, security: SSH mode), código de
+# beszel 0.21.0 (agent/server.go: LISTEN admite host:puerto), /amir20/dozzle (agent:
+# DOZZLE_AGENT_ADDR, certificados). docs/fases/fase11.md §4.9.
+name: monitor-agents
+
+services:
+  beszel-agent:
+    image: henrygd/beszel-agent:0.21.0
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - beszel-agent:/var/lib/beszel-agent
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      LISTEN: 10.77.0.1:45876
+      KEY: ${BESZEL_KEY:?}
+      # Sin HUB_URL: modo SSH (el hub conecta al agente; el VPS no necesita llegar al hub)
+
+  dozzle-agent:
+    image: amir20/dozzle:v11.3.2
+    restart: unless-stopped
+    command: agent
+    network_mode: host
+    environment:
+      DOZZLE_AGENT_ADDR: 10.77.0.1:7007
+      DOZZLE_HOSTNAME: vps-hetzner
+      DOZZLE_NO_ANALYTICS: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    secrets:
+      - source: dozzle_cert
+        target: /dozzle_cert.pem
+      - source: dozzle_key
+        target: /dozzle_key.pem
+
+secrets:
+  dozzle_cert:
+    file: ./dozzle-certs/dozzle_cert.pem
+  dozzle_key:
+    file: ./dozzle-certs/dozzle_key.pem
+
+volumes:
+  beszel-agent:

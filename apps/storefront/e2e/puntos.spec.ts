@@ -9,6 +9,7 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { skipIfRemote, testEmail } from "./_remote";
 
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "Secreta-123";
@@ -108,10 +109,10 @@ const total = async (page: Page) =>
 test.describe("puntos sin JS", () => {
   test.use({ javaScriptEnabled: false });
   test.describe.configure({ mode: "serial" });
-  const email = `e2e-puntos-${Date.now()}@example.com`;
+  const email = testEmail("e2e-puntos");
 
   test("invitado: el resumen dice cuánto ganaría con una cuenta", async ({ page }) => {
-    await toPayment(page, "invitado-puntos@example.com");
+    await toPayment(page, testEmail("invitado-puntos"));
     const earn = page.locator("[data-points-earn]");
     await expect(earn).toContainText(/Con una cuenta ganarías \d+,\d{2}\s€ en puntos/);
     await expect(earn.getByRole("link", { name: "Crear cuenta" })).toBeVisible();
@@ -119,6 +120,7 @@ test.describe("puntos sin JS", () => {
   });
 
   test("Mis puntos: saldo y movimientos", async ({ page }) => {
+    skipIfRemote();
     await createAccount(page, email);
     // El cliente de Medusa se crea al entrar por primera vez (fase 9): abonar después.
     await login(page, email);
@@ -142,6 +144,7 @@ test.describe("puntos sin JS", () => {
   test("checkout: usar el máximo, quitar, importe no válido y por encima del tope", async ({
     page,
   }) => {
+    skipIfRemote("usa la cuenta con puntos del test anterior (points:adjust, BD local)");
     await login(page, email);
     await toPayment(page);
     const block = page.locator("#puntos");
@@ -189,16 +192,17 @@ test.describe("códigos descuento sin JS (Fase P)", () => {
   test.use({ javaScriptEnabled: false });
 
   test("invitado: para usar un código hay que entrar", async ({ page }) => {
-    await toPayment(page, "invitado-codigo@example.com");
+    await toPayment(page, testEmail("invitado-codigo"));
     const block = page.locator("#codigo");
     await expect(block.getByRole("link", { name: "Entra en tu cuenta" })).toBeVisible();
     await expect(block.getByLabel("Código")).toHaveCount(0);
   });
 
   test("con cuenta: aplicar, combinar con puntos (recorte con aviso), quitar", async ({ page }) => {
+    skipIfRemote();
     createCode("E2E5", "eur", 5);
     const block = page.locator("#codigo");
-    const email = `e2e-codigo-${Date.now()}@example.com`;
+    const email = testEmail("e2e-codigo");
     await createAccount(page, email);
     await login(page, email);
     credit(email, 5);
@@ -236,11 +240,12 @@ test.describe("códigos descuento sin JS (Fase P)", () => {
 });
 
 test.describe("puntos con JS (Stripe test)", () => {
+  skipIfRemote();
   test.skip(({ isMobile }) => isMobile, "el pago se prueba en escritorio");
   test.setTimeout(120_000);
 
   test("pagar con puntos: pedido, email y saldo", async ({ page }) => {
-    const email = `e2e-puntos-pago-${Date.now()}@example.com`;
+    const email = testEmail("e2e-puntos-pago");
     await createAccount(page, email);
     await login(page, email);
     credit(email, 3);
@@ -281,7 +286,7 @@ test.describe("puntos con JS (Stripe test)", () => {
     page,
   }) => {
     createCode("E2E10", "pct", 10);
-    const email = `e2e-codigo-pago-${Date.now()}@example.com`;
+    const email = testEmail("e2e-codigo-pago");
     await createAccount(page, email);
     await login(page, email);
     credit(email, 2);

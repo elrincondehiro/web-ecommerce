@@ -3,6 +3,7 @@
 // Tarjetas de prueba de Stripe: 4242… (sin 3DS), 4000 0027 6000 3184 (3DS siempre),
 // 4000 0000 0000 0002 (rechazada).
 import { expect, test, type FrameLocator, type Page } from "@playwright/test";
+import { REMOTE, testEmail } from "./_remote";
 
 const PRODUCT = "/producto/mock-clicker-esencial-018/";
 const BULK = "/producto/mock-premios-plus-010/"; // granel (S-3): paso 5 g, 20 €/kg
@@ -39,7 +40,7 @@ async function addAndGoToCheckout(page: Page, bulkGrams?: string) {
 
 async function fillAddress(page: Page, overrides: Record<string, string> = {}) {
   const data = {
-    Email: "e2e@example.com",
+    Email: testEmail("e2e-checkout"),
     Teléfono: "600 123 456",
     Nombre: "Ana",
     Apellidos: "Pérez",
@@ -143,7 +144,7 @@ test.describe("con JS (Stripe test)", () => {
   });
 
   test("granel (S-3): resumen, confirmación y email en gramos y €/kg", async ({ page }) => {
-    const email = `granel-${Date.now()}@example.com`;
+    const email = testEmail("granel");
     await toPayment(page, "250", email);
     const grams = /250\sg\s·\s?Premios Plus/;
     await expect(page.locator("#resumen-titulo + ul")).toContainText(grams);
@@ -152,7 +153,9 @@ test.describe("con JS (Stripe test)", () => {
     await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 30_000 });
     await expect(page.locator("#pedido-lineas + ul")).toContainText(grams);
     await expect(page.locator("#pedido-lineas + ul")).toContainText("5,00 €");
-    // Email de confirmación (Mailpit, EMAIL_TRANSPORT=smtp): gramos y €/kg, no «50 ×»
+    // Email de confirmación (Mailpit, EMAIL_TRANSPORT=smtp): gramos y €/kg, no «50 ×». En
+    // remoto el email va a Resend (delivered+…@resend.dev): se revisa a mano.
+    if (REMOTE) return;
     let text = "";
     for (let i = 0; i < 40 && !text; i++) {
       const res = await page.request.get(
@@ -171,7 +174,7 @@ test.describe("con JS (Stripe test)", () => {
   test("correa a medida (E-2c): medida y observaciones en resumen, pedido y email", async ({
     page,
   }) => {
-    const email = `correa-${Date.now()}@example.com`;
+    const email = testEmail("correa");
     await toPayment(page, "correa", email);
     const details = ["Medida exacta: 6,40 m", "Observaciones: Para Hiro"];
     for (const d of details) await expect(page.locator("#resumen-titulo + ul")).toContainText(d);
@@ -179,6 +182,7 @@ test.describe("con JS (Stripe test)", () => {
     await page.getByRole("button", { name: /^Pagar y realizar pedido/ }).click();
     await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 30_000 });
     for (const d of details) await expect(page.locator("#pedido-lineas + ul")).toContainText(d);
+    if (REMOTE) return; // email: Mailpit solo en local
     let text = "";
     for (let i = 0; i < 40 && !text; i++) {
       const res = await page.request.get(

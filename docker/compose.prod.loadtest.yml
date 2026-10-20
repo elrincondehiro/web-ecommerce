@@ -1,0 +1,14 @@
+# Override SOLO para la prueba de carga directa al origen (fase 11-10, tanda B). Publica la tienda
+# en 10.77.0.1:8443 (IP del túnel WireGuard; nunca hacia fuera) sin el mTLS de Cloudflare
+# (sitio `loadtest_on` del Caddyfile). k6, desde la VM del homelab, entra por el túnel.
+#
+#   ./dc -f compose.prod.loadtest.yml up -d caddy   # abrir
+#   ./dc up -d caddy                                 # cerrar (sin el override)
+#
+# docs/fases/fase11.md §5.7.
+services:
+  caddy:
+    environment:
+      LOADTEST: "on"
+    ports:
+      - "10.77.0.1:8443:8443"

@@ -63,8 +63,7 @@
 }
 
 # ── Tienda ───────────────────────────────────────────────────────────────────────────────────────
-{$STORE_DOMAIN:tienda.localhost} {
-	import comun
+(tienda) {
 	import robots_{$ROBOTS:noindex}
 
 	# Directivas que no valen en el <meta> de la CSP de Astro (security.csp): van en cabecera. Se
@@ -85,16 +84,42 @@
 	# usuario salen con `private, no-store` y las server islands con su propio s-maxage: no coinciden
 	# con el matcher y no se tocan. Tras cada despliegue: purgar la caché de Cloudflare (fase11.md
 	# §4.3; el HTML viejo apunta a /_astro/ que ya no existen).
-	header Cache-Control "public, max-age=0, s-maxage=86400" {
+	# También en el 304: si Cloudflare revalida con el origen (If-None-Match) y el 304 trae solo
+	# `max-age=0`, Cloudflare se queda con eso y revalida en cada visita (REVALIDATED, fase 11-9).
+	# Un 304 no lleva Content-Type: las páginas se reconocen por la ruta (trailingSlash: always).
+	@paginas path */
+	header @paginas Cache-Control "public, max-age=0, s-maxage=86400" {
 		match {
-			status 200
+			status 200 304
 			header Cache-Control "public, max-age=0"
-			header Content-Type text/html*
 		}
 	}
 
 	reverse_proxy storefront:4321
 }
+
+{$STORE_DOMAIN:tienda.localhost} {
+	import comun
+	import tienda
+}
+
+# ── Prueba de carga directa al origen (fase 11-10, tanda B) ─────────────────────────────────────
+# DESACTIVADO por defecto (LOADTEST=off). Con docker/compose.prod.loadtest.yml (LOADTEST=on y el
+# puerto publicado SOLO en 10.77.0.1:8443, la IP del túnel WireGuard; el firewall de Hetzner no abre
+# el 8443): la tienda sin mTLS de Cloudflare y con `tls internal`, para que k6 (VM del homelab) mida
+# el VPS sin la caché de Cloudflare. Al terminar, recrear Caddy sin el override (fase11.md §5.7).
+(loadtest_on) {
+	https://{$STORE_DOMAIN:tienda.localhost}:8443 {
+		tls internal
+		encode zstd gzip
+		import tienda
+	}
+}
+
+(loadtest_off) {
+}
+
+import loadtest_{$LOADTEST:off}
 
 # ── API (Store API y webhooks) ───────────────────────────────────────────────────────────────────
 # En Cloudflare, el WAF solo deja pasar POST /hooks/payment/* (fase11.md §4.2): el navegador no la

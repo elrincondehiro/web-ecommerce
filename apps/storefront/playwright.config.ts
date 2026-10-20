@@ -9,6 +9,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 4321;
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
+// Contra un despliegue (fase 11-9, e2e/_remote.ts): sin webServer y más margen (red real).
+const REMOTE = !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(baseURL);
 
 export default defineConfig({
   testDir: "e2e",
@@ -19,15 +21,20 @@ export default defineConfig({
   retries: 0,
   forbidOnly: !!process.env.CI,
   reporter: "list",
-  use: { baseURL, trace: "retain-on-failure" },
+  use: { baseURL, trace: "retain-on-failure", ...(REMOTE ? { navigationTimeout: 30_000 } : {}) },
+  ...(REMOTE ? { timeout: 60_000, expect: { timeout: 10_000 } } : {}),
   projects: [
     { name: "escritorio", use: { ...devices["Desktop Chrome"] } },
     { name: "movil", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: {
-    command: "pnpm start",
-    url: baseURL,
-    reuseExistingServer: true,
-    timeout: 30_000,
-  },
+  ...(REMOTE
+    ? {}
+    : {
+        webServer: {
+          command: "pnpm start",
+          url: baseURL,
+          reuseExistingServer: true,
+          timeout: 30_000,
+        },
+      }),
 });

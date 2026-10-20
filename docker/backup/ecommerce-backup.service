@@ -1,0 +1,22 @@
+# Backup diario de la tienda (fase 11-7): docker/backup/backup.sh. Lo lanza ecommerce-backup.timer.
+#   sudo install -m 644 ecommerce-backup.service ecommerce-backup.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now ecommerce-backup.timer
+# A mano: sudo systemctl start ecommerce-backup.service ; journalctl -u ecommerce-backup -n 20
+[Unit]
+Description=Backup de la tienda (PostgreSQL + configuración, cifrado con age) a R2
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+ExecStart=/opt/ecommerce/backup/backup.sh
+# Endurecimiento: /usr, /boot y /etc de solo lectura. Sin ProtectHome: el cliente de Docker lee
+# ~/.docker del usuario.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+TimeoutStartSec=30min
+Nice=10
+IOSchedulingClass=idle
