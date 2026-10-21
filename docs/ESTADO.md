@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 21-oct-2026 · **Fase 11 (despliegue de prueba en Hetzner) cerrada**. **Siguiente: a decidir** (fase 12, pedidos de invitado o fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 21-oct-2026 · **Fase 11 (despliegue de prueba en Hetzner) cerrada** (tag `v0.1.0`) y Renovate #62 mergeado. Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente: a decidir** (fase 12, pedidos de invitado o fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -37,10 +37,10 @@ Roadmap completo y tiempos: README §13.
 
 ## 2. Qué hay construido
 
-- **Monorepo pnpm 12.10.1**, Node **24.21.0** (fnm). Workspaces: `apps/*`, `packages/*`.
+- **Monorepo pnpm 12.14.0**, Node **24.22.0** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
   - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront`: Astro 7.3.8 (`@astrojs/node` 11.1.7) estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), el común `SiteClient` (~1,4 KB), `ScrollDrag` en carruseles, otro en `/buscar/` (`SearchLive`, ~0,9 KB gzip), `CartLive` en `/carrito/` (~0,6 KB) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/storefront`: Astro 7.4.1 (`@astrojs/node` 11.1.9) estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), el común `SiteClient` (~1,4 KB), `ScrollDrag` en carruseles, otro en `/buscar/` (`SearchLive`, ~0,9 KB gzip), `CartLive` en `/carrito/` (~0,6 KB) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
     - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand (con JS, `CartLive` aplica los cambios sin recargar; Fase D). e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
     - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Stripe solo autoriza; la captura se hace desde el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
@@ -61,8 +61,8 @@ Roadmap completo y tiempos: README §13.
   - **`audit`**: `pnpm audit --prod` (nivel y excepciones en `pnpm-workspace.yaml` → `audit`).
   - **`lighthouse`**: `@lhci/cli` móvil sobre fixtures detrás de un proxy brotli; referencia = notas de GitHub (100 en todo salvo SEO de `/carrito/`, `noindex`).
   - Los cuatro son checks obligatorios en Gitea y GitHub. El reparto Gitea/GitHub de la Fase E (#48) se **revirtió**: en Gitea 28 dejaba `main` en naranja (faseE §E-0).
-- **Imágenes** (`images.yml`, solo GitHub → GHCR, públicas): `ghcr.io/elrincondehiro/ecommerce-backend` (`sha-<7>`, `main`; en tag `X.Y.Z`, `X.Y`, `latest`) y `ecommerce-storefront` con sufijo `-fixtures` (no desplegable hasta la fase 11).
-- **Producción** (fase 10-1): `docker/compose.prod.yml` + Caddyfile mínimo, probado en local desde cero (`compose.prod.local.yml`, `.env.prod.local`).
+- **Imágenes** (`images.yml`, solo GitHub → GHCR, públicas): `ghcr.io/elrincondehiro/ecommerce-backend` (`sha-<7>`, `main`; en tag `X.Y.Z`, `X.Y`, `latest`) y `ecommerce-storefront` con sufijo `-fixtures` (no desplegable). La imagen real del storefront la construye el usuario en el portátil contra la API del VPS (fase11 §4.7).
+- **Despliegue de prueba** (fase 11): `docker/compose.prod.yml` + Caddyfile de producción en el VPS Hetzner, detrás de Cloudflare; backups (`docker/backup/`), monitorización (`docker/monitoring/`) y prueba de carga (`loadtest/`). Detalle en §6.0 y [fase11.md](./fases/fase11.md).
 - **Limpieza de carritos** (fase 10-4): job `delete-stale-carts` en el worker, borrado **suave** de carritos sin cliente inactivos > `CART_CLEANUP_DAYS` (5 en pruebas, 30 por defecto).
   - Actions fijadas por **SHA + tag en comentario**.
 - **Renovate autoalojado** (`renovate.yml`, solo en Gitea, bot `renovate-bot`, secret `RENOVATE_TOKEN`):
@@ -131,7 +131,7 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
 
 **Fase 11 (despliegue de PRUEBA en Hetzner): ✅ cerrada** (21-oct-2026). Todo el detalle en [fase11.md](./fases/fase11.md); aquí solo lo necesario para seguir.
 
-- **PRs**: #59 (11-0 a 11-2), #60 (Caddy + CSP), #61 (R2, Resend, datos, storefront real) y el de `feat/fase11-backups-monitorizacion` (backups, monitorización, e2e/Lighthouse remotos, k6 y cierre). **Tag `v0.1.0`**: lo crea el usuario tras el merge.
+- **PRs**: #59 (11-0 a 11-2), #60 (Caddy + CSP), #61 (R2, Resend, datos, storefront real) y #63 (backups, monitorización, e2e/Lighthouse remotos, k6 y cierre). **Tag `v0.1.0`** creado. Después, Renovate #62 (Node 24.22, pnpm 12.14, Astro 7.4.1, Meilisearch 1.55…): `main` = `d3dedce`.
 - **Qué hay desplegado** (`https://hirobordercollie.es`, `api.`, `admin.`, `imagenes.`): VPS Hetzner CPX22 Debian 13, Docker 29.9.1, `docker/compose.prod.yml` con imágenes `sha-4ad9972` (storefront construido en el portátil, fase11 §4.7). Stripe **test**, 306 productos mock, emails reales por Resend desde `develop.`, fotos en R2. Tienda y Admin detrás de Cloudflare Access; `X-Robots-Tag: noindex`.
 - **Acceso**: SSH **solo por WireGuard** (`wg-vps` en el portátil → `deploy@10.77.0.1`); en el VPS, siempre `./dc` (compose con `env -i`; nunca exportar variables de `.env.prod`). Monitorización en la VM `monitor-kbd` del homelab (`./dcm`): Kuma, Beszel, Dozzle; agentes del VPS solo en la IP del túnel.
 - **Cloudflare**: Full (strict) + Origin CA, **AOP de zona con CA propia** (mTLS: el origen solo acepta Cloudflare), WAF en `api.` (solo `POST /hooks/payment/*`), caché manda el origen (HTML `s-maxage=86400`, purgar en cada despliegue), rate limiting. Las reglas **temporales** de las pruebas (Bypass por IP y Skip del rate limiting) se quitan al cerrar: para repetir e2e/Lighthouse/k6 hay que volver a crearlas mientras duren.
@@ -149,6 +149,10 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
 
 **Fase propia pendiente — pedidos de invitado en la cuenta** (antes del despliegue definitivo): Medusa deja los pedidos de invitado en un cliente aparte (`has_account=false`); al registrarse con el mismo email no salen en «Mis pedidos» ni dan puntos. Decidir A (pasarlos al verificar el email: subscriber + workflow) o B (transferencia oficial de Medusa con aceptación), puntos retroactivos y el caso «cliente con cuenta que compra sin entrar». Consultar context7 `/medusajs/medusa` (_customer-accounts_, _order transfer_).
+
+**Lista completa de pendientes y próximos pasos, para elegir: [PENDIENTES.md](./PENDIENTES.md).**
+
+**Al empezar:** Node 24.22.0 (`fnm install 24.22.0 && fnm default 24.22.0`, lo subió Renovate #62) y `pnpm install`. **Siguiente despliegue en el VPS**: Meilisearch 1.55 necesita arrancar una vez con `MEILI_UPGRADE_DB=true` (PENDIENTES §1).
 
 **Siguiente** (a decidir con el usuario): fase 12 (resto de monitorización: GlitchTip + SDK de errores solo en servidor, vigilante externo del homelab), la fase de pedidos de invitado, o la 13 (rendimiento: LCP de fichas, capacidad sin CDN, rebuild por webhook).
 

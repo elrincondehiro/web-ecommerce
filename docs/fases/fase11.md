@@ -1,7 +1,7 @@
 # Fase 11 — Despliegue de prueba en Hetzner
 
 > **Estado:** ✅ cerrada (21-oct-2026; tag `v0.1.0` lo crea el usuario)
-> **Rama/PR:** #59, #60, #61 y `feat/fase11-backups-monitorizacion` (11-7 a 11-10 y cierre)
+> **Rama/PR:** #59, #60, #61 y #63 (11-7 a 11-10 y cierre) · tag `v0.1.0`
 > **Anterior:** [Fase R](./faseR-relacionados.md) · **Siguiente:** fase 12 (monitorización)
 
 Despliegue **de prueba**, no la producción definitiva: dominio de pruebas, **Stripe en modo test**, **productos mock** y la tienda cerrada al público (Cloudflare Access, sin indexar). El usuario hace lo de los paneles (Hetzner, Cloudflare, Resend, Stripe, GitHub) y ejecuta los comandos en el VPS; el agente prepara la configuración del repo, explica cada paso y revisa los resultados.
