@@ -10,6 +10,8 @@ import {
   isSessionToken,
   loginRedirect,
   orderStatusLabel,
+  parseClaimForm,
+  wasLinkedToAccount,
   parseDeleteForm,
   parseLoginForm,
   parseProfileForm,
@@ -219,6 +221,27 @@ describe("utilidades", () => {
     expect(orderStatusLabel({ status: "canceled", fulfillment_status: "shipped" })).toBe(
       "Cancelado",
     );
+  });
+
+  it("pedido añadido a la cuenta desde una compra como invitado (Fase G)", () => {
+    expect(
+      wasLinkedToAccount({ metadata: { cuenta_vinculada: { at: "2026-10-21", reason: "x" } } }),
+    ).toBe(true);
+    expect(wasLinkedToAccount({ metadata: { otra: 1 } })).toBe(false);
+    expect(wasLinkedToAccount({ metadata: null })).toBe(false);
+    expect(wasLinkedToAccount({})).toBe(false);
+  });
+
+  it("reclamar un pedido (Fase G-2): nº con o sin # y email en minúsculas", () => {
+    expect(parseClaimForm(form({ display_id: " #1042 ", email: " Ana@Example.com " }))).toEqual({
+      ok: true,
+      data: { display_id: 1042, email: "ana@example.com" },
+    });
+    const bad = parseClaimForm(form({ display_id: "abc", email: "no" }));
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(Object.keys(bad.errors).sort()).toEqual(["display_id", "email"]);
+    expect(parseClaimForm(form({ display_id: "0", email: "a@b.es" })).ok).toBe(false);
+    expect(parseClaimForm(form({ display_id: "99999999999", email: "a@b.es" })).ok).toBe(false);
   });
 
   it("isIdentityExists reconoce el error de Medusa", () => {

@@ -19,6 +19,8 @@ export const PROFILE_PATH = "/cuenta/datos/";
 export const ADDRESSES_PATH = "/cuenta/direcciones/";
 export const ORDERS_PATH = "/cuenta/pedidos/";
 export const DELETE_PATH = "/cuenta/eliminar/";
+/** Aceptar o rechazar que un pedido pase a una cuenta (Fase G-2; enlace del email). */
+export const ORDER_TRANSFER_PATH = "/cuenta/transferir/";
 
 export function accountOrderPath(orderId: string): string {
   return `${ORDERS_PATH}${orderId}/`;
@@ -36,7 +38,10 @@ export type AccountActionName =
   | "account.addressSave"
   | "account.addressDelete"
   | "account.addressDefault"
-  | "account.deleteRequest";
+  | "account.deleteRequest"
+  | "account.claimOrder"
+  | "account.acceptTransfer"
+  | "account.declineTransfer";
 
 /** URL de un formulario sin JS: `<página>?_action=<nombre>` (la página debe ser on-demand). */
 export function accountActionUrl(page: string, name: AccountActionName): string {
@@ -81,6 +86,11 @@ export const ACCOUNT_NOTICES = {
   session_expired: "Tu sesión ha caducado. Vuelve a entrar.",
   wish_login:
     "Entra en tu cuenta para guardar productos en tu lista de deseos. Lo guardaremos al entrar.",
+  claim_sent:
+    "Si el pedido existe, se hizo sin cuenta y el email coincide, hemos enviado un email a esa dirección para confirmarlo. Cuando lo acepten, aparecerá aquí.",
+  transfer_accepted: "Pedido añadido a la cuenta. Ya puedes verlo en «Mis pedidos» de esa cuenta.",
+  transfer_declined: "Solicitud rechazada. El pedido no ha cambiado.",
+  transfer_failed: "El enlace no es válido o la solicitud ya no está pendiente.",
   error: "Ha ocurrido un error. Inténtalo de nuevo.",
 } as const;
 export type AccountNoticeCode = keyof typeof ACCOUNT_NOTICES;
@@ -88,6 +98,9 @@ export type AccountNoticeCode = keyof typeof ACCOUNT_NOTICES;
 /** Avisos de éxito (verde); el resto se pintan como error. */
 const SUCCESS = new Set<AccountNoticeCode>([
   "wish_login",
+  "claim_sent",
+  "transfer_accepted",
+  "transfer_declined",
   "verify_sent",
   "verified",
   "recover_sent",
@@ -337,6 +350,24 @@ export function parseDeleteForm(form: FormData): ParseResult<{ reason: string }>
   };
 }
 
+/**
+ * Reclamar un pedido hecho sin cuenta (Fase G-2): nº de pedido (con o sin «#») + email con el que
+ * se hizo. Solo se valida el formato: la respuesta es siempre la misma (no revela nada).
+ */
+export function parseClaimForm(form: FormData): ParseResult<{ display_id: number; email: string }> {
+  const rawId = get(form, "display_id").trim().replace(/^#/, "");
+  const values = { display_id: rawId.slice(0, 12), email: get(form, "email").slice(0, 254) };
+  const errors: Record<string, string> = {};
+  const displayId = /^\d{1,10}$/.test(rawId) ? Number(rawId) : NaN;
+  if (!(displayId >= 1 && displayId <= 2_147_483_647)) {
+    errors.display_id = "Escribe el número del pedido (lo tienes en el email de confirmación).";
+  }
+  const email = parseEmail(values.email);
+  if (!email) errors.email = "Escribe un email válido.";
+  if (!email || Object.keys(errors).length) return { ok: false, errors, values };
+  return { ok: true, data: { display_id: displayId, email } };
+}
+
 // ── Errores de Medusa ──────────────────────────────────────────────────────────────────────
 
 /** ¿El registro falló porque ya existe una identidad con ese email? (Medusa 2.21.2, 401). */
@@ -437,6 +468,15 @@ export function defaultAddress<T extends { is_default_shipping?: boolean | null 
 interface OrderStatusLike {
   status?: string | null;
   fulfillment_status?: string | null;
+}
+
+/**
+ * ¿El pedido se pasó a la cuenta desde una compra como invitado (Fase G)? El backend lo marca en
+ * `metadata.cuenta_vinculada` (apps/backend/src/lib/guest-orders.ts, LINKED_META_KEY).
+ */
+export function wasLinkedToAccount(order: { metadata?: Record<string, unknown> | null }): boolean {
+  const v = order.metadata?.cuenta_vinculada as { at?: unknown } | undefined;
+  return typeof v?.at === "string";
 }
 
 /** Estado del pedido para el cliente (Medusa 2.21.2: `status` + `fulfillment_status`). */

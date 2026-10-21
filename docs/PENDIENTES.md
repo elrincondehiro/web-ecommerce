@@ -1,6 +1,6 @@
 # Pendientes y próximos pasos — para elegir qué hacer en cada sesión
 
-> Recopilación de todo lo aplazado en los documentos de fase (secciones «Pendientes / riesgos») y en `ESTADO.md`, revisada al cerrar la fase 11 (21-oct-2026). El detalle y las fuentes siguen en cada documento enlazado; aquí solo el resumen para decidir.
+> Recopilación de todo lo aplazado en los documentos de fase (secciones «Pendientes / riesgos») y en `ESTADO.md`, revisada al cerrar la fase 11 (21-oct-2026) y la Fase G. El detalle y las fuentes siguen en cada documento enlazado; aquí solo el resumen para decidir.
 > Al hacer algo de esta lista: hacerlo en su fase, tacharlo aquí y actualizar el documento de origen.
 
 Leyenda: **🔴 bloquea abrir la tienda** · 🟠 importante · 🟢 mejora / cuando haya tiempo · 👤 depende del usuario o de terceros (gestoría).
@@ -30,6 +30,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] VPS: IP primaria nueva, borrar `ssh.` de DNS, endpoint de WireGuard por IP.
 - [ ] Tokens nuevos (R2 imágenes y backups, Resend, service token de Access) para el entorno definitivo.
 - [ ] Stripe **live** (claves, webhook nuevo) y registrar el dominio en _Payment method domains_ (Apple/Google Pay; faseI-marca §7.1).
+- [ ] Rate limiting en Cloudflare del formulario de reclamar pedidos (`/cuenta/pedidos/?_action=account.claimOrder`) y de `POST /store/customers/me/order-claims` en `api.` (Fase G).
 - [ ] Quitar Access de la tienda, `ROBOTS=index`, decidir el **robots.txt gestionado de Cloudflare** (`Content-Signal`, SEO 61 en Lighthouse).
 - [ ] `CART_CLEANUP_DAYS=30` (hoy 5).
 - [ ] Borrar los productos mock y cargar el catálogo real (`catalog:import`, fotos reales); script de limpieza de objetos huérfanos del bucket (fase6 §7).
@@ -38,7 +39,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 
 **Funcional**:
 
-- [ ] 🔴 **Pedidos de invitado → cuenta** (fase propia): al registrarse con el mismo email, los pedidos de invitado no salen en «Mis pedidos» ni dan puntos. Decidir A (pasarlos al verificar el email) o B (transferencia oficial de Medusa), puntos retroactivos y «cliente con cuenta que compra sin entrar» (fase11 §7).
+- [x] ~~🔴 **Pedidos de invitado → cuenta**~~: hecho en la [Fase G](./fases/faseG-invitados.md) (mismo email automático, reclamar con otro email, asignación manual `orders:assign`).
 - [ ] Carritos de «invitado con email» con pago de Stripe pendiente: no se limpian (fase10 §7). Purgado definitivo de los borrados en suave.
 - [ ] Baja de cuenta automática (borrado/anonimizado con workflow; ahora es manual, fase9 §7).
 
@@ -49,13 +50,14 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Clasificación de productos en IVA reducido/superreducido.
 - [ ] Omnibus (precio anterior en ofertas), desistimiento de personalizados (correas, TRLGDCU art. 103 c), antiparasitarios (RD 666/2023).
 - [ ] Comunicaciones comerciales (carrito abandonado, avisos de precio): consentimiento y baja.
+- [ ] Privacidad: párrafo «Pedidos sin iniciar sesión» (Fase G; se asocian a la cuenta con el mismo email; con otro email, solo si se acepta desde ese email).
 
 ## 3. Fases del roadmap que quedan
 
 | Fase                          | Contenido                                                                                                                                                      | Notas                                                                                            |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | **12 Monitorización (resto)** | GlitchTip + `@sentry/node` / `@sentry/astro` **solo en servidor**; vigilante externo del homelab (UptimeRobot / Healthchecks.io); alertas de error de app      | Kuma, Beszel, Dozzle y WireGuard ya están (fase 11-8). Dependencias nuevas: requieren aprobación |
-| **Pedidos de invitado**       | §2                                                                                                                                                             | Antes de abrir                                                                                   |
+| ~~Pedidos de invitado~~       | ✅ [Fase G](./fases/faseG-invitados.md)                                                                                                                        | —                                                                                                |
 | **13 Optimización continua**  | ver §4                                                                                                                                                         | —                                                                                                |
 | **Marketing**                 | carrito abandonado (tutorial oficial de Medusa), avisos de bajada de precio / reposición (R8), envío gratis por `item_total` («te faltan X €»), upselling (R3) | Comunicación comercial → gestoría                                                                |
 
@@ -78,6 +80,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - **Puntos** (faseL §8): devolución automática de puntos canjeados en devoluciones (plan en §6.4); revisar el widget del Admin; unificar con la tienda física (`channel: "tienda"`).
 - **Códigos** (faseP): no crear códigos sobre el envío ni promociones automáticas sin revisar `checkCodes`.
 - **Emails** (fase8): webhook de rebotes y quejas de Resend cuando haya volumen; Resend Free = 100/día.
+- **Pedidos de invitado** (faseG §7): botón en el Admin para la asignación manual (hoy `orders:assign`).
 - **Cuenta** (fase9): revocación de JWT (lista o sesiones), cambio de email, más datos del cliente (lista del usuario).
 - **Diseño** (faseD, faseI): foto del hero, logo en negativo, botón de pausa de la barra de anuncios, textos de «Sobre nosotros»; probar Safari/WebKit; `/productos/` 91–94 en Lighthouse **local**.
 - **Fotos reales**: script de preparación (sRGB, sin EXIF/GPS, ~2400 px, JPEG q85–90; fase6).

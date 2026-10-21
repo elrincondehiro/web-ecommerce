@@ -46,6 +46,14 @@ describe("renderEmail", () => {
     expect(guest.text).not.toContain("Puntos usados");
   });
 
+  it("transferencia de pedido (Fase G-2): nº de pedido, email enmascarado y plazo", async () => {
+    const { subject, text } = await renderEmail("order-transfer", previewProps("order-transfer"));
+    expect(subject).toBe("¿Añadir el pedido n.º 1042 a tu cuenta?");
+    expect(text).toContain("a***@example.com");
+    expect(text).toContain("7 días");
+    expect(text).toContain("/cuenta/transferir/?pedido=order_preview&token=preview");
+  });
+
   it("granel (S-3): gramos y precio por kilo en vez de unidades", async () => {
     const { text } = await renderEmail("order-placed", previewProps("order-placed"));
     expect(text).toMatch(/250 g · 20,00\s€\/kg/);

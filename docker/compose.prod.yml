@@ -62,6 +62,12 @@ x-backend: &backend
     # Puntos (Fase L-2): abono diario (job del worker) a los N días del último envío
     POINTS_ACCRUE_CRON: ${POINTS_ACCRUE_CRON:-0 4 * * *}
     POINTS_CONSOLIDATE_DAYS: ${POINTS_CONSOLIDATE_DAYS:-14}
+    # Fase G: ventana del abono y puntos de los pedidos de invitado pasados a la cuenta
+    POINTS_ACCRUE_LOOKBACK_DAYS: ${POINTS_ACCRUE_LOOKBACK_DAYS:-120}
+    POINTS_RETROACTIVE: ${POINTS_RETROACTIVE:-true}
+    # Fase G-2: caducidad de las solicitudes de transferencia de pedidos (job del worker)
+    ORDER_TRANSFER_TTL_DAYS: ${ORDER_TRANSFER_TTL_DAYS:-7}
+    ORDER_TRANSFER_EXPIRE_CRON: ${ORDER_TRANSFER_EXPIRE_CRON:-15 4 * * *}
     # Emails
     EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:?}
     EMAIL_FROM: ${EMAIL_FROM:?}

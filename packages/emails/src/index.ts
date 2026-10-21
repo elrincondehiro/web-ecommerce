@@ -6,6 +6,7 @@ import * as passwordReset from "./password-reset";
 import * as verifyEmail from "./verify-email";
 import * as welcome from "./welcome";
 import * as accountDeletionRequest from "./account-deletion-request";
+import * as orderTransfer from "./order-transfer";
 
 export type { EmailLinks } from "./_components/Layout";
 export type { EmailAddress, EmailLineItem } from "./_lib/types";
@@ -16,6 +17,7 @@ export type { PasswordResetProps } from "./password-reset";
 export type { VerifyEmailProps } from "./verify-email";
 export type { WelcomeProps } from "./welcome";
 export type { AccountDeletionRequestProps } from "./account-deletion-request";
+export type { OrderTransferProps } from "./order-transfer";
 
 /** Plantillas disponibles: el id es el `template` de `createNotifications`. */
 const templates = {
@@ -25,6 +27,7 @@ const templates = {
   "verify-email": verifyEmail,
   welcome,
   "account-deletion-request": accountDeletionRequest,
+  "order-transfer": orderTransfer,
 } as const;
 
 export type TemplateId = keyof typeof templates;
@@ -36,6 +39,7 @@ export type TemplateProps = {
   "verify-email": verifyEmail.VerifyEmailProps;
   welcome: welcome.WelcomeProps;
   "account-deletion-request": accountDeletionRequest.AccountDeletionRequestProps;
+  "order-transfer": orderTransfer.OrderTransferProps;
 };
 
 export const TEMPLATE_IDS = Object.keys(templates) as TemplateId[];

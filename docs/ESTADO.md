@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 21-oct-2026 · **Fase 11 (despliegue de prueba en Hetzner) cerrada** (tag `v0.1.0`) y Renovate #62 mergeado. Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente: a decidir** (fase 12, pedidos de invitado o fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 21-oct-2026 · **Fase G (pedidos de invitado → cuenta) cerrada** (rama `feat/faseG-invitados`). Antes: fase 11 (tag `v0.1.0`) y Renovate #62. Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente** (decidido con el usuario): **mejoras visuales y de contenido**, después optimizaciones de la tienda (fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -32,6 +32,7 @@
 | P Códigos descuento                         | ✅     | [faseP-codigos.md](./fases/faseP-codigos.md)                         |
 | R Relacionados y venta cruzada              | ✅     | [faseR-relacionados.md](./fases/faseR-relacionados.md)               |
 | 11 Despliegue de prueba (Hetzner)           | ✅     | [fase11.md](./fases/fase11.md)                                       |
+| G Pedidos de invitado → cuenta              | ✅     | [faseG-invitados.md](./fases/faseG-invitados.md)                     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -106,6 +107,8 @@ CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos
 pnpm --filter backend points:accrue                        # abono de puntos a mano (el job lo hace a las 4:00, Fase L)
 pnpm --filter backend points:adjust <email|cus_…> <credit|debit> <importe> <motivo>   # ajuste manual
 pnpm --filter backend points:close-account <cus_…>         # baja de la cuenta: el saldo se pierde (G6)
+pnpm --filter backend orders:link-guests [dry-run]         # pedidos de invitado con el email de una cuenta → a la cuenta (Fase G)
+pnpm --filter backend orders:assign <nº> <email|cus_…> <motivo> [dry-run]   # asignación manual de un pedido de invitado (G-3)
 # relacionados (Fase R): columna `relacionados` de productos.csv (handles separados por |)
 pnpm --filter backend codes:create <CODIGO> <pct|eur> <valor> [usos_total] [por_cliente]   # código de prueba (Fase P; lo normal: Admin → Promociones)
 pnpm --filter backend catalog:import <carpeta> [dry-run]   # categorias.csv + productos.csv (plantilla en apps/backend/catalog/plantilla)
@@ -148,13 +151,19 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
 
-**Fase propia pendiente — pedidos de invitado en la cuenta** (antes del despliegue definitivo): Medusa deja los pedidos de invitado en un cliente aparte (`has_account=false`); al registrarse con el mismo email no salen en «Mis pedidos» ni dan puntos. Decidir A (pasarlos al verificar el email: subscriber + workflow) o B (transferencia oficial de Medusa con aceptación), puntos retroactivos y el caso «cliente con cuenta que compra sin entrar». Consultar context7 `/medusajs/medusa` (_customer-accounts_, _order transfer_).
+**Fase G — pedidos de invitado → cuenta: ✅ cerrada** ([faseG-invitados.md](./fases/faseG-invitados.md)). Medusa guarda la compra sin cuenta en un cliente aparte (`has_account=false`) que no se puede convertir; los pedidos se pasan con la **transferencia oficial** (historial en el Admin, reversible con «transferir a invitado»):
+
+- **Mismo email (G-1, automático)**: al crear la cuenta y al comprar sin entrar (con ficha de invitado previa Medusa siempre elige la ficha de invitado: spike G-0). Insignia «Añadido a tu cuenta» (`order.metadata.cuenta_vinculada`). La ficha de invitado **no se borra** (D9).
+- **Otro email (G-2)**: «Mis pedidos» → nº + email → respuesta siempre igual → email `order-transfer` al email del pedido → `/cuenta/transferir/` (aceptar/rechazar con botón, sin sesión). Solo pedidos de **invitado**; `POST /store/orders/:id/transfer/request` y `/cancel` cerradas (403). Las solicitudes caducan a los `ORDER_TRANSFER_TTL_DAYS` (7): mientras están pendientes bloquean devoluciones y ediciones del pedido.
+- **Manual (G-3)**: `orders:assign <nº> <email|cus_…> <motivo> [dry-run]` (solo pedidos de invitado). Entre cuentas: «Transfer ownership» del Admin (permitido, D10).
+- **Puntos**: `POINTS_RETROACTIVE` (true) y `POINTS_ACCRUE_LOOKBACK_DAYS` (120).
+- Para los datos del VPS de pruebas: `orders:link-guests [dry-run]` tras desplegar.
 
 **Lista completa de pendientes y próximos pasos, para elegir: [PENDIENTES.md](./PENDIENTES.md).**
 
 **Al empezar:** Node 24.22.0 (`fnm install 24.22.0 && fnm default 24.22.0`, lo subió Renovate #62) y `pnpm install`. **Siguiente despliegue en el VPS**: Meilisearch 1.55 necesita arrancar una vez con `MEILI_UPGRADE_DB=true` (PENDIENTES §1).
 
-**Siguiente** (a decidir con el usuario): fase 12 (resto de monitorización: GlitchTip + SDK de errores solo en servidor, vigilante externo del homelab), la fase de pedidos de invitado, o la 13 (rendimiento: LCP de fichas, capacidad sin CDN, rebuild por webhook).
+**Siguiente** (decidido con el usuario): **mejoras visuales y de contenido** (las trae el usuario); después optimizaciones de la tienda (fase 13: LCP de fichas, capacidad sin CDN, rebuild por webhook). La fase 12 (GlitchTip, vigilante externo) sigue pendiente.
 
 **Pendientes que no son de la fase 11** (no bloquean):
 

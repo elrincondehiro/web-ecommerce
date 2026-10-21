@@ -5,6 +5,7 @@ import type PointsModuleService from "../modules/points/service";
 import { REF, balanceOf, roundCents } from "./points";
 import { ORDER_POINTS_FIELDS, orderPoints } from "./points-accrue";
 import { toNumber } from "./numeric";
+import { earnsPoints, retroactiveEnabled } from "./guest-orders";
 
 /**
  * Resumen de puntos de un cliente (Fase L-2): saldo, pendiente (estimación de los pedidos sin
@@ -32,9 +33,24 @@ export async function pointsSummary(
     filters: { customer_id: customerId } as never,
     pagination: { skip: 0, take: 50, order: { created_at: "DESC" } },
   });
+  // Fase G-1: con POINTS_RETROACTIVE=false, los pedidos de antes de la cuenta no cuentan.
+  const retroactive = retroactiveEnabled(process.env.POINTS_RETROACTIVE);
+  type Row = {
+    id: string;
+    status?: string;
+    canceled_at?: unknown;
+    created_at?: string | Date | null;
+    customer?: { created_at?: string | Date | null } | null;
+  };
   const pending = roundCents(
-    (orders as unknown as { id: string; status?: string; canceled_at?: unknown }[])
-      .filter((o) => o.status !== "canceled" && !o.canceled_at && !credited.has(o.id))
+    (orders as unknown as Row[])
+      .filter(
+        (o) =>
+          o.status !== "canceled" &&
+          !o.canceled_at &&
+          !credited.has(o.id) &&
+          earnsPoints(o, o.customer, retroactive),
+      )
       .reduce((acc, o) => acc + orderPoints(o as never), 0),
   );
   const [transactions, count] = account

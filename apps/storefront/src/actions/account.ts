@@ -16,6 +16,8 @@ import {
   ADDRESSES_PATH,
   DELETE_PATH,
   LOGIN_PATH,
+  ORDERS_PATH,
+  ORDER_TRANSFER_PATH,
   PROFILE_PATH,
   RECOVER_PATH,
   REGISTER_PATH,
@@ -24,6 +26,7 @@ import {
   isIdentityExists,
   isUnauthorized,
   loginRedirect,
+  parseClaimForm,
   parseDeleteForm,
   parseEmail,
   parseLoginForm,
@@ -41,6 +44,8 @@ import { CART_COOKIE, cartCookieOptions, isValidId } from "$lib/cart";
 import { WISH_PENDING_COOKIE, decodeWishPending } from "$lib/wishlist";
 import {
   addToWishlist,
+  answerOrderTransfer,
+  claimOrder,
   confirmEmailVerification,
   createAddress,
   createCustomer,
@@ -444,4 +449,81 @@ export const account = {
       }
     },
   }),
+
+  /**
+   * Reclamar un pedido hecho sin cuenta (Fase G-2). Mismo aviso pase lo que pase (exista o no el
+   * pedido, coincida o no el email, sea o no de otra cuenta): no se puede sacar información.
+   */
+  claimOrder: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<AccountResult> => {
+      const token = sessionOf(ctx);
+      if (!token) return expired(ORDERS_PATH);
+      const back = `${ORDERS_PATH}#reclamar`;
+      const parsed = parseClaimForm(form);
+      if (!parsed.ok) {
+        return {
+          to: back,
+          flash: { code: "invalid", errors: parsed.errors, values: parsed.values },
+        };
+      }
+      try {
+        await claimOrder(token, parsed.data);
+      } catch (err) {
+        if (isUnauthorized(err)) return expired(ORDERS_PATH);
+        logError(ctx, "reclamar pedido", err);
+        const { display_id, email } = parsed.data;
+        return {
+          to: back,
+          flash: { code: "error", values: { display_id: String(display_id), email } },
+        };
+      }
+      return { to: back, flash: { code: "claim_sent" } };
+    },
+  }),
+
+  /** Aceptar que el pedido pase a la cuenta que lo pidió (enlace del email, Fase G-2). */
+  acceptTransfer: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<AccountResult> => answerTransfer(form, ctx, true),
+  }),
+
+  declineTransfer: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<AccountResult> => answerTransfer(form, ctx, false),
+  }),
 };
+
+/**
+ * Respuesta a una solicitud de transferencia: con el token del email (no hace falta sesión: quien
+ * responde es el dueño del email del pedido). Vuelve a la misma página con el aviso.
+ */
+async function answerTransfer(
+  form: FormData,
+  ctx: ActionAPIContext,
+  accept: boolean,
+): Promise<AccountResult> {
+  const orderId = form.get("order_id");
+  const token = form.get("token");
+  if (
+    typeof orderId !== "string" ||
+    !isValidId(orderId) ||
+    typeof token !== "string" ||
+    !token ||
+    token.length > 200
+  ) {
+    return { to: ORDER_TRANSFER_PATH, flash: { code: "transfer_failed" } };
+  }
+  try {
+    await answerOrderTransfer(orderId, token, accept);
+    return {
+      to: ORDER_TRANSFER_PATH,
+      flash: { code: accept ? "transfer_accepted" : "transfer_declined" },
+    };
+  } catch (err) {
+    // 400/401 = token no válido o solicitud ya respondida/caducada.
+    const status = (err as { status?: unknown } | null)?.status;
+    if (status !== 400 && status !== 401) logError(ctx, "transferencia de pedido", err);
+    return { to: ORDER_TRANSFER_PATH, flash: { code: "transfer_failed" } };
+  }
+}

@@ -361,3 +361,11 @@ export function accountUrl(storefrontUrl: string): string {
 export function verifyUrl(storefrontUrl: string, code: string): string {
   return `${storefrontUrl}/cuenta/verificar/?token=${encodeURIComponent(code)}`;
 }
+
+/** Aceptar o rechazar una transferencia de pedido (Fase G-2): `/cuenta/transferir/`. */
+export function orderTransferUrl(storefrontUrl: string, orderId: string, token: string): string {
+  return (
+    `${storefrontUrl}/cuenta/transferir/?pedido=${encodeURIComponent(orderId)}` +
+    `&token=${encodeURIComponent(token)}`
+  );
+}

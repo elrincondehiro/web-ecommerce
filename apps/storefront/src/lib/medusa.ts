@@ -647,7 +647,7 @@ export async function transferCart(token: string, cartId: string): Promise<void>
 
 const ORDER_LIST_FIELDS =
   "id,display_id,status,created_at,currency_code,total,payment_status,fulfillment_status," +
-  "items.id,items.quantity,*items.variant";
+  "metadata,items.id,items.quantity,*items.variant";
 
 /** Pedidos del cliente (Medusa filtra por el `actor_id` del token), del más reciente al más antiguo. */
 export async function listCustomerOrders(
@@ -672,6 +672,46 @@ export const ACCOUNT_ORDER_FIELDS =
 export async function retrieveCustomerOrder(id: string): Promise<StoreOrder> {
   const { order } = await cartSdk().store.order.retrieve(id, { fields: ACCOUNT_ORDER_FIELDS });
   return order;
+}
+
+// ── Pedidos de invitado → cuenta (Fase G-2) ──────────────────────────────────────────────────
+
+/** Reclamar un pedido hecho sin cuenta (ruta propia; responde 202 siempre). */
+export async function claimOrder(
+  token: string,
+  body: { display_id: number; email: string },
+): Promise<void> {
+  await cartSdk().client.fetch("/store/customers/me/order-claims", {
+    method: "POST",
+    headers: bearer(token),
+    body,
+  });
+}
+
+/** Solicitud pendiente con ese token (ruta propia): nº de pedido y email enmascarado, o null. */
+export async function retrieveOrderTransfer(
+  orderId: string,
+  token: string,
+): Promise<{ display_id: number | null; requested_by: string } | null> {
+  try {
+    return await cartSdk().client.fetch(`/store/order-transfers/${encodeURIComponent(orderId)}`, {
+      query: { token },
+    });
+  } catch (err) {
+    if ((err as { status?: unknown } | null)?.status === 404) return null;
+    throw err;
+  }
+}
+
+/** Aceptar o rechazar la transferencia (rutas estándar de Medusa; solo con el token). */
+export async function answerOrderTransfer(
+  orderId: string,
+  token: string,
+  accept: boolean,
+): Promise<void> {
+  const order = cartSdk().store.order;
+  if (accept) await order.acceptTransfer(orderId, { token }, { fields: "id" });
+  else await order.declineTransfer(orderId, { token }, { fields: "id" });
 }
 
 /** Solicitud de baja (ruta propia del backend, fase 9). */

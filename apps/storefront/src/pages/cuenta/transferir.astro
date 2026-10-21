@@ -1,0 +1,79 @@
+---
+// Aceptar o rechazar que un pedido hecho sin cuenta pase a una cuenta (Fase G-2): destino del
+// enlace del email (`?pedido=<id>&token=<token>`), que llega al email DEL PEDIDO. No pide sesión:
+// quien responde demuestra que es suyo con el token. Se responde con un botón (POST), no al abrir
+// la página: los antivirus y las vistas previas de correo abren los enlaces (como verificar).
+// Referrer-Policy same-origin: el token no sale a otros sitios. 0 JS.
+import { buttonVariants } from "$lib/components/ui/button";
+import { ORDER_TRANSFER_PATH, accountActionUrl } from "$lib/account";
+import { accountPage } from "$lib/account-page";
+import { isValidId } from "$lib/cart";
+import { retrieveOrderTransfer } from "$lib/medusa";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import AuthCard from "../../components/account/AuthCard.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+Astro.response.headers.set("Referrer-Policy", "same-origin");
+const orderId = Astro.url.searchParams.get("pedido") ?? "";
+const token = Astro.url.searchParams.get("token") ?? "";
+let transfer: Awaited<ReturnType<typeof retrieveOrderTransfer>> = null;
+if (isValidId(orderId) && token.length > 0 && token.length <= 200) {
+  try {
+    transfer = await retrieveOrderTransfer(orderId, token);
+  } catch (err) {
+    Astro.logger.error(`transferir: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+---
+
+<BaseLayout
+  title="Añadir un pedido a una cuenta"
+  description="Confirma si quieres añadir tu pedido a una cuenta."
+  noindex
+>
+  <AuthCard title="Añadir un pedido a una cuenta">
+    <AccountNotice code={flash.code} />
+    {transfer ? (
+      <div class="flex flex-col gap-4">
+        <p class="text-sm text-muted-foreground">
+          La cuenta <strong class="text-foreground">{transfer.requested_by}</strong> ha pedido
+          añadir el pedido
+          {transfer.display_id && (
+            <strong class="text-foreground"> n.º {transfer.display_id}</strong>
+          )}
+          , que se hizo sin iniciar sesión con tu email. Si aceptas, el pedido pasará a esa cuenta y
+          los avisos del envío llegarán a su email.
+        </p>
+        <form
+          method="post"
+          action={accountActionUrl(ORDER_TRANSFER_PATH, "account.acceptTransfer")}
+        >
+          <input type="hidden" name="order_id" value={orderId} />
+          <input type="hidden" name="token" value={token} />
+          <button type="submit" class:list={[buttonVariants(), "w-full"]}>
+            Sí, añadirlo a esa cuenta
+          </button>
+        </form>
+        <form
+          method="post"
+          action={accountActionUrl(ORDER_TRANSFER_PATH, "account.declineTransfer")}
+        >
+          <input type="hidden" name="order_id" value={orderId} />
+          <input type="hidden" name="token" value={token} />
+          <button type="submit" class:list={[buttonVariants({ variant: "outline" }), "w-full"]}>
+            No, rechazar
+          </button>
+        </form>
+      </div>
+    ) : (
+      !flash.code && (
+        <p class="text-sm text-muted-foreground">
+          El enlace no es válido o la solicitud ya no está pendiente (se respondió o caducó).
+        </p>
+      )
+    )}
+  </AuthCard>
+</BaseLayout>

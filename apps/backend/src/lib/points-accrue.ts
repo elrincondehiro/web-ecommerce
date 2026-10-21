@@ -12,6 +12,7 @@ import {
   type AccrualItem,
   type FulfillmentLike,
 } from "./points";
+import { earnsPoints, lookbackDays, retroactiveEnabled } from "./guest-orders";
 
 /**
  * Abono de puntos (Fase L-2, K1/P1): pedidos de clientes con cuenta, sin cancelar, cuyo ÚLTIMO
@@ -19,10 +20,12 @@ import {
  * tras descuentos (incluido el de puntos), sin envío, sin `sin_puntos`, netas de lo devuelto
  * (Medusa ya baja el total de la línea al recibir una devolución). Idempotente (índice único reference + reference_id + type). Lo ejecuta el
  * job diario `points-accrue` (worker) y `pnpm --filter backend points:accrue`.
+ *
+ * Fase G-1: solo mira los pedidos de los últimos `POINTS_ACCRUE_LOOKBACK_DAYS` días (120); un
+ * pedido de invitado pasado a la cuenta da puntos si está en esa ventana. Con
+ * `POINTS_RETROACTIVE=false`, los pedidos hechos ANTES de crear la cuenta no dan puntos.
  */
 const PAGE = 100;
-/** Ventana de búsqueda: pedidos de los últimos N días (más que el plazo de cualquier envío). */
-const LOOKBACK_DAYS = 120;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // `total` / `item_total` del pedido: sin ellos Query no calcula los totales de las líneas
@@ -34,7 +37,9 @@ export const ORDER_POINTS_FIELDS = [
   "status",
   "canceled_at",
   "customer_id",
+  "created_at",
   "customer.has_account",
+  "customer.created_at",
   "items.total",
   "items.product.metadata",
   "items.variant.product.metadata",
@@ -44,10 +49,11 @@ export const ORDER_POINTS_FIELDS = [
 
 type OrderForPoints = {
   id: string;
+  created_at?: string | Date | null;
   status?: string | null;
   canceled_at?: unknown;
   customer_id?: string | null;
-  customer?: { has_account?: boolean | null } | null;
+  customer?: { has_account?: boolean | null; created_at?: string | Date | null } | null;
   items?: AccrualItem[] | null;
   fulfillments?: FulfillmentLike[] | null;
 };
@@ -69,7 +75,10 @@ export async function accruePoints(
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
   const service = container.resolve<PointsModuleService>(POINTS_MODULE);
   const days = consolidateDays(process.env.POINTS_CONSOLIDATE_DAYS);
-  const since = new Date(now.getTime() - LOOKBACK_DAYS * DAY_MS);
+  const since = new Date(
+    now.getTime() - lookbackDays(process.env.POINTS_ACCRUE_LOOKBACK_DAYS) * DAY_MS,
+  );
+  const retroactive = retroactiveEnabled(process.env.POINTS_RETROACTIVE);
   let checked = 0;
   let credited = 0;
   for (let skip = 0; ; skip += PAGE) {
@@ -82,7 +91,11 @@ export async function accruePoints(
     const orders = data as unknown as OrderForPoints[];
     if (!orders.length) break;
     const ready = orders.filter(
-      (o) => o.customer_id && o.customer?.has_account && isConsolidated(o, now, days),
+      (o) =>
+        o.customer_id &&
+        o.customer?.has_account &&
+        earnsPoints(o, o.customer, retroactive) &&
+        isConsolidated(o, now, days),
     );
     checked += ready.length;
     const done = new Set(

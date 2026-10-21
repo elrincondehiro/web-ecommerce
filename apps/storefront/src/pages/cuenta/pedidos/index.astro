@@ -1,12 +1,21 @@
 ---
 // Mis pedidos (fase 9): listado paginado (Medusa filtra por el cliente del token). 0 JS.
 import { itemCount } from "$lib/cart";
-import { ORDERS_PATH, accountOrderPath, orderStatusLabel } from "$lib/account";
+import {
+  ORDERS_PATH,
+  accountActionUrl,
+  accountOrderPath,
+  orderStatusLabel,
+  wasLinkedToAccount,
+} from "$lib/account";
+import { buttonVariants } from "$lib/components/ui/button";
 import { accountPage, requireCustomer } from "$lib/account-page";
 import { formatPrice } from "$lib/format";
 import { listCustomerOrders } from "$lib/medusa";
 import AccountLayout from "../../../components/account/AccountLayout.astro";
 import AccountNotice from "../../../components/account/AccountNotice.astro";
+import { Badge } from "$lib/components/ui/badge";
+import Field from "../../../components/checkout/Field.astro";
 
 export const prerender = false;
 
@@ -24,11 +33,14 @@ const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" });
 const units = (o: (typeof orders)[number]) => itemCount(o);
 const pageUrl = (n: number) => (n === 1 ? ORDERS_PATH : `${ORDERS_PATH}?pagina=${n}`);
+// Reclamar un pedido (Fase G-2): abierto si vuelve con un aviso o errores del formulario.
+const claimErrors = flash.errors ?? {};
+const claimValues = flash.values ?? {};
+const claimOpen = Boolean(flash.code);
 ---
 
 <AccountLayout title="Mis pedidos">
   <h1 class="mb-6 text-3xl font-semibold tracking-tight">Mis pedidos</h1>
-  <AccountNotice code={flash.code} />
 
   {orders.length === 0 ? (
     <p class="text-muted-foreground">
@@ -45,7 +57,14 @@ const pageUrl = (n: number) => (n === 1 ? ORDERS_PATH : `${ORDERS_PATH}?pagina=$
             href={accountOrderPath(o.id)}
             class="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 p-4 hover:bg-muted"
           >
-            <span class="font-semibold">Pedido #{o.display_id}</span>
+            <span class="flex flex-wrap items-center gap-2">
+              <span class="font-semibold">Pedido #{o.display_id}</span>
+              {wasLinkedToAccount(o) && (
+                <Badge variant="secondary" title="Lo hiciste sin iniciar sesión">
+                  Añadido a tu cuenta
+                </Badge>
+              )}
+            </span>
             <span class="text-right font-semibold tabular-nums">
               {formatPrice(o.total ?? 0, o.currency_code ?? "eur")}
             </span>
@@ -77,4 +96,52 @@ const pageUrl = (n: number) => (n === 1 ? ORDERS_PATH : `${ORDERS_PATH}?pagina=$
       )}
     </nav>
   )}
+  <details
+    id="reclamar"
+    open={claimOpen}
+    class="mt-8 max-w-xl rounded-md border-2 border-line bg-card p-4 shadow-sm"
+  >
+    <summary class="cursor-pointer font-semibold">¿Hiciste un pedido sin iniciar sesión?</summary>
+    <div class="mt-4 flex flex-col gap-4">
+      <AccountNotice code={flash.code} />
+      <p class="text-sm text-muted-foreground">
+        Los pedidos que haces sin iniciar sesión con el email de esta cuenta se añaden solos. Si lo
+        hiciste con otro email, escribe el número del pedido y ese email: le enviaremos un enlace
+        para confirmar que es tuyo.
+      </p>
+      <form
+        method="post"
+        action={accountActionUrl(ORDERS_PATH, "account.claimOrder")}
+        class="flex flex-col gap-4"
+      >
+        <div class="grid gap-4 sm:grid-cols-[10rem_1fr]">
+          <Field
+            name="display_id"
+            id="f-claim-display-id"
+            label="N.º de pedido"
+            inputmode="numeric"
+            autocomplete="off"
+            required
+            maxlength={12}
+            value={claimValues.display_id}
+            error={claimErrors.display_id}
+          />
+          <Field
+            name="email"
+            id="f-claim-email"
+            type="email"
+            label="Email del pedido"
+            autocomplete="email"
+            required
+            maxlength={254}
+            value={claimValues.email}
+            error={claimErrors.email}
+          />
+        </div>
+        <button type="submit" class:list={[buttonVariants({ variant: "outline" }), "self-start"]}>
+          Añadir el pedido
+        </button>
+      </form>
+    </div>
+  </details>
 </AccountLayout>

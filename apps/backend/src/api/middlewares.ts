@@ -15,6 +15,8 @@ import { StoreAddWishlistItemBody } from "./store/customers/me/wishlist/items/ro
 import { StoreApplyPointsBody } from "./store/carts/[id]/points/route";
 import { AdminAdjustPointsBody } from "./admin/customers/[id]/points/route";
 import { StoreApplyCodeBody } from "./store/carts/[id]/code/route";
+import { StoreOrderClaimBody } from "./store/customers/me/order-claims/route";
+import { StoreOrderTransferQuery } from "./store/order-transfers/[id]/route";
 
 /**
  * Códigos descuento (Fase P): la Store API estándar deja aplicar códigos a cualquiera (también a
@@ -32,6 +34,17 @@ const noPromoCodes = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextF
     return;
   }
   next();
+};
+
+/**
+ * Pedidos de invitado (Fase G-2): la ruta estándar de solicitar una transferencia deja pedir el
+ * pedido de OTRA cuenta conociendo su id (spike G-0) y la solicitud bloquea el pedido. Se cierra:
+ * las reclamaciones van solo por `/store/customers/me/order-claims` (solo pedidos de invitado).
+ * `cancel` también (las solicitudes caducan solas o las cancela el Admin). `accept`/`decline`
+ * siguen abiertas: exigen el token del email.
+ */
+const blockStoreTransferRequest = (_req: MedusaRequest, res: MedusaResponse) => {
+  res.status(403).json({ type: "not_allowed", message: "Usa /store/customers/me/order-claims" });
 };
 
 /**
@@ -104,6 +117,25 @@ export default defineMiddlewares({
       matcher: "/admin/customers/:id/points",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(AdminAdjustPointsBody)],
+    },
+    // Pedidos de invitado (Fase G-2)
+    {
+      matcher: "/store/orders/:id/transfer/request",
+      middlewares: [blockStoreTransferRequest],
+    },
+    {
+      matcher: "/store/orders/:id/transfer/cancel",
+      middlewares: [blockStoreTransferRequest],
+    },
+    {
+      matcher: "/store/customers/me/order-claims",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreOrderClaimBody)],
+    },
+    {
+      matcher: "/store/order-transfers/:id",
+      methods: ["GET"],
+      middlewares: [validateAndTransformQuery(StoreOrderTransferQuery, {})],
     },
     // Lista de deseos (Fase L-1). La autenticación la pone Medusa (`/store/customers/me*`).
     {
