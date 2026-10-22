@@ -26,6 +26,9 @@ playwright-report/
 !**/.env.example
 !**/.env.*.example
 
+# Migración desde Loyverse: datos de la tienda (repo público)
+migracion/loyverse/datos/
+
 # Certificados del origen (Origin CA, CA de Authenticated Origin Pulls; fase 11-3)
 docker/certs/
 *.key

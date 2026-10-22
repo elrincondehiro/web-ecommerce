@@ -1,6 +1,7 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "migracion/*"
 
 # Versiones exactas al añadir dependencias (política README §4)
 saveExact: true

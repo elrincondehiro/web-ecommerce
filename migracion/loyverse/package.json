@@ -1,0 +1,21 @@
+{
+  "name": "migracion-loyverse",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Descarga y revisión del catálogo de Loyverse (tienda física) para elegir qué pasa a la tienda online",
+  "scripts": {
+    "descargar": "node --env-file-if-exists=.env src/descargar.ts",
+    "analizar": "node --env-file-if-exists=.env src/analizar.ts",
+    "seleccion": "node src/seleccion.ts",
+    "convertir": "node src/convertir.ts",
+    "informe": "node src/informe.ts",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@web-ecommerce/config": "workspace:*",
+    "typescript": "6.0.3"
+  }
+}

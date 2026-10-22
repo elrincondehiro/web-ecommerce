@@ -33,7 +33,9 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Rate limiting en Cloudflare del formulario de reclamar pedidos (`/cuenta/pedidos/?_action=account.claimOrder`) y de `POST /store/customers/me/order-claims` en `api.` (Fase G).
 - [ ] Quitar Access de la tienda, `ROBOTS=index`, decidir el **robots.txt gestionado de Cloudflare** (`Content-Signal`, SEO 61 en Lighthouse).
 - [ ] `CART_CLEANUP_DAYS=30` (hoy 5).
-- [ ] Borrar los productos mock y cargar el catálogo real (`catalog:import`, fotos reales); script de limpieza de objetos huérfanos del bucket (fase6 §7).
+- [ ] Borrar los productos mock y cargar el catálogo real: herramientas en `migracion/loyverse/` (Fase V/W), revisión por categorías en curso; inventario → stock real; fotos reales (`images:import`); script de limpieza de objetos huérfanos del bucket (fase6 §7).
+- [ ] Normalizar los **valores de opciones** del catálogo real («L 69-81cm», «S/M» frente a «S-M», «400gr» frente a «400g»…) antes de producción (faseV §7).
+- [ ] Revocar el token de Loyverse al acabar la migración.
 - [ ] Bucket lock en `hiro-backups` (valorar).
 - [ ] Renovate en producción: todo con aprobación en el Dependency Dashboard salvo `vulnerabilityAlerts`; desplegar solo versiones con tag.
 

@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 21-oct-2026 · **Fase G (pedidos de invitado → cuenta) cerrada** (rama `feat/faseG-invitados`). Antes: fase 11 (tag `v0.1.0`) y Renovate #62. Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente** (decidido con el usuario): **mejoras visuales y de contenido**, después optimizaciones de la tienda (fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 22-oct-2026 · **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente**: una fase de **problemas de frontend y backend** que trae el usuario (detectados al cargar el catálogo real); después, mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -33,6 +33,7 @@
 | R Relacionados y venta cruzada              | ✅     | [faseR-relacionados.md](./fases/faseR-relacionados.md)               |
 | 11 Despliegue de prueba (Hetzner)           | ✅     | [fase11.md](./fases/fase11.md)                                       |
 | G Pedidos de invitado → cuenta              | ✅     | [faseG-invitados.md](./fases/faseG-invitados.md)                     |
+| V/W Migración desde Loyverse                | ✅     | [faseV-loyverse.md](./fases/faseV-loyverse.md)                       |
 
 Roadmap completo y tiempos: README §13.
 
@@ -150,6 +151,16 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 ```
 
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
+
+**Fase V/W — migración desde Loyverse: ✅ herramientas cerradas** ([faseV-loyverse.md](./fases/faseV-loyverse.md), uso en [`migracion/loyverse/README.md`](../migracion/loyverse/README.md)). Scripts en `migracion/loyverse/` (TypeScript con Node 24, sin dependencias):
+
+- `descargar` (catálogo y tickets, solo lectura, sin datos personales);
+- `analizar` (hoja de revisión por variante con sugerencia);
+- `informe` (HTML de ventas);
+- `seleccion`;
+- `convertir` (hojas de `catalog:import`, stock 0, publicado, mapas de opciones y categorías y `handles.csv` editables).
+
+Datos en `migracion/loyverse/datos/`, **fuera de git y de las imágenes**. El usuario revisa por categorías y carga de forma incremental; ya hay 60 productos reales (329 variantes) en la BD local, junto a los mock. ⚠️ El token de Loyverse (acceso total) está en `migracion/loyverse/.env`: revocarlo al acabar.
 
 **Fase G — pedidos de invitado → cuenta: ✅ cerrada** ([faseG-invitados.md](./fases/faseG-invitados.md)). Medusa guarda la compra sin cuenta en un cliente aparte (`has_account=false`) que no se puede convertir; los pedidos se pasan con la **transferencia oficial** (historial en el Admin, reversible con «transferir a invitado»):
 

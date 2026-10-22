@@ -25,6 +25,9 @@
 .idea
 docs
 docker
+loadtest
+# Migración desde Loyverse (fase V/W): scripts locales y datos de la tienda (datos/ ya fuera de git)
+migracion
 **/.DS_Store
 apps/backend/integration-tests
 apps/backend/uploads
