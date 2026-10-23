@@ -168,6 +168,16 @@ export function facetCategories(
   return new Map(tree.all.filter((n) => offer.has(n.handle)).map((n) => [n.handle, n.name]));
 }
 
+/**
+ * Sangría del filtro «Categoría» (Fase F): nivel de cada categoría ofrecida respecto a la menos
+ * profunda (0, 1, 2…), así las hijas que aparecen al elegir un padre se ven debajo de él.
+ */
+export function categoryIndent(tree: CategoryTree, handles: Iterable<string>): Map<string, number> {
+  const nodes = [...handles].map((h) => tree.byHandle.get(h)).filter((n): n is CategoryNode => !!n);
+  const top = Math.min(...nodes.map((n) => n.depth));
+  return new Map(nodes.map((n) => [n.handle, n.depth - top]));
+}
+
 /** Handles de las categorías de un producto y de sus ancestros (como `category_tree_handles`). */
 export function productTreeHandles(
   tree: CategoryTree,
@@ -193,4 +203,36 @@ export function narrowCategories(tree: CategoryTree, selected: readonly string[]
     for (const a of n?.path.slice(0, -1) ?? []) ancestors.add(a.handle);
   }
   return selected.filter((h) => !ancestors.has(h));
+}
+
+export interface CategoryLink {
+  name: string;
+  handle: string;
+  /** La de la página (fila de hermanas): `aria-current`. */
+  current?: boolean;
+}
+
+/**
+ * Fila de categorías de un listado (Fase F, CategoryNav): siempre hay una, así la rejilla empieza
+ * a la misma altura en todas las categorías (sin salto al navegar).
+ * - padre → sus hijas;
+ * - hoja → sus hermanas, con la actual marcada (`current`);
+ * - hoja sin hermanas, o `/productos/` (`node` null) → las raíces (la de la página, marcada).
+ */
+export function categoryRow(tree: CategoryTree, node: CategoryNode | null): CategoryLink[] {
+  const link = (n: CategoryNode): CategoryLink => ({
+    name: n.name,
+    handle: n.handle,
+    ...(node && n.handle === node.handle ? { current: true } : {}),
+  });
+  if (node?.children.length) return node.children.map(link);
+  const parent = node?.parentId ? tree.byId.get(node.parentId) : undefined;
+  const siblings = parent ? parent.children : tree.roots;
+  if (node && siblings.length > 1) return siblings.map(link);
+  const root = node?.path[0];
+  return tree.roots.map((r) => ({
+    name: r.name,
+    handle: r.handle,
+    ...(root && r.handle === root.handle ? { current: true } : {}),
+  }));
 }

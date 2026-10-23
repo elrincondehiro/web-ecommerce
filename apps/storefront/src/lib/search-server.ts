@@ -6,7 +6,7 @@ import { getCardImages } from "./card-images";
 import type { StoreProduct } from "./catalog";
 import { facetsFromSearch, type ListingFacets } from "./facets";
 import type { CardImage } from "./images";
-import { categoryNames, facetCategories, narrowCategories } from "./categories";
+import { categoryIndent, categoryNames, facetCategories, narrowCategories } from "./categories";
 import { CORREA_OPTION_TITLES, groupSearchIds } from "./correa";
 import { cardOf, freshCorreaCards, getCorreaCards } from "./correa-server";
 import { getPricedProductsByIds, searchProducts } from "./medusa";
@@ -51,27 +51,37 @@ export async function loadSearchPage(params: SearchParams, timings?: Timings): P
     const p = correas.get(id) ?? byId.get(id);
     return p ? [p] : [];
   });
+  const facets = facetsFromSearch(
+    {
+      ...outcome.facets,
+      // Las opciones de la correa (largo, mosquetones) se eligen en su ficha: no son filtros.
+      // Tampoco las marcadas `filtrable = false` en el Admin (Fase O, manifiesto del build).
+      opcion: outcome.facets.opcion.filter((f) => {
+        const title = f.value.slice(0, f.value.indexOf(":"));
+        return !CORREA_OPTION_TITLES.has(title) && !hiddenOptions().has(title);
+      }),
+    },
+    {
+      // Filtro por niveles (Fase S): raíces, o las hijas de lo elegido
+      categories: facetCategories(tree, params.categoria),
+      selected: new Set([...params.categoria, ...params.etiqueta, ...params.opcion]),
+      total: outcome.total,
+      disponible: params.disponible,
+    },
+  );
+  // Sangría de las subcategorías (Fase F): las hijas de lo elegido, debajo de su padre
+  const cat = facets.groups.find((g) => g.key === "categoria");
+  if (cat) {
+    const indent = categoryIndent(
+      tree,
+      cat.values.map((v) => v.value),
+    );
+    for (const v of cat.values) v.depth = indent.get(v.value) ?? 0;
+  }
   return {
     products,
     total: outcome.total,
-    facets: facetsFromSearch(
-      {
-        ...outcome.facets,
-        // Las opciones de la correa (largo, mosquetones) se eligen en su ficha: no son filtros.
-        // Tampoco las marcadas `filtrable = false` en el Admin (Fase O, manifiesto del build).
-        opcion: outcome.facets.opcion.filter((f) => {
-          const title = f.value.slice(0, f.value.indexOf(":"));
-          return !CORREA_OPTION_TITLES.has(title) && !hiddenOptions().has(title);
-        }),
-      },
-      {
-        // Filtro por niveles (Fase S): raíces, o las hijas de lo elegido
-        categories: facetCategories(tree, params.categoria),
-        selected: new Set([...params.categoria, ...params.etiqueta, ...params.opcion]),
-        total: outcome.total,
-        disponible: params.disponible,
-      },
-    ),
+    facets,
     categories: categoryNames(tree),
     images: getCardImages(),
   };

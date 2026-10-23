@@ -173,6 +173,24 @@ describe("materia seca (S-2)", () => {
 });
 
 describe("facetsFromSearch", () => {
+  it("grupo de opciones con un solo valor: fuera, salvo marcado (Fase F)", () => {
+    const base = {
+      categoria: [],
+      etiqueta: [],
+      opcion: [
+        { value: "Formato:Única", count: 24 },
+        { value: "Talla:S", count: 2 },
+        { value: "Talla:M", count: 1 },
+      ],
+      disponible: 0,
+      price: null,
+    };
+    const opts = { categories: new Map(), selected: new Set<string>(), total: 24 };
+    expect(facetsFromSearch(base, opts).groups.map((g) => g.title)).toEqual(["Talla"]);
+    const marked = facetsFromSearch(base, { ...opts, selected: new Set(["Formato:Única"]) });
+    expect(marked.groups.map((g) => g.title)).toEqual(["Formato", "Talla"]);
+  });
+
   it("agrupa opciones por título y conserva lo marcado aunque cuente 0", () => {
     const f = facetsFromSearch(
       {

@@ -6,7 +6,7 @@
 // Fuente: astro-docs (routing: nested pagination, `paginate()` con `params`).
 import type { GetStaticPaths } from "astro";
 import { metaDescription } from "$lib/catalog";
-import { categoryHref } from "$lib/categories";
+import { categoryHref, categoryRow } from "$lib/categories";
 import { buildListingFacets } from "$lib/facets";
 import { PAGE_SIZE } from "$lib/constants";
 import { getCategoryProducts, getShopTree } from "$lib/shop";
@@ -14,6 +14,7 @@ import { breadcrumbJsonLd } from "$lib/seo";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../../components/Breadcrumbs.astro";
 import CatalogPage from "../../../components/CatalogPage.astro";
+import CategoryNav from "../../../components/CategoryNav.astro";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const tree = await getShopTree(true);
@@ -28,7 +29,9 @@ export const getStaticPaths = (async ({ paginate }) => {
         name: node.name,
         description: node.description,
         path: node.path.map((n) => ({ name: n.name, handle: n.handle })),
-        children: node.children.map((n) => ({ name: n.name, handle: n.handle })),
+        // Fase F: hijas o, en una hoja, hermanas (siempre hay fila: sin salto al navegar)
+        row: categoryRow(tree, node),
+        hasChildren: node.children.length > 0,
       };
       return paginate(products, {
         pageSize: PAGE_SIZE,
@@ -58,21 +61,9 @@ const title = page.currentPage > 1 ? `${baseTitle} (página ${page.currentPage})
 >
   <Breadcrumbs items={crumbs} />
   <h1 class="mb-2 text-2xl font-semibold tracking-tight">{category.name}</h1>
-  {category.children.length > 0 && (
-    <nav aria-label={`Subcategorías de ${category.name}`} class="mb-6">
-      <ul class="flex flex-wrap gap-2">
-        {category.children.map((c) => (
-          <li>
-            <a
-              href={categoryHref(c)}
-              class="header-hover inline-flex items-center rounded-md border-2 border-line px-3 py-1.5 text-sm font-semibold"
-            >
-              {c.name}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  )}
+  <CategoryNav
+    links={category.row}
+    label={category.hasChildren ? `Subcategorías de ${category.name}` : "Categorías"}
+  />
   <CatalogPage page={page} facets={facets} categoryHandle={category.handle} />
 </BaseLayout>

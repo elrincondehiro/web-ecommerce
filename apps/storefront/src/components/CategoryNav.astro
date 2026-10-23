@@ -1,0 +1,35 @@
+---
+// Fila de categorías de los listados (Fase F; lib/categories.ts `categoryRow`). HTML + CSS:
+// - siempre presente y de altura fija (`.cat-row`): la rejilla empieza a la misma altura en
+//   todas las categorías y en /productos/ (sin salto al navegar entre ellas);
+// - una línea con scroll horizontal y arrastre con ratón (`data-drag-scroll` + ScrollDrag);
+// - en una hoja, sus hermanas con la actual marcada (`aria-current="page"`, fondo primario).
+import { categoryHref, type CategoryLink } from "$lib/categories";
+import ScrollDrag from "./ScrollDrag.astro";
+
+interface Props {
+  links: CategoryLink[];
+  /** Nombre accesible de la navegación. */
+  label: string;
+}
+const { links, label } = Astro.props;
+const base =
+  "header-hover inline-flex shrink-0 items-center rounded-md border-2 border-line px-3 py-1.5 text-sm font-semibold whitespace-nowrap";
+---
+
+<nav aria-label={label} class="mb-4">
+  <ul class="cat-row" data-drag-scroll>
+    {links.map((c) => (
+      <li class="shrink-0">
+        <a
+          href={categoryHref(c)}
+          aria-current={c.current ? "page" : undefined}
+          class:list={[base, c.current && "bg-primary text-primary-foreground shadow-xs"]}
+        >
+          {c.name}
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+<ScrollDrag />

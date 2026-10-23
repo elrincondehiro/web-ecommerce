@@ -93,6 +93,100 @@ test("grupos de filtros plegados; abierto el que tiene algo marcado (Fase O)", a
   expect(await open()).toEqual([]);
 });
 
+test("Fase F: rango de precio real, sin materia seca ni «Formato: Única» fuera de contexto", async ({
+  page,
+}) => {
+  // Ropa: el listado del build y /buscar/ dan el MISMO rango (antes /buscar/ daba 17–28)
+  await page.goto("/categoria/ropa-perro/");
+  const range = async () => [
+    await page.locator("#filtros [name=precio_min]").getAttribute("placeholder"),
+    await page.locator("#filtros [name=precio_max]").getAttribute("placeholder"),
+  ];
+  const listing = await range();
+  await page.goto("/buscar/?categoria=ropa-perro");
+  expect(await range()).toEqual(listing);
+  // Ropa no tiene analíticos: sin materia seca
+  await expect(page.locator("#filtros #f-proteina, #filtros #f-grasa")).toHaveCount(0);
+  // Higiene: productos sin variantes («Formato: Única») → sin grupo Formato, como el listado
+  await page.goto("/buscar/?categoria=higiene-cuidados-perro");
+  await expect(page.locator("#filtros #f-formato")).toHaveCount(0);
+  await page.goto("/categoria/higiene-cuidados-perro/");
+  await expect(page.locator("#filtros #f-formato")).toHaveCount(0);
+});
+
+test("Fase F: subcategorías sangradas bajo su padre", async ({ page, isMobile }) => {
+  await page.goto("/buscar/?categoria=alimentacion-perro&categoria=perro");
+  await filters(page, isMobile);
+  const indent = (label: string) =>
+    box(page, "categoria", label).evaluate((a) => a.closest("li")!.className);
+  expect(await indent("Perro")).not.toMatch(/facet-indent/);
+  expect(await indent("Alimentación")).toMatch(/facet-indent-1/);
+  expect(await indent("Piensos")).toMatch(/facet-indent-2/);
+});
+
+test("Fase F: «Solo disponibles» solo en el panel (ni en la barra ni junto a «Filtrar»)", async ({
+  page,
+}) => {
+  await page.goto("/buscar/");
+  await expect(page.locator("[data-results]").getByRole("switch")).toHaveCount(0);
+  await page.goto("/categoria/perro/");
+  // En la categoría estática solo está dentro del panel (casilla del formulario «Aplicar»)
+  await expect(page.locator("main a[role=switch]")).toHaveCount(0);
+  await expect(page.locator("#filtros label.stock-toggle")).toHaveCount(1);
+});
+
+test("Fase F: sin saltos de la rejilla al filtrar (fila de chips reservada)", async ({
+  page,
+  isMobile,
+}) => {
+  const top = () =>
+    page
+      .locator("[data-results] article")
+      .first()
+      .evaluate((a) => a.getBoundingClientRect().top + scrollY);
+  await page.goto("/buscar/?categoria=ropa-perro");
+  const before = await top();
+  await filters(page, isMobile);
+  await toggle(page, "talla", "M");
+  expect(await top()).toBe(before);
+  await filters(page, isMobile);
+  await toggle(page, "color", "Rojo");
+  expect(await top()).toBe(before);
+  // Muchos chips: una sola línea con scroll (misma altura)
+  await page.goto(
+    "/buscar/?categoria=ropa-perro&opcion=Talla%3AS&opcion=Talla%3AM&opcion=Talla%3AL&opcion=Color%3ARojo&opcion=Color%3AAzul&precio_min=1&precio_max=99",
+  );
+  expect(await top()).toBe(before);
+});
+
+test("Fase F: fila de categorías de altura fija; hojas con sus hermanas", async ({ page }) => {
+  const top = () =>
+    page
+      .locator("main article")
+      .first()
+      .evaluate((a) => a.getBoundingClientRect().top + scrollY);
+  await page.goto("/categoria/accesorios-perro/");
+  const parent = await top();
+  const row = page.getByRole("navigation", { name: "Subcategorías de Accesorios" });
+  await expect(row.getByRole("link", { name: "Ropa" })).toBeVisible();
+  // Hoja: sus hermanas con la actual marcada; la rejilla empieza a la misma altura
+  await row.getByRole("link", { name: "Ropa" }).click();
+  await expect(page).toHaveURL(/\/categoria\/ropa-perro\/$/);
+  const siblings = page.getByRole("navigation", { name: "Categorías" });
+  await expect(siblings.getByRole("link", { name: "Ropa" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(siblings.getByRole("link", { name: "Paseo" })).toBeVisible();
+  expect(await top()).toBe(parent);
+  // /productos/: las raíces, misma altura
+  await page.goto("/productos/");
+  await expect(
+    page.getByRole("navigation", { name: "Categorías" }).getByRole("link", { name: "Perro" }),
+  ).toBeVisible();
+  expect(await top()).toBe(parent);
+});
+
 test("categoría por niveles: raíces → hijas; gana la más concreta", async ({ page, isMobile }) => {
   await page.goto("/buscar/");
   await filters(page, isMobile);
@@ -114,7 +208,12 @@ test("precio, disponibilidad, orden y paginación", async ({ page, isMobile }) =
   // Todo el catálogo: "Solo disponibles" solo aparece si hay agotados entre los resultados
   await page.goto("/buscar/");
   let panel = await filters(page, isMobile);
-  await panel.getByRole("checkbox", { name: "Solo disponibles" }).click();
+  // Fase F: interruptor, lo primero del panel
+  const toggle = panel.getByRole("switch", { name: "Solo disponibles" });
+  await expect(panel.locator(".filter-panel__body > :first-child")).toContainText(
+    "Solo disponibles",
+  );
+  await toggle.click();
   await expect(page).toHaveURL(/\/buscar\/\?disponible=1#f-disponible$/);
   panel = await filters(page, isMobile);
   await panel.getByLabel("Precio máximo").fill("20");
@@ -185,7 +284,9 @@ test("tarjetas.json no es público; un solo panel de filtros; fragmento", async 
   expect(r.headers()["location"]).toBe("/buscar/parcial/?q=abrijo&opcion=Talla%3AM");
 });
 
-test("URL no canónica → 301; JS: carrito + común + SearchLive ≤ 1 KB", async ({ page }) => {
+test("URL no canónica → 301; JS: carrito + común + SearchLive + ScrollDrag (≤ 1 KB)", async ({
+  page,
+}) => {
   const res = await page.request.get("/buscar/?opcion=Talla:M&q=abrijo&categoria=ropa-perro", {
     maxRedirects: 0,
   });
@@ -194,7 +295,10 @@ test("URL no canónica → 301; JS: carrito + común + SearchLive ≤ 1 KB", asy
 
   const html = await (await page.request.get("/buscar/?q=abrijo")).text();
   const scripts = [...html.matchAll(/<script[^>]*src="([^"]+)"/g)].map((m) => m[1]);
-  expect(scripts).toHaveLength(3);
+  // Fase F: + ScrollDrag (fila de chips con scroll horizontal, aprobado por el usuario)
+  expect(scripts).toHaveLength(4);
+  const drag = scripts.find((s) => /\/_astro\/ScrollDrag\.[^/]+\.js$/.test(s!));
+  expect(gzipSync(await (await page.request.get(drag!)).body()).length).toBeLessThanOrEqual(1024);
   expect(scripts.some((s) => /\/_astro\/SiteClient\.[^/]+\.js$/.test(s!))).toBe(true);
   expect(scripts.some((s) => /\/_astro\/CartClient\.[^/]+\.js$/.test(s!))).toBe(true);
   const live = scripts.find((s) => /\/_astro\/SearchLive\.[^/]+\.js$/.test(s!));
@@ -242,6 +346,36 @@ test.describe("con JS (modelo híbrido: en el sitio)", () => {
     await expect(page).toHaveURL(/opcion=Color%3ARojo$/);
     await expect(page.getByRole("link", { name: "Quitar filtro Color: Rojo" })).toBeVisible();
     expect(await marked(page)).toBe(true);
+  });
+
+  test("Fase F: «Solo disponibles» del panel, en el sitio y con el foco", async ({
+    page,
+    isMobile,
+  }) => {
+    await page.goto("/buscar/");
+    await mark(page);
+    await filters(page, isMobile);
+    const toggle = page.locator("#f-disponible");
+    await toggle.click();
+    await expect(page).toHaveURL(/\/buscar\/\?disponible=1$/);
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
+    await expect(toggle).toBeFocused();
+    expect(await marked(page)).toBe(true);
+  });
+
+  test("Fase F: chips con JS sin saltos y arrastrables", async ({ page, isMobile }) => {
+    await page.goto("/buscar/?categoria=ropa-perro");
+    const top = () =>
+      page
+        .locator("[data-results] article")
+        .first()
+        .evaluate((a) => a.getBoundingClientRect().top + scrollY);
+    const before = await top();
+    await filters(page, isMobile);
+    await openGroup(page, "talla");
+    await box(page, "talla", "M").click();
+    await expect(page.getByRole("link", { name: "Quitar filtro Talla: M" })).toBeVisible();
+    expect(await top()).toBe(before);
   });
 
   test("orden al elegir, precio y paginación en el sitio", async ({ page, isMobile }) => {

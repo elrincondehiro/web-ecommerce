@@ -1,0 +1,36 @@
+---
+// «Solo disponibles» (Fase F): el filtro más útil de la tienda, destacado como interruptor
+// (`role="switch"`) y lo primero del panel de filtros. HTML + CSS (`.stock-toggle`, global.css),
+// 0 JS:
+// - `href` (/buscar/): enlace que alterna el filtro; con JS lo aplica SearchLive en el sitio,
+//   como el resto de enlaces de la página.
+// - sin `href` (panel de una categoría estática): casilla `disponible` del formulario «Aplicar».
+interface Props {
+  checked: boolean;
+  href?: string | undefined;
+  /** Panel: ancla del grupo (#f-disponible) para volver a él sin JS. */
+  id?: string | undefined;
+  class?: string | undefined;
+}
+const { checked, href, id, class: className } = Astro.props;
+const label = "Solo disponibles";
+---
+
+{href ? (
+  <a
+    href={href}
+    role="switch"
+    aria-checked={checked ? "true" : "false"}
+    class:list={["stock-toggle", className]}
+    id={id}
+  >
+    <span class="stock-toggle__track" aria-hidden="true" />
+    {label}
+  </a>
+) : (
+  <label class:list={["stock-toggle", className]} id={id}>
+    <input type="checkbox" name="disponible" value="1" checked={checked} class="sr-only" />
+    <span class="stock-toggle__track" aria-hidden="true" />
+    {label}
+  </label>
+)}

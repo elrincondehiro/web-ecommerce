@@ -603,6 +603,115 @@
   background: var(--primary);
   border-color: var(--primary);
 }
+/*
+ * «Solo disponibles» (Fase F, StockToggle.astro): interruptor con el estilo de los botones de la
+ * web (trazo de 2 px y sombra retro). Encendido = fondo primario. Enlace (`aria-checked`) o
+ * casilla oculta (`:has(:checked)`), los dos sin JS.
+ */
+.stock-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.375rem;
+  border: 2px solid var(--line);
+  border-radius: 9999px;
+  background: var(--card);
+  box-shadow: var(--shadow-xs);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    translate 150ms ease,
+    box-shadow 150ms ease;
+}
+.stock-toggle:hover {
+  translate: 1px 1px;
+  box-shadow: none;
+}
+.stock-toggle:focus-visible,
+.stock-toggle:has(:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.stock-toggle__track {
+  position: relative;
+  width: 2rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  border: 2px solid var(--line);
+  border-radius: 9999px;
+  background: var(--muted);
+  transition: background-color 150ms ease;
+}
+.stock-toggle__track::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 9999px;
+  background: var(--foreground);
+  transition: translate 150ms ease;
+}
+.stock-toggle[aria-checked="true"],
+.stock-toggle:has(:checked) {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.stock-toggle[aria-checked="true"] .stock-toggle__track,
+.stock-toggle:has(:checked) .stock-toggle__track {
+  background: var(--primary-foreground);
+}
+.stock-toggle[aria-checked="true"] .stock-toggle__track::after,
+.stock-toggle:has(:checked) .stock-toggle__track::after {
+  translate: 0.75rem 0;
+  background: var(--primary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stock-toggle,
+  .stock-toggle__track,
+  .stock-toggle__track::after {
+    transition: none;
+  }
+}
+/*
+ * Filas de una línea con scroll horizontal (Fase F): chips de filtros aplicados (ActiveFilters)
+ * y subcategorías (CategoryNav). Altura FIJA aunque esté vacía o tenga muchos elementos: nada
+ * cambia de altura al filtrar ni al navegar entre categorías (CLS). Arrastre con ratón:
+ * `data-drag-scroll` + ScrollDrag. La barra de scroll fina va en el relleno inferior.
+ */
+.chip-row,
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+  padding-bottom: 0.375rem;
+}
+.chip-row {
+  height: 2.25rem;
+}
+.cat-row {
+  height: 3rem;
+  /* Sombra retro del chip activo (3 px) sin recortar */
+  padding-right: 0.25rem;
+}
+/* Sangría de las subcategorías en el filtro «Categoría» (Fase F): una línea por nivel. */
+.facet-indent-1 {
+  margin-left: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--border);
+}
+.facet-indent-2 {
+  margin-left: 1.25rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--border);
+}
 [aria-checked="true"] > .link-box::after {
   content: "";
   width: 0.5rem;

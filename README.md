@@ -691,6 +691,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | G Pedidos de invitado → cuenta         | [faseG-invitados.md](./docs/fases/faseG-invitados.md)                                            | ✅     |
 | V/W Migración desde Loyverse           | [faseV-loyverse.md](./docs/fases/faseV-loyverse.md)                                              | ✅     |
 | O Opciones, variantes y plantillas     | [faseO-variantes.md](./docs/fases/faseO-variantes.md)                                            | ✅     |
+| F Mejoras en filtros                   | [faseF-filtros.md](./docs/fases/faseF-filtros.md)                                                | ✅     |
 | 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

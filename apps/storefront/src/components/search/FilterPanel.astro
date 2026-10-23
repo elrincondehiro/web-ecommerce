@@ -10,6 +10,7 @@
 // Fuente: MDN (context7 /mdn/content: popover, display:none del UA, showPopover), WAI-ARIA
 // (role=checkbox); probado en Chromium (fijo en escritorio, Escape no lo oculta, foco y clic ok).
 import FilterButton from "./FilterButton.astro";
+import StockToggle from "./StockToggle.astro";
 import { buttonVariants } from "$lib/components/ui/button";
 import type { ListingFacets } from "$lib/facets";
 import {
@@ -134,6 +135,20 @@ const linkHref = (key: "categoria" | "etiqueta" | "opcion", value: string, title
           <input type="hidden" name={name} value={value} />
         ))}
         <div class="filter-panel__body flex-1 overflow-y-auto px-4 py-2">
+          {/* Fase F: lo primero del panel, destacado */}
+          {facets.stockFilter && (
+            <div class="border-b py-3">
+              <StockToggle
+                checked={params.disponible}
+                id="f-disponible"
+                href={
+                  linkMode
+                    ? `${searchUrl({ ...params, disponible: !params.disponible, pagina: 1 }, action)}#f-disponible`
+                    : undefined
+                }
+              />
+            </div>
+          )}
           {groups.map((g) => (
             <details
               open={g.values.some((v) => isChecked(g.key, v.value))}
@@ -145,7 +160,7 @@ const linkHref = (key: "categoria" | "etiqueta" | "opcion", value: string, title
                 <legend class="sr-only">{g.title}</legend>
                 <ul class="flex flex-col gap-2">
                   {g.values.map((v) => (
-                    <li>
+                    <li class:list={[v.depth ? `facet-indent-${Math.min(v.depth, 2)}` : ""]}>
                       {linkMode ? (
                         <a
                           href={linkHref(g.key, v.value, g.title)}
@@ -264,34 +279,6 @@ const linkHref = (key: "categoria" | "etiqueta" | "opcion", value: string, title
               </div>
             </fieldset>
           ))}
-
-          {facets.stockFilter && linkMode && (
-            <div class="py-3" id="f-disponible">
-              <a
-                href={`${searchUrl({ ...params, disponible: !params.disponible, pagina: 1 }, action)}#f-disponible`}
-                role="checkbox"
-                aria-checked={params.disponible ? "true" : "false"}
-                class="flex items-center gap-2 text-sm hover:underline"
-              >
-                <span class:list={["link-box", box]} aria-hidden="true" />
-                Solo disponibles
-              </a>
-            </div>
-          )}
-          {facets.stockFilter && !linkMode && (
-            <div class="py-3">
-              <label class="flex cursor-pointer items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="disponible"
-                  value="1"
-                  checked={params.disponible}
-                  class={box}
-                />
-                Solo disponibles
-              </label>
-            </div>
-          )}
         </div>
 
         {(!linkMode || facets.price || msRanges.length > 0) && (

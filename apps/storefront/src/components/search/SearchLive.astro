@@ -6,7 +6,7 @@
 // [data-search-root]; se pide el fragmento (data-partial + query) y se cambia en el sitio:
 //   - URL con history.pushState; atrás/adelante (popstate) vuelven a pedir el fragmento;
 //   - se conservan el scroll, el panel móvil abierto, los grupos desplegados y el foco del
-//     filtro pulsado. Fase D (4.1):
+//     filtro pulsado (enlaces con `role`: casillas y el interruptor «Solo disponibles», Fase F). Fase D (4.1):
 //     el panel (#filtros) NO se sustituye: se cambia su contenido y el de #resultados, así no
 //     se cierra ni vuelve a animarse (antes: innerHTML de todo + showPopover → parpadeo). Se
 //     mantiene también el scroll de su lista. Si la estructura no coincide, todo el contenedor;
@@ -68,7 +68,7 @@
         } else root.replaceChildren(n);
         if (push) history.pushState(null, "", url);
         if (focus)
-          [...root.querySelectorAll<HTMLElement>(`#${focus[0]} [role=checkbox]`)]
+          [...root.querySelectorAll<HTMLElement>(`#${focus[0]} [role],#${focus[0]}`)]
             .find((a) => label(a) === focus[1])
             ?.focus();
         if (top) document.getElementById("resultados")?.scrollIntoView();
@@ -84,7 +84,7 @@
       if (!a || a.pathname !== path || a.origin !== location.origin) return;
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return; // nueva pestaña
       e.preventDefault();
-      const box = a.role === "checkbox";
+      const box = !!a.role;
       void load(a.search.slice(1), true, box ? focusKey(a) : undefined, !!a.rel);
     });
     const submit = (form: HTMLFormElement) => {

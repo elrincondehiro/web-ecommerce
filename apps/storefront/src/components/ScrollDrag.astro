@@ -2,7 +2,8 @@
 // Arrastrar con el ratón los carruseles (Fase D, 3.4). UN bundle en /_astro/ (≤ 1 KB gzip, sin
 // imports; excepción de AGENTS §3.4), cargado solo en páginas con carrusel: el componente que
 // pinta un [data-drag-scroll] incluye <ScrollDrag /> (Astro deduplica el script). Hoy: el
-// carrusel de la home (index.astro) y la galería de la ficha (ProductGallery.astro).
+// carrusel de la home (index.astro), la galería de la ficha (ProductGallery.astro) y, desde la
+// Fase F, la fila de subcategorías (CategoryNav.astro) y la de chips (ActiveFilters.astro).
 // check:budget exige ScrollDrag donde haya [data-drag-scroll] y en ningún otro sitio.
 // Solo ratón (táctil ya desliza; teclado: flechas y región con foco). Durante el arrastre se
 // quita el snap ([data-dragging], CSS) y al soltar vuelve, y el navegador encaja la tarjeta.
@@ -10,47 +11,52 @@
 ---
 
 <script>
-  for (const el of document.querySelectorAll<HTMLElement>("[data-drag-scroll]")) {
-    let x0 = 0;
-    let s0 = 0;
-    let id = -1;
-    let moved = false;
-    el.addEventListener("pointerdown", (e) => {
-      if (e.pointerType !== "mouse" || e.button) return;
-      x0 = e.clientX;
-      s0 = el.scrollLeft;
-      id = e.pointerId;
+  // Eventos en `document` (Fase F): sirve también para los contenedores que se insertan después
+  // (fila de chips de /buscar/, que SearchLive sustituye al filtrar en el sitio).
+  let el: HTMLElement | null = null;
+  let x0 = 0;
+  let s0 = 0;
+  let id = -1;
+  let moved = false;
+  addEventListener("pointerdown", (e) => {
+    const t = (e.target as Element).closest?.<HTMLElement>("[data-drag-scroll]");
+    if (!t || e.pointerType !== "mouse" || e.button) return;
+    el = t;
+    x0 = e.clientX;
+    s0 = t.scrollLeft;
+    id = e.pointerId;
+    moved = false;
+  });
+  addEventListener("pointermove", (e) => {
+    if (e.pointerId !== id || !el) return;
+    const dx = e.clientX - x0;
+    if (!moved && Math.abs(dx) < 6) return;
+    if (!moved) {
+      moved = true;
+      el.setPointerCapture(id);
+      el.dataset.dragging = "";
+    }
+    el.scrollLeft = s0 - dx;
+  });
+  const end = (e: PointerEvent) => {
+    if (e.pointerId !== id) return;
+    id = -1;
+    if (el) delete el.dataset.dragging;
+  };
+  addEventListener("pointerup", end);
+  addEventListener("pointercancel", end);
+  addEventListener(
+    "click",
+    (e) => {
+      if (!moved) return;
       moved = false;
-    });
-    el.addEventListener("pointermove", (e) => {
-      if (e.pointerId !== id) return;
-      const dx = e.clientX - x0;
-      if (!moved && Math.abs(dx) < 6) return;
-      if (!moved) {
-        moved = true;
-        el.setPointerCapture(id);
-        el.dataset.dragging = "";
-      }
-      el.scrollLeft = s0 - dx;
-    });
-    const end = (e: PointerEvent) => {
-      if (e.pointerId !== id) return;
-      id = -1;
-      delete el.dataset.dragging;
-    };
-    el.addEventListener("pointerup", end);
-    el.addEventListener("pointercancel", end);
-    el.addEventListener(
-      "click",
-      (e) => {
-        if (!moved) return;
-        moved = false;
-        e.preventDefault();
-        e.stopPropagation();
-      },
-      true,
-    );
-    // Sin el arrastre nativo de imágenes y enlaces (fantasma) al tirar del carrusel.
-    el.addEventListener("dragstart", (e) => e.preventDefault());
-  }
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true,
+  );
+  // Sin el arrastre nativo de imágenes y enlaces (fantasma) al tirar del carrusel.
+  addEventListener("dragstart", (e) => {
+    if ((e.target as Element).closest?.("[data-drag-scroll]")) e.preventDefault();
+  });
 </script>

@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 23-oct-2026 · **Fase O (opciones, variantes y plantillas de ficha) cerrada** (`feat/fase-o-variantes`, [faseO-variantes.md](./fases/faseO-variantes.md)). **Siguiente**: Fase F, mejoras en filtros (problemas que trae el usuario: rango de precio de `/buscar/`, materia seca fuera de contexto, «Formato: Única», sangrado de subcategorías, «Solo disponibles»). Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente**: una fase de **problemas de frontend y backend** que trae el usuario (detectados al cargar el catálogo real); después, mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 23-oct-2026 · **Fase F (mejoras en filtros) cerrada** (`feat/fase-f-filtros`, [faseF-filtros.md](./fases/faseF-filtros.md)). Antes: Fase O (#67). **Siguiente**: más peticiones de la fase de problemas de frontend y backend (las trae el usuario). Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente**: una fase de **problemas de frontend y backend** que trae el usuario (detectados al cargar el catálogo real); después, mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -35,6 +35,7 @@
 | G Pedidos de invitado → cuenta              | ✅     | [faseG-invitados.md](./fases/faseG-invitados.md)                     |
 | V/W Migración desde Loyverse                | ✅     | [faseV-loyverse.md](./fases/faseV-loyverse.md)                       |
 | O Opciones, variantes y plantillas          | ✅     | [faseO-variantes.md](./fases/faseO-variantes.md)                     |
+| F Mejoras en filtros                        | ✅     | [faseF-filtros.md](./fases/faseF-filtros.md)                         |
 
 Roadmap completo y tiempos: README §13.
 
@@ -153,7 +154,9 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
 
-**Fase O — opciones, variantes y plantillas de ficha: ✅ cerrada** ([faseO-variantes.md](./fases/faseO-variantes.md)):
+**Fase F — mejoras en filtros: ✅ cerrada** ([faseF-filtros.md](./fases/faseF-filtros.md)): rango de precio real en `/buscar/` (`min_price_eur` + `max_price_eur`), sin materia seca ni «Formato: Única» fuera de contexto, subcategorías sangradas, «Solo disponibles» como interruptor lo primero del panel y sin saltos de la rejilla (fila de chips reservada; fila de categorías en todos los listados, con las hermanas en las hojas; las dos en una línea con scroll y `ScrollDrag`). `SearchLive` 982 B (límite 1 KB). ⚠️ En la BD local la cuerda azul de nailon está casi toda reservada por pedidos de e2e (falla `correas.spec.ts`). E2e en otro puerto: `E2E_BASE_URL=http://localhost:<puerto>` (no `127.0.0.1`: Stripe vuelve a `SITE_URL`).
+
+**Fase O — opciones, variantes y plantillas de ficha: ✅ cerrada** (#67) ([faseO-variantes.md](./fases/faseO-variantes.md)):
 
 - Productos con 2 opciones (p. ej. estampado × talla): **un solo producto** con selector de muestras en la ficha, **sin JS**. La action busca la variante por las opciones; CSS por posición (`styles/variant-picker.css`, generado y comprobado por el test; 0,7 KB gzip).
 - Fotos por valor: `opcion_fotos` en la hoja + `handle--valor_XX.jpg` en `images:import`.

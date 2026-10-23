@@ -11,6 +11,7 @@ import {
   selectedCount,
   toSearchString,
   toggleUrl,
+  type RawSearchResult,
 } from "./search";
 
 const parse = (qs: string) => parseSearchParams(new URLSearchParams(qs));
@@ -181,6 +182,55 @@ describe("materia seca en la consulta (S-2)", () => {
       { hits: [], metadata: { count: 0 }, facets: { proteina_ms: { min: 22.5, max: 61 } } },
     ]);
     expect(out.facets.ms).toEqual({ proteina: { min: 22.5, max: 61 } });
+  });
+
+  it("sin datos (el proveedor da 0–0) no hay filtro, salvo que ya esté aplicado (Fase F)", () => {
+    const zero = { proteina_ms: { min: 0, max: 0 }, grasa_ms: { min: 0, max: 0 } };
+    const res = (facets: NonNullable<RawSearchResult["facets"]>): RawSearchResult[] => [
+      { hits: [], metadata: { count: 3 }, facets },
+    ];
+    expect(parseSearchResults(parse(""), res(zero)).facets.ms).toEqual({});
+    // Ya filtrado y queda un solo valor: se conserva para poder cambiarlo
+    const one = { proteina_ms: { min: 30, max: 30 } };
+    expect(parseSearchResults(parse("proteina_min=30"), res(one)).facets.ms).toEqual({
+      proteina: { min: 30, max: 30 },
+    });
+  });
+});
+
+describe("rango de precio (Fase F)", () => {
+  const res = (facets: NonNullable<RawSearchResult["facets"]>): RawSearchResult[] => [
+    { hits: [], metadata: { count: 5 }, facets },
+  ];
+  it("del más barato de los mínimos al más caro de los máximos", () => {
+    const out = parseSearchResults(
+      parse("categoria=ropa-perro"),
+      res({
+        min_price_eur: { type: "stats", min: 17.95, max: 27.95 },
+        max_price_eur: { type: "stats", min: 23.95, max: 35.95 },
+      }),
+    );
+    expect(out.facets.price).toEqual({ min: 17.95, max: 35.95 });
+  });
+  it("pide las dos estadísticas al motor", () => {
+    const [main] = buildSearchQueries(parse(""));
+    expect(main!.search_options.facets).toEqual(
+      expect.arrayContaining([
+        { field: "min_price_eur", type: "stats" },
+        { field: "max_price_eur", type: "stats" },
+      ]),
+    );
+  });
+  it("un solo precio: sin filtro, salvo que ya esté aplicado", () => {
+    const one = {
+      min_price_eur: { min: 9.95, max: 9.95 },
+      max_price_eur: { min: 9.95, max: 9.95 },
+    };
+    expect(parseSearchResults(parse(""), res(one)).facets.price).toBeNull();
+    expect(parseSearchResults(parse("precio_min=9"), res(one)).facets.price).toEqual({
+      min: 9.95,
+      max: 9.95,
+    });
   });
 });
 

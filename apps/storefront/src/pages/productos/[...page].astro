@@ -2,12 +2,13 @@
 import type { GetStaticPaths } from "astro";
 import { PAGE_SIZE } from "$lib/constants";
 import { buildListingFacets } from "$lib/facets";
-import { facetCategories, productTreeHandles } from "$lib/categories";
+import { categoryRow, facetCategories, productTreeHandles } from "$lib/categories";
 import { getListingProducts, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd } from "$lib/seo";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CatalogPage from "../../components/CatalogPage.astro";
+import CategoryNav from "../../components/CategoryNav.astro";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const [products, tree] = await Promise.all([getListingProducts(), getShopTree(true)]);
@@ -16,10 +17,14 @@ export const getStaticPaths = (async ({ paginate }) => {
     categories: facetCategories(tree, []),
     categoryHandles: (p) => productTreeHandles(tree, p),
   });
-  return paginate(products, { pageSize: PAGE_SIZE, props: { facets } });
+  // Fase F: fila de categorías raíz (misma altura que en las categorías)
+  return paginate(products, {
+    pageSize: PAGE_SIZE,
+    props: { facets, row: categoryRow(tree, null) },
+  });
 }) satisfies GetStaticPaths;
 
-const { page, facets } = Astro.props;
+const { page, facets, row } = Astro.props;
 const crumbs = [
   { name: "Inicio", href: "/" },
   { name: "Productos", href: "/productos/" },
@@ -34,5 +39,6 @@ const title = page.currentPage > 1 ? `Productos (página ${page.currentPage})` :
 >
   <Breadcrumbs items={crumbs} />
   <h1 class="mb-2 text-2xl font-semibold tracking-tight">Productos</h1>
+  <CategoryNav links={row} label="Categorías" />
   <CatalogPage page={page} facets={facets} />
 </BaseLayout>

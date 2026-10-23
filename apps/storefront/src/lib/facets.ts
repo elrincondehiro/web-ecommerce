@@ -37,7 +37,13 @@ export interface FacetGroup {
   key: "categoria" | "etiqueta" | "opcion";
   /** Para `opcion`, el título de la opción (Talla, Color…). */
   title: string;
-  values: { value: string; label: string; count?: number | undefined }[];
+  values: {
+    value: string;
+    label: string;
+    count?: number | undefined;
+    /** Categoría (Fase F): nivel respecto a la menos profunda ofrecida (sangría del panel). */
+    depth?: number | undefined;
+  }[];
 }
 
 export interface ListingFacets {
@@ -209,6 +215,9 @@ export function facetsFromSearch(
     ]);
   }
   for (const [title, values] of [...byTitle.entries()].sort(([a], [b]) => compareValues(a, b))) {
+    // Igual que en los listados (Fase O/F): un grupo con un solo valor no filtra nada
+    // («Formato: Única»), salvo que ese valor esté marcado (para poder desmarcarlo).
+    if (values.length < 2 && !values.some((v) => opts.selected.has(v.value))) continue;
     groups.push({
       key: "opcion",
       title,

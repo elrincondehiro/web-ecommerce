@@ -298,7 +298,13 @@ export interface SearchQueryBody {
  */
 export const CATEGORY_FIELD = "category_tree_handles";
 export const FACET_FIELDS = [CATEGORY_FIELD, "tags", "option_values", "in_stock"] as const;
-const PRICE_FACET = { field: "min_price_eur", type: "stats" } as const;
+// Rango de precio real (Fase F): mínimo de los precios más baratos y máximo de los más caros de
+// cada producto. Solo `min_price_eur` daba como máximo el del producto con la variante barata más
+// cara (en Ropa, 28 € en vez de 36 €).
+const PRICE_FACETS = [
+  { field: "min_price_eur", type: "stats" },
+  { field: "max_price_eur", type: "stats" },
+] as const;
 
 /** Opciones marcadas agrupadas por título: dentro de un grupo OR, entre grupos AND. */
 export function optionGroups(opcion: string[]): Map<string, string[]> {
@@ -375,7 +381,7 @@ export function buildSearchQueries(p: SearchParams, take = PAGE_SIZE): SearchQue
     search_options: {
       facets: [
         ...FACET_FIELDS,
-        PRICE_FACET,
+        ...PRICE_FACETS,
         ...dryMatterFilters().map(({ field }) => ({ field, type: "stats" })),
       ],
       disjunctive_facets: true,
@@ -427,6 +433,27 @@ export interface SearchOutcome {
   };
 }
 
+/**
+ * Rango de una faceta de estadísticas, o null si no hay datos. Meilisearch solo devuelve
+ * `facetStats` de valores numéricos (meilisearch-docs, faceted navigation) y, sin ninguno, el
+ * proveedor (@rokmohar/medusa-plugin-meilisearch 2.3.1, utils/query.js) contesta `0 / 0`: Ropa
+ * no tiene materia seca, pero llegaba «0–0». Con mínimo = máximo no hay nada que filtrar (lo mismo
+ * que los listados estáticos, lib/facets.ts `intRange`). Se exige que el máximo supere al mínimo
+ * redondeado, así los rangos de una sola cifra decimal no desaparecen.
+ */
+export function statsRange(
+  f: { min?: number | undefined; max?: number | undefined } | null | undefined,
+  /** El filtro ya está aplicado: se conserva aunque quede un solo valor (para poder cambiarlo). */
+  applied = false,
+): { min: number; max: number } | null {
+  const min = f?.min;
+  const max = f?.max;
+  if (typeof min !== "number" || typeof max !== "number") return null;
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+  if (max <= min && !applied) return null;
+  return { min, max: Math.max(min, max) };
+}
+
 /** Une la consulta principal y las de cada grupo de opciones (§ buildSearchQueries). */
 export function parseSearchResults(p: SearchParams, results: RawSearchResult[]): SearchOutcome {
   const [main, ...rest] = results;
@@ -443,13 +470,17 @@ export function parseSearchResults(p: SearchParams, results: RawSearchResult[]):
       opcion = [...opcion, ...own];
     });
   }
-  const stats = facets.min_price_eur;
+  const lo = facets.min_price_eur;
+  const hi = facets.max_price_eur;
   const ms: SearchOutcome["facets"]["ms"] = {};
   for (const { key, field } of dryMatterFilters()) {
-    const f = facets[field];
-    if (typeof f?.min === "number" && typeof f.max === "number")
-      ms[key] = { min: f.min, max: f.max };
+    const r = statsRange(facets[field], p.ms[key].min !== null || p.ms[key].max !== null);
+    if (r) ms[key] = r;
   }
+  const price = statsRange(
+    lo && { min: lo.min, max: Math.max(lo.max ?? -Infinity, hi?.max ?? -Infinity) },
+    p.precioMin !== null || p.precioMax !== null,
+  );
   return {
     ids: (main?.hits ?? []).map((h) => h.id),
     total: main?.metadata?.count ?? 0,
@@ -458,10 +489,7 @@ export function parseSearchResults(p: SearchParams, results: RawSearchResult[]):
       etiqueta: facets.tags?.values ?? [],
       opcion,
       disponible: facets.in_stock?.values?.find((v) => v.value === "true")?.count ?? 0,
-      price:
-        typeof stats?.min === "number" && typeof stats.max === "number"
-          ? { min: stats.min, max: stats.max }
-          : null,
+      price,
       ms,
     },
   };

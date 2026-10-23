@@ -192,7 +192,8 @@ test.describe("lista de deseos con JS", () => {
     expect(page.url()).toBe(url);
     const own = scripts.filter((s) => s.startsWith("/_astro/")).map((s) => s.split("/").pop()!);
     expect(
-      own.every((s) => /^(CartClient|SiteClient)\./.test(s)),
+      // ScrollDrag: fila de categorías de /productos/ (Fase F)
+      own.every((s) => /^(CartClient|SiteClient|ScrollDrag)\./.test(s)),
       own.join(", "),
     ).toBe(true);
   });
