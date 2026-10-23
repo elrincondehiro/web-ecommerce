@@ -1,12 +1,36 @@
 // Facetas de los listados estáticos (fase 7-1, D2): se calculan en el BUILD a partir de los
-// productos de la categoría (o de todo el catálogo), sin lista fija de opciones. Un valor solo
-// se ofrece si lo comparten ≥ MIN_PRODUCTS productos (evita valores sueltos tipo "Formato" de
-// un solo producto). En /buscar/ las mismas facetas llegan del motor con recuentos en vivo.
+// productos de la categoría (o de todo el catálogo), sin lista fija de opciones. Una etiqueta
+// solo se ofrece si la comparten ≥ MIN_PRODUCTS productos. Opciones (Fase O): basta UN producto
+// (los 9 estampados de una marca son filtrables), pero el grupo necesita ≥ 2 valores (con uno
+// no filtra nada; así «Formato: Única» de los productos sin variantes no sale) y no puede estar
+// marcado `metadata.filtrable = false` en la opción global (Admin). En /buscar/ las mismas
+// facetas llegan del motor con recuentos en vivo.
 // Funciones PURAS (Vitest).
 import { dryMatter, getProductPricing, type StoreProduct } from "./catalog";
 import { dryMatterFilters, type DryMatterKey, type FacetValue } from "./search";
 
 export const MIN_PRODUCTS = 2;
+/** Productos que tienen que compartir un valor de OPCIÓN para ofrecerlo (Fase O). */
+export const MIN_OPTION_PRODUCTS = 1;
+/** Clave de metadata de la opción global (Admin): `false` = nunca es filtro (Fase O). */
+export const FILTERABLE_KEY = "filtrable";
+
+/** ¿La opción se puede ofrecer como filtro? (`metadata.filtrable` false/"false" = no). */
+export function isFilterableOption(
+  option: { metadata?: Record<string, unknown> | null } | null | undefined,
+): boolean {
+  const v = option?.metadata?.[FILTERABLE_KEY];
+  return v !== false && v !== "false" && v !== "no";
+}
+
+/** Títulos de las opciones NO filtrables de un conjunto de productos (metadata de la global). */
+export function hiddenOptionTitles(products: readonly StoreProduct[]): Set<string> {
+  const out = new Set<string>();
+  for (const p of products) {
+    for (const o of p.options ?? []) if (o?.title && !isFilterableOption(o)) out.add(o.title);
+  }
+  return out;
+}
 
 export interface FacetGroup {
   /** Clave del parámetro de URL. */
@@ -63,9 +87,11 @@ export function buildListingFacets(
     categories?: Map<string, string>;
     categoryHandles?: (p: StoreProduct) => string[];
     min?: number;
+    minOption?: number;
   } = {},
 ): ListingFacets {
   const min = opts.min ?? MIN_PRODUCTS;
+  const minOption = opts.minOption ?? MIN_OPTION_PRODUCTS;
   const categories = new Map<string, Set<string>>();
   const tags = new Map<string, Set<string>>();
   const options = new Map<string, Map<string, Set<string>>>();
@@ -92,7 +118,7 @@ export function buildListingFacets(
     for (const t of p.tags ?? []) if (t?.value) addCount(tags, t.value, p.id);
     for (const o of p.options ?? []) {
       const title = o?.title?.trim();
-      if (!title) continue;
+      if (!title || !isFilterableOption(o)) continue;
       const byValue = options.get(title) ?? new Map<string, Set<string>>();
       for (const v of o.values ?? []) {
         const value = v?.value?.trim();
@@ -121,10 +147,10 @@ export function buildListingFacets(
     if (values.length > 1) groups.push({ key: "categoria", title: "Categoría", values });
   }
   for (const [title, byValue] of [...options.entries()].sort(([a], [b]) => compareValues(a, b))) {
-    const values = frequent(byValue, min)
+    const values = frequent(byValue, minOption)
       .map(([value]) => ({ value: `${title}:${value}`, label: value }))
       .sort((a, b) => compareValues(a.label, b.label));
-    if (values.length) groups.push({ key: "opcion", title, values });
+    if (values.length > 1) groups.push({ key: "opcion", title, values });
   }
   const tagValues = frequent(tags, min)
     .map(([value]) => ({ value, label: value }))

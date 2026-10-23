@@ -111,6 +111,8 @@ const LEGAL_PATHS = [
  *     LiveSync: categorías, /productos/, /ofertas/, home; Fase S, D-S1)
  *   - listados/categorias.json → shop-categories.json (árbol de categorías sin las vacías, para
  *     las páginas on-demand; Fase S)
+ *   - listados/opciones.json → hidden-options.json (opciones con `metadata.filtrable = false`,
+ *     para /buscar/; Fase O)
  * Fuente: astro-docs (integrations-reference: astro:config:done `config.build.server`,
  * astro:build:done `dir` = salida del cliente; comprobado en astro 7.3.5 integrations/hooks.js).
  * @returns {import("astro").AstroIntegration}
@@ -121,6 +123,7 @@ function privateBuildManifests() {
     { from: "listados/paginas.json", to: "listing-pages.json" },
     { from: "listados/categorias.json", to: "shop-categories.json" },
     { from: "listados/correas.json", to: "correa-cards.json" },
+    { from: "listados/opciones.json", to: "hidden-options.json" },
   ];
   /** @type {URL | undefined} */
   let serverDir;

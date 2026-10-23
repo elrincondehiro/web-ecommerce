@@ -11,6 +11,9 @@
  *   Las imágenes subidas desde el Admin (sin nombre `handle_XX`) se conservan detrás.
  * - `replace`: sustituye todas las imágenes del producto por las de la carpeta.
  *   Los objetos antiguos quedan en el bucket (limpieza pendiente, ver docs/fases/fase6.md).
+ * - Fase O: `<handle>--<valor>_XX.jpg` = fotos de un valor de la opción `metadata.opcion_fotos`
+ *   (p. ej. «Estampado»): van detrás de las generales y se asocian a TODAS las variantes con ese
+ *   valor (`batchImageVariantsWorkflow`, Medusa ≥ 2.11.2). Un valor que no existe = aviso.
  * - `dry-run`: solo informa, no sube ni modifica nada.
  * - La ruta de la carpeta es relativa a apps/backend (o absoluta).
  */
@@ -18,9 +21,14 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ExecArgs } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
-import { updateProductsWorkflow, uploadFilesWorkflow } from "@medusajs/medusa/core-flows";
+import {
+  batchImageVariantsWorkflow,
+  updateProductsWorkflow,
+  uploadFilesWorkflow,
+} from "@medusajs/medusa/core-flows";
 import {
   MIME_BY_EXT,
+  valueSlug,
   planProductImages,
   sourceFileFromUrl,
   type ProductImagePlan,
@@ -64,7 +72,18 @@ export default async function importImages({ container, args }: ExecArgs) {
 
   const { data: products } = await query.graph({
     entity: "product",
-    fields: ["id", "handle", "thumbnail", "images.id", "images.url", "images.metadata"],
+    fields: [
+      "id",
+      "handle",
+      "thumbnail",
+      "metadata",
+      "images.id",
+      "images.url",
+      "images.metadata",
+      "variants.id",
+      "variants.options.value",
+      "variants.options.option.title",
+    ],
     filters: { handle: plan.products.map((p) => p.handle) },
   });
   const byHandle = new Map(products.map((p) => [p.handle, p]));
@@ -78,7 +97,68 @@ export default async function importImages({ container, args }: ExecArgs) {
     );
   }
 
-  const stats = { products: 0, uploaded: 0, skipped: 0 };
+  const stats = { products: 0, uploaded: 0, skipped: 0, linked: 0 };
+
+  type Product = (typeof products)[number];
+  /** Fase O: slug del valor → variantes con ese valor en la opción `metadata.opcion_fotos`. */
+  function variantsByValue(product: Product): Map<string, string[]> | null {
+    const option = product.metadata?.["opcion_fotos"];
+    if (typeof option !== "string" || !option) return null;
+    const out = new Map<string, string[]>();
+    for (const v of product.variants ?? []) {
+      const ov = (v?.options ?? []).find((o) => o?.option?.title === option);
+      if (!v || !ov?.value) continue;
+      const slug = valueSlug(ov.value);
+      out.set(slug, [...(out.get(slug) ?? []), v.id]);
+    }
+    return out;
+  }
+
+  /**
+   * Asocia cada foto de valor a sus variantes. Idempotente: solo añade las que faltan (Medusa
+   * 2.21.2 no evita duplicados en `batchImageVariantsWorkflow`; comprobado en dev).
+   */
+  async function linkValueImages(
+    product: Product,
+    item: ProductImagePlan,
+    urls: Map<string, string>,
+  ) {
+    const byValue = variantsByValue(product);
+    const valued = item.files.filter((f) => f.value);
+    if (!valued.length) return;
+    if (!byValue) {
+      logger.warn(
+        `${item.handle}: fotos por valor sin \`opcion_fotos\` en el producto (se omiten).`,
+      );
+      return;
+    }
+    const { data } = await query.graph({
+      entity: "product_image",
+      fields: ["id", "url", "variants.id"],
+      filters: { product_id: product.id },
+    });
+    const byUrl = new Map(
+      (data as { id: string; url: string; variants?: ({ id: string } | null)[] | null }[]).map(
+        (i) => [i.url, { id: i.id, linked: new Set((i.variants ?? []).map((v) => v?.id)) }],
+      ),
+    );
+    for (const f of valued) {
+      const variants = byValue.get(f.value!);
+      if (!variants?.length) {
+        logger.warn(
+          `${item.handle}: ningún valor «${f.value}» en ${String(product.metadata?.["opcion_fotos"])} (${f.file}).`,
+        );
+        continue;
+      }
+      const image = byUrl.get(urls.get(f.file) ?? "");
+      const add = variants.filter((id) => !image?.linked.has(id));
+      if (!image || !add.length) continue;
+      if (!dryRun) {
+        await batchImageVariantsWorkflow(container).run({ input: { image_id: image.id, add } });
+      }
+      stats.linked += add.length;
+    }
+  }
 
   async function processProduct(item: ProductImagePlan) {
     const product = byHandle.get(item.handle);
@@ -89,7 +169,12 @@ export default async function importImages({ container, args }: ExecArgs) {
     );
     const pending = replace ? item.files : item.files.filter((f) => !imported.has(f.file));
     stats.skipped += item.files.length - pending.length;
-    if (!pending.length) return;
+    if (!pending.length) {
+      // Ya subidas: se repasa la asociación a variantes (p. ej. tras añadir variantes nuevas).
+      const urls = new Map(item.files.map((f) => [f.file, imported.get(f.file)?.url ?? ""]));
+      await linkValueImages(product, item, urls);
+      return;
+    }
     if (dryRun) {
       stats.products += 1;
       stats.uploaded += pending.length;
@@ -111,11 +196,16 @@ export default async function importImages({ container, args }: ExecArgs) {
     const newUrl = new Map(pending.map((f, i) => [f.file, uploaded[i]?.url]));
 
     // Orden: fotos de la carpeta por posición; después, las subidas a mano desde el Admin.
+    const urlOf = new Map<string, string>();
     const ours = item.files
       .map((f) => {
         const url = newUrl.get(f.file);
-        if (url) return { url, metadata: { source_file: f.file } };
+        if (url) {
+          urlOf.set(f.file, url);
+          return { url, metadata: { source_file: f.file } };
+        }
         const prev = imported.get(f.file);
+        if (prev) urlOf.set(f.file, prev.url);
         return prev ? { id: prev.id, url: prev.url, metadata: prev.metadata ?? {} } : null;
       })
       .filter((img): img is NonNullable<typeof img> => img !== null);
@@ -127,6 +217,7 @@ export default async function importImages({ container, args }: ExecArgs) {
         products: [{ id: product.id, images, thumbnail: ours[0]?.url ?? product.thumbnail }],
       },
     });
+    await linkValueImages(product, item, urlOf);
     stats.products += 1;
     stats.uploaded += pending.length;
   }
@@ -146,6 +237,7 @@ export default async function importImages({ container, args }: ExecArgs) {
 
   logger.info(
     `${dryRun ? "[dry-run] " : ""}Imágenes: ${stats.uploaded} subidas en ${stats.products} productos, ` +
-      `${stats.skipped} ya importadas, ${unknown.length} handles desconocidos.`,
+      `${stats.skipped} ya importadas, ${stats.linked} asociaciones nuevas a variantes, ` +
+      `${unknown.length} handles desconocidos.`,
   );
 }

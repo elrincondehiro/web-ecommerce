@@ -1,0 +1,17 @@
+---
+// <style> inline con su hash en la CSP (fase 11-3, como SwatchStyles). Usar SIEMPRE con
+// `slot="head"` del layout: desde el <body> el hash llega tarde (AGENTS §3.2).
+// Fase O: colores de las muestras del selector de opciones (`metadata.color` del valor).
+import { createHash } from "node:crypto";
+
+interface Props {
+  css: string;
+}
+const { css } = Astro.props;
+if (css && import.meta.env.CSP_ENABLED) {
+  const hash = `sha256-${createHash("sha256").update(css).digest("base64")}` as const;
+  Astro.csp?.insertStyleHash(hash);
+}
+---
+
+{css && <style is:inline set:html={css} />}

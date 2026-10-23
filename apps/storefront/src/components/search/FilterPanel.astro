@@ -82,6 +82,10 @@ const slug = (t: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+// Grupos plegados (Fase O): un <details> por grupo, abierto solo si tiene algo marcado (así 10
+// colores no empujan el resto de filtros). En /buscar/ sin JS, el grupo pulsado lleva un valor
+// marcado (o se acaba de desmarcar: entonces se pliega). Con JS, SearchLive deja abiertos los
+// que el usuario tenía abiertos.
 // Sin JS, "Aplicar" vuelve a la altura de los resultados (solo páginas con #resultados).
 const formAction = sidebar ? `${action}#resultados` : action;
 const linkHref = (key: "categoria" | "etiqueta" | "opcion", value: string, title: string) =>
@@ -132,7 +136,7 @@ const linkHref = (key: "categoria" | "etiqueta" | "opcion", value: string, title
         <div class="filter-panel__body flex-1 overflow-y-auto px-4 py-2">
           {groups.map((g) => (
             <details
-              open
+              open={g.values.some((v) => isChecked(g.key, v.value))}
               class="filter-group border-b py-3 last:border-b-0"
               id={`f-${slug(g.title)}`}
             >

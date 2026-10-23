@@ -86,7 +86,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - **Cuenta** (fase9): revocación de JWT (lista o sesiones), cambio de email, más datos del cliente (lista del usuario).
 - **Diseño** (faseD, faseI): foto del hero, logo en negativo, botón de pausa de la barra de anuncios, textos de «Sobre nosotros»; probar Safari/WebKit; `/productos/` 91–94 en Lighthouse **local**.
 - **Fotos reales**: script de preparación (sRGB, sin EXIF/GPS, ~2400 px, JPEG q85–90; fase6).
-- **CI**: RAM del runner (dos builds a la vez pueden agotar los 4 GB; fase2); quitar los `overrides` de seguridad cuando las dependencias traigan las versiones arregladas; vigilar los 5 avisos moderados de `pnpm audit`.
+- **CI**: RAM del runner (dos builds a la vez pueden agotar los 4 GB; fase2); quitar los `overrides` de seguridad cuando las dependencias traigan las versiones arregladas; vigilar los avisos moderados de `pnpm audit`; quitar las excepciones de `audit.ignore` (`pnpm-workspace.yaml`, 4 avisos altos del árbol de build de `@medusajs/*`, la última `GHSA-c4qx-w738-7hr3` del 23-oct-2026) cuando Renovate suba Medusa y `pnpm audit --prod` deje de mostrarlas.
 - **Avisos conocidos sin acción**: Lightning CSS no reconoce `::scroll-button()` (se irá con Renovate).
 
 ## 6. Caducidades 📅

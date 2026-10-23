@@ -258,12 +258,19 @@
     }
   }
   // Ficha con variantes: el ♡ del título sigue a la variante elegida (data-wish-follow = id del
-  // formulario de Añadir).
+  // formulario de Añadir): radio de la tabla o, en el selector de opciones (Fase O), la marca de
+  // la combinación elegida (VariantPicker: `data-pid` hermana del radio marcado).
   addEventListener("change", (e) => {
-    const r = e.target as HTMLInputElement;
-    if (r.name != "variant_id" || !r.form) return;
-    for (const b of document.querySelectorAll<HTMLElement>(`[data-wish-follow="${r.form.id}"]`))
-      b.dataset.wishKey = r.value;
+    const f = (e.target as HTMLInputElement).form;
+    const a = f?.querySelector<HTMLElement>("[data-ai]:checked")?.dataset.ai;
+    const k =
+      f?.querySelector<HTMLInputElement>("[name=variant_id]:checked")?.value ??
+      f?.querySelector<HTMLElement>(
+        `[name=opcion_2]:checked~[data-pa="${a}"],[name=opcion_1]:checked~[data-pid]`,
+      )?.dataset.pid;
+    if (!k) return;
+    for (const b of document.querySelectorAll<HTMLElement>(`[data-wish-follow="${f!.id}"]`))
+      b.dataset.wishKey = k;
     paint();
   });
 

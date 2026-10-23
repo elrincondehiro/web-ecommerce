@@ -102,6 +102,14 @@ export interface ProductSheet {
    * `undefined` = no tocar.
    */
   related?: string[] | null;
+  /**
+   * Ficha (Fase O): plantilla del storefront (`src/content/plantillas/<id>.md`), guía de tallas
+   * (`src/content/guias/<id>.md`) y opción cuyas fotos cambian la galería. `null` = borrar,
+   * `undefined` = no tocar.
+   */
+  template?: Text;
+  sizeGuide?: Text;
+  photoOption?: Text;
   /** Títulos de las opciones del producto, en el orden de las columnas. */
   options: string[];
   variants: VariantSheet[];
@@ -148,6 +156,9 @@ const PRODUCT_COLUMNS = [
   "sustituto",
   "sin_puntos",
   "relacionados",
+  "plantilla",
+  "guia_tallas",
+  "opcion_fotos",
   "sku",
   "ean",
   "precio",
@@ -184,6 +195,9 @@ const PRODUCT_LEVEL: ProductColumn[] = [
   "sustituto",
   "sin_puntos",
   "relacionados",
+  "plantilla",
+  "guia_tallas",
+  "opcion_fotos",
 ];
 /** Columnas de variante que heredan el valor de la fila de arriba (mismo producto). */
 type Inherited =
@@ -491,6 +505,19 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
         });
       }
     }
+    // Opción de las fotos (Fase O): una de las opciones del producto, con su grafía de la hoja.
+    if (p.photoOption) {
+      const match = p.options.find((t) => fold(t) === fold(p.photoOption!));
+      if (match) p.photoOption = match;
+      else {
+        errors.push({
+          file,
+          line: p.line,
+          column: "opcion_fotos",
+          message: `«${p.photoOption}» no es una opción del producto (${p.options.join(", ") || "no tiene opciones"}).`,
+        });
+      }
+    }
     if (!p.options.length && p.variants.length > 1) {
       errors.push({
         file,
@@ -632,6 +659,22 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
         } else if (list.length > RELATED_MAX) {
           err("relacionados", `Como mucho ${RELATED_MAX} productos.`);
         } else p.related = list;
+      }
+
+      // Ficha (Fase O): plantilla y guía de tallas = id de su fichero del storefront.
+      for (const [col, key] of [
+        ["plantilla", "template"],
+        ["guia_tallas", "sizeGuide"],
+      ] as const) {
+        if (!has(col)) continue;
+        const v = text(cell(col));
+        if (v && !HANDLE_RE.test(v)) {
+          err(col, `Id no válido: «${v}» (minúsculas, números y guiones).`);
+        } else if (v !== undefined) p[key] = v;
+      }
+      if (has("opcion_fotos")) {
+        const v = text(cell("opcion_fotos"));
+        if (v !== undefined) p.photoOption = v;
       }
 
       // Componentes analíticos (% sobre producto tal cual)

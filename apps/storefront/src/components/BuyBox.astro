@@ -7,6 +7,8 @@
 // cada fila de la tabla (el «Desde» no lo lleva: sería el de otra variante).
 // Granel (S-3): «Desde» = precio del mínimo, €/kg debajo, campo de gramos (AddToCart `bulk`) y,
 // con CATALOG_FEATURES.bulkStockLeft, «Quedan 2,4 kg» ([data-left], lo corrige LiveSync).
+// Selector de opciones (Fase O, `picker`): en vez de la tabla, VariantPicker (radios por opción)
+// y `product_id` en el formulario; la action busca la variante (lib/variant-picker.ts).
 import { Badge } from "$lib/components/ui/badge";
 import AddToCart from "./AddToCart.astro";
 import { commonRule, formatGrams } from "$lib/bulk";
@@ -20,11 +22,15 @@ import {
 import { stockLeftText } from "$lib/live-sync";
 import Price from "./Price.astro";
 import { BUY_FORM_ID } from "$lib/wishlist";
+import type { VariantPicker as Picker } from "$lib/variant-picker";
+import VariantPicker from "./VariantPicker.astro";
 
 interface Props {
   product: StoreProduct;
+  /** Fase O: selector de opciones (ficha), o null para la tabla de variantes. */
+  picker?: Picker | null | undefined;
 }
-const { product } = Astro.props;
+const { product, picker } = Astro.props;
 const pricing = getProductPricing(product);
 const multi = pricing.variants.length > 1;
 const currency = pricing.currencyCode;
@@ -83,7 +89,13 @@ const singleLeft = single ? stockLeftText(single) : null;
       unitKey={multi ? "" : product.id}
       id={BUY_FORM_ID}
     >
-      {multi && (
+      {multi && picker && currency && (
+        <div slot="before" class="flex flex-col gap-4">
+          <input type="hidden" name="product_id" value={product.id} />
+          <VariantPicker picker={picker} currency={currency} />
+        </div>
+      )}
+      {multi && !picker && (
         <fieldset slot="before">
           <legend class="sr-only">Elige una variante</legend>
           <table class="w-full max-w-sm text-sm tabular-nums">

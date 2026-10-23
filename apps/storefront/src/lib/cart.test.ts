@@ -146,6 +146,7 @@ describe("itemCount y avisos", () => {
       "discontinued",
       "maximum",
       "correa",
+      "variant",
       "error",
     ]);
   });

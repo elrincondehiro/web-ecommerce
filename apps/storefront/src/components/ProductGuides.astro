@@ -1,0 +1,73 @@
+---
+// Guía de tallas y plantilla de la ficha (Fase O; lib/plantillas.ts). HTML + `popover` nativo,
+// 0 JS: un botón por bloque abre un panel lateral (mismo estilo que el del carrito, `.flyout`)
+// que se cierra con ✕, Escape o pulsando fuera. Sin `boton` en la plantilla, su texto va
+// desplegado en la ficha. El contenido es Markdown de las Content Collections (rebuild).
+import { getEntry, render } from "astro:content";
+import { buttonVariants } from "$lib/components/ui/button";
+import Icon from "./Icon.astro";
+
+interface Props {
+  template: string | null;
+  sizeGuide: string | null;
+}
+const { template, sizeGuide } = Astro.props;
+const guide = sizeGuide ? await getEntry("guias", sizeGuide) : undefined;
+const tpl = template ? await getEntry("plantillas", template) : undefined;
+const Guide = guide ? (await render(guide)).Content : null;
+const Tpl = tpl ? (await render(tpl)).Content : null;
+const panels = [
+  ...(guide && Guide
+    ? [{ id: "guia-tallas", button: "Guía de tallas", title: guide.data.titulo, Body: Guide }]
+    : []),
+  ...(tpl && Tpl && tpl.data.boton
+    ? [{ id: `plantilla-${tpl.id}`, button: tpl.data.boton, title: tpl.data.titulo, Body: Tpl }]
+    : []),
+];
+const inline = tpl && Tpl && !tpl.data.boton ? { title: tpl.data.titulo, Body: Tpl } : null;
+---
+
+{panels.length > 0 && (
+  <div class="flex flex-wrap gap-2">
+    {panels.map((p) => (
+      <button
+        type="button"
+        popovertarget={p.id}
+        class={buttonVariants({ variant: "outline", size: "sm" })}
+      >
+        {p.button}
+      </button>
+    ))}
+  </div>
+)}
+{panels.map((p) => (
+  <div id={p.id} popover class="flyout" role="dialog" aria-labelledby={`${p.id}-t`}>
+    <div class="flex items-center justify-between border-b-2 border-line px-4 py-3">
+      <h2 id={`${p.id}-t`} class="font-display text-lg font-bold">
+        {p.title}
+      </h2>
+      <button
+        type="button"
+        popovertarget={p.id}
+        popovertargetaction="hide"
+        class={buttonVariants({ variant: "ghost", size: "icon" })}
+        aria-label="Cerrar"
+      >
+        <Icon name="x" class="size-5" />
+      </button>
+    </div>
+    <div class="prose-page overflow-y-auto px-4 py-4">
+      <p.Body />
+    </div>
+  </div>
+))}
+{inline && (
+  <section aria-labelledby="plantilla-ficha">
+    <h2 id="plantilla-ficha" class="mb-2 font-semibold">
+      {inline.title}
+    </h2>
+    <div class="prose-page max-w-prose text-muted-foreground">
+      <inline.Body />
+    </div>
+  </section>
+)}

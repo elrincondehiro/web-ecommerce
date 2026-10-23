@@ -11,3 +11,5 @@ medusa-db.sql
 !/catalog/mock/
 /catalog/mock/*
 !/catalog/mock/categorias.csv
+# Productos de prueba del selector de opciones (Fase O; e2e variantes.spec.ts)
+!/catalog/prueba-arnes/

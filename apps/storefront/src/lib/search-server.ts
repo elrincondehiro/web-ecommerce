@@ -1,6 +1,7 @@
 // Orquestación de una página de resultados (servidor): búsqueda → precio/stock frescos de los
 // ids de la página → facetas con recuentos → miniaturas del build. La usan /buscar/ y su
 // fragmento /buscar/parcial/ (fase 7-1).
+import { readBuildManifest } from "./build-manifest";
 import { getCardImages } from "./card-images";
 import type { StoreProduct } from "./catalog";
 import { facetsFromSearch, type ListingFacets } from "./facets";
@@ -21,6 +22,9 @@ export interface SearchPage {
   categories: Map<string, string>;
   images: Map<string, CardImage> | undefined;
 }
+
+/** Opciones no filtrables (Fase O): manifiesto del build `hidden-options.json`. */
+const hiddenOptions = () => readBuildManifest<number>("hidden-options.json");
 
 /** `timings` (opcional): mide cada llamada para la cabecera Server-Timing (lib/server-timing). */
 export async function loadSearchPage(params: SearchParams, timings?: Timings): Promise<SearchPage> {
@@ -53,10 +57,12 @@ export async function loadSearchPage(params: SearchParams, timings?: Timings): P
     facets: facetsFromSearch(
       {
         ...outcome.facets,
-        // Las opciones de la correa (largo, mosquetones) se eligen en su ficha: no son filtros
-        opcion: outcome.facets.opcion.filter(
-          (f) => !CORREA_OPTION_TITLES.has(f.value.slice(0, f.value.indexOf(":"))),
-        ),
+        // Las opciones de la correa (largo, mosquetones) se eligen en su ficha: no son filtros.
+        // Tampoco las marcadas `filtrable = false` en el Admin (Fase O, manifiesto del build).
+        opcion: outcome.facets.opcion.filter((f) => {
+          const title = f.value.slice(0, f.value.indexOf(":"));
+          return !CORREA_OPTION_TITLES.has(title) && !hiddenOptions().has(title);
+        }),
       },
       {
         // Filtro por niveles (Fase S): raíces, o las hijas de lo elegido

@@ -49,6 +49,8 @@ export const NOTICES = {
   maximum: `El máximo de un producto a granel es ${formatGrams(BULK_MAX_G)} por pedido.`,
   correa:
     "Revisa la correa: la medida exacta tiene que caber en el largo elegido y las observaciones, tener 200 caracteres como mucho.",
+  // Selector de opciones (Fase O): combinación que no existe (p. ej. HTML de un build anterior)
+  variant: "Esa combinación de opciones no está disponible. Elige otra.",
   error: "No se ha podido actualizar el carrito. Inténtalo de nuevo.",
 } as const;
 

@@ -26,7 +26,9 @@ test.describe("sin JS", () => {
   test.use({ javaScriptEnabled: false });
 
   test("listado: una sola tarjeta «Correa a medida» que lleva a la landing", async ({ page }) => {
-    await page.goto("/categoria/paseo-perro/");
+    // Su propia categoría: en la del padre (paseo-perro) la página 1 depende de qué más haya
+    // (con los arneses de prueba de la Fase O, la correa pasa a la página 2).
+    await page.goto("/categoria/correas-perro/");
     const card = page.locator("article", { hasText: "Correa a medida" });
     await expect(card).toHaveCount(1);
     await expect(page.locator('article a[href^="/producto/correa-azul"]')).toHaveCount(0);

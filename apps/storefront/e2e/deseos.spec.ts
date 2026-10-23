@@ -6,6 +6,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { skipIfRemote, testEmail } from "./_remote";
 
+/** Ficha con tabla de variantes (2 variantes con stock, como MULTI de carrito.spec.ts). */
+const TABLE_PRODUCT = "/producto/mock-champu-plus-020/";
+
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "Secreta-123";
 
@@ -122,11 +125,9 @@ test.describe("lista de deseos sin JS", () => {
     await page.goto("/cuenta/entrar/");
     await fillLogin(page, email);
     await expect(page).toHaveURL(/\/cuenta\/$/);
-    // Primer producto del listado con «Elegir opciones» (varias variantes).
-    await page.goto("/productos/");
-    const choose = page.getByRole("link", { name: /^Elegir opciones de / }).first();
-    const href = (await choose.getAttribute("href"))!;
-    await page.goto(href);
+    // Ficha con tabla de variantes (una opción sin fotos ni colores; Fase O). El selector de
+    // opciones se prueba en variantes.spec.ts.
+    await page.goto(TABLE_PRODUCT);
     const title = (await page.getByRole("heading", { level: 1 }).textContent())!.trim();
     const radios = page.locator("input[name=variant_id]");
     const second = radios.nth(1);
@@ -303,9 +304,7 @@ test.describe("lista de deseos con JS: estado guardado", () => {
     await page.goto("/cuenta/entrar/");
     await fillLogin(page, email);
     await expect(page).toHaveURL(/\/cuenta\/$/);
-    await page.goto("/productos/");
-    const choose = page.getByRole("link", { name: /^Elegir opciones de / }).first();
-    await page.goto((await choose.getAttribute("href"))!);
+    await page.goto(TABLE_PRODUCT);
     const title = (await page.getByRole("heading", { level: 1 }).textContent())!.trim();
     const radios = page.locator("input[name=variant_id]:visible");
     const save = page

@@ -57,3 +57,7 @@ audit:
     - GHSA-vfj7-8cjw-p6xm
     # @graphql-tools/utils (prototype pollution en mergeDeep): codegen de @medusajs/utils
     - GHSA-7mx3-vvmw-hjmv
+    # @graphql-tools/utils (prototype pollution en mergeIncrementalResult, 22-oct-2026): codegen
+    # de @medusajs/utils (@graphql-codegen v4/v5 → utils ^10, sin 10.x arreglada; Medusa 2.22.0
+    # igual). Solo genera tipos al compilar: Medusa no expone GraphQL.
+    - GHSA-c4qx-w738-7hr3

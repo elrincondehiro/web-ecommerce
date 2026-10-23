@@ -1086,3 +1086,44 @@
 .prose-page strong {
   font-weight: 700;
 }
+/* Fase O: imágenes y tablas del Markdown (guías de tallas, plantillas de ficha) con el estilo
+   de la web: trazo de marca de 2 px, esquinas md y sombra retro (como la galería de la ficha).
+   Las imágenes las optimiza Astro en el build (WebP, width/height, lazy). */
+.prose-page img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  background: var(--muted);
+}
+/* Un párrafo que solo tiene la imagen: un poco más de aire */
+.prose-page p:has(> img:only-child) {
+  margin-top: 1.5rem;
+}
+.prose-page table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+.prose-page th,
+.prose-page td {
+  padding: 0.375rem 0.75rem;
+  text-align: left;
+}
+.prose-page thead th {
+  background: var(--muted);
+  font-weight: 600;
+  border-bottom: 2px solid var(--line);
+}
+.prose-page tbody tr + tr td {
+  border-top: 1px solid var(--border);
+}

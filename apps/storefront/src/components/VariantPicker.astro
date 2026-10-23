@@ -1,0 +1,129 @@
+---
+// Selector de opciones de la ficha (Fase O; lib/variant-picker.ts). HTML + CSS, 0 JS.
+// - Opción A (`opcion_1`): muestras con foto, color (`metadata.color` del valor) o texto.
+// - Opción B (`opcion_2`): etiquetas; dentro de cada una, una marca por valor de A con la
+//   variante (`data-pa`, `data-pid`, `data-vstock`) y su precio. El CSS por posición
+//   (styles/variant-picker.css) deja ver solo la del A elegido, tacha las agotadas y cambia
+//   Añadir ↔ Agotado. LiveSync corrige `data-vstock` y los precios como en la tabla.
+// - Una sola opción: la marca va en la propia muestra (sin `data-pa`).
+// La action `cart.add` recibe `product_id` + `opcion_1` / `opcion_2` y busca la variante.
+// Debe ir dentro de un contenedor `.vp` que incluya la galería (ficha, [handle].astro).
+import { discountPercent } from "$lib/catalog";
+import { OPTION_FIELDS, type PickerOption, type VariantPicker } from "$lib/variant-picker";
+import Price from "./Price.astro";
+import ProductImage from "./ProductImage.astro";
+// Reglas por posición, iguales para todas las fichas (generadas: lib/variant-picker pickerCss)
+import "../styles/variant-picker.css";
+
+interface Props {
+  picker: VariantPicker;
+  currency: string;
+}
+const { picker, currency } = Astro.props;
+const { a, b, cells, selected } = picker;
+const showPrice = picker.priceRange;
+const chip =
+  "vp-opt relative flex cursor-pointer flex-col items-center gap-1 rounded-md border-2 border-line bg-card px-3 py-1.5 text-sm font-medium shadow-xs has-checked:border-primary has-checked:ring-2 has-checked:ring-primary has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring";
+const label = (o: PickerOption) => o.title;
+---
+
+<fieldset class="flex flex-col gap-2">
+  <legend class="mb-2 text-sm font-semibold">{label(a)}</legend>
+  <div class="flex flex-wrap gap-2">
+    {a.values.map((v, i) => {
+      const image = v.images[0];
+      const cell = b ? null : (cells[i]?.[0] ?? null);
+      return (
+        <label class:list={[chip, (image || v.color) && "p-1"]} title={v.value}>
+          <input
+            type="radio"
+            name={OPTION_FIELDS[0]}
+            value={v.field}
+            checked={i === selected.a}
+            required
+            data-ai={i + 1}
+            class="sr-only"
+          />
+          {image ? (
+            <ProductImage src={image} alt="" variant="thumb" class="size-14 rounded-sm" />
+          ) : v.color ? (
+            <span
+              class="swatch size-9 rounded-full border-2 border-line"
+              data-sw={`a${i + 1}`}
+              aria-hidden="true"
+            />
+          ) : null}
+          <span class:list={[(image || v.color) && "px-1 text-xs"]}>{v.value}</span>
+          {!b && (
+            <span
+              class="text-xs font-normal tabular-nums"
+              data-pid={cell?.id}
+              data-vstock={cell?.inStock ? "in" : "out"}
+            >
+              {cell && cell.amount != null && showPrice && (
+                <Price
+                  id={cell.id}
+                  amount={cell.amount}
+                  currency={currency}
+                  wasAmount={cell.wasAmount}
+                  discountPercent={
+                    cell.wasAmount !== null ? discountPercent(cell.amount, cell.wasAmount) : null
+                  }
+                />
+              )}
+              <span class="sr-only" data-if-vstock="out">
+                (agotado)
+              </span>
+            </span>
+          )}
+        </label>
+      );
+    })}
+  </div>
+</fieldset>
+{b && (
+  <fieldset class="flex flex-col gap-2">
+    <legend class="mb-2 text-sm font-semibold">{label(b)}</legend>
+    <div class="flex flex-wrap gap-2">
+      {b.values.map((v, j) => (
+        <label class:list={[chip, "min-w-14"]}>
+          <input
+            type="radio"
+            name={OPTION_FIELDS[1]}
+            value={v.field}
+            checked={j === selected.b}
+            required
+            class="sr-only"
+          />
+          <span>{v.value}</span>
+          {a.values.map((_, i) => {
+            const cell = cells[i]?.[j] ?? null;
+            return (
+              <span
+                class="text-xs font-normal tabular-nums"
+                data-pa={i + 1}
+                data-pid={cell?.id}
+                data-vstock={cell?.inStock ? "in" : "out"}
+              >
+                {cell && cell.amount != null && showPrice && (
+                  <Price
+                    id={cell.id}
+                    amount={cell.amount}
+                    currency={currency}
+                    wasAmount={cell.wasAmount}
+                    discountPercent={
+                      cell.wasAmount !== null ? discountPercent(cell.amount, cell.wasAmount) : null
+                    }
+                  />
+                )}
+                <span class="sr-only" data-if-vstock="out">
+                  {cell ? "(agotado)" : "(no disponible)"}
+                </span>
+              </span>
+            );
+          })}
+        </label>
+      ))}
+    </div>
+  </fieldset>
+)}

@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 22-oct-2026 · **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente**: una fase de **problemas de frontend y backend** que trae el usuario (detectados al cargar el catálogo real); después, mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 23-oct-2026 · **Fase O (opciones, variantes y plantillas de ficha) cerrada** (`feat/fase-o-variantes`, [faseO-variantes.md](./fases/faseO-variantes.md)). **Siguiente**: Fase F, mejoras en filtros (problemas que trae el usuario: rango de precio de `/buscar/`, materia seca fuera de contexto, «Formato: Única», sangrado de subcategorías, «Solo disponibles»). Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente**: una fase de **problemas de frontend y backend** que trae el usuario (detectados al cargar el catálogo real); después, mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -34,6 +34,7 @@
 | 11 Despliegue de prueba (Hetzner)           | ✅     | [fase11.md](./fases/fase11.md)                                       |
 | G Pedidos de invitado → cuenta              | ✅     | [faseG-invitados.md](./fases/faseG-invitados.md)                     |
 | V/W Migración desde Loyverse                | ✅     | [faseV-loyverse.md](./fases/faseV-loyverse.md)                       |
+| O Opciones, variantes y plantillas          | ✅     | [faseO-variantes.md](./fases/faseO-variantes.md)                     |
 
 Roadmap completo y tiempos: README §13.
 
@@ -151,6 +152,14 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 ```
 
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
+
+**Fase O — opciones, variantes y plantillas de ficha: ✅ cerrada** ([faseO-variantes.md](./fases/faseO-variantes.md)):
+
+- Productos con 2 opciones (p. ej. estampado × talla): **un solo producto** con selector de muestras en la ficha, **sin JS**. La action busca la variante por las opciones; CSS por posición (`styles/variant-picker.css`, generado y comprobado por el test; 0,7 KB gzip).
+- Fotos por valor: `opcion_fotos` en la hoja + `handle--valor_XX.jpg` en `images:import`.
+- Guías de tallas por modelo (`guia_tallas`, `src/content/guias/`; se cambian desde la metadata del producto en el Admin) y plantillas por categoría (`src/content/plantillas/`), en un `popover`. Fotos en el Markdown junto al `.md` (`![alt](./foto.jpg)`), optimizadas por Astro.
+- Filtros: opción con un solo producto, `metadata.filtrable = false` en el Admin y grupos plegados.
+- Productos de prueba en `apps/backend/catalog/prueba-arnes/` (cargados en la BD local; e2e `variantes.spec.ts`).
 
 **Fase V/W — migración desde Loyverse: ✅ herramientas cerradas** ([faseV-loyverse.md](./fases/faseV-loyverse.md), uso en [`migracion/loyverse/README.md`](../migracion/loyverse/README.md)). Scripts en `migracion/loyverse/` (TypeScript con Node 24, sin dependencias):
 

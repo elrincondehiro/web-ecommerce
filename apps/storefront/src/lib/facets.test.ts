@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { StoreProduct } from "./catalog";
-import { buildListingFacets, compareValues, facetsFromSearch } from "./facets";
+import {
+  buildListingFacets,
+  compareValues,
+  facetsFromSearch,
+  hiddenOptionTitles,
+  isFilterableOption,
+} from "./facets";
 
 const product = (
   id: string,
@@ -30,6 +36,32 @@ const product = (
     })),
   }) as unknown as StoreProduct;
 
+describe("opciones no filtrables (Fase O)", () => {
+  const withMeta = (id: string, metadata: Record<string, unknown> | null) =>
+    ({
+      ...product(id, { options: { "Mosquetón lado perro": ["Estándar", "Montaña"] } }),
+      options: [
+        {
+          title: "Mosquetón lado perro",
+          metadata,
+          values: [{ value: "Estándar" }, { value: "Montaña" }],
+        },
+      ],
+    }) as unknown as StoreProduct;
+
+  it('metadata.filtrable = false (o "false" / "no" del Admin) la quita', () => {
+    for (const v of [false, "false", "no"]) {
+      expect(isFilterableOption({ metadata: { filtrable: v } })).toBe(false);
+      expect(buildListingFacets([withMeta("a", { filtrable: v })]).groups).toEqual([]);
+    }
+    expect(isFilterableOption({ metadata: null })).toBe(true);
+    expect(buildListingFacets([withMeta("a", null)]).groups).toHaveLength(1);
+    expect([...hiddenOptionTitles([withMeta("a", { filtrable: false })])]).toEqual([
+      "Mosquetón lado perro",
+    ]);
+  });
+});
+
 describe("compareValues", () => {
   it("tallas en orden natural, el resto alfabético con números", () => {
     expect(["XL", "S", "M", "L"].sort(compareValues)).toEqual(["S", "M", "L", "XL"]);
@@ -55,12 +87,30 @@ describe("buildListingFacets", () => {
     product("c", { cat: "hogar", options: { Talla: ["M"] }, prices: [12] }),
   ];
 
-  it("solo valores compartidos por ≥ 2 productos; grupos sin valores fuera", () => {
+  it("opciones: basta un producto, pero el grupo necesita ≥ 2 valores; etiquetas: ≥ 2 productos", () => {
     const f = buildListingFacets(products);
     expect(f.groups).toEqual([
-      { key: "opcion", title: "Talla", values: [{ value: "Talla:M", label: "M" }] },
+      {
+        key: "opcion",
+        title: "Formato",
+        values: [
+          { value: "Formato:Único A", label: "Único A" },
+          { value: "Formato:Único B", label: "Único B" },
+        ],
+      },
+      {
+        key: "opcion",
+        title: "Talla",
+        values: ["S", "M", "L"].map((v) => ({ value: `Talla:${v}`, label: v })),
+      },
       { key: "etiqueta", title: "Etiquetas", values: [{ value: "vegano", label: "vegano" }] },
     ]);
+    // Un solo valor en todo el listado («Formato: Única»): sin grupo
+    const single = buildListingFacets([
+      product("x", { options: { Formato: ["Única"] } }),
+      product("y", { options: { Formato: ["Única"] } }),
+    ]);
+    expect(single.groups).toEqual([]);
     expect(f.price).toEqual({ min: 5, max: 20 });
     expect(f.stockFilter).toBe(true);
   });

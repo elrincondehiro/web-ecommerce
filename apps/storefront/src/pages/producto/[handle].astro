@@ -10,11 +10,13 @@ import {
 import { BUY_FORM_ID } from "$lib/wishlist";
 import { buttonVariants } from "$lib/components/ui/button";
 import { categoryHref, deepestCategory } from "$lib/categories";
-import { getEntry } from "astro:content";
+import { getCollection, getEntry } from "astro:content";
 import { CORREA_GROUP_HANDLE, CORREA_GROUP_PATH, correaSwatch, isCorrea } from "$lib/correa";
 import { getAllProducts } from "$lib/medusa";
 import { getRelatedByProduct, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
+import { resolveSizeGuide, resolveTemplate } from "$lib/plantillas";
+import { buildVariantPicker, pickerColorCss } from "$lib/variant-picker";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import AnalyticsTable from "../../components/AnalyticsTable.astro";
@@ -26,6 +28,8 @@ import ProductGallery from "../../components/ProductGallery.astro";
 import LiveSync from "../../components/LiveSync.astro";
 import WishButton from "../../components/WishButton.astro";
 import RelatedProducts from "../../components/RelatedProducts.astro";
+import ProductGuides from "../../components/ProductGuides.astro";
+import HeadStyle from "../../components/HeadStyle.astro";
 
 // Todas las fichas, también las descatalogadas (Fase E, opción i): su URL sigue respondiendo.
 export const getStaticPaths = (async () => {
@@ -67,19 +71,40 @@ const crumbs = [
   ...(correa ? [{ name: "Correa a medida", href: CORREA_GROUP_PATH }] : []),
   { name: product.title, href: `/producto/${product.handle}/` },
 ];
+// Plantilla y guía de tallas (Fase O): el build falla si apuntan a un fichero que no existe.
+const templates = (await getCollection("plantillas")).map((t) => ({
+  id: t.id,
+  categorias: t.data.categorias,
+}));
+const template = correa ? null : resolveTemplate(product, category, templates);
+const sizeGuide = correa
+  ? null
+  : resolveSizeGuide(
+      product,
+      (await getCollection("guias")).map((g) => g.id),
+    );
+// Selector de opciones (Fase O): con 2 opciones (o 1 con fotos o colores), en vez de la tabla.
+const picker = discontinued || correa ? null : buildVariantPicker(product);
 const gallery = (product.images ?? [])
   .slice()
   .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
   .map((img) => img.url)
   .filter(Boolean);
 if (!gallery.length && product.thumbnail) gallery.push(product.thumbnail);
-const image = gallery[0] ?? null;
+// Fotos por valor (opción de fotos): grupos en la galería; las generales detrás.
+const photoGroups = picker?.a.values.some((v) => v.images.length)
+  ? picker.a.values.map((v) => ({ label: v.value, images: v.images }))
+  : [];
+const generalPhotos = photoGroups.length ? (picker?.generalImages ?? []) : gallery;
+const image = photoGroups[picker?.selected.a ?? 0]?.images[0] ?? gallery[0] ?? null;
 // Correa: las opciones se eligen en el configurador (no se listan)
 // Lista de deseos (L-1, decisión B): ♡ junto al título, lejos de «Añadir». Varias variantes →
 // guarda la elegida (y se enciende si ESA está guardada); una sola o correa → el producto.
 const pricing = getProductPricing(product);
 const wishVariant = !correa && pricing.variants.length > 1;
-const options = correa ? [] : (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
+// El resumen de opciones sobra si ya se eligen en el selector
+const options =
+  correa || picker ? [] : (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
 // Plazo de fabricación de la correa (src/content/correa.md)
 const plazo = correa ? (await getEntry("correa", "correa"))?.data.plazo : undefined;
 // Descatalogado: enlace al sustituto o, si no hay, a su categoría (o al catálogo)
@@ -106,9 +131,16 @@ const onward = replacement
   }
 >
   <SwatchStyles slot="head" swatches={showPicker ? siblings : []} />
+  <HeadStyle slot="head" css={picker ? pickerColorCss(picker) : ""} />
   <Breadcrumbs items={crumbs} />
-  <div class="grid gap-8 md:grid-cols-2">
-    <ProductGallery images={gallery} alt={product.title} />
+  {/* `.vp` (Fase O): el CSS del selector abarca la galería (fotos del valor elegido) */}
+  <div class:list={["grid gap-8 md:grid-cols-2", picker && "vp"]}>
+    <ProductGallery
+      images={generalPhotos}
+      alt={product.title}
+      groups={photoGroups}
+      selected={picker?.selected.a}
+    />
     <div class="flex flex-col gap-6">
       <div class="flex items-start justify-between gap-4">
         <div class="flex min-w-0 flex-col gap-2">
@@ -120,8 +152,14 @@ const onward = replacement
             variant="title"
             form={BUY_FORM_ID}
             wish={wishVariant ? "variant" : "product"}
-            initialKey={wishVariant ? preselectedVariantId(pricing) : undefined}
-            productField={!correa}
+            initialKey={
+              wishVariant
+                ? picker
+                  ? (picker.cells[picker.selected.a]?.[picker.selected.b]?.id ?? undefined)
+                  : preselectedVariantId(pricing)
+                : undefined
+            }
+            productField={!correa && !picker}
             productId={product.id}
             productTitle={product.title}
             back={`/producto/${product.handle}/`}
@@ -144,8 +182,10 @@ const onward = replacement
           <CorreaBuilder product={product} />
         </>
       ) : (
-        <BuyBox product={product} />
+        <BuyBox product={product} picker={picker} />
       )}
+
+      {!discontinued && <ProductGuides template={template} sizeGuide={sizeGuide} />}
 
       {options.length > 0 && (
         <dl class="grid gap-2 text-sm">

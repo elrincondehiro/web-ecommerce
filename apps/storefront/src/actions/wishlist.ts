@@ -10,6 +10,7 @@ import { COOKIE_SECURE } from "astro:env/server";
 import { z } from "astro/zod";
 import { loginRedirect } from "$lib/account";
 import { ID_PATTERN, safeBackPath } from "$lib/cart";
+import { resolveVariant } from "./resolve-variant";
 import { addToWishlist, removeFromWishlist, shareWishlist, unshareWishlist } from "$lib/medusa";
 import {
   WISHLIST_PATH,
@@ -42,13 +43,22 @@ export const wishlist = {
     input: z.object({
       product_id: z.string().refine(isProductId),
       variant_id: z.string().refine(isVariantId).nullish(),
+      // Selector de opciones (Fase O): la variante elegida sale de las opciones.
+      opcion_1: z.string().min(3).max(200).nullish(),
+      opcion_2: z.string().min(3).max(200).nullish(),
       // Botón de la ficha (dentro del formulario de Añadir): «variant» guarda la variante
       // elegida; «product» (o el formulario propio, sin `wish`) solo el producto.
       wish: z.enum(["product", "variant"]).nullish(),
       back: z.string().max(512).nullish(),
     }),
-    handler: async ({ product_id, variant_id, wish, back }, ctx): Promise<WishResult> => {
-      const target = { product_id, variant_id: wish === "variant" ? (variant_id ?? null) : null };
+    handler: async (input, ctx): Promise<WishResult> => {
+      const { product_id, wish, back } = input;
+      let variant_id: string | null = null;
+      if (wish === "variant") {
+        // Si las opciones no casan con ninguna variante (HTML viejo), se guarda el producto.
+        variant_id = await resolveVariant(input).catch(() => null);
+      }
+      const target = { product_id, variant_id };
       const origin = safeBackPath(back);
       const token = ctx.locals.customerToken;
       if (!token) return toLogin(ctx, origin, encodeWishPending(target));

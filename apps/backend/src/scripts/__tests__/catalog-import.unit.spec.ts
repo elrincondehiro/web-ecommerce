@@ -6,6 +6,7 @@ import { bulkMinimumAmount, bulkMinimumError, bulkRule } from "../../lib/granel"
 import {
   planCatalog,
   productCreateInput,
+  productMetadata,
   planSale,
   variantUpdateInput,
   type CatalogSnapshot,
@@ -591,5 +592,39 @@ describe("relacionados (Fase R)", () => {
     expect(rel(plan).map((e) => e.message)).toEqual(["No existe el producto «zz»."]);
     const ok = planCatalog({ categories: [], products }, emptyDb({ replacementHandles: ["zz"] }));
     expect(rel(ok)).toEqual([]);
+  });
+});
+
+describe("plantilla, guía de tallas y opción de fotos (Fase O)", () => {
+  const read = (rows: string[]) =>
+    readProducts(
+      csv([
+        "handle,plantilla,guia_tallas,opcion_fotos,opcion:Estampado,opcion:Talla,sku,precio",
+        ...rows,
+      ]),
+    );
+
+  it("se guardan en la metadata; «-» borra; la opción toma la grafía de la columna", () => {
+    const { products, errors } = read([
+      'arnes,arnes,marca-m-arnes-a,estampado,Flores,S,A-1,"29,95"',
+      "arnes,,,,Flores,M,A-2,",
+      'otro,-,-,-,Rojo,S,O-1,"9,95"',
+    ]);
+    expect(errors).toEqual([]);
+    expect(productMetadata(products[0]!)).toMatchObject({
+      plantilla: "arnes",
+      guia_tallas: "marca-m-arnes-a",
+      opcion_fotos: "Estampado",
+    });
+    expect(productMetadata(products[1]!)).toMatchObject({
+      plantilla: "",
+      guia_tallas: "",
+      opcion_fotos: "",
+    });
+  });
+
+  it("id no válido y opción que el producto no tiene", () => {
+    const { errors } = read(['arnes,Arnés,guia a,Color,Flores,S,A-1,"29,95"']);
+    expect(errors.map((e) => e.column)).toEqual(["plantilla", "guia_tallas", "opcion_fotos"]);
   });
 });

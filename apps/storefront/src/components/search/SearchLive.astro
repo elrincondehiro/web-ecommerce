@@ -5,7 +5,8 @@
 // enlaces internos (filtros, chips, paginación) y los formularios GET (precio, orden) dentro de
 // [data-search-root]; se pide el fragmento (data-partial + query) y se cambia en el sitio:
 //   - URL con history.pushState; atrás/adelante (popstate) vuelven a pedir el fragmento;
-//   - se conservan el scroll, el panel móvil abierto y el foco del filtro pulsado. Fase D (4.1):
+//   - se conservan el scroll, el panel móvil abierto, los grupos desplegados y el foco del
+//     filtro pulsado. Fase D (4.1):
 //     el panel (#filtros) NO se sustituye: se cambia su contenido y el de #resultados, así no
 //     se cierra ni vuelve a animarse (antes: innerHTML de todo + showPopover → parpadeo). Se
 //     mantiene también el scroll de su lista. Si la estructura no coincide, todo el contenedor;
@@ -57,6 +58,9 @@
         if (panel && results && np && nr) {
           const list = q(panel, ".filter-panel__body");
           const y = list?.scrollTop ?? 0;
+          // Grupos que el usuario tenía abiertos (Fase O: el servidor los da plegados)
+          for (const d of panel.querySelectorAll("details[open]"))
+            q(np, "#" + d.id)?.setAttribute("open", "");
           panel.replaceChildren(...np.childNodes);
           results.replaceWith(nr);
           const nl = q(panel, ".filter-panel__body");

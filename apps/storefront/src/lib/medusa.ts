@@ -32,7 +32,9 @@ const ORDER = "title";
 // `updated_at`: `lastmod` del sitemap (Fase E).
 const CATALOG_FIELDS =
   "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,updated_at,*images,*categories,*options,*options.values,*tags";
-const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity`;
+// `*variants.images` (Fase O): fotos de cada variante (las suyas + las generales; Medusa 2.21.2,
+// product-module-service `assignImagesToVariants`). Las usa la galería del selector de opciones.
+const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.images,*variants.calculated_price,+variants.inventory_quantity`;
 const CATEGORY_FIELDS = "id,name,handle,description,rank,parent_category_id";
 const PAGE = 100;
 
@@ -353,6 +355,18 @@ export async function getProductVariantsMeta(
     query: { product_id: productId, limit: 500, fields: "id,metadata" },
   });
   return variants;
+}
+
+/**
+ * Opciones y variantes de un producto (Fase O): la action `cart.add` busca la variante con los
+ * valores elegidos en el selector (lib/variant-picker.ts `findVariantByOptions`). Solo productos
+ * publicados del canal de la publishable key (si no, 404).
+ */
+export async function getProductOptionMatrix(productId: string): Promise<StoreProduct> {
+  const { product } = await cartSdk().store.product.retrieve(productId, {
+    fields: "id,*options,variants.id,*variants.options",
+  });
+  return product;
 }
 
 export async function updateLineItem(

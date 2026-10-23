@@ -65,6 +65,9 @@ Una fila por categoría.
 | `sustituto`     | no          | `collar-nylon-2`              | Handle del producto que lo sustituye. `-` = quitarlo.                                                                                                                                                                                        |
 | `sin_puntos`    | no          | `sí`                          | El producto no genera puntos del programa de fidelización (Fase L). Vacío = no tocar.                                                                                                                                                        |
 | `relacionados`  | no          | `collar-cuero \| correa-roja` | Fase R. Handles de otros productos, separados por `\|`, en el orden en que quieres verlos (máx. 8). La ficha muestra 4: si hay menos, completa con otros de su categoría. El carrito sugiere los relacionados de lo que lleva. `-` = borrar. |
+| `plantilla`     | no          | `arnes`                       | Fase O. Plantilla de la ficha (`apps/storefront/src/content/plantillas/<id>.md`). Vacío: la de su categoría, si la tiene. `-` = quitarla. Ver [Fichas con plantilla y selector](#fichas-con-plantilla-y-selector).                           |
+| `guia_tallas`   | no          | `marca-m-arnes-a`             | Fase O. Guía de tallas del modelo (`apps/storefront/src/content/guias/<id>.md`). `-` = quitarla.                                                                                                                                             |
+| `opcion_fotos`  | no          | `Estampado`                   | Fase O. Opción cuyas fotos cambian la galería al elegirla (fotos `handle--valor_01.jpg`). Tiene que ser una de las opciones del producto. `-` = quitarla.                                                                                    |
 
 ### Componentes analíticos (primera fila)
 
@@ -154,13 +157,25 @@ Un producto que ya no se vende **no se borra ni se pasa a borrador**: su URL tie
 - Volver a venderlo: `descatalogado` = `no`.
 - El cambio llega a la búsqueda al momento y a las páginas en el siguiente build.
 
+## Fichas con plantilla y selector
+
+Fase O. Para productos con varias opciones (p. ej. un arnés con 9 estampados × 5 tallas = 45 filas, **un solo producto**):
+
+- **Selector**: con 2 opciones o más (o con una sola si sus valores tienen foto o color), la ficha enseña un grupo de muestras por opción en vez de la tabla de variantes. Funciona sin JS.
+- **Fotos por valor**: `opcion_fotos = Estampado` y las fotos `arnes-estampado--flores_01.jpg`, `arnes-estampado--flores_02.jpg`… (valor en minúsculas, sin tildes y con guiones). Se asocian a todas las variantes con ese valor; la galería enseña las del valor elegido. Las `handle_01.jpg` siguen siendo generales (salen siempre). También se pueden asociar en el Admin («Media» de la variante).
+- **Color de la muestra** (si el valor no tiene foto): en el Admin, `Opciones → Color → valor → Metadata`, clave `color` = `#c0392b`.
+- **No filtrable**: en el Admin, metadata de la **opción** (`Opciones → Mosquetón lado perro → Metadata`), clave `filtrable` = `false`. Sale de los filtros de la tienda; se sigue encontrando al buscar.
+- **Plantilla**: contenido común (cómo medir…) en `apps/storefront/src/content/plantillas/<id>.md`; se aplica a las categorías de su lista `categorias` o al producto con la columna `plantilla`.
+- **Guía de tallas**: una por modelo, en `apps/storefront/src/content/guias/<id>.md`, y el producto la elige con `guia_tallas`.
+- Plantillas y guías se publican con un rebuild del storefront.
+
 ## Correa a medida
 
 Las correas configurables (largo y mosquetones, stock por piezas) **no van en `productos.csv`**: tienen sus propias hojas y su script, `correas:sync`. Ver [`correas/LEEME.md`](./correas/LEEME.md). Su categoría (`correas-perro`) sí va en `categorias.csv`.
 
 ## Fotos
 
-Las fotos van **por producto**, con `images:import`: ficheros `handle_01.jpg`, `handle_02.jpg`… `_01` es la miniatura y solo se admite JPG. Se suben al bucket (SeaweedFS en dev, R2 en producción). Ya importadas se omiten; `replace` las sustituye todas.
+Las fotos van **por producto**, con `images:import`: ficheros `handle_01.jpg`, `handle_02.jpg`… `_01` es la miniatura y solo se admite JPG. Fotos de un valor de opción (Fase O): `handle--valor_01.jpg`, ver [Fichas con plantilla y selector](#fichas-con-plantilla-y-selector). Se suben al bucket (SeaweedFS en dev, R2 en producción). Ya importadas se omiten; `replace` las sustituye todas.
 
 ## Producción
 

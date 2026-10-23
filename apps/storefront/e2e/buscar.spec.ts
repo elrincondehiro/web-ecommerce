@@ -17,6 +17,16 @@ const box = (page: Page, group: string, label: string) =>
   page
     .locator(`#filtros #f-${group} a[role=checkbox]`)
     .filter({ hasText: new RegExp(`^\\s*${label}\\s*\\d*$`) });
+/** Despliega el grupo (Fase O: llegan plegados salvo los que tienen algo marcado). */
+async function openGroup(page: Page, group: string) {
+  const d = page.locator(`#filtros details#f-${group}`);
+  if ((await d.getAttribute("open")) === null) await d.locator("summary").click();
+}
+/** Despliega el grupo y pulsa el valor. */
+async function toggle(page: Page, group: string, label: string) {
+  await openGroup(page, group);
+  await box(page, group, label).click();
+}
 
 test.use({ javaScriptEnabled: false, reducedMotion: "reduce" });
 
@@ -43,13 +53,13 @@ test("filtrar (OR dentro, AND entre grupos), chips y quitar todo", async ({ page
   const total = Number((await status(page).textContent())!.match(/\d+/)![0]);
   // Sin JS cada clic navega y la página nueva se abre en el grupo pulsado (#f-…)
   await filters(page, isMobile);
-  await box(page, "talla", "M").click();
+  await toggle(page, "talla", "M");
   await expect(page).toHaveURL(/categoria=ropa-perro&opcion=Talla%3AM#f-talla$/);
   await filters(page, isMobile);
-  await box(page, "talla", "L").click();
+  await toggle(page, "talla", "L");
   await expect(page).toHaveURL(/opcion=Talla%3AL&opcion=Talla%3AM#f-talla$/);
   await filters(page, isMobile);
-  await box(page, "color", "Rojo").click();
+  await toggle(page, "color", "Rojo");
   await expect(page).toHaveURL(
     /categoria=ropa-perro&opcion=Color%3ARojo&opcion=Talla%3AL&opcion=Talla%3AM#f-color$/,
   );
@@ -71,15 +81,27 @@ test("filtrar (OR dentro, AND entre grupos), chips y quitar todo", async ({ page
   await expect(page).toHaveURL(/\/buscar\/$/);
 });
 
+test("grupos de filtros plegados; abierto el que tiene algo marcado (Fase O)", async ({ page }) => {
+  await page.goto("/buscar/?categoria=ropa-perro&opcion=Talla%3AM");
+  const open = () =>
+    page
+      .locator("#filtros details")
+      .evaluateAll((ds) => ds.filter((d) => d.hasAttribute("open")).map((d) => d.id));
+  // Abiertos: la categoría (marcada en la URL) y Talla
+  expect(await open()).toEqual(["f-categoria", "f-talla"]);
+  await page.goto("/categoria/ropa-perro/");
+  expect(await open()).toEqual([]);
+});
+
 test("categoría por niveles: raíces → hijas; gana la más concreta", async ({ page, isMobile }) => {
   await page.goto("/buscar/");
   await filters(page, isMobile);
   await expect(box(page, "categoria", "Alimentación")).toHaveCount(0);
-  await box(page, "categoria", "Perro").click();
+  await toggle(page, "categoria", "Perro");
   await expect(page).toHaveURL(/\/buscar\/\?categoria=perro#f-categoria$/);
   const perro = Number((await status(page).textContent())!.match(/\d+/)![0]);
   await filters(page, isMobile);
-  await box(page, "categoria", "Alimentación").click();
+  await toggle(page, "categoria", "Alimentación");
   await expect(page).toHaveURL(/categoria=alimentacion-perro&categoria=perro#f-categoria$/);
   const alimentacion = Number((await status(page).textContent())!.match(/\d+/)![0]);
   expect(alimentacion).toBeGreaterThan(0);
@@ -135,6 +157,7 @@ test("proteína sobre materia seca (S-2): rango, chip y quitar", async ({ page, 
 test("botón Filtrar de una categoría estática → /buscar/ con la categoría", async ({ page }) => {
   await page.goto("/categoria/ropa-perro/");
   await page.getByRole("button", { name: "Filtrar" }).click();
+  await page.locator("#filtros details#f-color summary").click();
   await page.locator("#filtros input[value='Color:Azul']").check();
   await page.locator("#filtros").getByRole("button", { name: "Aplicar filtros" }).click();
   await expect(page).toHaveURL(/\/buscar\/\?categoria=ropa-perro&opcion=Color%3AAzul$/);
@@ -197,6 +220,7 @@ test.describe("con JS (modelo híbrido: en el sitio)", () => {
     const before = await status(page).textContent();
     await filters(page, isMobile);
     await page.evaluate(() => (document.getElementById("filtros")!.dataset.mark = "1"));
+    await openGroup(page, "color");
     const link = box(page, "color", "Rojo");
     await link.scrollIntoViewIfNeeded();
     const y = await page.evaluate(() => scrollY);

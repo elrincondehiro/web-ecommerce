@@ -124,6 +124,10 @@ export const META = {
   noPoints: "sin_puntos",
   /** Relacionados (Fase R): handles separados por «|» (lo lee el storefront, lib/related.ts). */
   related: "relacionados",
+  /** Ficha (Fase O; lo lee el storefront, lib/plantillas.ts y lib/variant-picker.ts). */
+  template: "plantilla",
+  sizeGuide: "guia_tallas",
+  photoOption: "opcion_fotos",
   stepG: "paso_g",
   minG: "min_g",
   netG: "neto_g",
@@ -411,11 +415,22 @@ export function planCatalog(
     if (textChanged(p.brand, existing.brand)) changes.push("marca");
     const meta = productMetadata(p);
     const changedKeys = Object.keys(meta).filter((k) => metaChanged(meta[k], existing.metadata[k]));
-    const own = [META.discontinued, META.replacement, META.noPoints, META.related] as string[];
+    const own = [
+      META.discontinued,
+      META.replacement,
+      META.noPoints,
+      META.related,
+      META.template,
+      META.sizeGuide,
+      META.photoOption,
+    ] as string[];
     if (changedKeys.includes(META.discontinued)) changes.push("descatalogado");
     if (changedKeys.includes(META.noPoints)) changes.push("sin puntos");
     if (changedKeys.includes(META.replacement)) changes.push("sustituto");
     if (changedKeys.includes(META.related)) changes.push("relacionados");
+    if (changedKeys.includes(META.template)) changes.push("plantilla");
+    if (changedKeys.includes(META.sizeGuide)) changes.push("guía de tallas");
+    if (changedKeys.includes(META.photoOption)) changes.push("opción de fotos");
     if (changedKeys.some((k) => !own.includes(k))) changes.push("analíticos");
     if (p.status && p.status !== existing.status) changes.push("estado");
     if (p.iva && IVA_TYPE[p.iva] !== existing.type) changes.push("iva");
@@ -542,6 +557,9 @@ export function productMetadata(p: ProductSheet): Record<string, unknown> {
   if (p.noPoints !== undefined) meta[META.noPoints] = p.noPoints ? true : "";
   if (p.related !== undefined) meta[META.related] = p.related ? p.related.join("|") : "";
   if (p.brand !== undefined) meta[BRAND_KEY] = p.brand ?? "";
+  if (p.template !== undefined) meta[META.template] = p.template ?? "";
+  if (p.sizeGuide !== undefined) meta[META.sizeGuide] = p.sizeGuide ?? "";
+  if (p.photoOption !== undefined) meta[META.photoOption] = p.photoOption ?? "";
   return meta;
 }
 

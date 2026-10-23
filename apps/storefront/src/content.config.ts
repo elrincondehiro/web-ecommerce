@@ -102,4 +102,33 @@ const correa = defineCollection({
     }),
 });
 
-export const collections = { anuncios, home, tienda, paginas, correa };
+/**
+ * Plantillas de ficha (Fase O): `src/content/plantillas/<id>.md`. Contenido común (cómo medir,
+ * consejos…) en Markdown; se aplica a los productos de las categorías de `categorias` (y de sus
+ * subcategorías) o a los que lo pidan con `metadata.plantilla` (columna `plantilla` de la hoja).
+ * La correa a medida NO es una de estas: tiene su propia ficha (lib/correa.ts).
+ */
+const plantillas = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./src/content/plantillas" }),
+  schema: z.object({
+    /** Título del bloque en la ficha («Cómo medir a tu perro»). */
+    titulo: z.string().min(1).max(80),
+    /** Texto del botón que lo abre; sin él, el bloque va desplegado en la ficha. */
+    boton: z.string().max(40).optional(),
+    categorias: z.array(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)).default([]),
+  }),
+});
+
+/**
+ * Guías de tallas (Fase O): `src/content/guias/<id>.md`, una por modelo (las tallas cambian de
+ * una marca o un modelo a otro). El producto la elige con `metadata.guia_tallas`.
+ */
+const guias = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./src/content/guias" }),
+  schema: z.object({
+    titulo: z.string().min(1).max(80),
+    marca: z.string().optional(),
+  }),
+});
+
+export const collections = { anuncios, home, tienda, paginas, correa, plantillas, guias };

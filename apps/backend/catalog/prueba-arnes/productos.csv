@@ -1,0 +1,25 @@
+handle,titulo,subtitulo,descripcion,categorias,marca,opcion_fotos,guia_tallas,opcion:Estampado,opcion:Color,opcion:Talla,sku,precio,stock
+prueba-arnes-estampado,Arnés estampado,Marca M · Modelo A,Arnés acolchado con estampado. Producto de prueba (Fase O).,arneses-perro,Marca M,Estampado,marca-m-arnes-a,Flores,,XS,PRB-ARN-11,"24,95",5
+prueba-arnes-estampado,,,,,,,,Flores,,S,PRB-ARN-12,"24,95",5
+prueba-arnes-estampado,,,,,,,,Flores,,M,PRB-ARN-13,"27,95",5
+prueba-arnes-estampado,,,,,,,,Flores,,L,PRB-ARN-14,"29,95",5
+prueba-arnes-estampado,,,,,,,,Flores,,XL,PRB-ARN-15,"31,95",5
+prueba-arnes-estampado,,,,,,,,Huellas,,XS,PRB-ARN-21,"24,95",0
+prueba-arnes-estampado,,,,,,,,Huellas,,S,PRB-ARN-22,"24,95",5
+prueba-arnes-estampado,,,,,,,,Huellas,,M,PRB-ARN-23,"27,95",5
+prueba-arnes-estampado,,,,,,,,Huellas,,L,PRB-ARN-24,"29,95",5
+prueba-arnes-estampado,,,,,,,,Huellas,,XL,PRB-ARN-25,"31,95",5
+prueba-arnes-estampado,,,,,,,,Rayas,,XS,PRB-ARN-31,"24,95",5
+prueba-arnes-estampado,,,,,,,,Rayas,,S,PRB-ARN-32,"24,95",5
+prueba-arnes-estampado,,,,,,,,Rayas,,M,PRB-ARN-33,"27,95",0
+prueba-arnes-estampado,,,,,,,,Rayas,,L,PRB-ARN-34,"29,95",0
+prueba-arnes-estampado,,,,,,,,Rayas,,XL,PRB-ARN-35,"31,95",5
+prueba-arnes-basico,Arnés básico,Marca M · Modelo B,Arnés sencillo. Producto de prueba (Fase O).,arneses-perro,Marca M,,marca-m-arnes-b,,Negro,S,PRB-ARB-11,"19,95",4
+prueba-arnes-basico,,,,,,,,,Negro,M,PRB-ARB-12,"19,95",4
+prueba-arnes-basico,,,,,,,,,Negro,L,PRB-ARB-13,"19,95",4
+prueba-arnes-basico,,,,,,,,,Rojo,S,PRB-ARB-21,"19,95",4
+prueba-arnes-basico,,,,,,,,,Rojo,M,PRB-ARB-22,"19,95",4
+prueba-arnes-basico,,,,,,,,,Rojo,L,PRB-ARB-23,"19,95",0
+prueba-arnes-basico,,,,,,,,,Azul,S,PRB-ARB-31,"19,95",4
+prueba-arnes-basico,,,,,,,,,Azul,M,PRB-ARB-32,"19,95",4
+prueba-arnes-basico,,,,,,,,,Azul,L,PRB-ARB-33,"19,95",4

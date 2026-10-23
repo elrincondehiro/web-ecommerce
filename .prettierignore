@@ -5,3 +5,5 @@ dist/
 .medusa/
 coverage/
 .pi/skills/
+# Generado por lib/variant-picker.ts (pickerCss; el test lo compara)
+apps/storefront/src/styles/variant-picker.css

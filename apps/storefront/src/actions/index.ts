@@ -39,6 +39,7 @@ import {
   type StoreCart,
 } from "$lib/medusa";
 import { account } from "./account";
+import { resolveVariant } from "./resolve-variant";
 import { checkout } from "./checkout";
 import { wishlist } from "./wishlist";
 
@@ -49,6 +50,8 @@ const quantity = z.number().int().min(1).max(MAX_QUANTITY);
  * es solo de cordura: paso, mínimo y máximo (BULK_MAX_G → aviso «maximum») los mira checkGrams.
  */
 const grams = z.number().int().min(0).max(1_000_000).nullish();
+/** Selector de opciones (Fase O): «Título:valor» de cada opción. */
+const optionField = z.string().min(3).max(200).nullish();
 
 function getCartId(ctx: ActionAPIContext): string | null {
   const value = ctx.cookies.get(CART_COOKIE)?.value;
@@ -121,8 +124,27 @@ export const server = {
   cart: {
     add: defineAction({
       accept: "form",
-      input: z.object({ variant_id: id, quantity: quantity.default(1), grams, preset: grams }),
-      handler: async ({ variant_id, quantity, grams, preset }, ctx): Promise<CartResult> => {
+      input: z.object({
+        variant_id: id.nullish(),
+        product_id: id.nullish(),
+        opcion_1: optionField,
+        opcion_2: optionField,
+        quantity: quantity.default(1),
+        grams,
+        preset: grams,
+      }),
+      handler: async (input, ctx): Promise<CartResult> => {
+        const { quantity, grams, preset } = input;
+        let variant_id: string | null;
+        try {
+          variant_id = await resolveVariant(input);
+        } catch (err) {
+          const known = fail(classifyCartError(err));
+          if (known) return known;
+          logError(ctx, "add", err);
+          return { code: "error", count: null };
+        }
+        if (!variant_id) return { code: "variant", count: null };
         const wanted = preset ?? grams;
         let units = quantity;
         if (wanted != null) {
@@ -145,7 +167,7 @@ export const server = {
             return { code: "error", count: null };
           }
         }
-        return addWithRetry(ctx, "add", variant_id, units);
+        return addWithRetry(ctx, "add", variant_id!, units);
       },
     }),
 

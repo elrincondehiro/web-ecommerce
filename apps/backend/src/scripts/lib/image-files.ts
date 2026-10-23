@@ -2,6 +2,9 @@
  * Convención de nombres de fotos de producto (fase 6): `<handle>_<XX>.jpg|jpeg`
  *   - `<handle>`: handle del producto en Medusa (minúsculas, dígitos y guiones).
  *   - `<XX>`: dos dígitos 01–99; define el orden. `_01` es la miniatura.
+ * Fotos de un valor de opción (Fase O): `<handle>--<valor>_<XX>.jpg`, con el valor de la opción
+ * `metadata.opcion_fotos` del producto en minúsculas, sin tildes y con guiones (`valueSlug`):
+ * se asocian a las variantes con ese valor. Van detrás de las generales.
  * Funciones puras (sin I/O) para poder testearlas.
  */
 import path from "node:path";
@@ -9,6 +12,8 @@ import path from "node:path";
 export interface ParsedImageFile {
   file: string;
   handle: string;
+  /** Fase O: slug del valor de opción (`--flores`), o null en las fotos generales. */
+  value: string | null;
   position: number;
 }
 
@@ -17,7 +22,17 @@ export interface ProductImagePlan {
   files: ParsedImageFile[];
 }
 
-export const IMAGE_FILE_RE = /^([a-z0-9]+(?:-[a-z0-9]+)*)_(\d{2})\.(jpe?g)$/;
+export const IMAGE_FILE_RE =
+  /^([a-z0-9]+(?:-[a-z0-9]+)*?)(?:--([a-z0-9]+(?:-[a-z0-9]+)*))?_(\d{2})\.(jpe?g)$/;
+
+/** Valor de opción → parte del nombre de fichero: «Rayas Azules» → `rayas-azules`. */
+export const valueSlug = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 export const MIME_BY_EXT: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -28,13 +43,14 @@ export const MIME_BY_EXT: Record<string, string> = {
 export function parseImageFileName(file: string): ParsedImageFile | null {
   const match = IMAGE_FILE_RE.exec(path.basename(file).toLowerCase());
   if (!match) return null;
-  const position = Number(match[2]);
+  const position = Number(match[3]);
   if (position < 1) return null;
-  return { file, handle: match[1] as string, position };
+  return { file, handle: match[1] as string, value: match[2] ?? null, position };
 }
 
 /**
- * Agrupa ficheros por handle y los ordena por posición. Devuelve también los nombres
+ * Agrupa ficheros por handle y los ordena: generales por posición y después las de cada valor
+ * (alfabético) por posición. Devuelve también los nombres
  * ignorados (no siguen la convención) y los duplicados (misma posición con .jpg y .jpeg).
  */
 export function planProductImages(files: string[]): {
@@ -42,7 +58,7 @@ export function planProductImages(files: string[]): {
   ignored: string[];
   duplicates: string[];
 } {
-  const byHandle = new Map<string, Map<number, ParsedImageFile>>();
+  const byHandle = new Map<string, Map<string, ParsedImageFile>>();
   const ignored: string[] = [];
   const duplicates: string[] = [];
   for (const file of files) {
@@ -51,18 +67,24 @@ export function planProductImages(files: string[]): {
       ignored.push(file);
       continue;
     }
-    const positions = byHandle.get(parsed.handle) ?? new Map<number, ParsedImageFile>();
-    if (positions.has(parsed.position)) {
+    const positions = byHandle.get(parsed.handle) ?? new Map<string, ParsedImageFile>();
+    const key = `${parsed.value ?? ""}_${parsed.position}`;
+    if (positions.has(key)) {
       duplicates.push(file);
       continue;
     }
-    positions.set(parsed.position, parsed);
+    positions.set(key, parsed);
     byHandle.set(parsed.handle, positions);
   }
   const products = [...byHandle.entries()]
     .map(([handle, positions]) => ({
       handle,
-      files: [...positions.values()].sort((a, b) => a.position - b.position),
+      files: [...positions.values()].sort(
+        (a, b) =>
+          Number(a.value !== null) - Number(b.value !== null) ||
+          (a.value ?? "").localeCompare(b.value ?? "") ||
+          a.position - b.position,
+      ),
     }))
     .sort((a, b) => a.handle.localeCompare(b.handle));
   return { products, ignored, duplicates };
