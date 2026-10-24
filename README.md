@@ -224,7 +224,7 @@ Política:
 | `shadcn-svelte` (CLI)                                                                                                     | 1.7.0                         | storefront (dev)                                                                                                                   |
 | `bits-ui`                                                                                                                 | 2.19.5                        | storefront                                                                                                                         |
 | `tailwind-variants` · `tailwind-merge` · `clsx` · `tw-animate-css`                                                        | 3.3.1 · 3.7.0 · 2.1.1 · 1.4.0 | storefront (utilidades de shadcn-svelte)                                                                                           |
-| `sharp`                                                                                                                   | 0.35.5                        | storefront (`astro:assets`)                                                                                                        |
+| `sharp`                                                                                                                   | 0.35.5                        | storefront (`astro:assets`; Fase M: fotos de mascotas en runtime)                                                                  |
 | `@astrojs/check` · `svelte-check`                                                                                         | 0.9.11 · 4.7.7                | storefront (dev, typecheck)                                                                                                        |
 | `@stripe/stripe-js`                                                                                                       | 9.17.0                        | storefront                                                                                                                         |
 | Fuentes Baloo 2 · Nunito Sans _(Fonts API, Fontsource; no es un paquete npm)_                                             | —                             | storefront: titulares / texto (I-Marca), pesos 600–700 / 400–700                                                                   |
@@ -694,6 +694,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | F Mejoras en filtros                   | [faseF-filtros.md](./docs/fases/faseF-filtros.md)                                                | ✅     |
 | Auditoría de rendimiento               | [auditoria-rendimiento.md](./docs/fases/auditoria-rendimiento.md)                                | ✅     |
 | R Rendimiento (imágenes, cachés, CSS)  | [faseR-rendimiento.md](./docs/fases/faseR-rendimiento.md)                                        | ✅     |
+| M Mascotas y aviso de pedidos          | [faseM-mascotas.md](./docs/fases/faseM-mascotas.md)                                              | ✅     |
 | 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
@@ -819,7 +820,11 @@ SMTP_HOST=localhost
 SMTP_PORT=1025
 STOREFRONT_URL=http://localhost:4321 # enlaces de los emails
 EMAIL_ASSETS_URL=                    # origen del logo (/email/logo.png); vacío = STOREFRONT_URL
-SHOP_NOTIFY_EMAIL=                   # avisos internos (fase 9: solicitudes de baja); vacío = no se envían
+SHOP_NOTIFY_EMAIL=                   # avisos internos (bajas, fase 9; pedidos nuevos, Fase M); vacío = no se envían
+NTFY_URL=                            # push de pedido nuevo (Fase M), p. ej. https://ntfy.sh; vacío = sin push
+NTFY_ORDERS_TOPIC=                   # tema largo y aleatorio solo para pedidos (sin datos personales)
+NTFY_TOKEN=                          # opcional, si el tema está protegido
+ADMIN_URL=                           # origen del Admin para el enlace del aviso (vacío = MEDUSA_BACKEND_URL)
 
 STOREFRONT_REBUILD_WEBHOOK=          # opcional: dispara rebuild del storefront
 
