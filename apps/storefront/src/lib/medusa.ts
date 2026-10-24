@@ -17,6 +17,7 @@ import { CardCache } from "./card-cache";
 import { isDiscontinued, type StoreProduct, type StoreVariant } from "./catalog";
 import { isCorrea, maxLength } from "./correa";
 import type { CartPoints, PointsSummary } from "./points";
+import type { Pet, PetBody } from "./pets";
 import type { RawSearchResult, SearchQueryBody } from "./search";
 
 export type StoreCategory = HttpTypes.StoreProductCategory;
@@ -826,6 +827,45 @@ export async function removeFromWishlist(token: string, itemId: string): Promise
     { method: "DELETE", headers: bearer(token) },
   );
   return deleted;
+}
+
+// ── Mascotas (Fase M): rutas propias del backend (lib/pets.ts tiene los tipos) ────────────────
+
+/** Mascotas del cliente (vivas primero, después las fallecidas). */
+export async function listPets(token: string): Promise<Pet[]> {
+  const { pets } = await cartSdk().client.fetch<{ pets: Pet[] }>("/store/customers/me/pets", {
+    headers: bearer(token),
+  });
+  return pets;
+}
+
+/** Crea (`petId` null) o edita una mascota. 404 si es de otro cliente. */
+export async function savePet(token: string, petId: string | null, body: PetBody): Promise<Pet> {
+  const { pet } = await cartSdk().client.fetch<{ pet: Pet }>(
+    petId ? `/store/customers/me/pets/${encodeURIComponent(petId)}` : "/store/customers/me/pets",
+    { method: "POST", headers: bearer(token), body },
+  );
+  return pet;
+}
+
+export async function deletePet(token: string, petId: string): Promise<void> {
+  await cartSdk().client.fetch(`/store/customers/me/pets/${encodeURIComponent(petId)}`, {
+    method: "DELETE",
+    headers: bearer(token),
+  });
+}
+
+/** Foto pública (WebP ya reducido, base64) o `null` para quitarla. */
+export async function setPetPhoto(
+  token: string,
+  petId: string,
+  webpBase64: string | null,
+): Promise<void> {
+  await cartSdk().client.fetch(`/store/customers/me/pets/${encodeURIComponent(petId)}/photo`, {
+    method: webpBase64 ? "POST" : "DELETE",
+    headers: bearer(token),
+    ...(webpBase64 ? { body: { content: webpBase64, consent: true } } : {}),
+  });
 }
 
 // ── Puntos (Fase L-3): rutas propias del backend (lib/points.ts tiene los tipos) ─────────────

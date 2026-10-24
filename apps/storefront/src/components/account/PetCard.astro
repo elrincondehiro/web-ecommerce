@@ -1,0 +1,139 @@
+---
+// Mini ficha de una mascota en «Mis peques» (Fase M), 0 JS. Las fallecidas salen en gris, sin
+// edad actual y con «En nuestro recuerdo». Quitar pide confirmación en un `popover` nativo.
+import { buttonVariants } from "$lib/components/ui/button";
+import { PETS_PATH, accountActionUrl } from "$lib/account";
+import {
+  PET_NEUTERED,
+  PET_ORIGINS,
+  PET_SEX,
+  isGone,
+  partialDateLabel,
+  petAgeLabel,
+  speciesLabel,
+  type Pet,
+} from "$lib/pets";
+import Icon from "../Icon.astro";
+
+interface Props {
+  pet: Pet;
+}
+const { pet } = Astro.props;
+const gone = isGone(pet);
+const age = petAgeLabel(pet);
+const died = partialDateLabel(pet.death_year, pet.death_month, pet.death_day);
+const born = partialDateLabel(pet.birth_year, pet.birth_month, pet.birth_day);
+const facts = [
+  pet.breed,
+  pet.sex && pet.sex !== "desconocido" ? PET_SEX[pet.sex] : null,
+  pet.neutered && pet.neutered !== "desconocido"
+    ? `Esterilizado/a: ${PET_NEUTERED[pet.neutered].toLowerCase()}`
+    : null,
+  pet.weight_kg != null ? `${String(pet.weight_kg).replace(".", ",")} kg` : null,
+  pet.origin ? PET_ORIGINS[pet.origin] : null,
+].filter((x): x is string => Boolean(x));
+const confirmId = `quitar-${pet.id}`;
+---
+
+<li
+  class:list={[
+    "flex flex-col gap-3 rounded-md border-2 border-line p-4 shadow-sm",
+    gone ? "bg-muted text-muted-foreground" : "bg-card",
+  ]}
+>
+  <div class="flex items-start gap-4">
+    {pet.photo_url ? (
+      <img
+        src={pet.photo_url}
+        alt={`Foto de ${pet.name}`}
+        width="80"
+        height="80"
+        loading="lazy"
+        class:list={[
+          "size-20 shrink-0 rounded-md border-2 border-line object-cover",
+          gone && "grayscale",
+        ]}
+      />
+    ) : (
+      <div
+        class="flex size-20 shrink-0 items-center justify-center rounded-md border-2 border-line bg-muted"
+        aria-hidden="true"
+      >
+        <Icon name="paw-print" class="size-8 text-muted-foreground" />
+      </div>
+    )}
+    <div class="flex min-w-0 flex-col gap-1">
+      <h2 class="text-lg font-semibold break-words">{pet.name}</h2>
+      <p class="text-sm">
+        {speciesLabel(pet)}
+        {!gone && age && (
+          <>
+            {" "}
+            · {age} <span class="text-muted-foreground">(aprox.)</span>
+          </>
+        )}
+      </p>
+      {gone && (
+        <p class="text-sm">
+          🌈 En nuestro recuerdo{died && <> · desde {died}</>}
+          {age && <> · vivió {age}</>}
+        </p>
+      )}
+      {!gone && born && <p class="text-xs text-muted-foreground">Nació en {born} (aprox.)</p>}
+    </div>
+  </div>
+  {facts.length > 0 && <p class="text-sm">{facts.join(" · ")}</p>}
+  {!gone && pet.diet && (
+    <p class="text-sm">
+      <span class="font-medium">Come:</span> {pet.diet}
+    </p>
+  )}
+  {!gone && pet.health && (
+    <p class="text-sm">
+      <span class="font-medium">Salud:</span> {pet.health}
+    </p>
+  )}
+  <div class="mt-auto flex flex-wrap gap-3">
+    <a href={`${PETS_PATH}${pet.id}/`} class="text-sm underline underline-offset-4">
+      Editar
+    </a>
+    <button
+      type="button"
+      popovertarget={confirmId}
+      class="text-sm text-destructive underline underline-offset-4"
+    >
+      Quitar
+    </button>
+  </div>
+  <div
+    id={confirmId}
+    popover
+    role="dialog"
+    aria-labelledby={`${confirmId}-t`}
+    class="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-md border-2 border-line bg-card p-6 text-foreground shadow-lg backdrop:bg-black/40"
+  >
+    <h3 id={`${confirmId}-t`} class="mb-2 text-lg font-semibold">
+      ¿Quitar la ficha de {pet.name}?
+    </h3>
+    <p class="mb-4 text-sm text-muted-foreground">
+      Se borrarán sus datos y su foto. No se puede deshacer.
+      {!gone && " Si nos ha dejado, también puedes editarla y añadir la fecha para recordarla."}
+    </p>
+    <div class="flex flex-wrap gap-3">
+      <form method="post" action={accountActionUrl(PETS_PATH, "account.petDelete")}>
+        <input type="hidden" name="pet_id" value={pet.id} />
+        <button type="submit" class={buttonVariants({ variant: "destructive" })}>
+          Quitar
+        </button>
+      </form>
+      <button
+        type="button"
+        popovertarget={confirmId}
+        popovertargetaction="hide"
+        class={buttonVariants({ variant: "outline" })}
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+</li>

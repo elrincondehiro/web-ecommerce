@@ -6,6 +6,7 @@ import {
   ACCOUNT_PATH,
   ADDRESSES_PATH,
   ORDERS_PATH,
+  PETS_PATH,
   PROFILE_PATH,
   accountActionUrl,
 } from "$lib/account";
@@ -22,6 +23,7 @@ const current = Astro.url.pathname;
 const links = [
   { href: ACCOUNT_PATH, name: "Resumen" },
   { href: ORDERS_PATH, name: "Mis pedidos" },
+  { href: PETS_PATH, name: "Mis peques" },
   { href: WISHLIST_PATH, name: "Lista de deseos" },
   { href: POINTS_PATH, name: "Mis puntos" },
   { href: ADDRESSES_PATH, name: "Direcciones" },

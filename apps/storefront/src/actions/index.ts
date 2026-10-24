@@ -39,6 +39,7 @@ import {
   type StoreCart,
 } from "$lib/medusa";
 import { account } from "./account";
+import { pets } from "./pets";
 import { resolveVariant } from "./resolve-variant";
 import { checkout } from "./checkout";
 import { wishlist } from "./wishlist";
@@ -118,7 +119,8 @@ async function addWithRetry(
 }
 
 export const server = {
-  account,
+  // Mascotas (Fase M) dentro de `account.*`: mismo PRG y cookie flash (src/middleware.ts).
+  account: { ...account, ...pets },
   checkout,
   wishlist,
   cart: {

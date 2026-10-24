@@ -1,0 +1,29 @@
+---
+// Editar una mascota (Fase M). Solo las del cliente con sesión (otra → 404). On-demand, 0 JS.
+import { PETS_PATH } from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { isValidId } from "$lib/cart";
+import { listPets } from "$lib/medusa";
+import { petFormValues } from "$lib/pets";
+import AccountLayout from "../../../components/account/AccountLayout.astro";
+import AccountNotice from "../../../components/account/AccountNotice.astro";
+import PetForm from "../../../components/account/PetForm.astro";
+
+export const prerender = false;
+
+const { id } = Astro.params;
+if (!isValidId(id)) return new Response(null, { status: 404 });
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const pet = (await listPets(session.token)).find((p) => p.id === id);
+if (!pet) return Astro.redirect(PETS_PATH, 303);
+---
+
+<AccountLayout title={`Editar a ${pet.name}`}>
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Editar a {pet.name}</h1>
+  <AccountNotice code={flash.code} />
+  <div class="max-w-2xl">
+    <PetForm pet={pet} values={flash.values ?? petFormValues(pet)} errors={flash.errors ?? {}} />
+  </div>
+</AccountLayout>
