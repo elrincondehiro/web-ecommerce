@@ -316,13 +316,13 @@ function PetForm({
       <DateFields prefix="death" label="Fallecimiento" pet={pet} />
       <label className="flex flex-col gap-1 text-sm">
         Alimentación actual
-        <input name="diet" maxLength={300} defaultValue={pet?.diet ?? ""} className={input} />
+        <input name="diet" maxLength={200} defaultValue={pet?.diet ?? ""} className={input} />
       </label>
       <label className="flex flex-col gap-1 text-sm">
         Salud (enfermedades, alergias, intolerancias)
         <textarea
           name="health"
-          maxLength={1000}
+          maxLength={500}
           rows={2}
           defaultValue={pet?.health ?? ""}
           className={input}

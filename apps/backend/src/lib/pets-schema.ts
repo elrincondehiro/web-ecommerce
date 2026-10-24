@@ -29,9 +29,9 @@ export const PetBody = z.object({
   sex: z.enum(PET_SEX).nullish(),
   neutered: z.enum(PET_YES_NO).nullish(),
   weight_kg: z.number().positive().max(200).nullish(),
-  diet: text(300),
+  diet: text(200),
   origin: z.enum(PET_ORIGINS).nullish(),
-  health: text(1000),
+  health: text(500),
   health_consent: z.boolean().default(false),
 });
 export type PetBodyInput = z.infer<typeof PetBody>;
