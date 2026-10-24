@@ -159,10 +159,15 @@ test.describe("sin JS", () => {
   test("granel: la tarjeta lleva a la ficha («Elegir cantidad») con «Desde» y €/kg", async ({
     page,
   }) => {
-    await page.goto("/categoria/snacks-perro/");
-    const card = page
-      .locator("main article")
-      .filter({ has: page.getByRole("link", { name: "Elegir cantidad de Premios Plus" }) });
+    // Tarjeta de ESE producto (con 1000 mock hay varios «Premios Plus» y la paginación de
+    // snacks-perro cambia): la página de la categoría donde está, por su enlace a la ficha.
+    let found = false;
+    for (let n = 1; n <= 6 && !found; n++) {
+      await page.goto(`/categoria/snacks-perro/${n > 1 ? `${n}/` : ""}`);
+      found = (await page.locator(`main article a[href="${BULK}"]`).count()) > 0;
+    }
+    expect(found).toBe(true);
+    const card = page.locator("main article").filter({ has: page.locator(`a[href="${BULK}"]`) });
     await expect(card).toContainText("Desde");
     await expect(card).toContainText("20,00 €/kg · mínimo 100 g");
     await expect(card.getByRole("link", { name: "Elegir cantidad de Premios Plus" })).toBeVisible();

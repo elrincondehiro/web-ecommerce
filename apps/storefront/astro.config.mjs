@@ -211,8 +211,17 @@ export default defineConfig({
     privateBuildManifests(),
   ],
   // Sin prefetch de Astro: inyecta /_astro/page.*.js en todas las páginas y el presupuesto
-  // es 0 bundles JS en home/listado/ficha. Se sustituirá por Speculation Rules (fase 13).
+  // es 0 bundles JS en home/listado/ficha. En su lugar, Speculation Rules inline (Fase R-3,
+  // src/lib/speculation.ts).
   prefetch: false,
+  // CSS dentro del HTML (<style>) en vez de <link> bloqueante (Fase R-3b, P4): la ficha pintaba
+  // la foto (LCP) solo tras bajar el CSS (11,5 KB). Medido en un recorrido real en móvil con 4G
+  // lento: −16 % de tiempo en 3 páginas con Speculation Rules; Lighthouse de fichas 96–98 →
+  // 99–100. Coste: ~10 KB brotli más por HTML y el CSS ya no se reutiliza entre páginas (sin
+  // Speculation Rules, +71 ms en la 2.ª ficha en 4G lento; 0 en 4G normal).
+  // faseR-rendimiento.md §2.3. Con la CSP activa, Astro registra el hash de cada <style>.
+  // Fuente: astro-docs (configuration-reference#buildinlinestylesheets).
+  build: { inlineStylesheets: "always" },
   // Sin sesiones de Astro: el carrito va en una cookie httpOnly propia (fase 4). Excluye el
   // runtime de sesiones del bundle de servidor (astro-docs: configuration-reference#session).
   session: false,
@@ -313,6 +322,16 @@ export default defineConfig({
         int: true,
         min: 0,
         default: 30,
+      }),
+      // Caché en memoria del precio y stock de las server islands LiveSyncData (por producto;
+      // lib/card-cache.ts). En segundos; 0 = desactivada. Se suma a la de Medusa
+      // (MEDUSA_FF_CACHING) y a la de Cloudflare (s-maxage). Fase R-2, faseR-rendimiento.md.
+      LIVE_SYNC_CACHE_TTL: envField.number({
+        context: "server",
+        access: "secret",
+        int: true,
+        min: 0,
+        default: 15,
       }),
       // Caché en memoria de /buscar/sugerencias/ (HTML por texto, 500 entradas). En segundos;
       // 0 = desactivada. Se suma a la de Cloudflare (fase 11, fase7.md §2.7). Fase 7-2.

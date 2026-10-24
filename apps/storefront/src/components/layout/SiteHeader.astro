@@ -82,10 +82,12 @@ const server =
       href="/"
       class="flex items-center gap-2 justify-self-start font-display text-lg font-bold tracking-tight lg:text-xl"
     >
-      {/* Fichero estático a 3× en public/: la cabecera también está en páginas on-demand, donde
-          <Image> llamaría a sharp en runtime (D6, fase 7-1). */}
+      {/* Ficheros estáticos en public/: la cabecera también está en páginas on-demand, donde
+          <Image> llamaría a sharp en runtime (D6, fase 7-1). 1× / 2× / 3× (Fase R-1, P3): antes
+          siempre el de 3× (6,8 KB) para 36 px; en DPR 1, 1,5 KB. */}
       <img
         src="/simbolo-header.webp"
+        srcset="/simbolo-header.webp 1x, /simbolo-header@2x.webp 2x, /simbolo-header@3x.webp 3x"
         alt=""
         width="36"
         height="44"

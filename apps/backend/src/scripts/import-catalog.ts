@@ -67,6 +67,7 @@ import {
   type DbOption,
   type DbProduct,
 } from "./lib/catalog-plan";
+import { clearMedusaCache } from "./lib/clear-cache";
 
 export const SALE_LIST_TITLE = "Catálogo — ofertas";
 const PRODUCT_BATCH = 20;
@@ -773,4 +774,5 @@ export default async function importCatalog({ container, args }: ExecArgs) {
       `${plan.products.update.length} actualizados; ${levels} niveles de stock; ofertas +${sale.create} ` +
       `~${sale.update} −${sale.delete}.`,
   );
+  await clearMedusaCache(container);
 }

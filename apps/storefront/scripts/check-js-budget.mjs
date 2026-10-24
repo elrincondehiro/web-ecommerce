@@ -45,7 +45,8 @@ const PAGE_BUNDLES = [
   { name: "correa", re: /^CorreaLive\.[^/]*\.js$/, max: 1024, required: "correa" },
 ];
 /** Bundles que solo pueden (y deben) ir en las páginas con cierta marca. */
-const MARKS = { drag: /\bdata-drag-scroll\b/, correa: /\bdata-correa=/ };
+// Marcas en ATRIBUTOS de etiquetas, no en el CSS inline (Fase R-3b: `[data-drag-scroll]` del CSS).
+const MARKS = { drag: /<[^>]*\sdata-drag-scroll\b/, correa: /<[^>]*\sdata-correa=/ };
 /** Mejora progresiva de /buscar/ (modelo híbrido, fase 7-1). */
 const SEARCH_BUNDLE = /^SearchLive\.[^/]*\.js$/;
 const SEARCH_GZIP_MAX = 1024;
@@ -94,7 +95,8 @@ for await (const file of htmlFiles(ROOT)) {
   const html = await readFile(file, "utf8");
   const bundles = [...html.matchAll(SCRIPT_SRC), ...html.matchAll(MODULEPRELOAD)].map((m) => m[1]);
   const inline = [...html.matchAll(INLINE)]
-    .filter((m) => !/type=["']application\/ld\+json["']/i.test(m[1] ?? ""))
+    // JSON, no JS: datos estructurados y Speculation Rules (Fase R-3).
+    .filter((m) => !/type=["'](application\/ld\+json|speculationrules)["']/i.test(m[1] ?? ""))
     .map((m) => m[2] ?? "")
     .join("\n");
   const inlineGzip = inline ? gzipSync(inline).length : 0;

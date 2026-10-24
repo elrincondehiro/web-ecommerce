@@ -1,5 +1,6 @@
 ---
 import { Font } from "astro:assets";
+import SpeculationRules from "../components/SpeculationRules.astro";
 import ThemeInit from "../components/ThemeInit.astro";
 import Seo from "../components/Seo.astro";
 import CartClient from "../components/CartClient.astro";
@@ -39,9 +40,13 @@ const auth = !Astro.isPrerendered && Boolean(Astro.locals.customerToken);
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <Font cssVariable="--font-nunito-sans" preload={[{ weight: 400 }]} />
+    {/* Precarga: 400 (texto base) y 700 (negritas del texto, `<strong>`; Fase R-1, P5). Sin el
+        700, llegaba tarde y el párrafo con negrita cambiaba de líneas: CLS 0,05 en escritorio
+        (medido, A/B: 0,001 con la precarga; el 600 no cambia nada). */}
+    <Font cssVariable="--font-nunito-sans" preload={[{ weight: 400 }, { weight: 700 }]} />
     <Font cssVariable="--font-baloo" />
     <Seo {...seo} />
+    <SpeculationRules />
     <slot name="head" />
   </head>
   <body class="flex min-h-dvh flex-col antialiased">

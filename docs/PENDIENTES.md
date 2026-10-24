@@ -66,9 +66,13 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 ## 4. Fase 13 — rendimiento y operación (candidatas)
 
 - [ ] 🟠 **Rebuild del storefront por webhook** de catálogo: hoy un producto, foto, oferta o categoría nuevos no aparecen hasta el siguiente build (fase3, fase6, faseI-interficie). Con ello: `offers.price` en el JSON-LD (fase3 §7).
-- [ ] 🟠 **Capacidad sin Cloudflare ~20 páginas/s** (fase11 §5.7): caché corta de `LiveSyncData` en Astro, módulo de caché de Medusa en Redis, o L-2 (resumen por producto en Redis, ESTADO §7). Repetir la tanda B y la B2 a 20 páginas/s.
-- [ ] LCP de las fichas ~1,8–2 s: foto principal a 720 px, CSS crítico (~110 ms), logos del pie y la cabecera más pequeños (auditoría pre-fase 10 §6).
-- [ ] Speculation Rules inline y view transitions CSS (sin JS; fase3 §7.1).
+- [x] ~~**Capacidad sin Cloudflare ~20 páginas/s**~~: [Fase R-2](./fases/faseR-rendimiento.md) (caché de Medusa + caché de `LiveSyncData`): ~100 páginas/s en local con Medusa en 2 núcleos. **Queda**: repetir la tanda B de la fase 11 en el VPS tras desplegar.
+- [x] ~~LCP de las fichas (P1–P5 de la auditoría de rendimiento)~~: [Fase R](./fases/faseR-rendimiento.md).
+- [x] ~~Caché de `LiveSyncData` (P8) y una island por ficha (P6)~~: Fase R-2.
+- [ ] Caché de Medusa (`MEDUSA_FF_CACHING`, experimental en 2.21.2): en cada subida de Medusa, repetir la prueba de invalidación (Admin, pedido, script; faseR-rendimiento.md §3). Una escritura por SQL a mano no la invalida (vaciarla, §7).
+- [x] ~~Speculation Rules inline (P7)~~: Fase R-3.
+- [ ] View transitions CSS (sin JS; fase3 §7.1).
+- [ ] `stock:mock` no repone las piezas de la correa: los e2e de la correa de 7 m fallan en local tras muchos pedidos de prueba.
 - [ ] Partytown si se añaden terceros.
 - [ ] `ASTRO_KEY` fija (si se deja de purgar la CDN en cada despliegue; fase3).
 - [ ] Imagen del backend de ~1 GB: adelgazar (fase10 §7).

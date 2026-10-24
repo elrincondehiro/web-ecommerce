@@ -6,6 +6,7 @@
 import Medusa from "@medusajs/js-sdk";
 import type { HttpTypes } from "@medusajs/types";
 import {
+  LIVE_SYNC_CACHE_TTL,
   MEDUSA_BACKEND_URL,
   MEDUSA_PUBLISHABLE_KEY,
   SEARCH_CARD_CACHE_TTL,
@@ -205,13 +206,28 @@ async function fetchLive(ids: string[]): Promise<StoreProduct[]> {
   return products;
 }
 
-/** Productos con precio y stock actuales por id (island de los listados), en el orden de `ids`. */
+/**
+ * Caché por producto de las islands (Fase R-2, P8; lib/card-cache.ts). Un producto visto en un
+ * listado, en los relacionados o en su ficha se pide una vez por TTL (LIVE_FIELDS es el mismo en
+ * todos). 2000 productos con sus variantes ≈ unos MB. Por proceso.
+ */
+const liveCache =
+  LIVE_SYNC_CACHE_TTL > 0
+    ? new CardCache<StoreProduct>({ ttlMs: LIVE_SYNC_CACHE_TTL * 1000, maxEntries: 2000 })
+    : undefined;
+
+/**
+ * Productos con precio y stock actuales por id (server islands LiveSyncData), en el orden de
+ * `ids`. Con LIVE_SYNC_CACHE_TTL > 0 pueden ir hasta ese TTL por detrás; el carrito y el
+ * checkout validan siempre contra Medusa.
+ */
 export async function getPricedProductsFresh(ids: string[]): Promise<StoreProduct[]> {
   if (!ids.length) return [];
   if (useFixtures) {
     const all = await fixtures.products();
     return ids.map((id) => all.find((p) => p.id === id)).filter((p) => p !== undefined);
   }
+  if (liveCache) return (await liveCache.getMany(ids, fetchLive, (p) => p.id)).values;
   const byId = new Map((await fetchLive(ids)).map((p) => [p.id, p]));
   return ids.map((id) => byId.get(id)).filter((p): p is StoreProduct => Boolean(p));
 }
@@ -471,12 +487,6 @@ export const ORDER_FIELDS =
 export async function retrieveOrder(id: string): Promise<StoreOrder> {
   const { order } = await cartSdk().store.order.retrieve(id, { fields: ORDER_FIELDS });
   return order;
-}
-
-/** Un producto con precio y stock por id (server island de la ficha). */
-export async function getPricedProduct(id: string): Promise<StoreProduct | null> {
-  if (useFixtures) return (await fixtures.products()).find((p) => p.id === id) ?? null;
-  return (await fetchLive([id]))[0] ?? null;
 }
 
 // ── Búsqueda (runtime: /buscar/). Fase 7-1. ────────────────────────────────────────────────

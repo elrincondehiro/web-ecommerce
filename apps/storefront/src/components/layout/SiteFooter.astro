@@ -37,8 +37,10 @@ const link = "hover:text-foreground hover:underline";
         href="/"
         class="mb-4 inline-block rounded-md dark:border-2 dark:border-line dark:bg-[#F3E8DC] dark:p-1"
       >
+        {/* 1× / 2× (Fase R-1, P3): antes siempre 240 px (16,6 KB) para 120 px CSS. */}
         <img
           src="/logo-pie.webp"
+          srcset="/logo-pie.webp 1x, /logo-pie@2x.webp 2x"
           alt={SITE_NAME}
           width="120"
           height="112"

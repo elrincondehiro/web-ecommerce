@@ -17,6 +17,7 @@
 import type { ExecArgs, UpdateInventoryLevelInput } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 import { updateInventoryLevelsWorkflow } from "@medusajs/medusa/core-flows";
+import { clearMedusaCache } from "./lib/clear-cache";
 
 const MIN = Number(process.env.STOCK_MIN ?? 10);
 const TARGET = Number(process.env.STOCK_TARGET ?? 50);
@@ -62,4 +63,5 @@ export default async function stockMock({ container }: ExecArgs) {
   }
   await updateInventoryLevelsWorkflow(container).run({ input: { updates } });
   logger.info(`stock:mock: ${updates.length} niveles repuestos a ${TARGET} libres`);
+  await clearMedusaCache(container);
 }

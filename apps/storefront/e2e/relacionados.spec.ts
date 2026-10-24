@@ -59,12 +59,26 @@ test.describe("ficha", () => {
   });
 
   test("precio de los relacionados corregido por LiveSync (sin errores)", async ({ page }) => {
+    // Una sola island para la ficha y sus relacionados (Fase R-2, P6).
+    const islands: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("/_server-islands/LiveSyncData")) islands.push(r.url());
+    });
     const live = page.waitForResponse(
       (r) => r.url().includes("/_server-islands/LiveSyncData") && r.status() === 200,
     );
     await page.goto(WITH_SHEET);
-    await live;
+    const res = await live;
     await expect(related(page).locator(".price__now").first()).toHaveText(/\d+,\d{2}\s€/);
+    await page.waitForLoadState("networkidle");
+    expect(islands).toHaveLength(1);
+    // Trae los datos de cada tarjeta de los relacionados.
+    const data = (await res.text()).match(/<template data-live-sync>(.*?)<\/template>/s)?.[1];
+    const map = JSON.parse(data ?? "{}") as Record<string, unknown>;
+    for (const pid of await related(page)
+      .locator("article[data-pid]")
+      .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.pid!)))
+      expect(map[pid], pid).toBeDefined();
   });
 });
 

@@ -42,6 +42,16 @@ overrides:
   # GHSA moderado: ReDoS con la opción `$data`. Lo traen @medusajs/cli (umzug/@rushstack) y
   # react-email (conf). Misma major 8.
   "ajv@>=8.0.0 <8.18.0": "8.20.0"
+  # GHSA altos (22-oct-2026, PR de la Fase R). Misma major; quitarlas cuando Medusa/Astro las suban
+  # (Medusa 2.22.1 sigue con zod 4.2.0 fija, multer ^2.4.0 y express 4 con body-parser ~1.20.5).
+  # body-parser: DoS con bytes tras el cuerpo (express 4 de Medusa: todas las peticiones).
+  "body-parser@>=1.0.0 <1.20.9": "1.20.9"
+  # multer: DoS con una subida de fichero pendiente (@medusajs/medusa, subidas del Admin).
+  "multer@>=2.0.0 <2.5.0": "2.5.0"
+  # zod: agota memoria validando colecciones enormes (@medusajs/deps fija 4.2.0; @astrojs/sitemap).
+  "zod@>=4.0.0 <4.6.6": "4.6.7"
+  # undici: DoS por error sin capturar (unifont, fuentes de Astro en el build).
+  "undici@>=8.0.0 <8.12.2": "8.12.3"
 
 # `pnpm audit --prod` en CI (fase 10-3): falla con avisos altos o críticos. Excepciones: avisos
 # altos que solo llegan por herramientas de build/CLI de @medusajs/* y aún no tienen versión

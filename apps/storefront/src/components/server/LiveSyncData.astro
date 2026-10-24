@@ -10,7 +10,9 @@
 //     los mismos) y corrige también una oferta que termina tras el build. No se pasan los ids:
 //     irían cifrados en la URL y en el JS inline. Clave desconocida (HTML de otro build) → "{}"
 //     → se queda lo del build.
-//   - ficha: productId
+//   - ficha: productId, y `relatedKey` (clave de sus relacionados, Fase R-2 P6): una sola
+//     island por ficha con el producto (y sus variantes) y las tarjetas de «También te puede
+//     interesar» (solo entradas de producto). El aplicador corrige toda la página por id.
 // Respuesta (perf L-1): en la ficha, producto + todas sus variantes; en los listados, SOLO las
 // entradas de producto (las tarjetas no tienen marcas por variante), así su tamaño depende del
 // número de tarjetas y no del de variantes. Medusa se consulta con los campos mínimos
@@ -32,11 +34,13 @@ import {
 } from "$lib/correa";
 import { formatPrice } from "$lib/format";
 import { cardOf, freshCorreaCards, freshTableVariants, getCorreaCards } from "$lib/correa-server";
-import { getCorreaMaxLengths, getPricedProduct, getPricedProductsFresh } from "$lib/medusa";
+import { getCorreaMaxLengths, getPricedProductsFresh } from "$lib/medusa";
 import { listingIds } from "$lib/shop";
 
 interface Props {
   productId?: string | undefined;
+  /** Ficha: clave de sus relacionados (lib/listing-pages.ts), en la misma island (P6). */
+  relatedKey?: string | undefined;
   /** Clave de una página de listado (lib/listing-pages.ts). */
   pageKey?: string | undefined;
   /**
@@ -45,14 +49,23 @@ interface Props {
    */
   correaLanding?: boolean | undefined;
 }
-const { productId, pageKey, correaLanding } = Astro.props;
+const { productId, relatedKey, pageKey, correaLanding } = Astro.props;
 
 let entries: LiveEntry[] = [];
 let correa: CorreaLiveData | null = null;
 if (productId) {
-  const product = await getPricedProduct(productId);
+  const related = relatedKey ? await listingIds(relatedKey) : [];
+  const cards = related.length ? await getCorreaCards() : null;
+  // Una petición a Medusa (o ninguna, con la caché) para la ficha y sus relacionados.
+  const [products, correas] = await Promise.all([
+    getPricedProductsFresh([productId, ...related.filter((id) => !cardOf(cards, id))]),
+    freshCorreaCards(related, cards),
+  ]);
+  const product = products.find((p) => p.id === productId);
+  const rest = products.filter((p) => p.id !== productId);
   if (product && isCorrea(product)) ({ entries, correa } = correaLive(product));
   else if (product) entries = liveEntries([product]);
+  entries.push(...liveEntries([...rest, ...correas.values()], { variants: false }));
 } else if (pageKey && correaLanding) {
   // Landing: tabla de precios (las variantes de la tabla de UNA correa por material) +
   // disponibilidad de todos los colores (solo largo máximo). Las dos peticiones en paralelo;

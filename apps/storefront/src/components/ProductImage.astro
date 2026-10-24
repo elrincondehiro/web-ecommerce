@@ -21,6 +21,12 @@ interface Props {
   variant?: ImageVariant;
   /** Imagen LCP: carga inmediata y alta prioridad. */
   priority?: boolean;
+  /**
+   * Prioridad baja (Fase R-1): fotos que no se ven al cargar pero el navegador descarga igual
+   * (las 2.ª y siguientes de la galería: carrusel horizontal dentro del viewport, `lazy` no las
+   * frena). Así no compiten con la LCP.
+   */
+  low?: boolean;
   class?: string;
   /**
    * Páginas on-demand (/buscar/, D6): miniatura ya generada en el build, o `null` si no la hay
@@ -35,6 +41,7 @@ const {
   alt,
   variant = "card",
   priority = false,
+  low = false,
   class: className = "",
   prebuilt,
   sizes: sizesProp,
@@ -43,6 +50,7 @@ const preset = IMAGE_PRESETS[variant];
 const sizes = sizesProp ?? preset.sizes;
 const classes = `aspect-square w-full bg-muted object-cover ${className}`;
 const loading = priority ? "eager" : "lazy";
+const fetchpriority = priority ? "high" : low ? "low" : "auto";
 ---
 
 {prebuilt ? (
@@ -58,7 +66,7 @@ const loading = priority ? "eager" : "lazy";
       width={preset.width}
       height={preset.width}
       loading={loading}
-      fetchpriority={priority ? "high" : "auto"}
+      fetchpriority={fetchpriority}
       decoding="async"
       class={classes}
     />
@@ -76,7 +84,7 @@ const loading = priority ? "eager" : "lazy";
     fit="cover"
     position="center"
     loading={loading}
-    fetchpriority={priority ? "high" : "auto"}
+    fetchpriority={fetchpriority}
     decoding="async"
     class={classes}
   />
@@ -87,7 +95,7 @@ const loading = priority ? "eager" : "lazy";
     width={preset.width}
     height={preset.width}
     loading={loading}
-    fetchpriority={priority ? "high" : "auto"}
+    fetchpriority={fetchpriority}
     decoding="async"
     class={classes}
   />

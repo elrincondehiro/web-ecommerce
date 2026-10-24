@@ -50,6 +50,24 @@ test.describe("sin JS", () => {
     await expect(bar.getByRole("link", { name: /Rebajas/ })).toHaveCount(1);
   });
 
+  test("ficha (Fase R-1): solo la 1.ª foto con prioridad alta; logos 1×/2×", async ({ page }) => {
+    await page.goto("/producto/mock-champu-plus-020/");
+    const shots = page.locator("ul[aria-label^='Fotos de'] > li img");
+    expect(await shots.count()).toBeGreaterThan(1);
+    await expect(shots.first()).toHaveAttribute("fetchpriority", "high");
+    for (const p of await shots.evaluateAll((ls) =>
+      ls.slice(1).map((i) => i.getAttribute("fetchpriority")),
+    ))
+      expect(p).toBe("low");
+    // 720 px en la foto principal (P2): el móvil típico ya no pide la de 800
+    await expect(page.locator("ul[aria-label^='Fotos de'] source").first()).toHaveAttribute(
+      "srcset",
+      /720w/,
+    );
+    await expect(page.locator("header img").first()).toHaveAttribute("srcset", /@2x\.webp 2x/);
+    await expect(page.locator("footer img").first()).toHaveAttribute("srcset", /@2x\.webp 2x/);
+  });
+
   test("home: hero LCP, categorías, carrusel de destacados, ofertas y valores", async ({
     page,
   }) => {
@@ -238,5 +256,30 @@ test.describe("con JS", () => {
     const entries = Object.keys(JSON.parse(data ?? "{}"));
     expect(entries.length).toBeGreaterThanOrEqual(await page.locator("main article").count());
     await expect(page.locator("main article").first().locator("del")).toBeVisible();
+  });
+
+  test("Speculation Rules (Fase R-3): prefetch de fichas al pasar el ratón, sin violaciones de CSP", async ({
+    page,
+  }) => {
+    const violations: string[] = [];
+    page.on("console", (m) => {
+      if (/Content Security Policy|speculation/i.test(m.text())) violations.push(m.text());
+    });
+    await page.goto("/categoria/perro/");
+    const rules = JSON.parse(
+      (await page.locator('head script[type="speculationrules"]').textContent()) ?? "{}",
+    ) as { prefetch?: { eagerness?: string }[] };
+    expect(rules.prefetch?.[0]?.eagerness).toBe("moderate");
+    // Con JS (sin JS Chromium no las aplica). Al pasar el ratón por una tarjeta, pide la ficha
+    // (cabecera Sec-Purpose: prefetch).
+    const card = page.locator("main article a[href^='/producto/']").first();
+    const href = (await card.getAttribute("href"))!;
+    const prefetch = page.waitForRequest(
+      (r) => r.url().endsWith(href) && /prefetch/.test(r.headers()["sec-purpose"] ?? ""),
+      { timeout: 5000 },
+    );
+    await card.hover();
+    await prefetch;
+    expect(violations).toEqual([]);
   });
 });

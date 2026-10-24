@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 23-oct-2026 · **Fase F (mejoras en filtros) cerrada** (`feat/fase-f-filtros`, [faseF-filtros.md](./fases/faseF-filtros.md)). Antes: Fase O (#67). **Siguiente**: más peticiones de la fase de problemas de frontend y backend (las trae el usuario). Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). **Siguiente**: una fase de **problemas de frontend y backend** que trae el usuario (detectados al cargar el catálogo real); después, mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 24-oct-2026 · **Fase R (rendimiento) hecha** ([faseR-rendimiento.md](./fases/faseR-rendimiento.md)): fotos de la galería, 720 px, logos 1×/2×, precarga del 700 (R-1); caché de Medusa en Redis (`MEDUSA_FF_CACHING`, experimental) + caché de 15 s de `LiveSyncData` + una island por ficha (R-2: capacidad sin CDN ~25 → ~100 páginas/s; con Cloudflare caliente apenas cambia, sirve tras cada purga y para carrito/checkout); Speculation Rules y CSS dentro del HTML (R-3). Antes: auditoría de rendimiento, Fase F (#68), Fase O (#67). **Siguiente**: más peticiones de la fase de problemas de frontend y backend. Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). Después: mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -36,6 +36,8 @@
 | V/W Migración desde Loyverse                | ✅     | [faseV-loyverse.md](./fases/faseV-loyverse.md)                       |
 | O Opciones, variantes y plantillas          | ✅     | [faseO-variantes.md](./fases/faseO-variantes.md)                     |
 | F Mejoras en filtros                        | ✅     | [faseF-filtros.md](./fases/faseF-filtros.md)                         |
+| Auditoría de rendimiento (1000 productos)   | ✅     | [auditoria-rendimiento.md](./fases/auditoria-rendimiento.md)         |
+| R Rendimiento (imágenes, cachés, CSS)       | ✅     | [faseR-rendimiento.md](./fases/faseR-rendimiento.md)                 |
 
 Roadmap completo y tiempos: README §13.
 
@@ -55,7 +57,7 @@ Roadmap completo y tiempos: README §13.
   - `MEDUSA_WORKER_MODE` shared/server/worker; `DISABLE_MEDUSA_ADMIN`.
   - Telemetría OFF: `MEDUSA_DISABLE_TELEMETRY=true` + `allowBuilds` de `@medusajs/telemetry` a false.
   - Seed **España**: EUR **IVA incluido**, IVA **21 %** por defecto; **10 %** y **4 %** vía tipo de producto `iva-reducido` / `iva-superreducido`; un solo canal "Tienda online"; envíos 4,95 / 9,95 €; publishable key (sale en el log del seed).
-  - **Catálogo mock** (Fase S): `catalog:mock [N=300]` genera `catalog/mock/productos.csv` sobre el árbol real (`catalog/mock/categorias.csv`, 37 categorías) y se carga con `catalog:import catalog/mock`. En la BD local: **300 productos** (728 variantes, 4 fotos de picsum cada uno), 25 en oferta, 11 en `destacados`, 8 a granel publicados (S-3; p. ej. `mock-premios-plus-010`). `stock:mock` repone también el granel (en tramos de 250 g). Los `seed:mock*` antiguos están archivados (`src/scripts/OBSOLETOS.md`).
+  - **Catálogo mock** (Fase S; **1000 productos** desde la auditoría de rendimiento): `catalog:mock [N=300]` genera `catalog/mock/productos.csv` sobre el árbol real (`catalog/mock/categorias.csv`, 37 categorías) y se carga con `catalog:import catalog/mock`. En la BD local: **300 productos** (728 variantes, 4 fotos de picsum cada uno), 25 en oferta, 11 en `destacados`, 8 a granel publicados (S-3; p. ej. `mock-premios-plus-010`). `stock:mock` repone también el granel (en tramos de 250 g). Los `seed:mock*` antiguos están archivados (`src/scripts/OBSOLETOS.md`).
   - **Búsqueda** (fase 7): Search Module con el proveedor Meilisearch (`@rokmohar/medusa-plugin-meilisearch`), índice `product` en `src/search/product.ts` y `POST /store/search` permitido en `src/api/middlewares.ts`. Sin `MEILISEARCH_HOST` (tests, CI) se usa el proveedor PostgreSQL de Medusa.
   - **Ficheros**: `file-s3` contra SeaweedFS (R2 en producción), activo solo si existe `S3_BUCKET`. Fotos por lotes con `images:import <carpeta>` (`handle_XX.jpg`) y fotos mock con `images:mock` (`.cache/mock-images`, 1,5 GB, ignorado por git).
   - Importes de Medusa v2 en **unidad principal** (4.95 = 4,95 €).
@@ -571,7 +573,7 @@ Documento de fase con: opciones (con pros/contras y fuentes), propuesta recomend
 - **Carritos de «invitado con email»** (con pago de Stripe pendiente) y purgado definitivo de los borrados en suave: ver fase10.md §7.
 
 - **Fase 11 — Cloudflare**: regla de caché que **respete el origen** (no «Cache Everything» por encima de `no-store`); rate limiting de entrar/registro/recuperar/checkout.
-- **Fase 11/13**: CSS crítico (~110 ms), LCP variable de la ficha (ancho de 720 px) y logos del pie/cabecera más pequeños ([auditoría](./fases/auditoria-pre-fase10.md) §6).
+- ~~**Fase 11/13**: CSS crítico, LCP de la ficha (720 px) y logos~~: hechos en la [Fase R](./fases/faseR-rendimiento.md) (CSS dentro del HTML, 720 px, logos 1×/2×).
 - PAT del push mirror y token de GitHub para Renovate: **caducan en 1 año** (renovarlos).
 - Confirmar con la gestoría la clasificación de productos en IVA reducido/superreducido.
 - **Fase R:** upselling (`mejor_opcion`), avisos de bajada de precio y reposición en la lista de deseos (R8) y «te faltan X € para el envío gratis» (cuando haya envío gratis por reglas de precio): faseR-relacionados.md §4–§5.

@@ -18,10 +18,12 @@ export const IMAGE_PRESETS: Record<
       "(min-width: 1024px) min(calc(25vw - 1.75rem), 270px), (min-width: 640px) calc(33.33vw - 1.7rem), calc(50vw - 1.5rem)",
   },
   // Ficha: 1 col (móvil, ancho − px-4·2) · 2 cols con gap-8 (md) · máx. 544px (max-w-6xl).
-  // 800 cubre el móvil típico (≈380px CSS × DPR 1,75–2 ≈ 665–760px) sin saltar a 960.
+  // 720 (Fase R-1, P2 de la auditoría de rendimiento): el móvil típico (≈376px CSS × DPR 1,75 =
+  // 658px) pedía 800 (un 30 % más de bytes en la imagen LCP); con 720 la LCP del móvil baja
+  // ~0,5 s (medido, A/B). DPR 2–2,6 sigue saltando a 960.
   detail: {
     width: 1200,
-    widths: [640, 800, 960, 1200],
+    widths: [640, 720, 960, 1200],
     sizes: "(min-width: 1152px) 544px, (min-width: 768px) calc(50vw - 2rem), calc(100vw - 2rem)",
   },
   // Miniaturas de la galería

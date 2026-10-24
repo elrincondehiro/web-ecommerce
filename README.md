@@ -255,7 +255,7 @@ Política:
 
 > **TypeScript 7 no se usa todavía**: Astro declara `typescript ^5 \|\| ^6`. **Medusa** documenta `^5.6.2`; en la fase 2 se probó **6.0.3** y `typecheck`/`build`/tests pasan (si diera problemas: 5.9.3 solo en `apps/backend`).
 > **Astro 7** requiere `@astrojs/node` ≥ 11 y `@astrojs/svelte` ≥ 9 (`@astrojs/node` 9.x y `@astrojs/svelte` 8.x son para Astro 6).
-> **Overrides de seguridad** (`pnpm-workspace.yaml`, solo para las versiones vulnerables): `http-cache-semantics` → 4.3.0 (lo trae `astro`) y `ajv` 8 → 8.20.0 (lo traen `@medusajs/cli` y `react-email`). Se quitan cuando las dependencias que los traen los incluyan ([auditoría](./docs/fases/auditoria-pre-fase10.md) §4.6).
+> **Overrides de seguridad** (`pnpm-workspace.yaml`, solo para las versiones vulnerables): `http-cache-semantics` → 4.3.0 (lo trae `astro`) y `ajv` 8 → 8.20.0 (lo traen `@medusajs/cli` y `react-email`); desde la Fase R (avisos altos del 22-oct-2026), `body-parser` → 1.20.9 (express 4 de Medusa), `multer` → 2.5.0 (`@medusajs/medusa`), `zod` 4 → 4.6.7 (`@medusajs/deps` fija 4.2.0, también en 2.22.1; y `@astrojs/sitemap`) y `undici` 8 → 8.12.3 (`unifont`, fuentes de Astro). Se quitan cuando las dependencias que los traen los incluyan ([auditoría](./docs/fases/auditoria-pre-fase10.md) §4.6).
 
 ## 5. MCPs de documentación para agentes
 
@@ -692,6 +692,8 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | V/W Migración desde Loyverse           | [faseV-loyverse.md](./docs/fases/faseV-loyverse.md)                                              | ✅     |
 | O Opciones, variantes y plantillas     | [faseO-variantes.md](./docs/fases/faseO-variantes.md)                                            | ✅     |
 | F Mejoras en filtros                   | [faseF-filtros.md](./docs/fases/faseF-filtros.md)                                                | ✅     |
+| Auditoría de rendimiento               | [auditoria-rendimiento.md](./docs/fases/auditoria-rendimiento.md)                                | ✅     |
+| R Rendimiento (imágenes, cachés, CSS)  | [faseR-rendimiento.md](./docs/fases/faseR-rendimiento.md)                                        | ✅     |
 | 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

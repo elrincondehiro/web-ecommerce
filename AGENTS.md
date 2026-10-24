@@ -151,11 +151,11 @@ Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>
 ### 3.3 Rendimiento — obligatorio
 
 - Imágenes: `astro:assets` (`<Image>`/`<Picture>`), `width`/`height` siempre, AVIF/WebP, `loading="lazy"` salvo LCP (`loading="eager"` + `fetchpriority="high"`).
-- Fuentes: auto-alojadas (Astro Fonts API), `font-display: swap`, máximo 2 familias, ficheros **estáticos** de los pesos usados (no la variable completa) y `preload` solo del peso del texto base.
+- Fuentes: auto-alojadas (Astro Fonts API), `font-display: swap`, máximo 2 familias, ficheros **estáticos** de los pesos usados (no la variable completa) y `preload` solo del peso del texto base y de sus negritas (400 y 700 de Nunito Sans; el 700 evita el CLS de los párrafos con `<strong>`, Fase R-1).
 - Terceros (analítica, píxeles, chat): **siempre** vía Partytown (`type="text/partytown"`) o cargados tras interacción. Nunca bloqueantes.
 - Trabajo pesado de cliente (filtrado/ordenación grande, parsing) → **Web Worker**.
-- Navegación: **Speculation Rules** inline (`<script type="speculationrules">`) y view transitions **nativas en CSS** (`@view-transition`). No actives `prefetch` de Astro ni `<ClientRouter />` (añaden JS a todas las páginas; ver `docs/fases/fase3.md` §7.1).
-- Nada de CSS-in-JS en runtime. Tailwind v4 + tokens en `@theme`.
+- Navegación: **Speculation Rules** inline (`<script type="speculationrules">`, `src/lib/speculation.ts`: `prefetch` `moderate` de fichas y listados; nunca `prerender` sin medir la carga de las islands) y view transitions **nativas en CSS** (`@view-transition`). No actives `prefetch` de Astro ni `<ClientRouter />` (añaden JS a todas las páginas; ver `docs/fases/fase3.md` §7.1).
+- Nada de CSS-in-JS en runtime. Tailwind v4 + tokens en `@theme`. El CSS va **dentro del HTML** (`build.inlineStylesheets: "always"`, Fase R-3b): cada KB de CSS nuevo se descarga en **cada** página, no una vez.
 - Cabeceras de caché: assets `/_astro/*` inmutables (1 año); server islands con `s-maxage` corto + `stale-while-revalidate`; rutas por usuario `private, no-store`.
 - Sin polyfills salvo necesidad demostrada. Target: navegadores evergreen.
 
@@ -191,6 +191,7 @@ Excepción aprobada en la Fase E (E-2c): las fichas de la **correa a medida** (f
 - Enlaces entre módulos con `defineLink`, nunca FK directas entre módulos.
 - Validación de entrada con `zod` en middlewares (`src/api/middlewares.ts`).
 - Redis: usar los módulos oficiales (event bus, workflow engine, locking, caching). No uses `ioredis` directamente salvo en módulo propio justificado.
+- **Caché de Medusa** (`MEDUSA_FF_CACHING`, Fase R-2): se invalida con los eventos del **servidor**. Todo script (`medusa exec`) que escriba catálogo, precios o stock llama a `clearMedusaCache(container)` al terminar (`src/scripts/lib/clear-cache.ts`).
 - **Server vs worker**: nada de trabajo pesado en el request. Emails, indexado de Meilisearch, generación de imágenes, rebuild del storefront → subscribers/jobs (se ejecutan en el worker).
 - **Stripe**: proveedor oficial `payment-stripe`. Webhooks verificados con `STRIPE_WEBHOOK_SECRET`. El manejo debe ser **idempotente**. Importes siempre en la unidad que espere Medusa para la versión instalada; no conviertas a mano sin verificarlo.
 - **Ficheros**: `file-s3` apuntando a SeaweedFS (local, `forcePathStyle`) o R2 (prod). No guardes ficheros en disco local del contenedor.

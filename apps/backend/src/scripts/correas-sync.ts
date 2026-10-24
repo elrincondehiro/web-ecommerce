@@ -47,6 +47,7 @@ import {
   type ProductWanted,
   type VariantWanted,
 } from "./lib/correas-plan";
+import { clearMedusaCache } from "./lib/clear-cache";
 
 type Row = Record<string, unknown>;
 const BATCH = 100;
@@ -425,4 +426,5 @@ export default async function correasSync({ container, args }: ExecArgs) {
       `actualizadas, ${plan.pieces.create.length} piezas nuevas. El stock de las piezas existentes ` +
       `no se ha tocado. Opciones: ${OPTION_TITLES.join(" · ")}.`,
   );
+  await clearMedusaCache(container);
 }

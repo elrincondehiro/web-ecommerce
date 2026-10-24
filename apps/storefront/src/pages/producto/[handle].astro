@@ -12,6 +12,7 @@ import { buttonVariants } from "$lib/components/ui/button";
 import { categoryHref, deepestCategory } from "$lib/categories";
 import { getCollection, getEntry } from "astro:content";
 import { CORREA_GROUP_HANDLE, CORREA_GROUP_PATH, correaSwatch, isCorrea } from "$lib/correa";
+import { listingPageKey } from "$lib/listing-pages";
 import { getAllProducts } from "$lib/medusa";
 import { getRelatedByProduct, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
@@ -210,6 +211,12 @@ const onward = replacement
       <AnalyticsTable product={product} />
     </div>
   </div>
-  {!discontinued && <LiveSync productId={product.id} />}
+  {/* Una island para la ficha y sus relacionados (Fase R-2, P6): la clave es la del bloque. */}
+  {!discontinued && (
+    <LiveSync
+      productId={product.id}
+      relatedKey={related.length ? listingPageKey(related.map((p) => p.id)) : undefined}
+    />
+  )}
   <RelatedProducts products={related} back={`/producto/${product.handle}/`} />
 </BaseLayout>

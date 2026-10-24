@@ -2,11 +2,10 @@
 // «También te puede interesar» (Fase R, R1): relacionados de la ficha (lib/related.ts; los
 // calcula el build con getRelatedByProduct). Estático, 0 JS propio: las tarjetas de siempre
 // (Añadir, ♡) y, en móvil, carrusel con arrastre (ScrollDrag, AGENTS §3.4). Precio y stock los
-// corrige un LiveSync con la clave del bloque (manifiesto de listados, como el carrusel de la home).
+// corrige el LiveSync de la ficha con la clave del bloque (`relatedLiveKey`, manifiesto de
+// listados): una sola island por ficha (Fase R-2, P6).
 import type { StoreProduct } from "$lib/catalog";
 import { CAROUSEL_CARD_SIZES } from "$lib/images";
-import { listingPageKey } from "$lib/listing-pages";
-import LiveSync from "./LiveSync.astro";
 import ProductCard from "./ProductCard.astro";
 import ScrollDrag from "./ScrollDrag.astro";
 
@@ -44,7 +43,6 @@ const { products, back } = Astro.props;
         ))}
       </ul>
     </div>
-    <LiveSync pageKey={listingPageKey(products.map((p) => p.id))} />
     <ScrollDrag />
   </section>
 )}

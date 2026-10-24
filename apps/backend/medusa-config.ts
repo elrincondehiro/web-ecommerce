@@ -211,9 +211,15 @@ module.exports = defineConfig({
     { resolve: "./src/modules/wishlist" },
     // Programa de puntos (Fase L-2, docs/fases/faseL-deseos-puntos.md).
     { resolve: "./src/modules/points" },
+    // Caché de consultas (Fase R-2, docs/fases/faseR-rendimiento.md): solo actúa con el feature flag
+    // `MEDUSA_FF_CACHING=true` (experimental, «[WIP]» en 2.21.2). Se invalida con los eventos del
+    // servidor; lo que escribe un `medusa exec` no le llega (los scripts de catálogo y stock la
+    // vacían al terminar, src/scripts/lib/clear-cache.ts). TTL corto (60 s por defecto) como
+    // red de seguridad para cualquier escritura que no emita evento.
     {
       resolve: "@medusajs/medusa/caching",
       options: {
+        ttl: Number(process.env.MEDUSA_CACHE_TTL ?? 60),
         providers: [
           {
             resolve: "@medusajs/caching-redis",

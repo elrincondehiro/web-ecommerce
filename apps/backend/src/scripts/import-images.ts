@@ -33,6 +33,7 @@ import {
   sourceFileFromUrl,
   type ProductImagePlan,
 } from "./lib/image-files";
+import { clearMedusaCache } from "./lib/clear-cache";
 
 const PRODUCT_CONCURRENCY = 4;
 
@@ -240,4 +241,5 @@ export default async function importImages({ container, args }: ExecArgs) {
       `${stats.skipped} ya importadas, ${stats.linked} asociaciones nuevas a variantes, ` +
       `${unknown.length} handles desconocidos.`,
   );
+  if (!dryRun) await clearMedusaCache(container);
 }
