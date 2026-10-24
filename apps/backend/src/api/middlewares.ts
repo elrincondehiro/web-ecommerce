@@ -17,6 +17,7 @@ import { AdminAdjustPointsBody } from "./admin/customers/[id]/points/route";
 import { StoreApplyCodeBody } from "./store/carts/[id]/code/route";
 import { StoreOrderClaimBody } from "./store/customers/me/order-claims/route";
 import { StoreOrderTransferQuery } from "./store/order-transfers/[id]/route";
+import { PetBody, PetPhotoBody } from "../lib/pets-schema";
 
 /**
  * Códigos descuento (Fase P): la Store API estándar deja aplicar códigos a cualquiera (también a
@@ -142,6 +143,41 @@ export default defineMiddlewares({
       matcher: "/store/customers/me/wishlist/items",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(StoreAddWishlistItemBody)],
+    },
+    // Mascotas (Fase M). La autenticación la pone Medusa (`/store/customers/me*`, `/admin*`).
+    // La foto llega ya reducida (WebP ~50–150 KB en base64): límite de 1 MB solo en esa ruta
+    // (context7 /medusajs/medusa, «parse-body»: `bodyParser.sizeLimit`; por defecto 100 KB).
+    {
+      matcher: "/store/customers/me/pets",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(PetBody)],
+    },
+    {
+      matcher: "/store/customers/me/pets/:id",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(PetBody)],
+    },
+    {
+      matcher: "/store/customers/me/pets/:id/photo",
+      methods: ["POST"],
+      bodyParser: { sizeLimit: "1mb" },
+      middlewares: [validateAndTransformBody(PetPhotoBody)],
+    },
+    {
+      matcher: "/admin/customers/:id/pets",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(PetBody)],
+    },
+    {
+      matcher: "/admin/customers/:id/pets/:petId",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(PetBody)],
+    },
+    {
+      matcher: "/admin/customers/:id/pets/:petId/photo",
+      methods: ["POST"],
+      bodyParser: { sizeLimit: "1mb" },
+      middlewares: [validateAndTransformBody(PetPhotoBody)],
     },
   ],
 });
