@@ -156,6 +156,15 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
 
+**Fase R — rendimiento: ✅ cerrada** (#69) ([faseR-rendimiento.md](./fases/faseR-rendimiento.md), con la [auditoría](./fases/auditoria-rendimiento.md)). Lighthouse móvil 99–100 en todo (fichas 95 → 99), escritorio 100.
+
+- **Variables nuevas** (ya en `.env.example`, `docker/compose.prod.yml` y `docker/.env.prod.example`): backend `MEDUSA_FF_CACHING=true` + `MEDUSA_CACHE_TTL=60`; storefront `LIVE_SYNC_CACHE_TTL=15` (runtime). Copiarlas al `.env` local si no están (el backend arranca sin ellas, pero sin la caché).
+- **Caché de Medusa en Redis** (experimental): los scripts de catálogo/stock la vacían al terminar (`clearMedusaCache`); un SQL a mano no (vaciarla: faseR-rendimiento.md §7).
+- **CSS dentro del HTML** (`build.inlineStylesheets: "always"`) y **Speculation Rules** (`src/lib/speculation.ts`): cada KB de CSS se paga en cada página.
+- **Overrides de seguridad** nuevos (body-parser, multer, zod, undici; README §4): quitarlos cuando Renovate suba Medusa/Astro y `pnpm audit --prod` no los muestre.
+- **En el VPS, al desplegar**: añadir las variables a `.env.prod` (o dejar los valores por defecto del compose), repetir la tanda B de k6 (fase11 §5.7) y comprobar la invalidación de la caché (faseR §3).
+- **Datos locales**: 1068 productos (1000 mock); `e2e/correas.spec.ts` (7 m) falla en local porque `stock:mock` no repone las piezas de la correa (PENDIENTES §4).
+
 **Fase F — mejoras en filtros: ✅ cerrada** ([faseF-filtros.md](./fases/faseF-filtros.md)): rango de precio real en `/buscar/` (`min_price_eur` + `max_price_eur`), sin materia seca ni «Formato: Única» fuera de contexto, subcategorías sangradas, «Solo disponibles» como interruptor lo primero del panel y sin saltos de la rejilla (fila de chips reservada; fila de categorías en todos los listados, con las hermanas en las hojas; las dos en una línea con scroll y `ScrollDrag`). `SearchLive` 982 B (límite 1 KB). ⚠️ En la BD local la cuerda azul de nailon está casi toda reservada por pedidos de e2e (falla `correas.spec.ts`). E2e en otro puerto: `E2E_BASE_URL=http://localhost:<puerto>` (no `127.0.0.1`: Stripe vuelve a `SITE_URL`).
 
 **Fase O — opciones, variantes y plantillas de ficha: ✅ cerrada** (#67) ([faseO-variantes.md](./fases/faseO-variantes.md)):
