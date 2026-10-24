@@ -41,6 +41,7 @@
 - **Foto** (`lib/pet-photo.ts`): JPG, PNG, WebP o AVIF de hasta **8 MB**; sharp aplica la orientación EXIF, reduce a 800 px (sin ampliar), convierte a WebP (calidad 80) y **no copia los metadatos** (sin GPS). Se envía al backend en base64. sharp ya era dependencia (servicio de imágenes); en runtime se carga solo en esta action.
 - `security.actionBodySizeLimit` = 9 MB (antes, 1 MB por defecto) en `astro.config.mjs`.
 - Cookie flash: valores de hasta 500 caracteres (el campo de salud).
+- Fechas en el orden español (día, mes, año) en la tienda y en el Admin; tarjeta «Mis peques» en el resumen de la cuenta (nombres de las vivas).
 - `/privacidad/`: apartados provisionales «Mis peques», «Salud de tus mascotas» y «Fotos de tus mascotas» (para la gestoría).
 - e2e `e2e/mascotas.spec.ts` (sin JS, escritorio y móvil) y `/cuenta/mascotas/` y `/nueva/` en la prueba de desbordamiento de `cuenta.spec.ts`.
 
@@ -106,6 +107,10 @@ A mano:
 - [x] Cada pedido nuevo avisa por email y por ntfy; el push no lleva datos personales.
 - [x] 0 KB de JS nuevo; batería completa en verde.
 
+### 2.3 Arreglo incluido: filas con scroll horizontal (Fase F)
+
+En escritorio, al aparecer la barra de scroll de los chips de `/buscar/` (y de la fila de categorías), la barra ocupaba ~10 px dentro de la fila y salía un scroll vertical que recortaba los chips por arriba. `.chip-row`/`.cat-row` (`global.css`): `overflow-y: hidden`, elementos alineados arriba y altura con el hueco de la barra reservado (chips 36 → 44 px, categorías 48 → 56 px). La altura es la misma con barra o sin ella (sin CLS).
+
 ## 7. Pendientes / riesgos
 
 - 👤 **Gestoría**: revisar los textos provisionales de `/privacidad/` (mascotas, salud y fotos) y de las dos casillas.
@@ -113,5 +118,6 @@ A mano:
 - **Fotos privadas** (cuando no se acepte que sea pública): necesitan un bucket privado, un módulo propio con `@aws-sdk/client-s3` (dependencia nueva) y una ruta que sirva la foto con sesión. Aplazado por complejidad.
 - **Compartir fichas / protectoras**: usar `share_token` y `status`; solo fichas sin foto o con foto pública; **la salud nunca se comparte**.
 - **Backups**: las fotos (como las de producto) solo están en R2; el backup diario solo copia Postgres.
+- **Red local**: la foto de la mascota se sirve directa del bucket (`S3_FILE_URL`, en local `http://localhost:8333/…`), no por `astro:assets` como las de producto (que se generan en el build bajo `/_astro/`): desde otro dispositivo de la LAN no se ve. En producción es la URL pública de R2 (`imagenes.`), sin problema.
 - Las fotos que suba la tienda desde el Admin dependen de que el navegador genere WebP con `canvas.toBlob` (Chrome, Firefox, Edge y Safari ≥ 14 sí).
 - El tope de 20 mascotas por cuenta y los límites de texto (alimentación 200, salud 500) son decisiones provisionales.

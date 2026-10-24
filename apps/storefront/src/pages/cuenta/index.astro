@@ -6,13 +6,15 @@ import {
   ADDRESSES_PATH,
   DELETE_PATH,
   ORDERS_PATH,
+  PETS_PATH,
   PROFILE_PATH,
   accountOrderPath,
   defaultAddress,
 } from "$lib/account";
 import { accountPage, requireCustomer } from "$lib/account-page";
 import { formatPrice } from "$lib/format";
-import { getPointsSummary, listCustomerOrders } from "$lib/medusa";
+import { getPointsSummary, listCustomerOrders, listPets } from "$lib/medusa";
+import { isGone } from "$lib/pets";
 import { POINTS_PATH } from "$lib/points";
 import AccountLayout from "../../components/account/AccountLayout.astro";
 import AccountNotice from "../../components/account/AccountNotice.astro";
@@ -23,11 +25,14 @@ const flash = accountPage(Astro);
 const session = await requireCustomer(Astro);
 if (!session.ok) return session.redirect;
 const { customer, token } = session;
-const [{ orders }, points] = await Promise.all([
+const [{ orders }, points, pets] = await Promise.all([
   listCustomerOrders(token, { limit: 1, offset: 0 }),
   // Si falla, la tarjeta de puntos no muestra el saldo (el resto de la página sigue).
   getPointsSummary(token, { limit: 1, offset: 0 }).catch(() => null),
+  // Mis peques (Fase M): igual, sin los nombres si falla.
+  listPets(token).catch(() => null),
 ]);
+const petNames = (pets ?? []).filter((p) => !isGone(p)).map((p) => p.name);
 const last = orders[0];
 const address = defaultAddress(customer.addresses);
 const name = customer.first_name?.trim();
@@ -102,6 +107,22 @@ const card = "flex flex-col gap-2 rounded-md border-2 border-line bg-card shadow
       </p>
       <a href={WISHLIST_PATH} class="mt-auto text-sm underline underline-offset-4">
         Ver mi lista
+      </a>
+    </section>
+
+    <section aria-labelledby="resumen-peques" class={card}>
+      <h2 id="resumen-peques" class="text-lg font-semibold">
+        Mis peques
+      </h2>
+      {petNames.length > 0 ? (
+        <p class="text-sm break-words">{petNames.join(", ")}</p>
+      ) : (
+        <p class="text-sm text-muted-foreground">
+          Cuéntanos quién vive contigo para aconsejarte mejor.
+        </p>
+      )}
+      <a href={PETS_PATH} class="mt-auto text-sm underline underline-offset-4">
+        {petNames.length > 0 ? "Ver sus fichas" : "Añadir mis mascotas"}
       </a>
     </section>
 

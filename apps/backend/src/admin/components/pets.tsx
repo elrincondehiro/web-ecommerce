@@ -145,13 +145,13 @@ function DateFields({
     <fieldset className="flex flex-wrap items-end gap-2">
       <legend className="mb-1 text-sm">{label}</legend>
       <label className="flex flex-col gap-1 text-xs">
-        Año
+        Día (opcional)
         <input
-          name={`${prefix}_year`}
+          name={`${prefix}_day`}
           inputMode="numeric"
-          pattern="[0-9]{4}"
-          defaultValue={v("year")}
-          className={`${input} w-20`}
+          pattern="[0-9]{1,2}"
+          defaultValue={v("day")}
+          className={`${input} w-16`}
         />
       </label>
       <label className="flex flex-col gap-1 text-xs">
@@ -166,13 +166,13 @@ function DateFields({
         </select>
       </label>
       <label className="flex flex-col gap-1 text-xs">
-        Día (opcional)
+        Año
         <input
-          name={`${prefix}_day`}
+          name={`${prefix}_year`}
           inputMode="numeric"
-          pattern="[0-9]{1,2}"
-          defaultValue={v("day")}
-          className={`${input} w-16`}
+          pattern="[0-9]{4}"
+          defaultValue={v("year")}
+          className={`${input} w-20`}
         />
       </label>
     </fieldset>

@@ -135,20 +135,18 @@ const dates = [
         </legend>
         <div class="flex flex-wrap gap-3">
           <div class="flex flex-col gap-1">
-            <label for={`f-${d.prefix}_year`} class="text-xs text-muted-foreground">
-              Año
+            <label for={`f-${d.prefix}_day`} class="text-xs text-muted-foreground">
+              Día (opcional)
             </label>
             <input
-              id={`f-${d.prefix}_year`}
-              name={`${d.prefix}_year`}
+              id={`f-${d.prefix}_day`}
+              name={`${d.prefix}_day`}
               inputmode="numeric"
-              pattern="[0-9]{4}"
-              maxlength={4}
-              placeholder={String(thisYear)}
-              value={values[`${d.prefix}_year`]}
-              aria-invalid={err(`${d.prefix}_year`) ? "true" : undefined}
-              aria-describedby={err(`${d.prefix}_year`) ? `f-${d.prefix}-error` : undefined}
-              class:list={[control, "w-24"]}
+              pattern="[0-9]{1,2}"
+              maxlength={2}
+              value={values[`${d.prefix}_day`]}
+              aria-invalid={err(`${d.prefix}_day`) ? "true" : undefined}
+              class:list={[control, "w-20"]}
             />
           </div>
           <div class="flex flex-col gap-1">
@@ -173,22 +171,24 @@ const dates = [
             </select>
           </div>
           <div class="flex flex-col gap-1">
-            <label for={`f-${d.prefix}_day`} class="text-xs text-muted-foreground">
-              Día (opcional)
+            <label for={`f-${d.prefix}_year`} class="text-xs text-muted-foreground">
+              Año
             </label>
             <input
-              id={`f-${d.prefix}_day`}
-              name={`${d.prefix}_day`}
+              id={`f-${d.prefix}_year`}
+              name={`${d.prefix}_year`}
               inputmode="numeric"
-              pattern="[0-9]{1,2}"
-              maxlength={2}
-              value={values[`${d.prefix}_day`]}
-              aria-invalid={err(`${d.prefix}_day`) ? "true" : undefined}
-              class:list={[control, "w-20"]}
+              pattern="[0-9]{4}"
+              maxlength={4}
+              placeholder={String(thisYear)}
+              value={values[`${d.prefix}_year`]}
+              aria-invalid={err(`${d.prefix}_year`) ? "true" : undefined}
+              aria-describedby={err(`${d.prefix}_year`) ? `f-${d.prefix}-error` : undefined}
+              class:list={[control, "w-24"]}
             />
           </div>
         </div>
-        {[err(`${d.prefix}_year`), err(`${d.prefix}_month`), err(`${d.prefix}_day`)]
+        {[err(`${d.prefix}_day`), err(`${d.prefix}_month`), err(`${d.prefix}_year`)]
           .filter(Boolean)
           .slice(0, 1)
           .map((e) => (
