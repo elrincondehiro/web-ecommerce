@@ -80,6 +80,12 @@ x-backend: &backend
     SMTP_PORT: ${SMTP_PORT:-1025}
     EMAIL_ASSETS_URL: ${EMAIL_ASSETS_URL:-}
     SHOP_NOTIFY_EMAIL: ${SHOP_NOTIFY_EMAIL:-}
+    # Aviso de pedido nuevo (Fase M): email a SHOP_NOTIFY_EMAIL + push ntfy (sin datos personales).
+    # Sin NTFY_URL/NTFY_ORDERS_TOPIC no hay push. ADMIN_URL = origen del Admin (enlace del aviso).
+    ADMIN_URL: ${ADMIN_URL:-}
+    NTFY_URL: ${NTFY_URL:-}
+    NTFY_ORDERS_TOPIC: ${NTFY_ORDERS_TOPIC:-}
+    NTFY_TOKEN: ${NTFY_TOKEN:-}
 
 services:
   caddy:

@@ -90,6 +90,24 @@ describe("renderEmail", () => {
     expect(baja.text).toContain("Ya no voy a comprar más.");
   });
 
+  it("pedido nuevo para la tienda (Fase M): total, mascotas con su salud y enlace al Admin", async () => {
+    const { subject, text } = await renderEmail(
+      "order-received-shop",
+      previewProps("order-received-shop"),
+    );
+    expect(subject).toMatch(/^Pedido nuevo n\.º 1042 · 34,85\s€$/);
+    expect(text).toContain("lucia@example.com");
+    expect(text).toContain("Hiro");
+    expect(text).toContain("Salud: Alergia al pollo");
+    expect(text).toContain("/app/orders/order_01PREVIEW");
+    const noPets = await renderEmail("order-received-shop", {
+      ...previewProps("order-received-shop"),
+      pets: [],
+    });
+    expect(noPets.text).not.toContain("SUS PEQUES");
+    expect(noPets.text).not.toMatch(/Sus peques/i);
+  });
+
   it("escapa los datos del cliente", async () => {
     const { html } = await renderEmail("order-placed", {
       ...previewProps("order-placed"),
