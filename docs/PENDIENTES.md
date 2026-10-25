@@ -21,6 +21,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Copiar al VPS `compose.prod.yml`, `Caddyfile` y `monitoring/compose.agents.yml` nuevos (Dozzle v11.3.4 también en la VM).
 - [ ] Purge Everything en Cloudflare y comprobar HIT.
 - [ ] Automatizar la purga con un token de solo «Cache Purge» (fase11 §7) y, quizá, un script `deploy` con estos pasos.
+- [ ] **Fase M** (mascotas y avisos): crear en ntfy el tema solo para pedidos y poner `NTFY_URL`, `NTFY_ORDERS_TOPIC` y `ADMIN_URL=https://admin.<dominio>` en `.env.prod` (server y worker los leen del bloque común). La tabla `pet` la crea el `server` al arrancar (`db:migrate`).
 
 ## 2. 🔴 Antes de abrir la tienda de verdad (fase «producción definitiva»)
 
@@ -53,6 +54,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Omnibus (precio anterior en ofertas), desistimiento de personalizados (correas, TRLGDCU art. 103 c), antiparasitarios (RD 666/2023).
 - [ ] Comunicaciones comerciales (carrito abandonado, avisos de precio): consentimiento y baja.
 - [ ] Privacidad: párrafo «Pedidos sin iniciar sesión» (Fase G; se asocian a la cuenta con el mismo email; con otro email, solo si se acepta desde ese email).
+- [ ] Privacidad y casillas de «Mis peques» (Fase M): datos de las mascotas, consentimiento de la salud y de la foto pública (faseM §7).
 
 ## 3. Fases del roadmap que quedan
 

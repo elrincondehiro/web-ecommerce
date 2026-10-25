@@ -352,6 +352,10 @@ export default defineConfig({
     },
   },
   security: {
+    // Foto de mascota (Fase M): hasta 8 MB por formulario (el resto de actions envían pocos KB).
+    // Por defecto 1 MB (astro 7.4.1, core/config/schemas/defaults.js `actionBodySizeLimit`); se
+    // aplica a todas las actions: cada una valida después sus límites (lib/pets.ts, fotos).
+    actionBodySizeLimit: 9 * 1024 * 1024,
     ...(ALLOWED_DOMAINS.length ? { allowedDomains: ALLOWED_DOMAINS } : {}),
     ...(CSP_ENABLED
       ? {

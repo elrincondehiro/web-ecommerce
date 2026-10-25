@@ -1,0 +1,328 @@
+---
+// Formulario de mascota (Fase M): alta y edición, sin JS (POST multipart → action
+// `account.petSave` → PRG). Los errores y valores vuelven en la cookie flash; el fichero de la
+// foto no se puede devolver (hay que volver a elegirlo, lo dice el aviso).
+// Dos consentimientos: la salud (si se escribe, hay que marcarlo o no se guarda nada) y la foto
+// pública (igual). Detalle en docs/fases/faseM-mascotas.md.
+import { buttonVariants } from "$lib/components/ui/button";
+import { PETS_PATH, accountActionUrl } from "$lib/account";
+import { MONTHS, PET_NEUTERED, PET_ORIGINS, PET_SEX, PET_SPECIES, type Pet } from "$lib/pets";
+import Field from "../checkout/Field.astro";
+
+interface Props {
+  pet: Pet | null;
+  values: Record<string, string>;
+  errors: Record<string, string>;
+}
+const { pet, values, errors } = Astro.props;
+const action = accountActionUrl(
+  pet ? `${PETS_PATH}${pet.id}/` : `${PETS_PATH}nueva/`,
+  "account.petSave",
+);
+const thisYear = new Date().getFullYear();
+const control =
+  "h-10 rounded-md border-2 border-line bg-background px-3 text-base aria-invalid:border-destructive sm:text-sm";
+const area =
+  "rounded-md border-2 border-line bg-background px-3 py-2 text-base aria-invalid:border-destructive sm:text-sm";
+const box = "rounded-md border-2 border-line bg-card shadow-sm p-4 sm:p-6 flex flex-col gap-4";
+const err = (k: string) => errors[k];
+const selects = [
+  { name: "sex", label: "Sexo", options: PET_SEX },
+  { name: "neutered", label: "Esterilizado/a", options: PET_NEUTERED },
+  { name: "origin", label: "Procedencia", options: PET_ORIGINS },
+] as const;
+const dates = [
+  { prefix: "birth", legend: "Fecha de nacimiento", hint: "(aproximada)" },
+  { prefix: "death", legend: "Fecha de fallecimiento", hint: "(solo si nos ha dejado)" },
+] as const;
+---
+
+<form method="post" action={action} enctype="multipart/form-data" class="flex flex-col gap-6">
+  {pet && <input type="hidden" name="pet_id" value={pet.id} />}
+
+  <section class={box} aria-labelledby="pet-basico">
+    <h2 id="pet-basico" class="text-xl font-semibold">
+      Datos básicos
+    </h2>
+    <Field
+      name="name"
+      label="Nombre"
+      required
+      maxlength={60}
+      autocomplete="off"
+      value={values.name}
+      error={err("name")}
+    />
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div class="flex flex-col gap-1">
+        <label for="f-species" class="text-sm font-medium">
+          Tipo de animal
+        </label>
+        <select
+          id="f-species"
+          name="species"
+          required
+          class={control}
+          aria-invalid={err("species") ? "true" : undefined}
+        >
+          {Object.entries(PET_SPECIES).map(([k, l]) => (
+            <option value={k} selected={(values.species || "perro") === k}>
+              {l}
+            </option>
+          ))}
+        </select>
+        {err("species") && <p class="text-sm text-destructive">{err("species")}</p>}
+      </div>
+      <Field
+        name="species_other"
+        label="Si es «Otro», ¿qué animal es?"
+        maxlength={40}
+        optional
+        value={values.species_other}
+        error={err("species_other")}
+      />
+    </div>
+    <Field
+      name="breed"
+      label="Raza o mezcla"
+      maxlength={120}
+      hint="P. ej. «Border collie», «Mestizo de pastor alemán» o «Común europeo»."
+      value={values.breed}
+      error={err("breed")}
+    />
+    <div class="grid gap-4 sm:grid-cols-3">
+      {selects.map((s) => (
+        <div class="flex flex-col gap-1">
+          <label for={`f-${s.name}`} class="text-sm font-medium">
+            {s.label} <span class="font-normal text-muted-foreground">(opcional)</span>
+          </label>
+          <select
+            id={`f-${s.name}`}
+            name={s.name}
+            class={control}
+            aria-invalid={err(s.name) ? "true" : undefined}
+          >
+            <option value="">—</option>
+            {Object.entries(s.options).map(([k, l]) => (
+              <option value={k} selected={values[s.name] === k}>
+                {l}
+              </option>
+            ))}
+          </select>
+          {err(s.name) && <p class="text-sm text-destructive">{err(s.name)}</p>}
+        </div>
+      ))}
+    </div>
+    <Field
+      name="weight_kg"
+      label="Peso aproximado (kg)"
+      inputmode="decimal"
+      pattern="[0-9]{1,3}([.,][0-9]{1,2})?"
+      class="sm:max-w-48"
+      value={values.weight_kg}
+      error={err("weight_kg")}
+    />
+  </section>
+
+  <section class={box} aria-labelledby="pet-fechas">
+    <h2 id="pet-fechas" class="text-xl font-semibold">
+      Fechas
+    </h2>
+    {dates.map((d) => (
+      <fieldset class="flex flex-col gap-2">
+        <legend class="mb-1 text-sm font-medium">
+          {d.legend} <span class="font-normal text-muted-foreground">{d.hint}</span>
+        </legend>
+        <div class="flex flex-wrap gap-3">
+          <div class="flex flex-col gap-1">
+            <label for={`f-${d.prefix}_day`} class="text-xs text-muted-foreground">
+              Día (opcional)
+            </label>
+            <input
+              id={`f-${d.prefix}_day`}
+              name={`${d.prefix}_day`}
+              inputmode="numeric"
+              pattern="[0-9]{1,2}"
+              maxlength={2}
+              value={values[`${d.prefix}_day`]}
+              aria-invalid={err(`${d.prefix}_day`) ? "true" : undefined}
+              class:list={[control, "w-20"]}
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for={`f-${d.prefix}_month`} class="text-xs text-muted-foreground">
+              Mes
+            </label>
+            <select
+              id={`f-${d.prefix}_month`}
+              name={`${d.prefix}_month`}
+              aria-invalid={err(`${d.prefix}_month`) ? "true" : undefined}
+              class={control}
+            >
+              <option value="">—</option>
+              {MONTHS.map((m, i) => (
+                <option
+                  value={String(i + 1)}
+                  selected={values[`${d.prefix}_month`] === String(i + 1)}
+                >
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for={`f-${d.prefix}_year`} class="text-xs text-muted-foreground">
+              Año
+            </label>
+            <input
+              id={`f-${d.prefix}_year`}
+              name={`${d.prefix}_year`}
+              inputmode="numeric"
+              pattern="[0-9]{4}"
+              maxlength={4}
+              placeholder={String(thisYear)}
+              value={values[`${d.prefix}_year`]}
+              aria-invalid={err(`${d.prefix}_year`) ? "true" : undefined}
+              aria-describedby={err(`${d.prefix}_year`) ? `f-${d.prefix}-error` : undefined}
+              class:list={[control, "w-24"]}
+            />
+          </div>
+        </div>
+        {[err(`${d.prefix}_day`), err(`${d.prefix}_month`), err(`${d.prefix}_year`)]
+          .filter(Boolean)
+          .slice(0, 1)
+          .map((e) => (
+            <p id={`f-${d.prefix}-error`} class="text-sm text-destructive">
+              {e}
+            </p>
+          ))}
+      </fieldset>
+    ))}
+  </section>
+
+  <section class={box} aria-labelledby="pet-cuidados">
+    <h2 id="pet-cuidados" class="text-xl font-semibold">
+      Alimentación y salud
+    </h2>
+    <Field
+      name="diet"
+      label="Alimentación actual"
+      maxlength={200}
+      hint="Marca, tipo de comida, BARF…"
+      value={values.diet}
+      error={err("diet")}
+    />
+    <div class="flex flex-col gap-1">
+      <label for="f-health" class="text-sm font-medium">
+        Salud: enfermedades, alergias o intolerancias
+        <span class="font-normal text-muted-foreground"> (opcional)</span>
+      </label>
+      <textarea
+        id="f-health"
+        name="health"
+        rows="3"
+        maxlength="500"
+        aria-invalid={err("health") ? "true" : undefined}
+        class={area}
+      >{values.health ?? ""}</textarea>
+      {err("health") && <p class="text-sm text-destructive">{err("health")}</p>}
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="health_consent"
+          checked={values.health_consent === "on"}
+          aria-invalid={err("health_consent") ? "true" : undefined}
+          aria-describedby={err("health_consent") ? "f-health_consent-error" : undefined}
+          class="mt-0.5 size-4"
+        />
+        <span>
+          Acepto que guardéis la información de salud de mi mascota para atender mis pedidos y
+          recomendarme productos adecuados. Puedo retirarlo cuando quiera (desmarcando la casilla o
+          vaciando el campo). Más información en la{" "}
+          <a href="/privacidad/" class="underline underline-offset-4">
+            política de privacidad
+          </a>
+          .
+        </span>
+      </label>
+      {err("health_consent") && (
+        <p id="f-health_consent-error" class="text-sm text-destructive">
+          {err("health_consent")}
+        </p>
+      )}
+    </div>
+  </section>
+
+  <section class={box} aria-labelledby="pet-foto">
+    <h2 id="pet-foto" class="text-xl font-semibold">
+      Foto
+    </h2>
+    {pet?.photo_url && (
+      <div class="flex items-center gap-4">
+        <img
+          src={pet.photo_url}
+          alt={`Foto actual de ${pet.name}`}
+          width="96"
+          height="96"
+          loading="lazy"
+          class="size-24 rounded-md border-2 border-line object-cover"
+        />
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="photo_remove" class="size-4" />
+          Quitar la foto
+        </label>
+      </div>
+    )}
+    <div class="flex flex-col gap-1">
+      <label for="f-photo" class="text-sm font-medium">
+        {pet?.photo_url ? "Cambiar la foto" : "Subir una foto"}
+        <span class="font-normal text-muted-foreground"> (opcional)</span>
+      </label>
+      <input
+        id="f-photo"
+        type="file"
+        name="photo"
+        accept="image/jpeg,image/png,image/webp,image/avif"
+        aria-invalid={err("photo") ? "true" : undefined}
+        aria-describedby="f-photo-hint"
+        class="text-sm file:mr-3 file:rounded-md file:border-2 file:border-line file:bg-background file:px-3 file:py-1.5"
+      />
+      <p id="f-photo-hint" class="text-xs text-muted-foreground">
+        JPG, PNG, WebP o AVIF de hasta 8 MB. La reducimos y le quitamos los datos ocultos de la foto
+        (como la ubicación).
+      </p>
+      {err("photo") && <p class="text-sm text-destructive">{err("photo")}</p>}
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="photo_consent"
+          aria-invalid={err("photo_consent") ? "true" : undefined}
+          aria-describedby={err("photo_consent") ? "f-photo_consent-error" : undefined}
+          class="mt-0.5 size-4"
+        />
+        <span>
+          Acepto que la foto sea <strong>pública</strong>: cualquiera con su enlace podrá verla, y
+          podréis usarla en las fichas que yo decida compartir. Necesario para subirla.
+        </span>
+      </label>
+      {err("photo_consent") && (
+        <p id="f-photo_consent-error" class="text-sm text-destructive">
+          {err("photo_consent")}
+        </p>
+      )}
+    </div>
+  </section>
+
+  <div class="flex flex-wrap items-center gap-3">
+    <button type="submit" class={buttonVariants()}>
+      {pet ? "Guardar cambios" : "Añadir"}
+    </button>
+    <a href={PETS_PATH} class={buttonVariants({ variant: "outline" })}>
+      Cancelar
+    </a>
+  </div>
+</form>

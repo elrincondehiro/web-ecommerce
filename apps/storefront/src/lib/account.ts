@@ -10,6 +10,8 @@ import { z } from "astro/zod";
 import { checkShippingPostalCode, normalizePhone } from "./checkout";
 
 export const ACCOUNT_PATH = "/cuenta/";
+/** Mis peques (Fase M): lista, alta (`nueva/`) y edición (`<id>/`). */
+export const PETS_PATH = "/cuenta/mascotas/";
 export const LOGIN_PATH = "/cuenta/entrar/";
 export const REGISTER_PATH = "/cuenta/registro/";
 export const RECOVER_PATH = "/cuenta/recuperar/";
@@ -41,7 +43,9 @@ export type AccountActionName =
   | "account.deleteRequest"
   | "account.claimOrder"
   | "account.acceptTransfer"
-  | "account.declineTransfer";
+  | "account.declineTransfer"
+  | "account.petSave"
+  | "account.petDelete";
 
 /** URL de un formulario sin JS: `<página>?_action=<nombre>` (la página debe ser on-demand). */
 export function accountActionUrl(page: string, name: AccountActionName): string {
@@ -80,6 +84,11 @@ export const ACCOUNT_NOTICES = {
   saved: "Cambios guardados.",
   address_saved: "Dirección guardada.",
   address_deleted: "Dirección eliminada.",
+  pet_saved: "Ficha guardada.",
+  pet_deleted: "Ficha eliminada.",
+  pet_photo_failed:
+    "Hemos guardado los datos, pero no la foto. Prueba con otra imagen (JPG, PNG, WebP o AVIF de hasta 8 MB).",
+  pet_limit: "Has llegado al máximo de fichas de mascotas por cuenta.",
   delete_sent:
     "Hemos recibido tu solicitud. Eliminaremos tu cuenta y te escribiremos en un plazo máximo de un mes.",
   logged_out: "Has cerrado la sesión.",
@@ -109,6 +118,8 @@ const SUCCESS = new Set<AccountNoticeCode>([
   "saved",
   "address_saved",
   "address_deleted",
+  "pet_saved",
+  "pet_deleted",
   "delete_sent",
   "logged_out",
 ]);
@@ -141,7 +152,8 @@ export function decodeAccountFlash(raw: string | undefined): AccountFlash {
       v && typeof v === "object"
         ? Object.fromEntries(
             Object.entries(v).filter(
-              (e): e is [string, string] => typeof e[1] === "string" && e[1].length <= 300,
+              // 500: el campo de salud de las mascotas (Fase M); el resto llega con ≤ 300.
+              (e): e is [string, string] => typeof e[1] === "string" && e[1].length <= 500,
             ),
           )
         : undefined;

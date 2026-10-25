@@ -1,0 +1,47 @@
+---
+// Mis peques (Fase M): mini fichas de las mascotas del cliente (vivas primero, después las
+// fallecidas, en gris) y «+ Añadir mascota». On-demand, 0 JS (Quitar confirma con `popover`).
+import { buttonVariants } from "$lib/components/ui/button";
+import { PETS_PATH } from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { listPets } from "$lib/medusa";
+import AccountLayout from "../../../components/account/AccountLayout.astro";
+import AccountNotice from "../../../components/account/AccountNotice.astro";
+import PetCard from "../../../components/account/PetCard.astro";
+import Icon from "../../../components/Icon.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const pets = await listPets(session.token);
+---
+
+<AccountLayout title="Mis peques">
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <h1 class="text-3xl font-semibold tracking-tight">Mis peques</h1>
+    <a href={`${PETS_PATH}nueva/`} class={buttonVariants()}>
+      + Añadir mascota
+    </a>
+  </div>
+  <AccountNotice code={flash.code} />
+  <p class="mb-6 max-w-2xl text-sm text-muted-foreground">
+    Cuéntanos quién vive contigo. Lo veremos al preparar tus pedidos para aconsejarte mejor.
+  </p>
+  {pets.length > 0 ? (
+    <ul class="grid gap-4 sm:grid-cols-2">
+      {pets.map((pet) => (
+        <PetCard pet={pet} />
+      ))}
+    </ul>
+  ) : (
+    <div class="flex max-w-xl flex-col items-start gap-3 rounded-md border-2 border-line bg-card p-6 shadow-sm">
+      <Icon name="paw-print" class="size-8 text-muted-foreground" />
+      <p>Aún no has añadido ninguna mascota.</p>
+      <a href={`${PETS_PATH}nueva/`} class={buttonVariants({ variant: "outline" })}>
+        + Añadir la primera
+      </a>
+    </div>
+  )}
+</AccountLayout>

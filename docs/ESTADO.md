@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 24-oct-2026 · **Fase R (rendimiento) hecha** ([faseR-rendimiento.md](./fases/faseR-rendimiento.md)): fotos de la galería, 720 px, logos 1×/2×, precarga del 700 (R-1); caché de Medusa en Redis (`MEDUSA_FF_CACHING`, experimental) + caché de 15 s de `LiveSyncData` + una island por ficha (R-2: capacidad sin CDN ~25 → ~100 páginas/s; con Cloudflare caliente apenas cambia, sirve tras cada purga y para carrito/checkout); Speculation Rules y CSS dentro del HTML (R-3). Antes: auditoría de rendimiento, Fase F (#68), Fase O (#67). **Siguiente**: más peticiones de la fase de problemas de frontend y backend. Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). Después: mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 24-oct-2026 · **Fase M (mascotas y aviso de pedidos) hecha** ([faseM-mascotas.md](./fases/faseM-mascotas.md)): «Mis peques» en la cuenta (fichas de mascotas sin JS, foto pública con consentimiento y sin metadatos, salud con consentimiento, fallecidas en gris), widgets en el Admin (cliente y pedido) y aviso de cada pedido nuevo por email a `SHOP_NOTIFY_EMAIL` y push ntfy (`NTFY_URL` + `NTFY_ORDERS_TOPIC`). Antes: **Fase R (rendimiento)** ([faseR-rendimiento.md](./fases/faseR-rendimiento.md)). **Siguiente**: más peticiones de frontend y backend del usuario. Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). Después: mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -38,6 +38,7 @@
 | F Mejoras en filtros                        | ✅     | [faseF-filtros.md](./fases/faseF-filtros.md)                         |
 | Auditoría de rendimiento (1000 productos)   | ✅     | [auditoria-rendimiento.md](./fases/auditoria-rendimiento.md)         |
 | R Rendimiento (imágenes, cachés, CSS)       | ✅     | [faseR-rendimiento.md](./fases/faseR-rendimiento.md)                 |
+| M Mascotas y aviso de pedidos               | ✅     | [faseM-mascotas.md](./fases/faseM-mascotas.md)                       |
 
 Roadmap completo y tiempos: README §13.
 
@@ -155,6 +156,14 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 ```
 
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
+
+**Fase M — mascotas y aviso de pedidos: ✅ cerrada** ([faseM-mascotas.md](./fases/faseM-mascotas.md)):
+
+- **Mis peques** (`/cuenta/mascotas/`, 0 JS): módulo `pets` (migración nueva: `db:migrate`), rutas `/store/customers/me/pets*` y `/admin/customers/:id/pets*`, widgets del Admin en la ficha del cliente (editar) y del pedido (ver). Fechas como año + mes + día opcional; fallecidas en gris al final.
+- **Consentimientos**: sin la casilla no se guarda nada (aviso). Salud solo con consentimiento; la foto, solo **pública** (bucket público, `mascotas/…webp`), reducida a 800 px y **sin metadatos** con sharp en la action (en el Admin, canvas). Fotos privadas aplazadas (necesitan otro bucket y `@aws-sdk/client-s3`).
+- `security.actionBodySizeLimit` = 9 MB (fotos de hasta 8 MB); cookie flash con valores de hasta 500 caracteres.
+- **Aviso de pedido nuevo** (subscriber `order-placed-shop-notify`, worker): email `order-received-shop` a `SHOP_NOTIFY_EMAIL` (con las mascotas) + push ntfy **sin datos personales**. Variables nuevas `NTFY_URL`, `NTFY_ORDERS_TOPIC`, `NTFY_TOKEN`, `ADMIN_URL` (en `.env.example`, `compose.prod.yml` y `.env.prod.example`): el usuario crea un tema de ntfy solo para pedidos.
+- Preparado para compartir fichas (protectoras): `status` y `share_token` en el modelo, sin uso. La salud nunca se comparte.
 
 **Fase R — rendimiento: ✅ cerrada** (#69) ([faseR-rendimiento.md](./fases/faseR-rendimiento.md), con la [auditoría](./fases/auditoria-rendimiento.md)). Lighthouse móvil 99–100 en todo (fichas 95 → 99), escritorio 100.
 

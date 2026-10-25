@@ -87,7 +87,14 @@ test.describe("cuenta sin JS", () => {
     // El menú de la cuenta (scroll horizontal) estiraba la columna del grid: ~420 px en 320.
     await page.setViewportSize({ width: 320, height: 640 });
     await login(page, email);
-    for (const path of ["/cuenta/", "/cuenta/pedidos/", "/cuenta/direcciones/", "/cuenta/datos/"]) {
+    for (const path of [
+      "/cuenta/",
+      "/cuenta/pedidos/",
+      "/cuenta/direcciones/",
+      "/cuenta/datos/",
+      "/cuenta/mascotas/",
+      "/cuenta/mascotas/nueva/",
+    ]) {
       await page.goto(path);
       const { scroll, client } = await page.evaluate(() => ({
         scroll: document.documentElement.scrollWidth,

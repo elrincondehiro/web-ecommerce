@@ -680,24 +680,31 @@
  * Filas de una línea con scroll horizontal (Fase F): chips de filtros aplicados (ActiveFilters)
  * y subcategorías (CategoryNav). Altura FIJA aunque esté vacía o tenga muchos elementos: nada
  * cambia de altura al filtrar ni al navegar entre categorías (CLS). Arrastre con ratón:
- * `data-drag-scroll` + ScrollDrag. La barra de scroll fina va en el relleno inferior.
+ * `data-drag-scroll` + ScrollDrag.
+ * Barra de scroll: en escritorio (barras clásicas, no superpuestas) ocupa ~10 px de alto DENTRO
+ * de la fila. La altura reserva ese hueco debajo de los chips (alineados arriba) y
+ * `overflow-y: hidden` evita el scroll vertical que recortaba los chips por arriba: la altura es
+ * la misma con barra o sin ella (móvil: barra superpuesta, el hueco queda vacío).
  */
 .chip-row,
 .cat-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
-  padding-bottom: 0.375rem;
+  padding-top: 0.125rem;
 }
+/* Chip 28 px + 2 px arriba + hueco de la barra (~12 px) */
 .chip-row {
-  height: 2.25rem;
+  height: 2.75rem;
 }
+/* Categoría 36 px + sombra retro 3 px + 2 px arriba + hueco de la barra */
 .cat-row {
-  height: 3rem;
+  height: 3.5rem;
   /* Sombra retro del chip activo (3 px) sin recortar */
   padding-right: 0.25rem;
 }

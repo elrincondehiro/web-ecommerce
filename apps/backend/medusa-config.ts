@@ -211,6 +211,8 @@ module.exports = defineConfig({
     { resolve: "./src/modules/wishlist" },
     // Programa de puntos (Fase L-2, docs/fases/faseL-deseos-puntos.md).
     { resolve: "./src/modules/points" },
+    // Mascotas de los clientes (Fase M, docs/fases/faseM-mascotas.md).
+    { resolve: "./src/modules/pets" },
     // Caché de consultas (Fase R-2, docs/fases/faseR-rendimiento.md): solo actúa con el feature flag
     // `MEDUSA_FF_CACHING=true` (experimental, «[WIP]» en 2.21.2). Se invalida con los eventos del
     // servidor; lo que escribe un `medusa exec` no le llega (los scripts de catálogo y stock la

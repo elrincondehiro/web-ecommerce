@@ -1,0 +1,21 @@
+---
+// Alta de una mascota (Fase M). On-demand, 0 JS.
+import { accountPage, requireCustomer } from "$lib/account-page";
+import AccountLayout from "../../../components/account/AccountLayout.astro";
+import AccountNotice from "../../../components/account/AccountNotice.astro";
+import PetForm from "../../../components/account/PetForm.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+---
+
+<AccountLayout title="Añadir mascota">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Añadir mascota</h1>
+  <AccountNotice code={flash.code} />
+  <div class="max-w-2xl">
+    <PetForm pet={null} values={flash.values ?? {}} errors={flash.errors ?? {}} />
+  </div>
+</AccountLayout>
