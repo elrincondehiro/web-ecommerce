@@ -151,11 +151,30 @@ describe("buildSearchQueries", () => {
     });
     expect(main!.pagination.order).toEqual({ min_price_eur: "ASC" });
     expect(main!.search_options.facets).toContainEqual({ field: "proteina_ms", type: "stats" });
-    // Una consulta extra por grupo de opciones, sin el propio grupo
+    // Con opciones marcadas, `option_values` no va en la principal (Medusa le quitaría el
+    // filtro de TODAS las opciones): una con todos los filtros y una por grupo sin el suyo.
+    expect(main!.search_options.facets).not.toContain("option_values");
+    expect(rest).toHaveLength(3);
+    expect(rest[0]!.filters).toEqual(main!.filters);
+    expect(JSON.stringify(rest[1]!.filters)).not.toContain("Color:Rojo");
+    expect(JSON.stringify(rest[1]!.filters)).toContain("Talla:M");
+    expect(JSON.stringify(rest[2]!.filters)).not.toContain("Talla:M");
+    expect(JSON.stringify(rest[2]!.filters)).toContain("Color:Rojo");
+    expect(rest[2]!.pagination).toEqual({ skip: 0, take: 0 });
+  });
+
+  it("un solo grupo marcado: también se cuentan aparte los demás grupos (con el filtro)", () => {
+    const [main, ...rest] = buildSearchQueries(parse("opcion=Color:Rojo&opcion=Color:Azul"));
+    expect(main!.search_options.facets).not.toContain("option_values");
     expect(rest).toHaveLength(2);
-    expect(JSON.stringify(rest[0]!.filters)).not.toContain("Color:Rojo");
-    expect(JSON.stringify(rest[0]!.filters)).toContain("Talla:M");
-    expect(rest[1]!.pagination).toEqual({ skip: 0, take: 0 });
+    expect(JSON.stringify(rest[0]!.filters)).toContain("Color:Rojo");
+    expect(JSON.stringify(rest[1]!.filters)).not.toContain("Color:");
+  });
+
+  it("sin opciones marcadas: una sola consulta, con option_values", () => {
+    const queries = buildSearchQueries(parse("categoria=ropa"));
+    expect(queries).toHaveLength(1);
+    expect(queries[0]!.search_options.facets).toContain("option_values");
   });
 });
 
@@ -243,15 +262,20 @@ describe("parseSearchResults", () => {
         metadata: { count: 2 },
         facets: {
           category_tree_handles: { values: [{ value: "ropa", count: 2 }] },
+          in_stock: { values: [{ value: "true", count: 2 }] },
+          min_price_eur: { type: "stats", min: 4.95, max: 20 },
+        },
+      },
+      // Con todos los filtros: vale para los grupos NO marcados
+      {
+        facets: {
           option_values: {
             values: [
-              { value: "Talla:M", count: 99 },
-              { value: "Color:Rojo", count: 99 },
+              { value: "Talla:M", count: 2 },
+              { value: "Color:Rojo", count: 2 },
               { value: "Formato:Único", count: 1 },
             ],
           },
-          in_stock: { values: [{ value: "true", count: 2 }] },
-          min_price_eur: { type: "stats", min: 4.95, max: 20 },
         },
       },
       {
@@ -286,6 +310,42 @@ describe("parseSearchResults", () => {
     ]);
     expect(out.facets.disponible).toBe(2);
     expect(out.facets.price).toEqual({ min: 4.95, max: 20 });
+  });
+
+  it("un grupo marcado: los demás grupos con sus números reales (lo que no da resultados, fuera)", () => {
+    const p = parse("opcion=Color:Rojo&opcion=Color:Azul");
+    const out = parseSearchResults(p, [
+      // La principal no trae option_values (§ buildSearchQueries)
+      { hits: [], metadata: { count: 101 }, facets: {} },
+      // Con el filtro de color: Talla sí, Peso no (ningún producto rojo o azul tiene peso)
+      {
+        facets: {
+          option_values: {
+            values: [
+              { value: "Talla:M", count: 101 },
+              { value: "Color:Rojo", count: 68 },
+            ],
+          },
+        },
+      },
+      // Sin el filtro de color: los colores para añadir otro (OR)
+      {
+        facets: {
+          option_values: {
+            values: [
+              { value: "Color:Rojo", count: 68 },
+              { value: "Color:Verde", count: 64 },
+              { value: "Peso:3 kg", count: 128 },
+            ],
+          },
+        },
+      },
+    ]);
+    expect(out.facets.opcion).toEqual([
+      { value: "Talla:M", count: 101 },
+      { value: "Color:Rojo", count: 68 },
+      { value: "Color:Verde", count: 64 },
+    ]);
   });
 
   it("lastPage", () => {

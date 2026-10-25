@@ -9,18 +9,18 @@
 # categorias: handles de categorias.csv separados por | (la subcategoría más concreta) · etiquetas: separadas por | · iva: general / reducido (10 %) / superreducido (4 %) · coleccion: handle de una colección del Admin.
 # estado: publicado / borrador (por defecto publicado) · peso_g: peso de envío en gramos (con envase) · medidas en milímetros. Celda vacía = no tocar; un guion - = borrar el valor.
 "# ANALÍTICOS (producto, % tal cual, 0–100): proteina_pct · grasa_pct · fibra_pct · cenizas_pct · humedad_pct (sin humedad no hay filtro sobre materia seca). Otros: columna analitico:Nombre con texto libre (1,2 %)."
-# descatalogado: sí / no (la ficha sigue con aviso y noindex; sale de listados, búsqueda y sitemap) · sustituto: handle del producto que lo reemplaza · sin_puntos: sí / no (no genera puntos del programa de fidelización) · relacionados: handles separados por | (máx. 8; la ficha muestra 4 y rellena con su categoría) · plantilla / guia_tallas: id de la plantilla de ficha y de la guía de tallas · opcion_fotos: opción cuyas fotos cambian la galería (LEEME.md). Columnas opcionales: añádelas si las usas.
+# descatalogado: sí / no (la ficha sigue con aviso y noindex; sale de listados, búsqueda y sitemap) · sustituto: handle del producto que lo reemplaza · sin_puntos: sí / no (no genera puntos del programa de fidelización) · relacionados: handles separados por | (máx. 8; la ficha muestra 4 y rellena con su categoría) · plantilla / guia_tallas: id de la plantilla de ficha y de la guía de tallas · opcion_fotos: opción cuyas fotos cambian la galería (LEEME.md). Columnas opcionales: si no las usas, déjalas vacías o bórralas.
 "# CONTENIDO NETO (variante, para el precio por kilo o litro): neto_g (gramos) O neto_ml (mililitros), no los dos."
 "# GRANEL: granel = sí y, en vez de precio/precio_oferta/stock, paso_g (se vende de paso en paso: 5, 10, 25… g) · min_g (mínimo por pedido, múltiplo del paso; vacío = el paso) · precio_kg · precio_oferta_kg · stock_g (gramos, solo al crear)."
 #   El precio de un paso (precio_kg × paso_g / 1000) debe salir en céntimos exactos: dry-run propone alternativas si no.
-handle,titulo,subtitulo,descripcion,categorias,etiquetas,iva,coleccion,estado,material,marca,proteina_pct,grasa_pct,fibra_pct,cenizas_pct,humedad_pct,analitico:Calcio,granel,opcion:Talla,opcion:Color,opcion:Tamaño,sku,ean,precio,precio_oferta,stock,peso_g,largo_mm,ancho_mm,alto_mm,neto_g,neto_ml,paso_g,min_g,precio_kg,precio_oferta_kg,stock_g
+handle,titulo,subtitulo,descripcion,categorias,etiquetas,iva,coleccion,estado,material,marca,proteina_pct,grasa_pct,fibra_pct,cenizas_pct,humedad_pct,analitico:Calcio,granel,descatalogado,sustituto,sin_puntos,relacionados,plantilla,guia_tallas,opcion_fotos,opcion:Talla,opcion:Color,opcion:Tamaño,sku,ean,precio,precio_oferta,stock,peso_g,largo_mm,ancho_mm,alto_mm,neto_g,neto_ml,paso_g,min_g,precio_kg,precio_oferta_kg,stock_g
 collar-nylon,Collar de nailon,Hebilla de liberación rápida,"Collar ajustable de nailon resistente.
-Lavable a mano.",collares-perro,novedad|reflectante,general,,publicado,Nailon,Hiro,,,,,,,,S,Rojo,,COL-NYL-S-ROJ,8400000000024,"12,95",,10,60,200,120,30,,,,,,,
-collar-nylon,,,,,,,,,,,,,,,,,,S,Azul,,COL-NYL-S-AZU,,,,8,,,,,,,,,,,
-collar-nylon,,,,,,,,,,,,,,,,,,L,Rojo,,COL-NYL-L-ROJ,,"15,95","13,95",5,90,,,,,,,,,,
-collar-nylon,,,,,,,,,,,,,,,,,,L,Azul,,COL-NYL-L-AZU,,,,0,,,,,,,,,,,
-pienso-pollo-adulto,Pienso de pollo para perros adultos,,Pienso completo con pollo fresco como primer ingrediente.,pienso-perro,,general,,publicado,,Hiro,26,15,"2,5","7,5",9,"1,2 %",,,,3 kg,PIE-POL-AD-3KG,,"19,90",,12,3100,400,250,100,3000,,,,,,
-pienso-pollo-adulto,,,,,,,,,,,,,,,,,,,,12 kg,PIE-POL-AD-12KG,,"59,90","54,90",6,12200,,,,12000,,,,,,
-alas-pollo-deshidratadas,Alas de pollo deshidratadas,,Snack natural a granel: elige los gramos.,snacks-perro,natural,general,,publicado,,,60,20,,,10,,sí,,,,ALA-POL-DES,,,,,,,,,,,5,100,20,18,2400
-taza-logo,Taza con logo,,,tazas-para-ti,ideal para regalo,general,,borrador,Cerámica,,,,,,,,,,,,TAZA-LOGO,,"9,95",,25,350,120,90,100,,350,,,,,
-guia-cachorro,Guía del cachorro,,,libros-para-ti,,superreducido,,publicado,,,,,,,,,,,,,LIB-GUIA-CACH,,"14,90",,4,400,,,,,,,,,,
+Lavable a mano.",collares-perro,novedad|reflectante,general,,publicado,Nailon,Hiro,,,,,,,,,,,pienso-pollo-adulto|alas-pollo-deshidratadas,,,,S,Rojo,,COL-NYL-S-ROJ,8400000000024,"12,95",,10,60,200,120,30,,,,,,,
+collar-nylon,,,,,,,,,,,,,,,,,,,,,,,,,S,Azul,,COL-NYL-S-AZU,,,,8,,,,,,,,,,,
+collar-nylon,,,,,,,,,,,,,,,,,,,,,,,,,L,Rojo,,COL-NYL-L-ROJ,,"15,95","13,95",5,90,,,,,,,,,,
+collar-nylon,,,,,,,,,,,,,,,,,,,,,,,,,L,Azul,,COL-NYL-L-AZU,,,,0,,,,,,,,,,,
+pienso-pollo-adulto,Pienso de pollo para perros adultos,,Pienso completo con pollo fresco como primer ingrediente.,pienso-perro,,general,,publicado,,Hiro,26,15,"2,5","7,5",9,"1,2 %",,,,,,,,,,,3 kg,PIE-POL-AD-3KG,,"19,90",,12,3100,400,250,100,3000,,,,,,
+pienso-pollo-adulto,,,,,,,,,,,,,,,,,,,,,,,,,,,12 kg,PIE-POL-AD-12KG,,"59,90","54,90",6,12200,,,,12000,,,,,,
+alas-pollo-deshidratadas,Alas de pollo deshidratadas,,Snack natural a granel: elige los gramos.,snacks-perro,natural,general,,publicado,,,60,20,,,10,,sí,,,,,,,,,,,ALA-POL-DES,,,,,,,,,,,5,100,20,18,2400
+taza-logo,Taza con logo,,,tazas-para-ti,ideal para regalo,general,,borrador,Cerámica,,,,,,,,,,,,,,,,,,,TAZA-LOGO,,"9,95",,25,350,120,90,100,,350,,,,,
+guia-cachorro,Guía del cachorro,,,libros-para-ti,,superreducido,,publicado,,,,,,,,,,,,,,,,,,,,LIB-GUIA-CACH,,"14,90",,4,400,,,,,,,,,,

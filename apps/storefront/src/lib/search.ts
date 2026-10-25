@@ -363,12 +363,25 @@ function orderFor(p: SearchParams): Record<string, "ASC" | "DESC"> | undefined {
 
 /**
  * Consultas para una página de resultados:
- * - [0] resultados + facetas disyuntivas (Medusa quita el filtro de cada campo al contarlo);
- * - [1..] una por grupo de opciones marcado (Talla, Color…): `option_values` es UN campo, así
- *   que Medusa quitaría TODOS los grupos; aquí se quita solo el propio para contar bien.
+ * - [0] resultados + facetas disyuntivas (Medusa quita el filtro de cada campo al contarlo:
+ *   categorías, etiquetas y rangos cuentan sin su propio filtro, para poder añadir otro valor).
+ * - Con opciones marcadas: `option_values` es UN campo para todas las opciones, así que Medusa
+ *   quitaría el filtro de TODAS al contar y Peso, Talla… salían con los números del catálogo
+ *   entero (tras marcar Color: Rojo, «Peso: 3 kg (128)» aunque ningún producto rojo tenga peso).
+ *   Por eso no se pide `option_values` en [0] y se cuentan aparte:
+ *   - [1] con TODOS los filtros → los grupos no marcados (AND real: solo lo que da resultados);
+ *   - [2..] uno por grupo marcado, sin su propio filtro → sus valores (OR dentro del grupo).
  * NO se envía `typo_tolerance`: Meilisearch lo configura por índice y rechaza la opción.
  */
 export function buildSearchQueries(p: SearchParams, take = PAGE_SIZE): SearchQueryBody[] {
+  const groups = [...optionGroups(p.opcion).keys()];
+  const optionsOnly = (filters: Filter): SearchQueryBody => ({
+    entity: "product",
+    fields: ["id"],
+    filters,
+    pagination: { skip: 0, take: 0 },
+    search_options: { facets: ["option_values"] },
+  });
   const main: SearchQueryBody = {
     entity: "product",
     fields: ["id"],
@@ -380,24 +393,18 @@ export function buildSearchQueries(p: SearchParams, take = PAGE_SIZE): SearchQue
     },
     search_options: {
       facets: [
-        ...FACET_FIELDS,
+        ...FACET_FIELDS.filter((f) => !groups.length || f !== "option_values"),
         ...PRICE_FACETS,
         ...dryMatterFilters().map(({ field }) => ({ field, type: "stats" })),
       ],
       disjunctive_facets: true,
     },
   };
-  const groups = [...optionGroups(p.opcion).keys()];
-  const perGroup = groups.length > 1 ? groups : [];
+  if (!groups.length) return [main];
   return [
     main,
-    ...perGroup.map((title): SearchQueryBody => ({
-      entity: "product",
-      fields: ["id"],
-      filters: filtersFor(p, title),
-      pagination: { skip: 0, take: 0 },
-      search_options: { facets: ["option_values"] },
-    })),
+    optionsOnly(filtersFor(p)),
+    ...groups.map((title) => optionsOnly(filtersFor(p, title))),
   ];
 }
 
@@ -456,15 +463,18 @@ export function statsRange(
 
 /** Une la consulta principal y las de cada grupo de opciones (§ buildSearchQueries). */
 export function parseSearchResults(p: SearchParams, results: RawSearchResult[]): SearchOutcome {
-  const [main, ...rest] = results;
+  const [main, all, ...perGroup] = results;
   const facets = main?.facets ?? {};
   let opcion = facets.option_values?.values ?? [];
   const groups = [...optionGroups(p.opcion).keys()];
-  if (groups.length > 1) {
-    const counted = new Set(groups);
-    opcion = opcion.filter((f) => !counted.has(splitOption(f.value).title));
+  if (groups.length) {
+    // § buildSearchQueries: grupos no marcados con todos los filtros; cada marcado, sin el suyo.
+    const marked = new Set(groups);
+    opcion = (all?.facets?.option_values?.values ?? []).filter(
+      (f) => !marked.has(splitOption(f.value).title),
+    );
     groups.forEach((title, i) => {
-      const own = (rest[i]?.facets?.option_values?.values ?? []).filter(
+      const own = (perGroup[i]?.facets?.option_values?.values ?? []).filter(
         (f) => splitOption(f.value).title === title,
       );
       opcion = [...opcion, ...own];

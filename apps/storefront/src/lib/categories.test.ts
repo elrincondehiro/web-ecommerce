@@ -3,6 +3,7 @@ import type { StoreProduct } from "./catalog";
 import {
   buildCategoryTree,
   categoryHref,
+  categoryRow,
   categoryNames,
   deepestCategory,
   facetCategories,
@@ -143,5 +144,24 @@ describe("filtro por niveles", () => {
     expect(names.get("juguetes")).toBe("Juguetes (perro)");
     expect(names.get("juguetes-gato")).toBe("Juguetes (gato)");
     expect(names.get("piensos")).toBe("piensos");
+  });
+});
+
+describe("fila de categorías (categoryRow)", () => {
+  const row = (handle: string | null) =>
+    categoryRow(tree, handle ? tree.byHandle.get(handle)! : null).map(
+      (l) => `${l.handle}${l.current ? "*" : ""}`,
+    );
+  it("/productos/: las raíces, sin marcar", () => {
+    expect(row(null)).toEqual(["huerfana", "perro", "gato"]);
+  });
+  it("padre: sus hijas", () => {
+    expect(row("perro")).toEqual(["alimentacion", "juguetes"]);
+  });
+  it("hoja con hermanas: las hermanas, con ella marcada", () => {
+    expect(row("snacks")).toEqual(["piensos", "snacks*"]);
+  });
+  it("hoja sin hermanas: ella sola, marcada (no salta a las raíces)", () => {
+    expect(row("juguetes-gato")).toEqual(["juguetes-gato*"]);
   });
 });

@@ -216,8 +216,10 @@ export interface CategoryLink {
  * Fila de categorías de un listado (Fase F, CategoryNav): siempre hay una, así la rejilla empieza
  * a la misma altura en todas las categorías (sin salto al navegar).
  * - padre → sus hijas;
- * - hoja → sus hermanas, con la actual marcada (`current`);
- * - hoja sin hermanas, o `/productos/` (`node` null) → las raíces (la de la página, marcada).
+ * - hoja → sus hermanas (las raíces, si es una raíz sin hijas), con la actual marcada
+ *   (`current`); sin hermanas, ella sola marcada: para subir de nivel está la miga de pan
+ *   (enseñar los ascendientes confundía y saltaba de nivel);
+ * - `/productos/` (`node` null) → las raíces.
  */
 export function categoryRow(tree: CategoryTree, node: CategoryNode | null): CategoryLink[] {
   const link = (n: CategoryNode): CategoryLink => ({
@@ -225,14 +227,8 @@ export function categoryRow(tree: CategoryTree, node: CategoryNode | null): Cate
     handle: n.handle,
     ...(node && n.handle === node.handle ? { current: true } : {}),
   });
-  if (node?.children.length) return node.children.map(link);
-  const parent = node?.parentId ? tree.byId.get(node.parentId) : undefined;
-  const siblings = parent ? parent.children : tree.roots;
-  if (node && siblings.length > 1) return siblings.map(link);
-  const root = node?.path[0];
-  return tree.roots.map((r) => ({
-    name: r.name,
-    handle: r.handle,
-    ...(root && r.handle === root.handle ? { current: true } : {}),
-  }));
+  if (!node) return tree.roots.map(link);
+  if (node.children.length) return node.children.map(link);
+  const parent = node.parentId ? tree.byId.get(node.parentId) : undefined;
+  return (parent ? parent.children : tree.roots).map(link);
 }

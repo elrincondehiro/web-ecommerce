@@ -96,6 +96,10 @@ pnpm --filter storefront build && pnpm --filter storefront test:e2e   # 217 (11 
 - [x] La rejilla no se mueve al filtrar ni al navegar entre categorías.
 - [x] `SearchLive` ≤ 1 KB; batería completa en verde.
 
+> **Arreglo (25-oct-2026):** recuentos de opciones en `/buscar/` con **un** grupo marcado. Todas las opciones van en un solo campo (`option_values`) y las facetas disyuntivas de Medusa le quitaban el filtro de todas al contar: con Color = Rojo o Azul, «Peso: 3 kg (128)», el catálogo entero (y al marcarlo, 0 resultados). Ahora la consulta principal no pide `option_values`; una consulta con todos los filtros cuenta los grupos no marcados (solo salen los que dan resultados) y una por grupo marcado, sin su filtro, cuenta sus valores (OR). Antes solo se hacía con dos grupos o más. `buildSearchQueries`/`parseSearchResults` en `lib/search.ts`.
+
+> **Cambio posterior (25-oct-2026, tras la Fase M):** en una hoja **sin hermanas** la fila muestra solo esa hoja marcada (antes, las raíces con su raíz marcada: confundía y saltaba de nivel). Para subir, la miga de pan. `categoryRow` en `lib/categories.ts` y su test.
+
 ## 7. Pendientes / riesgos
 
 - `SearchLive` queda a 42 B de su límite (982 de 1024 B). Lo próximo que necesite `/buscar/` en JS obliga a recortar algo o a revisar el límite (AGENTS §3.4).

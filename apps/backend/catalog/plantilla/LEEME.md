@@ -12,7 +12,20 @@ pnpm --filter backend catalog:import catalog/mi-carga
 # 4. Fotos (handle_01.jpg = miniatura, handle_02.jpg…)
 pnpm --filter backend images:import catalog/mi-carga/fotos dry-run
 pnpm --filter backend images:import catalog/mi-carga/fotos
+# 5. Publicar los cambios en la tienda: rebuild del storefront (el catálogo se genera en el build)
 ```
+
+## Antes de empezar (catálogo real)
+
+Decisiones que conviene tomar **antes** de rellenar cientos de filas, porque cambiarlas después cuesta:
+
+1. **Árbol de categorías definitivo** (`categorias.csv`): los `handle` van en la URL y no se cambian. Productos solo en la hoja más concreta. Cómo se ve en la tienda: [En la tienda](#en-la-tienda-categorías).
+2. **Nombres de opciones y valores** comunes a toda la tienda (`Talla`, `Color`, `Tamaño`, `Sabor`…) y una sola grafía por valor: `S/M` o `S-M`, `400 g` o `400g`. Mezclarlas duplica valores en los filtros. El `dry-run` lista los valores nuevos: revísalos siempre.
+3. **Etiquetas**: salen como filtro en la tienda. Pocas y con un criterio (`natural`, `sin cereales`, `cachorro`…). Las internas no deben ir aquí.
+4. **Plantillas y guías de tallas** (Markdown en el storefront): cuáles hacen falta y con qué `id`, antes de escribir `plantilla`/`guia_tallas` en la hoja. Ver [Fichas con plantilla y selector](#fichas-con-plantilla-y-selector).
+5. **Fotos**: nombre de fichero = `handle` (JPG), así que los handles tienen que estar decididos antes de renombrar fotos.
+6. **Carga por partes**: una carpeta por tanda (p. ej. `mi-carga/categorias.csv` + `productos.csv` de una categoría). Cada carga solo añade o actualiza: lo que no está en la hoja no se toca.
+7. **Desde Loyverse**: `migracion/loyverse/` genera estas mismas hojas (`convertir`, con stock 0); se pueden completar a mano antes de cargarlas ([README](../../../../migracion/loyverse/README.md)).
 
 ## Reglas generales
 
@@ -37,9 +50,15 @@ Una fila por categoría.
 | `orden`       | no          | `0`                  | Posición entre las hermanas (0, 1, 2…).                                                                                                                                    |
 | `activa`      | no          | `sí`                 | `sí` / `no`. Por defecto `sí`.                                                                                                                                             |
 
-**Productos solo en la subcategoría más concreta** (`pienso-perro`, no también `alimentacion-perro` ni `perro`): cuando el storefront muestre subcategorías, la página del padre sumará los productos de sus hijas.
+**Productos solo en la subcategoría más concreta** (`pienso-perro`, no también `alimentacion-perro` ni `perro`): la página del padre suma los productos de sus hijas.
 
-> ⚠️ Hoy el storefront solo muestra las categorías **principales** (sin padre). Las subcategorías se cargan en Medusa, pero su página y la navegación llegan en una fase posterior del storefront.
+### En la tienda (categorías)
+
+- Cada categoría tiene su página `/categoria/<handle>/` con la miga de pan (Perro › Paseo › Correas) y el menú «Tienda» de la cabecera.
+- **Fila de categorías** encima de la rejilla: en un padre, sus hijas; en una hoja, sus hermanas con ella marcada; si no tiene hermanas, ella sola marcada (para subir, la miga de pan).
+- `orden` decide el orden en el menú y en la fila; con el mismo `orden`, alfabético por nombre. `descripcion` es la meta descripción de la página (SEO, ≤ 160 caracteres).
+- Una categoría **sin productos publicados** (en ella o en sus hijas) no sale en la tienda. `activa = no` la oculta aunque tenga productos.
+- Árbol nuevo o cambiado → **rebuild del storefront** (las páginas de categoría se generan en el build).
 
 ## productos.csv
 
@@ -54,9 +73,9 @@ Una fila por categoría.
 | `subtitulo`     | no          | `Hebilla rápida`              |                                                                                                                                                                                                                                              |
 | `descripcion`   | no          |                               | Admite saltos de línea (entre comillas, como hace Excel).                                                                                                                                                                                    |
 | `categorias`    | no          | `collares-perro`              | Handles separados por `\|`. Si tiene valor, **sustituye** las actuales. `-` = ninguna.                                                                                                                                                       |
-| `etiquetas`     | no          | `novedad\|reflectante`        | Separadas por `\|`. Las que no existan se crean. Sustituye las actuales. `-` = ninguna.                                                                                                                                                      |
+| `etiquetas`     | no          | `novedad\|reflectante`        | Separadas por `\|`. Las que no existan se crean. Sustituye las actuales. `-` = ninguna. Salen como **filtro** en la tienda y se buscan: solo etiquetas para el cliente.                                                                      |
 | `iva`           | no          | `reducido`                    | `general` (21 %), `reducido` (10 %), `superreducido` (4 %). Por defecto, general.                                                                                                                                                            |
-| `coleccion`     | no          | `destacados`                  | Handle de una colección creada en el Admin. `-` = quitarla.                                                                                                                                                                                  |
+| `coleccion`     | no          | `destacados`                  | Handle de una colección creada en el Admin. `-` = quitarla. La colección `destacados` es el carrusel de la home (`home.yaml` del storefront).                                                                                                |
 | `estado`        | no          | `publicado`                   | `publicado` / `borrador`. Por defecto `publicado`.                                                                                                                                                                                           |
 | `material`      | no          | `Nailon`                      |                                                                                                                                                                                                                                              |
 | `marca`         | no          | `Hiro`                        | Se guarda en `metadata.marca`.                                                                                                                                                                                                               |
@@ -91,7 +110,8 @@ Para piensos, latas y snacks. Porcentajes **tal cual** (como en la etiqueta), de
 - Las opciones son **globales**: todos los productos comparten «Talla», «Color»… Así los filtros de la tienda suman bien. Las opciones y los valores que no existan **se crean**. El `dry-run` los lista antes («Valores nuevos en Color: Burdeos»): revísalo para cazar erratas.
 - Los valores se comparan sin mayúsculas ni tildes (`azul` = `Azul`), y se usa la grafía que ya existe en la tienda.
 - Cada producto rellena **solo sus opciones**, y **todas** sus variantes llevan valor en ellas. Dos variantes del mismo producto no pueden repetir combinación.
-- **Producto sin variantes**: una sola fila, sin opciones. Se crea con la variante «Única».
+- **Producto sin variantes**: una sola fila, sin opciones. Se crea con la variante «Única» (opción «Formato»), que la tienda no muestra ni usa como filtro.
+- **En la ficha**: con **una** opción, una tabla con precio y stock por variante; con **dos o más** (o una con fotos o color por valor), el [selector de muestras](#fichas-con-plantilla-y-selector). Cada opción con más de un producto sale como **filtro** en la tienda (salvo las marcadas como no filtrables).
 - A un producto ya creado no se le pueden añadir ni quitar opciones desde la hoja; eso se hace en el Admin. Sí se pueden añadir variantes nuevas o valores nuevos.
 
 ### Datos de la variante (cada fila)
@@ -165,9 +185,23 @@ Fase O. Para productos con varias opciones (p. ej. un arnés con 9 estampados ×
 - **Fotos por valor**: `opcion_fotos = Estampado` y las fotos `arnes-estampado--flores_01.jpg`, `arnes-estampado--flores_02.jpg`… (valor en minúsculas, sin tildes y con guiones). Se asocian a todas las variantes con ese valor; la galería enseña las del valor elegido. Las `handle_01.jpg` siguen siendo generales (salen siempre). También se pueden asociar en el Admin («Media» de la variante).
 - **Color de la muestra** (si el valor no tiene foto): en el Admin, `Opciones → Color → valor → Metadata`, clave `color` = `#c0392b`.
 - **No filtrable**: en el Admin, metadata de la **opción** (`Opciones → Mosquetón lado perro → Metadata`), clave `filtrable` = `false`. Sale de los filtros de la tienda; se sigue encontrando al buscar.
-- **Plantilla**: contenido común (cómo medir…) en `apps/storefront/src/content/plantillas/<id>.md`; se aplica a las categorías de su lista `categorias` o al producto con la columna `plantilla`.
-- **Guía de tallas**: una por modelo, en `apps/storefront/src/content/guias/<id>.md`, y el producto la elige con `guia_tallas`.
-- Plantillas y guías se publican con un rebuild del storefront.
+- **Plantilla**: contenido común (cómo medir, consejos de uso…) en `apps/storefront/src/content/plantillas/<id>.md`. Se aplica sola a los productos de las categorías de su lista `categorias` (y de sus subcategorías), o a un producto con la columna `plantilla = <id>` (gana sobre la de la categoría; `-` = ninguna). Ejemplo: [`arnes.md`](../../../storefront/src/content/plantillas/arnes.md).
+
+  ```markdown
+  ---
+  titulo: Cómo medir a tu perro # título del bloque en la ficha
+  boton: Cómo medir # opcional: con botón se abre en un panel; sin él, va desplegado
+  categorias:
+    - arneses-perro
+  ---
+
+  Texto en Markdown (listas, negritas, tablas, fotos `![alt](./foto.jpg)` junto al .md).
+  ```
+
+- **Guía de tallas**: una por **modelo** (las tallas cambian de marca a marca), en `apps/storefront/src/content/guias/<id>.md` con `titulo` y `marca` (opcional) en la cabecera y una tabla de tallas en el cuerpo. El producto la elige con `guia_tallas = <id>`; se puede cambiar después en el Admin (metadata `guia_tallas`). Ejemplo: [`marca-m-arnes-a.md`](../../../storefront/src/content/guias/marca-m-arnes-a.md).
+- El `id` es el nombre del fichero sin `.md` (minúsculas y guiones). El importador no lo comprueba: un `id` que no existe **rompe el build del storefront** con un aviso que dice qué producto y qué fichero falta. Crea el `.md` antes del build (o corrige la hoja).
+- Plantillas y guías se publican con un **rebuild** del storefront.
+- Ejemplo completo (estampados con fotos, guía y plantilla): [`catalog/prueba-arnes/`](../prueba-arnes/).
 
 ## Correa a medida
 
@@ -175,16 +209,20 @@ Las correas configurables (largo y mosquetones, stock por piezas) **no van en `p
 
 ## Fotos
 
-Las fotos van **por producto**, con `images:import`: ficheros `handle_01.jpg`, `handle_02.jpg`… `_01` es la miniatura y solo se admite JPG. Fotos de un valor de opción (Fase O): `handle--valor_01.jpg`, ver [Fichas con plantilla y selector](#fichas-con-plantilla-y-selector). Se suben al bucket (SeaweedFS en dev, R2 en producción). Ya importadas se omiten; `replace` las sustituye todas.
+Las fotos van **por producto**, con `images:import`: ficheros `handle_01.jpg`, `handle_02.jpg`… (dos cifras, de `01` a `99`, en el orden de la galería). `_01` es la miniatura y solo se admite JPG (`.jpg` o `.jpeg`). Fotos de un valor de opción (Fase O): `handle--valor_01.jpg`, ver [Fichas con plantilla y selector](#fichas-con-plantilla-y-selector). Se suben al bucket (SeaweedFS en dev, R2 en producción). Ya importadas se omiten; `replace` las sustituye todas.
 
-## Producción
+- **Tamaño**: la tienda genera AVIF/WebP del tamaño de cada sitio (tarjeta 240 px, galería hasta 720 px). Bastan unos **1500 px** de lado mayor; más solo alarga el build. **Cuadradas** (1:1) para que la rejilla no baile.
+- Los cambios de fotos se ven tras un **rebuild** del storefront.
 
-Dentro del contenedor del backend (los scripts compilados están en `./src/scripts/*.js`):
+## Producción (VPS)
+
+Dentro del contenedor del backend (los scripts compilados están en `./src/scripts/*.js`), con `./dc` en `/opt/ecommerce` (fase 11 §4.6). La carpeta se sube antes al VPS por `scp` (no va en la imagen):
 
 ```bash
-C="docker compose --env-file docker/.env.prod -f docker/compose.prod.yml"
-$C cp apps/backend/catalog/mi-carga backend-server:/tmp/catalogo
-$C exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-catalog.js /tmp/catalogo dry-run
-$C exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-catalog.js /tmp/catalogo
-$C exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-images.js /tmp/catalogo/fotos
+./dc cp ./mi-carga backend-server:/tmp/catalogo
+./dc exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-catalog.js /tmp/catalogo dry-run
+./dc exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-catalog.js /tmp/catalogo
+./dc exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-images.js /tmp/catalogo/fotos
 ```
+
+Después, **rebuild del storefront** contra la API del VPS y despliegue (fase 11 §4.7) + _Purge Everything_ en Cloudflare. Plantillas y guías de tallas nuevas van en el repo del storefront: entran en ese build.
