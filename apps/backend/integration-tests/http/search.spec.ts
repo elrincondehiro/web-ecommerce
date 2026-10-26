@@ -44,7 +44,6 @@ async function eventually<T>(fn: () => Promise<T>, ok: (v: T) => boolean, ms = 3
 }
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: {},
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;

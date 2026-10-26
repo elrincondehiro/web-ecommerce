@@ -25,7 +25,6 @@ type ApiError = { response: { status: number; data: { message?: string; code?: s
 const fail = (e: ApiError) => e.response;
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: { STRIPE_API_KEY: "" },
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;

@@ -21,7 +21,6 @@ type Res = { status: number; data: Record<string, unknown> & { message?: string 
 const asRes = (e: { response: Res }) => e.response;
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: { STRIPE_API_KEY: "" },
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;

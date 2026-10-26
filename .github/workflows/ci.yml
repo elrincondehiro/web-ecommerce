@@ -109,7 +109,7 @@ jobs:
     if: ${{ github.server_url == 'https://github.com' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    container: node:24.22.0-trixie
+    container: node:24.22.1-trixie
     services:
       postgres-localhost:
         image: postgres:17.11-alpine

@@ -36,7 +36,6 @@ const WEBP = Buffer.concat([
 ]).toString("base64");
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: {},
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;

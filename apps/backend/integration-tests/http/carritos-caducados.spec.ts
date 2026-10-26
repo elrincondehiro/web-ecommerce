@@ -19,7 +19,6 @@ jest.setTimeout(120 * 1000);
 const DAY = 24 * 60 * 60 * 1000;
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: {},
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;

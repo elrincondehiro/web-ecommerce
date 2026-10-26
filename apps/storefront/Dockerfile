@@ -19,7 +19,7 @@
 # "Environment variables": el adapter no carga .env), context7 /pnpm/pnpm.io (docker, fetch,
 # deploy) y AGENTS §6.
 
-ARG NODE_IMAGE=node:24.22.0-alpine3.24
+ARG NODE_IMAGE=node:24.22.1-alpine3.24
 
 # ── base: Node + pnpm (versión de `packageManager`, vía corepack) ────────────────────────────────
 FROM ${NODE_IMAGE} AS base

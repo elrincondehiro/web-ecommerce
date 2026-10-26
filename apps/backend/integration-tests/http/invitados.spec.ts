@@ -41,7 +41,6 @@ type Res = { status: number; data: Record<string, unknown> & { message?: string 
 const asRes = (e: { response: Res }) => e.response;
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: { STRIPE_API_KEY: "" },
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;
@@ -235,10 +234,12 @@ medusaIntegrationTestRunner({
     };
 
     it("G-0: con ficha de invitado previa, Medusa pone en ella el pedido sin sesión", async () => {
-      // Sin ficha previa: a la cuenta (lo hace Medusa).
+      // Sin ficha previa: acaba en la cuenta. Medusa ≤ 2.21 lo ponía ahí directamente; desde 2.22
+      // (`findOrCreateCustomerStep` con `hasAccount: false` en create/update-cart) crea una ficha
+      // de invitado y lo pasa a la cuenta el subscriber C1 (guest-orders-order-placed).
       const ana = await account("c1a@example.com");
       const direct = await placeOrder("c1a@example.com");
-      expect((await orderOwner(direct)).customer_id).toBe(ana.id);
+      await waitOwner(direct, ana.id);
 
       // Con ficha previa: Medusa elige el invitado (el subscriber C1 lo corrige después).
       const email = "c1b@example.com";

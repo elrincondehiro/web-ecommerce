@@ -20,7 +20,6 @@ type Res = { status: number; data: Record<string, unknown> };
 const asRes = (e: { response: Res }) => e.response;
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: {},
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;

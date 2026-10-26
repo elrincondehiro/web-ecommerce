@@ -17,7 +17,6 @@ import seedStore from "../../src/scripts/seed";
 jest.setTimeout(180 * 1000);
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: { STRIPE_API_KEY: "" },
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;

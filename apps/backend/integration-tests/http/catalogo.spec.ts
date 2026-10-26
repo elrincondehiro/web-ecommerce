@@ -20,7 +20,6 @@ const amount = (v: unknown) =>
   Number((v as { prices?: { amount: unknown }[] } | null | undefined)?.prices?.[0]?.amount);
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: {},
   testSuite: ({ api, getContainer }) => {
     let container: MedusaContainer;
