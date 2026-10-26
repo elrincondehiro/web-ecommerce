@@ -294,6 +294,62 @@
 }
 
 /*
+ * Pago (Fase PG, StripePayment.astro): sin JS, el aviso; con JS, el esqueleto de los métodos
+ * mientras carga Stripe (lo quita el script al `ready`).
+ */
+.pago-skeleton {
+  display: none;
+}
+[data-js] .pago-nojs {
+  display: none;
+}
+[data-js] .pago-skeleton {
+  display: block;
+}
+/* Opciones de pago de primer nivel (Stripe / transferencia): <details name> con un radio dibujado. */
+.pago-opcion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.pago-opcion-titulo::-webkit-details-marker {
+  display: none;
+}
+.pago-opcion-titulo::before {
+  content: "";
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 9999px;
+  border: 2px solid var(--color-foreground);
+}
+.pago-opcion[open] {
+  border-color: var(--color-primary);
+}
+.pago-opcion[open] > .pago-opcion-titulo::before {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 3px var(--color-background);
+  background: var(--color-primary);
+}
+.pago-skeleton-row {
+  animation: pago-pulse 1.4s ease-in-out infinite;
+}
+@keyframes pago-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pago-skeleton-row {
+    animation: none;
+  }
+}
+
+/*
  * Cantidad − / + (Fase D, 3.3, QuantityField.astro). Sin JS: solo el campo numérico con sus
  * flechas. Con JS (<html data-js>, SiteClient): botones visibles y sin flechas nativas.
  */

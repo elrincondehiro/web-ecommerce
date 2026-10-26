@@ -7,6 +7,10 @@
 //   métodos con redirección vuelven a `return_url`. En ambos casos se acaba en
 //   /checkout/completar/ (GET), que completa el carrito en Medusa (idempotente).
 // - Sin JS: queda visible el aviso de que el pago necesita JavaScript (#pago-estado).
+// - Fase PG: métodos y captura los fija el backend (tarjeta, PayPal, Bizum; sin Link). PayPal redirige
+//   y vuelve a `return_url`; Bizum NO redirige: Stripe.js espera en la página a que el cliente lo
+//   apruebe en la app de su banco (~segundos; docs.stripe.com/payments/bizum/accept-a-payment),
+//   por eso el aviso #pago-espera mientras dura confirmPayment.
 // Fuentes: tipos de @stripe/stripe-js 9.17.0 (confirmPayment, elements), context7 /medusajs/medusa
 // (storefront-development/checkout/payment/stripe).
 import { buttonVariants } from "$lib/components/ui/button";
@@ -48,20 +52,41 @@ const fonts = (https ? (fontData["--font-nunito-sans"] ?? []) : [])
   data-theme-dark={JSON.stringify(STRIPE_THEME.dark)}
   class="flex flex-col gap-4"
 >
-  {/* Altura reservada para el iframe del Payment Element (evita CLS al montarlo). El aviso va
-      superpuesto (absolute) para que quitarlo no desplace el iframe. Sin JS se queda el aviso;
-      con JS el script lo cambia por "Cargando…" y lo quita cuando el iframe está listo. */}
-  <div class="relative min-h-57">
+  {/* Altura reservada para el iframe del Payment Element (evita CLS al montarlo). Encima, en
+      absoluto (quitarlo no desplaza nada):
+      - sin JS: el aviso de que el pago necesita JavaScript;
+      - con JS (<html data-js>, CSS): un esqueleto de la lista de métodos con «Cargando el pago
+        seguro…» (Fase PG: antes era un texto gris pequeño y el hueco parecía vacío). El script lo
+        quita al `ready` del Payment Element y, si tarda más de 8 s, añade un aviso. */}
+  <div class="relative min-h-72">
     <p
       id="pago-estado"
-      class="absolute inset-x-0 top-0 rounded-md border-2 border-destructive px-4 py-3 text-sm text-destructive"
+      class="pago-nojs absolute inset-x-0 top-0 rounded-md border-2 border-destructive px-4 py-3 text-sm text-destructive"
     >
-      Para pagar con tarjeta necesitas activar JavaScript: el formulario de pago lo proporciona
-      Stripe, nuestro procesador de pagos.
+      Para pagar necesitas activar JavaScript: el formulario de pago (tarjeta, PayPal o Bizum) lo
+      proporciona Stripe, nuestro procesador de pagos.
+    </p>
+    <div id="pago-cargando" class="pago-skeleton absolute inset-x-0 top-0" aria-hidden="true">
+      <div class="flex flex-col gap-3">
+        {[0, 1, 2].map(() => (
+          <div class="pago-skeleton-row flex h-14 items-center gap-3 rounded-md border-2 border-line px-4">
+            <span class="size-4 rounded-full bg-muted" />
+            <span class="h-3 w-28 rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+    </div>
+    <p
+      id="pago-cargando-texto"
+      role="status"
+      class="pago-skeleton absolute inset-x-0 top-48 text-center text-sm text-muted-foreground"
+    >
+      Cargando el pago seguro de Stripe…
     </p>
     <div id="pago-element"></div>
   </div>
   <p id="pago-mensaje" role="alert" class="text-sm text-destructive empty:hidden"></p>
+  <p id="pago-espera" role="status" class="text-sm text-muted-foreground empty:hidden"></p>
   <button id="pago-boton" type="submit" class={buttonVariants({ size: "lg" })} disabled>
     Pagar y realizar pedido · {formatPrice(total, currency)}
   </button>
@@ -73,16 +98,24 @@ const fonts = (https ? (fontData["--font-nunito-sans"] ?? []) : [])
   const form = document.querySelector<HTMLFormElement>("#pago-form");
   const button = document.querySelector<HTMLButtonElement>("#pago-boton");
   const message = document.querySelector<HTMLElement>("#pago-mensaje");
+  const wait = document.querySelector<HTMLElement>("#pago-espera");
   const ERROR = "No se ha podido cargar el pago. Recarga la página o inténtalo más tarde.";
+  const SLOW = "Está tardando más de lo normal. Espera un poco más o recarga la página.";
+  const WAIT = "Procesando el pago… Si pagas con Bizum, apruébalo en la app de tu banco.";
+  const FAILED = "El pago no se ha completado. Prueba de nuevo o usa otro método de pago.";
 
   async function init(f: HTMLFormElement, btn: HTMLButtonElement, msg: HTMLElement) {
     const { pk, secret, return: returnUrl } = f.dataset;
     if (!pk || !secret || !returnUrl) return;
-    const status = f.querySelector<HTMLElement>("#pago-estado");
-    if (status) {
-      status.className = "absolute inset-x-0 top-0 text-sm text-muted-foreground";
-      status.textContent = "Cargando el formulario de pago…";
-    }
+    const skeleton = [...f.querySelectorAll<HTMLElement>("#pago-cargando, #pago-cargando-texto")];
+    const loadingText = f.querySelector<HTMLElement>("#pago-cargando-texto");
+    const slow = setTimeout(() => {
+      if (loadingText) loadingText.textContent = SLOW;
+    }, 8000);
+    const done = () => {
+      clearTimeout(slow);
+      for (const el of skeleton) el.remove();
+    };
     const stripe = await loadStripe(pk, { locale: "es" });
     if (!stripe) throw new Error("Stripe.js no disponible");
     const elements = stripe.elements({
@@ -96,10 +129,24 @@ const fonts = (https ? (fontData["--font-nunito-sans"] ?? []) : [])
           : (f.dataset.themeLight ?? "{}"),
       ),
     });
-    const payment = elements.create("payment", { layout: "tabs" });
+    // Acordeón con radios (Fase PG): con 3–4 métodos se ven todos a la vez, cada uno con su
+    // logo, también en móvil (con pestañas, Google Pay quedaba tras «más»). Tipos de
+    // @stripe/stripe-js 9.17.0 (`Layout`, `radios`, `spacedAccordionItems`).
+    const payment = elements.create("payment", {
+      layout: {
+        type: "accordion",
+        defaultCollapsed: false,
+        radios: "always",
+        spacedAccordionItems: true,
+      },
+    });
     payment.on("ready", () => {
-      status?.remove();
+      done();
       btn.disabled = false;
+    });
+    payment.on("loaderror", () => {
+      done();
+      msg.textContent = ERROR;
     });
     payment.mount("#pago-element");
 
@@ -108,18 +155,22 @@ const fonts = (https ? (fontData["--font-nunito-sans"] ?? []) : [])
       if (btn.disabled) return;
       btn.disabled = true; // evita el doble envío
       msg.textContent = "";
-      const { error } = await stripe.confirmPayment({
+      if (wait) wait.textContent = WAIT;
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: { return_url: returnUrl },
         redirect: "if_required",
       });
-      if (error) {
-        // Errores de tarjeta/validación: Stripe da el mensaje localizado. Se puede reintentar.
-        msg.textContent = error.message ?? ERROR;
+      if (wait) wait.textContent = "";
+      if (error || paymentIntent?.status === "requires_payment_method") {
+        // Errores de tarjeta/validación o Bizum rechazado: Stripe da el mensaje localizado. Se
+        // puede reintentar con el mismo formulario.
+        msg.textContent = error?.message ?? FAILED;
         btn.disabled = false;
         return;
       }
-      // Autorizado sin redirección (p. ej. tarjeta sin 3DS): completar el pedido en el servidor.
+      // Autorizado (tarjeta sin 3DS) o cobrado (Bizum) sin redirección: completar el pedido en el
+      // servidor. Si aún estuviera pendiente, /checkout/completar/ vuelve con el aviso.
       window.location.assign(returnUrl);
     });
   }

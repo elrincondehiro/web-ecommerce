@@ -8,6 +8,7 @@ import * as welcome from "./welcome";
 import * as accountDeletionRequest from "./account-deletion-request";
 import * as orderTransfer from "./order-transfer";
 import * as orderReceivedShop from "./order-received-shop";
+import * as transferReminder from "./transfer-reminder";
 
 export type { EmailLinks } from "./_components/Layout";
 export type { EmailAddress, EmailLineItem } from "./_lib/types";
@@ -20,6 +21,8 @@ export type { WelcomeProps } from "./welcome";
 export type { AccountDeletionRequestProps } from "./account-deletion-request";
 export type { OrderTransferProps } from "./order-transfer";
 export type { OrderReceivedShopProps, ShopPet } from "./order-received-shop";
+export type { TransferReminderProps } from "./transfer-reminder";
+export type { TransferInfo } from "./_components/transfer";
 
 /** Plantillas disponibles: el id es el `template` de `createNotifications`. */
 const templates = {
@@ -31,6 +34,7 @@ const templates = {
   "account-deletion-request": accountDeletionRequest,
   "order-transfer": orderTransfer,
   "order-received-shop": orderReceivedShop,
+  "transfer-reminder": transferReminder,
 } as const;
 
 export type TemplateId = keyof typeof templates;
@@ -44,6 +48,7 @@ export type TemplateProps = {
   "account-deletion-request": accountDeletionRequest.AccountDeletionRequestProps;
   "order-transfer": orderTransfer.OrderTransferProps;
   "order-received-shop": orderReceivedShop.OrderReceivedShopProps;
+  "transfer-reminder": transferReminder.TransferReminderProps;
 };
 
 export const TEMPLATE_IDS = Object.keys(templates) as TemplateId[];

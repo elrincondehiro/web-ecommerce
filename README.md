@@ -516,7 +516,7 @@ pnpm --filter storefront fixtures:update               # regenera src/lib/__fixt
 - HTML estático para home, `/productos/`, `/categoria/<handle>/` y `/producto/<handle>/`. El precio y el stock se escriben en el build y una **server island** invisible (`LiveSync`) los corrige (fase 6).
 - Imágenes de producto optimizadas en build con `<Picture>` (AVIF/WebP, 1:1) desde el bucket (`IMAGE_BASE_URL`). El primer build tarda unos 30 min con 1000 productos × 4 fotos; después son unos 20 s ([fase6.md](./docs/fases/fase6.md)).
 - **Carrito** (fase 4): cookie `cart_id` httpOnly, Astro Actions que funcionan sin JS (POST → 303 a la página de origen), contador en server island, `/carrito/` on-demand con 0 JS y un único script de mejora progresiva (fetch, toasts, flyout en escritorio) de ~1 KB gzip ([fase4.md](./docs/fases/fase4.md)).
-- **Checkout** (fase 5): `/checkout/` on-demand en una página (datos → envío → pago). Datos y envío funcionan sin JS. El pago usa el Payment Element de Stripe (script de ~2 KB gzip + Stripe.js), solo autoriza y la captura se hace desde el Admin. Confirmación en `/pedido/<id>/` ([fase5.md](./docs/fases/fase5.md)).
+- **Checkout** (fase 5): `/checkout/` on-demand en una página (datos → envío → pago). Datos y envío funcionan sin JS. El pago usa el Payment Element de Stripe (script de ~2 KB gzip + Stripe.js): tarjeta y PayPal se autorizan y se capturan desde el Admin; Bizum se cobra al momento; los clientes con cuenta pueden pagar por transferencia ([fasePG-pagos.md](./docs/fases/fasePG-pagos.md)). Confirmación en `/pedido/<id>/` ([fase5.md](./docs/fases/fase5.md)).
 - shadcn-svelte con el preset `vega`; alias `$lib` definido en `tsconfig.json` y en `vite.resolve.alias`.
 - Componentes en `src/lib/components/ui`, renderizados **sin** `client:*`.
 - Baloo 2 (titulares, 600/700) y Nunito Sans (texto, 400/600/700) auto-alojadas con la Fonts API (`fontProviders.fontsource()`): pesos estáticos; solo se precarga el 400 de Nunito Sans (I-Marca).
@@ -663,6 +663,8 @@ El CI básico se **adelanta a la fase 1** para que todos los PR estén protegido
 
 Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objetivos, qué se hizo, decisiones y **comandos para testearla**. Este README solo mantiene la visión general.
 
+Versiones publicadas (tags; las crea el usuario): **`v0.1.0`** (fase 11, primer despliegue de prueba) y **`v0.2.0`** (Fases G a M, desplegada en el VPS de pruebas el 25-oct-2026).
+
 | Fase                                   | Documento                                                                                        | Estado |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
 | Prefase (SSH, repos, MCPs, decisiones) | [prefase.md](./docs/fases/prefase.md)                                                            | ✅     |
@@ -695,6 +697,7 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 | Auditoría de rendimiento               | [auditoria-rendimiento.md](./docs/fases/auditoria-rendimiento.md)                                | ✅     |
 | R Rendimiento (imágenes, cachés, CSS)  | [faseR-rendimiento.md](./docs/fases/faseR-rendimiento.md)                                        | ✅     |
 | M Mascotas y aviso de pedidos          | [faseM-mascotas.md](./docs/fases/faseM-mascotas.md)                                              | ✅     |
+| PG Pagos: PayPal, Bizum, transferencia | [fasePG-pagos.md](./docs/fases/fasePG-pagos.md)                                                  | ✅     |
 | 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

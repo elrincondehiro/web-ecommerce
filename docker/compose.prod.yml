@@ -86,6 +86,11 @@ x-backend: &backend
     NTFY_URL: ${NTFY_URL:-}
     NTFY_ORDERS_TOPIC: ${NTFY_ORDERS_TOPIC:-}
     NTFY_TOKEN: ${NTFY_TOKEN:-}
+    # Transferencia (Fase PG-3): sin IBAN/titular no se ofrece.
+    TRANSFER_IBAN: ${TRANSFER_IBAN:-}
+    TRANSFER_HOLDER: ${TRANSFER_HOLDER:-}
+    TRANSFER_DAYS: ${TRANSFER_DAYS:-3}
+    TRANSFER_CANCEL_CRON: ${TRANSFER_CANCEL_CRON:-0 9 * * *}
 
 services:
   caddy:

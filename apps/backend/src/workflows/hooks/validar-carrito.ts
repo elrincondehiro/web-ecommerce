@@ -13,6 +13,7 @@ import { KIT_SHORTAGE_MESSAGE, kitShortages, type DemandLine } from "../../lib/k
 import { pointsDiscount } from "../../lib/points";
 import { CODE_MESSAGES, customerCodes } from "../../lib/codes";
 import { POINTS_MODULE } from "../../modules/points";
+import { TRANSFER_PROVIDER_ID, transferConfig, transferGuarded } from "../../lib/transfer";
 import type PointsModuleService from "../../modules/points/service";
 
 /** Puntos (Fase L-2): el saldo cambió entre aplicar y pagar (otro pedido, ajuste…). */
@@ -188,6 +189,7 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
   if (c.completed_at) return;
   await checkPointsBalance(container as MedusaContainer, cart);
   checkCodes(cart);
+  checkTransfer(cart);
   const lines = demandLines(c.items ?? []);
   if ((await kitShortages(container as MedusaContainer, lines, c.sales_channel_id)).length) {
     throw new MedusaError(
@@ -197,6 +199,29 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
     );
   }
 });
+
+export const TRANSFER_ACCOUNT_MESSAGE =
+  "El pago por transferencia solo está disponible para clientes con cuenta.";
+
+/**
+ * Transferencia (Fase PG-3), segunda barrera: un carrito con sesión del pago manual solo se
+ * completa si es de un cliente con cuenta y la transferencia está configurada. Sin Stripe (CI,
+ * desarrollo) el pago manual es el de pruebas y no se limita. El carrito del hook trae
+ * `payment_collection.payment_sessions.*` y `customer.*` (completeCartFields de core-flows 2.21.2).
+ */
+function checkTransfer(cart: unknown): void {
+  if (!transferGuarded()) return;
+  const c = cart as {
+    customer?: { has_account?: boolean | null } | null;
+    payment_collection?: { payment_sessions?: { provider_id?: string }[] | null } | null;
+  };
+  const manual = (c.payment_collection?.payment_sessions ?? []).some(
+    (s) => s?.provider_id === TRANSFER_PROVIDER_ID,
+  );
+  if (manual && (!c.customer?.has_account || !transferConfig().enabled)) {
+    throw new MedusaError(MedusaError.Types.NOT_ALLOWED, TRANSFER_ACCOUNT_MESSAGE);
+  }
+}
 
 /** Códigos (Fase P): uno por pedido y solo clientes con cuenta. */
 function checkCodes(cart: unknown): void {

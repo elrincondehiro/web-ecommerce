@@ -21,6 +21,7 @@
  *    van al 10 % / 4 % (y si aplica recargo de equivalencia, Canarias/Ceuta/Melilla, etc.).
  */
 import type { ExecArgs } from "@medusajs/framework/types";
+import { transferConfig } from "../lib/transfer";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import {
   createApiKeysWorkflow,
@@ -123,11 +124,12 @@ export default async function seedStore({ container }: ExecArgs) {
           countries: [COUNTRY],
           automatic_taxes: true,
           is_tax_inclusive: true,
-          // Fase 5 (P5): solo Stripe si está configurado; sin clave (CI/tests) el manual,
-          // para que la región sea válida. Para BD existentes: `pnpm --filter backend stripe:region`.
-          payment_providers: [
-            process.env.STRIPE_API_KEY ? "pp_stripe_stripe" : "pp_system_default",
-          ],
+          // Fase 5 (P5): Stripe si está configurado; sin clave (CI/tests) el manual, para que
+          // la región sea válida. Con Stripe y transferencia configurada (Fase PG-3), también el
+          // manual (= transferencia, solo con cuenta). BD existentes: `stripe:region`.
+          payment_providers: process.env.STRIPE_API_KEY
+            ? ["pp_stripe_stripe", ...(transferConfig().enabled ? ["pp_system_default"] : [])]
+            : ["pp_system_default"],
         },
       ],
     },

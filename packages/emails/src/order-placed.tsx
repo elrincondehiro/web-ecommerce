@@ -1,6 +1,7 @@
 import { Section } from "react-email";
 import { AddressBlock, AmountRow, LineItems, SectionLabel } from "./_components/blocks";
 import { Layout, type EmailLinks } from "./_components/Layout";
+import { TransferBox, type TransferInfo } from "./_components/transfer";
 import { CallToAction, Muted, Paragraph, Title } from "./_components/ui";
 import { formatDate, formatMoney, formatRate } from "./_lib/format";
 import type { TaxBreakdownRow } from "./_lib/tax";
@@ -35,6 +36,10 @@ export type OrderPlacedProps = EmailLinks & {
   shippingAddress?: EmailAddress | null;
   /** Página del pedido en "Mi cuenta" (solo si el pedido es de un cliente con cuenta). */
   orderUrl?: string | null;
+  /** Método de pago (Fase PG): «Tarjeta», «Bizum», «PayPal»… */
+  paymentMethod?: string | null;
+  /** Transferencia pendiente (Fase PG-3): datos para pagar. */
+  transfer?: TransferInfo | null;
 };
 
 export const subject = (p: Pick<OrderPlacedProps, "displayId">) =>
@@ -52,8 +57,12 @@ export function OrderPlaced(props: OrderPlacedProps) {
       <Paragraph>
         {props.customerName ? `Hola, ${props.customerName}. ` : "Hola. "}
         Hemos recibido tu pedido <strong>n.º {props.displayId}</strong> del{" "}
-        {formatDate(props.createdAt)}. Te avisaremos por email cuando salga hacia tu casa.
+        {formatDate(props.createdAt)}.{" "}
+        {props.transfer
+          ? "Lo prepararemos en cuanto recibamos la transferencia."
+          : "Te avisaremos por email cuando salga hacia tu casa."}
       </Paragraph>
+      {props.transfer ? <TransferBox transfer={props.transfer} /> : null}
 
       <SectionLabel>Resumen</SectionLabel>
       <LineItems items={props.items} currencyCode={c} />
@@ -77,6 +86,9 @@ export function OrderPlaced(props: OrderPlacedProps) {
           value={props.shippingTotal > 0 ? formatMoney(props.shippingTotal, c) : "Gratis"}
         />
         <AmountRow label="Total (IVA incluido)" value={formatMoney(props.total, c)} strong />
+        {props.paymentMethod ? (
+          <AmountRow muted label="Forma de pago" value={props.paymentMethod} />
+        ) : null}
         {props.taxBreakdown.map((row) => (
           <AmountRow
             key={row.rate}
@@ -183,6 +195,7 @@ OrderPlaced.PreviewProps = {
     country: "España",
   },
   orderUrl: "http://localhost:4321/cuenta/pedidos/order_01PREVIEW/",
+  paymentMethod: "Tarjeta",
 } satisfies OrderPlacedProps;
 
 export default OrderPlaced;

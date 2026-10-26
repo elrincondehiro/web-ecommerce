@@ -28,7 +28,13 @@ import {
   isSessionToken,
   readToken,
 } from "$lib/account";
-import { CHECKOUT_PATH, FLASH_COOKIE, encodeFlash, flashCookieOptions } from "$lib/checkout";
+import {
+  CHECKOUT_PATH,
+  COMPLETE_PATH,
+  FLASH_COOKIE,
+  encodeFlash,
+  flashCookieOptions,
+} from "$lib/checkout";
 import { isPrivatePath } from "$lib/cache";
 import { WISH_NOTICES, isWishError, wishRedirectTarget, type WishResult } from "$lib/wishlist";
 import {
@@ -102,7 +108,12 @@ async function handle(context: APIContext, next: MiddlewareNext): Promise<Respon
     if (data.flash) {
       context.cookies.set(FLASH_COOKIE, encodeFlash(data.flash), flashCookieOptions(COOKIE_SECURE));
     }
-    const target = data.step === "carrito" ? "/carrito/" : `${CHECKOUT_PATH}#${data.step}`;
+    const target =
+      data.step === "carrito"
+        ? "/carrito/"
+        : data.step === "completar"
+          ? COMPLETE_PATH
+          : `${CHECKOUT_PATH}#${data.step}`;
     const response = context.redirect(target, 303);
     response.headers.set("Cache-Control", NO_STORE);
     return response;

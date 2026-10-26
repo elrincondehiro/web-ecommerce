@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 24-oct-2026 · **Fase M (mascotas y aviso de pedidos) hecha** ([faseM-mascotas.md](./fases/faseM-mascotas.md)): «Mis peques» en la cuenta (fichas de mascotas sin JS, foto pública con consentimiento y sin metadatos, salud con consentimiento, fallecidas en gris), widgets en el Admin (cliente y pedido) y aviso de cada pedido nuevo por email a `SHOP_NOTIFY_EMAIL` y push ntfy (`NTFY_URL` + `NTFY_ORDERS_TOPIC`). Antes: **Fase R (rendimiento)** ([faseR-rendimiento.md](./fases/faseR-rendimiento.md)). **Siguiente**: más peticiones de frontend y backend del usuario. Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). Después: mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 26-oct-2026 · **Fase PG (pagos) hecha** ([fasePG-pagos.md](./fases/fasePG-pagos.md)): tarjeta, PayPal y Bizum por Stripe con métodos y captura fijados en el servidor (Bizum se cobra al momento; el resto se autoriza y se captura desde el Admin) y transferencia para clientes con cuenta (3 días, recordatorio y cancelación automática; `TRANSFER_IBAN`, `TRANSFER_HOLDER`). Tag **`v0.2.0`** (G–M) desplegado en el VPS. Antes: **Fase M (mascotas y aviso de pedidos) hecha** ([faseM-mascotas.md](./fases/faseM-mascotas.md)): «Mis peques» en la cuenta (fichas de mascotas sin JS, foto pública con consentimiento y sin metadatos, salud con consentimiento, fallecidas en gris), widgets en el Admin (cliente y pedido) y aviso de cada pedido nuevo por email a `SHOP_NOTIFY_EMAIL` y push ntfy (`NTFY_URL` + `NTFY_ORDERS_TOPIC`). Antes: **Fase R (rendimiento)** ([faseR-rendimiento.md](./fases/faseR-rendimiento.md)). **Siguiente**: más peticiones de frontend y backend del usuario. Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). Después: mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -39,6 +39,7 @@
 | Auditoría de rendimiento (1000 productos)   | ✅     | [auditoria-rendimiento.md](./fases/auditoria-rendimiento.md)         |
 | R Rendimiento (imágenes, cachés, CSS)       | ✅     | [faseR-rendimiento.md](./fases/faseR-rendimiento.md)                 |
 | M Mascotas y aviso de pedidos               | ✅     | [faseM-mascotas.md](./fases/faseM-mascotas.md)                       |
+| PG Pagos (PayPal, Bizum, transferencia)     | ✅     | [fasePG-pagos.md](./fases/fasePG-pagos.md)                           |
 
 Roadmap completo y tiempos: README §13.
 
@@ -50,7 +51,7 @@ Roadmap completo y tiempos: README §13.
   - `apps/storefront`: Astro 7.4.1 (`@astrojs/node` 11.1.9) estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), el común `SiteClient` (~1,4 KB), `ScrollDrag` en carruseles, otro en `/buscar/` (`SearchLive`, ~0,9 KB gzip), `CartLive` en `/carrito/` (~0,6 KB) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
     - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand (con JS, `CartLive` aplica los cambios sin recargar; Fase D). e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
-    - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Stripe solo autoriza; la captura se hace desde el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
+    - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Fase PG: tarjeta y PayPal se autorizan (captura desde el Admin), Bizum se cobra al momento y la transferencia (solo con cuenta) se marca pagada capturándola en el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
     - **Imágenes**: `<Picture>` AVIF/WebP en build desde el bucket. El primer build tarda unos 11 min con 300 productos × 4 fotos (`avif.effort: 2`; 30 min con 1000); con la caché `node_modules/.astro`, unos 20 s.
 - **Infra dev** (`docker/compose.dev.yml`, puertos solo `127.0.0.1`): Postgres 17.11, Redis 8.10.2, Meilisearch v1.54.3 (`MEILI_UPGRADE_DB=true` en dev), SeaweedFS 4.48 (`weed mini`, bucket `medusa` con lectura anónima), Mailpit, Stripe CLI (perfil `stripe`). Credenciales de ejemplo en `docker/.env` (desde `.env.example`).
 - **Backend**:
@@ -157,6 +158,14 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
 
+**Fase PG — pagos: ✅ cerrada** ([fasePG-pagos.md](./fases/fasePG-pagos.md)):
+
+- **Stripe**: middleware en `POST /store/payment-collections/:id/payment-sessions` que impone `payment_method_types` (card, paypal, bizum; sin Link) y captura mixta (`src/lib/stripe-session.ts`); `automaticPaymentMethods: false` en `medusa-config.ts`. Mismo proveedor y webhook.
+- **Transferencia**: pago manual (`pp_system_default`) solo con cuenta (middleware + hook `validate` al completar), rutas `/store/customers/me/transfer` y `/store/customers/me/orders/:id/transfer`, job `transfer-orders` (`TRANSFER_CANCEL_CRON`), plantilla `transfer-reminder`. Variables nuevas en `.env.example`, `compose.prod.yml` y `.env.prod.example`; tras configurarlas, `stripe:region`.
+- **Admin**: widget «Forma de pago» en el pedido (qué hacer según el método).
+- **Desplegar**: IBAN y titular reales en `.env.prod`, `stripe-region.js` en el contenedor, Bizum y PayPal activos en Stripe live (PENDIENTES §1–2).
+- e2e de tarjeta: con muchos pagos seguidos Stripe pide hCaptcha y fallan un rato (fasePG §7).
+
 **Fase M — mascotas y aviso de pedidos: ✅ cerrada** ([faseM-mascotas.md](./fases/faseM-mascotas.md)):
 
 - **Mis peques** (`/cuenta/mascotas/`, 0 JS): módulo `pets` (migración nueva: `db:migrate`), rutas `/store/customers/me/pets*` y `/admin/customers/:id/pets*`, widgets del Admin en la ficha del cliente (editar) y del pedido (ver). Fechas como año + mes + día opcional; fallecidas en gris al final.
@@ -228,7 +237,7 @@ Datos en `migracion/loyverse/datos/`, **fuera de git y de las imágenes**. El us
 
 - **Fase 4 (carrito): cerrada** (PR #18, `ce526aa`). Detalle, medidas y pendientes en [fase4.md](./fases/fase4.md) §5–8.
 - **Fase 5 (checkout + Stripe): cerrada** (PR #20, `72dd7e4`). Resultados en [fase5.md](./fases/fase5.md) §5.1 y pendientes en §7.
-  - Stripe solo **autoriza**; la captura se hace desde el Admin. La región España tiene solo `pp_stripe_stripe` (`pnpm --filter backend stripe:region`, idempotente).
+  - Stripe solo **autoriza**; la captura se hace desde el Admin. La región España tiene solo `pp_stripe_stripe` (`pnpm --filter backend stripe:region`, idempotente). Desde la Fase PG: Bizum se cobra al momento y, con transferencia configurada, la región lleva también `pp_system_default`.
   - El checkout es una sola página `/checkout/`. Los pasos de datos y envío funcionan sin JS (PRG + cookie `checkout_flash`). El pago usa un `<script>` con `@stripe/stripe-js/pure` (1,9 KB gzip).
   - Tras pagar: `/checkout/completar/` → `/pedido/<id>/`. El detalle solo se ve con la cookie `last_order`.
   - Para probarlo hacen falta las claves de test en los `.env`, `pnpm infra:stripe` (webhooks) y el backend en marcha.

@@ -15,7 +15,8 @@ export type CheckoutActionName =
   | "checkout.applyPoints"
   | "checkout.removePoints"
   | "checkout.applyCode"
-  | "checkout.removeCode";
+  | "checkout.removeCode"
+  | "checkout.transfer";
 
 /** URL de un formulario sin JS: `?_action=<nombre>` (ACTION_QUERY_PARAMS de Astro). */
 export function checkoutActionUrl(name: CheckoutActionName): string {
@@ -55,6 +56,8 @@ export const CHECKOUT_NOTICES = {
   payment_failed: "El pago no se ha completado. Prueba de nuevo o usa otro método de pago.",
   payment_pending: "El pago aún no está confirmado. Completa el pago para realizar el pedido.",
   error: "Ha ocurrido un error. Inténtalo de nuevo.",
+  // Transferencia (Fase PG-3): solo con cuenta.
+  transfer_login: "Entra en tu cuenta para pagar por transferencia.",
   // Puntos (Fase L-3). `points_changed`: el backend rechaza completar (validar-carrito.ts).
   points_invalid: "Escribe un importe válido, por ejemplo 2,50.",
   points_max: "Ese importe supera lo que puedes usar en este pedido.",
@@ -383,6 +386,8 @@ export function stripeSession(cart: CheckoutCartLike): StripeSessionState {
  * Clasifica el error de `cart.complete` (FetchError del js-sdk o `error.message` de la respuesta
  * `type: "cart"`). Mensajes verificados contra Medusa 2.21.2:
  *   400 "Session: … was not authorized with the provider."  → payment_pending
+ *   400 "More information is required for payment" (requires_more: Bizum sin aprobar, 3DS a
+ *       medias; Fase PG)                                     → payment_pending
  *   400 "Some variant does not have the required inventory"  → stock
  *   404 "Cart … not found"                                  → expired
  *   400 "Tu saldo de puntos ha cambiado…" (hook propio)       → points_changed
@@ -392,11 +397,17 @@ export function classifyCompleteError(err: unknown): CheckoutNoticeCode | "expir
   const status = (err as { status?: unknown } | null)?.status;
   const message =
     err instanceof Error ? err.message : typeof err === "string" ? err : String(err ?? "");
-  if (/not authorized with the provider|requires_more|authoriz/i.test(message))
+  if (
+    /not authorized with the provider|requires_more|more information is required|authoriz/i.test(
+      message,
+    )
+  )
     return "payment_pending";
   if (/required inventory|insufficient_inventory/i.test(message)) return "stock";
   // POINTS_BALANCE_MESSAGE del backend (Fase L-2).
   if (/saldo de puntos ha cambiado/i.test(message)) return "points_changed";
+  // Hook propio (Fase PG-3): transferencia sin cuenta.
+  if (/transferencia solo está disponible/i.test(message)) return "transfer_login";
   // Hook propio (Fase P): más de un código o sin cuenta (barrera al completar).
   if (/un código descuento por pedido/i.test(message)) return "code_one";
   if (/Entra en tu cuenta para usar un código/i.test(message)) return "code_login";

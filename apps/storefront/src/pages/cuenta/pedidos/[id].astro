@@ -8,7 +8,12 @@ import { ORDERS_PATH, orderStatusLabel } from "$lib/account";
 import { requireCustomer } from "$lib/account-page";
 import { isValidId } from "$lib/cart";
 import { formatPrice } from "$lib/format";
-import { retrieveCustomerOrder, type StoreOrder } from "$lib/medusa";
+import {
+  getOrderTransfer,
+  retrieveCustomerOrder,
+  type OrderTransfer,
+  type StoreOrder,
+} from "$lib/medusa";
 import AccountLayout from "../../../components/account/AccountLayout.astro";
 import { lineDetails } from "$lib/correa";
 import OrderTotals from "../../../components/order/OrderTotals.astro";
@@ -31,6 +36,13 @@ try {
 if (!order || order.customer_id !== session.customer.id) {
   return new Response(null, { status: 404 });
 }
+// Transferencia pendiente (Fase PG-3): datos para pagarla. Si falla, la página sigue sin ellos.
+let transfer: OrderTransfer | null = null;
+try {
+  transfer = await getOrderTransfer(order.id, session.token);
+} catch (err) {
+  Astro.logger.error(`pedido transferencia: ${err instanceof Error ? err.message : String(err)}`);
+}
 const currency = order.currency_code ?? "eur";
 const addr = order.shipping_address;
 const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" });
@@ -46,6 +58,30 @@ const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: 
   </p>
 
   <div class="flex max-w-2xl flex-col gap-6">
+    {transfer && (
+      <section
+        aria-labelledby="pedido-transferencia"
+        class="rounded-md border-2 border-primary bg-card p-4 shadow-sm"
+      >
+        <h2 id="pedido-transferencia" class="mb-2 text-lg font-semibold">
+          Pendiente de pago por transferencia
+        </h2>
+        <p class="mb-3 text-sm">
+          Haz la transferencia antes del <strong>{transfer.lastDay}</strong> (incluido). Si no la
+          recibimos, el pedido se cancelará. Preparamos el pedido cuando llega.
+        </p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt class="text-muted-foreground">Importe</dt>
+          <dd class="font-semibold tabular-nums">{transfer.amount}</dd>
+          <dt class="text-muted-foreground">IBAN</dt>
+          <dd class="font-mono select-all">{transfer.iban}</dd>
+          <dt class="text-muted-foreground">Titular</dt>
+          <dd>{transfer.holder}</dd>
+          <dt class="text-muted-foreground">Concepto</dt>
+          <dd class="font-mono select-all">{transfer.concept}</dd>
+        </dl>
+      </section>
+    )}
     <section
       aria-labelledby="pedido-lineas"
       class="rounded-md border-2 border-line bg-card shadow-sm p-4"

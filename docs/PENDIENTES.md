@@ -21,6 +21,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Copiar al VPS `compose.prod.yml`, `Caddyfile` y `monitoring/compose.agents.yml` nuevos (Dozzle v11.3.4 también en la VM).
 - [ ] Purge Everything en Cloudflare y comprobar HIT.
 - [ ] Automatizar la purga con un token de solo «Cache Purge» (fase11 §7) y, quizá, un script `deploy` con estos pasos.
+- [ ] **Fase PG** (pagos): `TRANSFER_IBAN` y `TRANSFER_HOLDER` reales en `.env.prod` (y `TRANSFER_DAYS`/`TRANSFER_CANCEL_CRON` si no valen los de por defecto) y, tras desplegar, `./dc exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/stripe-region.js`. En el panel de Stripe, dejar solo tarjeta, PayPal y Bizum. Probar a mano un pago con cada método (también Google Pay en el móvil: solo sale en https) y revisar los e2e de tarjeta intermitentes (fasePG §5).
 - [ ] **Fase M** (mascotas y avisos): crear en ntfy el tema solo para pedidos y poner `NTFY_URL`, `NTFY_ORDERS_TOPIC` y `ADMIN_URL=https://admin.<dominio>` en `.env.prod` (server y worker los leen del bloque común). La tabla `pet` la crea el `server` al arrancar (`db:migrate`).
 
 ## 2. 🔴 Antes de abrir la tienda de verdad (fase «producción definitiva»)
@@ -30,7 +31,8 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Dominio definitivo, emails (`EMAIL_FROM`, `EMAIL_REPLY_TO`, `SHOP_NOTIFY_EMAIL` de empresa) y verificación en Resend.
 - [ ] VPS: IP primaria nueva, borrar `ssh.` de DNS, endpoint de WireGuard por IP.
 - [ ] Tokens nuevos (R2 imágenes y backups, Resend, service token de Access) para el entorno definitivo.
-- [ ] Stripe **live** (claves, webhook nuevo) y registrar el dominio en _Payment method domains_ (Apple/Google Pay; faseI-marca §7.1).
+- [ ] Stripe **live** (claves, webhook nuevo) y registrar el dominio en _Payment method domains_ (Apple/Google Pay; faseI-marca §7.1). Activar **Bizum** (requisitos propios) y **PayPal** en live (Fase PG).
+- [ ] 👤 Condiciones de compra: métodos de pago, plazos de la transferencia y cancelación (texto provisional; gestoría).
 - [ ] Rate limiting en Cloudflare del formulario de reclamar pedidos (`/cuenta/pedidos/?_action=account.claimOrder`) y de `POST /store/customers/me/order-claims` en `api.` (Fase G).
 - [ ] Quitar Access de la tienda, `ROBOTS=index`, decidir el **robots.txt gestionado de Cloudflare** (`Content-Signal`, SEO 61 en Lighthouse).
 - [ ] `CART_CLEANUP_DAYS=30` (hoy 5).
@@ -74,6 +76,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Caché de Medusa (`MEDUSA_FF_CACHING`, experimental en 2.21.2): en cada subida de Medusa, repetir la prueba de invalidación (Admin, pedido, script; faseR-rendimiento.md §3). Una escritura por SQL a mano no la invalida (vaciarla, §7).
 - [x] ~~Speculation Rules inline (P7)~~: Fase R-3.
 - [ ] View transitions CSS (sin JS; fase3 §7.1).
+- [ ] `stock:mock` solo repone los 100 primeros productos mock (`query.graph` sin paginación): el clicker de los e2e se agota (Fase PG).
 - [ ] `stock:mock` no repone las piezas de la correa: los e2e de la correa de 7 m fallan en local tras muchos pedidos de prueba.
 - [ ] Partytown si se añaden terceros.
 - [ ] `ASTRO_KEY` fija (si se deja de purgar la CDN en cada despliegue; fase3).
@@ -87,6 +90,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - **Correas** (faseE): fotos de mosquetones (rejilla), plazo de fabricación provisional, ofertas en correas (rompen el build a propósito).
 - **Puntos** (faseL §8): devolución automática de puntos canjeados en devoluciones (plan en §6.4); revisar el widget del Admin; unificar con la tienda física (`channel: "tienda"`).
 - **Códigos** (faseP): no crear códigos sobre el envío ni promociones automáticas sin revisar `checkCodes`.
+- **Pagos** (fasePG §7): estado propio «esperando transferencia» en «Mis pedidos»; conciliación bancaria; PayPal directo o TPV Sabadell si el volumen lo justifica; espaciar los e2e de pago si el hCaptcha de Stripe molesta en CI.
 - **Emails** (fase8): webhook de rebotes y quejas de Resend cuando haya volumen; Resend Free = 100/día.
 - **Pedidos de invitado** (faseG §7): botón en el Admin para la asignación manual (hoy `orders:assign`).
 - **Cuenta** (fase9): revocación de JWT (lista o sesiones), cambio de email, más datos del cliente (lista del usuario).

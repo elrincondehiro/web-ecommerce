@@ -1,6 +1,7 @@
 import type { EmailLinks, OrderReceivedShopProps, ShopPet } from "emails";
 import { codeDiscount } from "./codes";
-import { buildOrderPlacedProps, type OrderLike } from "./emails";
+import { buildOrderPlacedProps, orderPaymentMethod, type OrderLike } from "./emails";
+import { paymentStatusLabel } from "./payment-method";
 import { toNumber } from "./numeric";
 import { petAgeLabel, SPECIES_LABEL, type PetSpecies } from "./pets";
 import { pointsDiscount } from "./points";
@@ -97,6 +98,7 @@ export function buildOrderReceivedShopProps(
     shippingAddress: base.shippingAddress ?? null,
     pets: shopPets(pets),
     adminOrderUrl: adminUrl,
+    payment: paymentStatusLabel(orderPaymentMethod(order)),
   };
 }
 
@@ -110,7 +112,14 @@ export type NtfyMessage = { url: string; headers: Record<string, string>; body: 
  */
 export function ntfyOrderMessage(
   env: { url?: string; topic?: string; token?: string },
-  order: { displayId: number | string; total: number; currencyCode: string; units: number },
+  order: {
+    displayId: number | string;
+    total: number;
+    currencyCode: string;
+    units: number;
+    /** «Bizum · cobrado»… (sin datos personales). */
+    payment?: string | null;
+  },
   adminUrl: string | null,
 ): NtfyMessage | null {
   if (!env.url || !env.topic || !/^https?:\/\//.test(env.url)) return null;
@@ -125,7 +134,12 @@ export function ntfyOrderMessage(
   return {
     url: `${env.url.replace(/\/+$/, "")}/${encodeURIComponent(env.topic)}`,
     headers,
-    body: `Pedido n.º ${order.displayId} · ${eur(order.total, order.currencyCode)} · ${items}`,
+    body: [
+      `Pedido n.º ${order.displayId}`,
+      eur(order.total, order.currencyCode),
+      items,
+      ...(order.payment ? [order.payment] : []),
+    ].join(" · "),
   };
 }
 

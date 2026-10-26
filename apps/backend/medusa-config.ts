@@ -73,7 +73,8 @@ const fileModule = S3_BUCKET
  * @medusajs/payment-stripe 2.21.2 (`StripeOptions`).
  * - Sin STRIPE_API_KEY (CI, `medusa build`) no se registra: Medusa arranca sin Stripe.
  * - `capture: false`: solo se AUTORIZA al pagar; la captura se hace desde el Admin (fase 5, P1).
- * - `automaticPaymentMethods`: los métodos los decide el Dashboard de Stripe.
+ * - `automaticPaymentMethods: false` (Fase PG): los métodos los fija el backend con
+ *   `payment_method_types` (src/lib/stripe-session.ts); Stripe no admite los dos parámetros a la vez.
  * - `webhookSecret` obligatorio en producción (verificación de firma de los webhooks).
  */
 const STRIPE_API_KEY = process.env.STRIPE_API_KEY;
@@ -90,7 +91,7 @@ const paymentModule = STRIPE_API_KEY
                 apiKey: STRIPE_API_KEY,
                 webhookSecret: required("STRIPE_WEBHOOK_SECRET"),
                 capture: false,
-                automaticPaymentMethods: true,
+                automaticPaymentMethods: false,
               },
             },
           ],

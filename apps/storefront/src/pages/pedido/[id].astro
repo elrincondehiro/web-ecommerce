@@ -8,7 +8,8 @@ import { buttonVariants } from "$lib/components/ui/button";
 import { isValidId } from "$lib/cart";
 import { LAST_ORDER_COOKIE, canViewOrder } from "$lib/checkout";
 import { formatPrice } from "$lib/format";
-import { retrieveOrder, type StoreOrder } from "$lib/medusa";
+import { getOrderTransfer, retrieveOrder, type OrderTransfer, type StoreOrder } from "$lib/medusa";
+import { ORDERS_PATH } from "$lib/account";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { lineDetails } from "$lib/correa";
 import OrderTotals from "../../components/order/OrderTotals.astro";
@@ -30,6 +31,19 @@ if (canViewOrder(Astro.cookies.get(LAST_ORDER_COOKIE)?.value, id)) {
 }
 const currency = order?.currency_code ?? "eur";
 const addr = order?.shipping_address;
+// Fase PG: Bizum se cobra al momento (captured); tarjeta y PayPal se autorizan y se capturan al
+// preparar el envío (authorized).
+const paid = order?.payment_status === "captured";
+// Transferencia (Fase PG-3; solo con cuenta): los datos para pagar, en la ficha del pedido.
+const token = Astro.locals.customerToken;
+let transfer: OrderTransfer | null = null;
+if (order && token) {
+  try {
+    transfer = await getOrderTransfer(order.id, token);
+  } catch (err) {
+    Astro.logger.error(`pedido transferencia: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
 ---
 
 <BaseLayout
@@ -44,9 +58,42 @@ const addr = order?.shipping_address;
     <div class="flex max-w-2xl flex-col gap-6">
       <p class="text-muted-foreground">
         Pedido <strong class="text-foreground">#{order.display_id}</strong>. Te enviaremos la
-        confirmación a <strong class="text-foreground">{order.email}</strong>. El cargo en tu
-        tarjeta se hace cuando preparamos el envío.
+        confirmación a <strong class="text-foreground">{order.email}</strong>.{" "}
+        {paid
+          ? "Pago recibido."
+          : transfer
+            ? "Lo prepararemos en cuanto recibamos la transferencia."
+            : "El cargo se hace cuando preparamos el envío."}
       </p>
+
+      {transfer && (
+        <section
+          aria-labelledby="pedido-transferencia"
+          class="rounded-md border-2 border-primary bg-card p-4 shadow-sm"
+        >
+          <h2 id="pedido-transferencia" class="mb-2 text-lg font-semibold">
+            Datos para la transferencia
+          </h2>
+          <p class="mb-3 text-sm">
+            Hazla antes del <strong>{transfer.lastDay}</strong> (incluido). Si no la recibimos, el
+            pedido se cancelará. También te los hemos enviado por email y los tienes en{" "}
+            <a href={`${ORDERS_PATH}${order.id}/`} class="underline underline-offset-4">
+              tu pedido
+            </a>
+            .
+          </p>
+          <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt class="text-muted-foreground">Importe</dt>
+            <dd class="font-semibold tabular-nums">{transfer.amount}</dd>
+            <dt class="text-muted-foreground">IBAN</dt>
+            <dd class="font-mono select-all">{transfer.iban}</dd>
+            <dt class="text-muted-foreground">Titular</dt>
+            <dd>{transfer.holder}</dd>
+            <dt class="text-muted-foreground">Concepto</dt>
+            <dd class="font-mono select-all">{transfer.concept}</dd>
+          </dl>
+        </section>
+      )}
 
       <section
         aria-labelledby="pedido-lineas"

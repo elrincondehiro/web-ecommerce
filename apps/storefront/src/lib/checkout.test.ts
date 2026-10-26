@@ -198,6 +198,9 @@ describe("pedido", () => {
     expect(
       classifyCompleteError(new Error("Session: payses_1 was not authorized with the provider.")),
     ).toBe("payment_pending");
+    expect(classifyCompleteError(new Error("More information is required for payment"))).toBe(
+      "payment_pending",
+    );
     expect(
       classifyCompleteError(new Error("Some variant does not have the required inventory")),
     ).toBe("stock");

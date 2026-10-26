@@ -74,6 +74,7 @@ export default async function orderPlacedShopNotify({
       total: props.total,
       currencyCode: props.currencyCode,
       units: orderUnits(props),
+      payment: props.payment ?? null,
     },
     adminUrl,
   );

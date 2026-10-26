@@ -465,6 +465,46 @@ export async function initiateStripeSession(
   return typeof secret === "string" ? secret : null;
 }
 
+// ── Transferencia (Fase PG-3) ─────────────────────────────────────────────────────────────
+export const TRANSFER_PROVIDER_ID = "pp_system_default";
+
+/** ¿Puede este cliente pagar por transferencia? (GET /store/customers/me/transfer). */
+export async function getTransferAvailability(
+  token: string,
+): Promise<{ enabled: boolean; days?: number }> {
+  return cartSdk().client.fetch("/store/customers/me/transfer", { headers: bearer(token) });
+}
+
+/** Sesión de pago por transferencia (pago manual) con la sesión del cliente (lo exige el backend). */
+export async function initiateTransferSession(cart: StoreCart, token: string): Promise<void> {
+  await cartSdk().store.payment.initiatePaymentSession(
+    cart,
+    { provider_id: TRANSFER_PROVIDER_ID },
+    { fields: "id" },
+    bearer(token),
+  );
+}
+
+export type OrderTransfer = {
+  iban: string;
+  holder: string;
+  concept: string;
+  amount: string;
+  lastDay: string;
+};
+
+/** Datos para pagar un pedido del cliente con la transferencia pendiente, o null. */
+export async function getOrderTransfer(
+  orderId: string,
+  token: string,
+): Promise<OrderTransfer | null> {
+  const res = await cartSdk().client.fetch<{ transfer: OrderTransfer | null }>(
+    `/store/customers/me/orders/${encodeURIComponent(orderId)}/transfer`,
+    { headers: bearer(token) },
+  );
+  return res.transfer;
+}
+
 export type CompleteResult =
   { type: "order"; order: StoreOrder } | { type: "cart"; error: { message: string } };
 

@@ -8,8 +8,11 @@ import {
   type OrderShippedProps,
   type TaxableLine,
   type TrackingInfo,
+  type TransferInfo,
 } from "emails";
 import { bulkRule } from "./granel";
+import { paymentMethodInfo, type PaymentLike, type PaymentMethodInfo } from "./payment-method";
+import { formatDay, formatIban, lastPayDay, transferConcept, transferConfig } from "./transfer";
 import { CORREA_LINE_META } from "./correas";
 import { codeDiscount } from "./codes";
 import {
@@ -75,6 +78,10 @@ export const ORDER_EMAIL_FIELDS = [
   "items.adjustments.code",
   "items.adjustments.amount",
   "items.product.metadata",
+  // Método de pago (Fase PG): «Bizum · cobrado», «Tarjeta · pendiente de capturar»…
+  "payment_collections.payments.provider_id",
+  "payment_collections.payments.captured_at",
+  "payment_collections.payments.data",
 ] as const;
 
 // `toNumber` vive en lib/numeric.ts (Fase L-3: también lo usan las reglas de puntos, que este
@@ -136,7 +143,15 @@ export type OrderLike = {
   shipping_methods?: ShippingMethodLike[] | null;
   shipping_address?: AddressLike;
   customer?: { has_account?: boolean | null } | null;
+  payment_collections?: ({ payments?: PaymentLike[] | null } | null)[] | null;
 };
+
+/** Método del pago más reciente del pedido (Fase PG), o null. */
+export function orderPaymentMethod(order: OrderLike): PaymentMethodInfo | null {
+  const payments = (order.payment_collections ?? []).flatMap((c) => c?.payments ?? []);
+  const valid = payments.filter(Boolean);
+  return paymentMethodInfo(valid[valid.length - 1] ?? null);
+}
 
 const sumRates = (lines: TaxLineLike[] | null | undefined) =>
   (lines ?? []).reduce((acc, l) => acc + toNumber(l?.rate), 0);
@@ -273,6 +288,30 @@ export function buildOrderPlacedProps(order: OrderLike, links: EmailLinks): Orde
     // compra como invitado no lleva enlace (/pedido/<id>/ solo muestra datos con la cookie
     // `last_order`, fase 5, P7).
     orderUrl: order.customer?.has_account ? accountOrderUrl(links.storefrontUrl, order.id) : null,
+    paymentMethod: orderPaymentMethod(order)?.label ?? null,
+    transfer: orderTransferInfo(order),
+  };
+}
+
+/** Importe con el formato de los emails («44,95 €»). */
+const money = (n: number, currency: string) =>
+  new Intl.NumberFormat("es-ES", { style: "currency", currency: currency.toUpperCase() }).format(n);
+
+/**
+ * Datos para pagar por transferencia (Fase PG-3) si el pedido la tiene pendiente y está
+ * configurada (IBAN y titular); si no, null.
+ */
+export function orderTransferInfo(order: OrderLike): TransferInfo | null {
+  const info = orderPaymentMethod(order);
+  const config = transferConfig();
+  if (!info?.transfer || info.captured || !config.enabled) return null;
+  const created = order.created_at ? new Date(order.created_at) : new Date();
+  return {
+    iban: formatIban(config.iban),
+    holder: config.holder,
+    concept: transferConcept(order.display_id ?? order.id),
+    amount: money(toNumber(order.total), order.currency_code ?? "eur"),
+    lastDay: formatDay(lastPayDay(created, config.days)),
   };
 }
 

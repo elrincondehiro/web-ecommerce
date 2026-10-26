@@ -124,6 +124,68 @@ test.describe("con JS (Stripe test)", () => {
     // El Payment Element pide el país/CP según el país de la tarjeta; España no pide CP.
   }
 
+  test("carga (Fase PG): esqueleto visible hasta que Stripe está listo", async ({ page }) => {
+    await addAndGoToCheckout(page);
+    await fillAddress(page);
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await page.getByRole("button", { name: "Continuar al pago" }).click();
+    await expect(page.locator("#pago-estado")).toBeHidden(); // aviso sin JS
+    await expect(page.getByRole("button", { name: /^Pagar y realizar pedido/ })).toBeEnabled({
+      timeout: 30_000,
+    });
+    await expect(page.locator("#pago-cargando")).toHaveCount(0);
+  });
+
+  test("métodos (Fase PG): tarjeta, Bizum y PayPal", async ({ page }) => {
+    await toPayment(page);
+    // Acordeón (Fase PG): los tres a la vista, la tarjeta abierta.
+    const frame = stripeFrame(page);
+    for (const name of ["Tarjeta", "Bizum", "PayPal"]) {
+      await expect(frame.getByRole("button", { name, exact: true })).toBeVisible();
+    }
+    await expect(frame.getByRole("textbox", { name: /Número de (la )?tarjeta/i })).toBeVisible();
+  });
+
+  /** Bizum (Fase PG): sin redirección; Stripe espera la aprobación (~5 s en test). */
+  async function payBizum(page: Page, phone: string) {
+    const frame = stripeFrame(page);
+    await frame.getByRole("button", { name: "Bizum", exact: true }).click();
+    const field = frame.getByRole("textbox", { name: /teléfono|phone/i });
+    await field.fill(phone);
+    // Salir del campo: Stripe valida y guarda el teléfono al perder el foco (sin esto, a veces el
+    // clic inmediato en «Pagar» no llegaba a confirmar).
+    await field.press("Tab");
+    await page.getByRole("button", { name: /^Pagar y realizar pedido/ }).click();
+  }
+
+  test("Bizum aprobado: pedido cobrado al momento", async ({ page }) => {
+    await toPayment(page);
+    await payBizum(page, "612345678");
+    await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 60_000 });
+    await expect(page.getByText("Pago recibido.")).toBeVisible();
+  });
+
+  test("Bizum rechazado (+34600000002): aviso y se puede reintentar", async ({ page }) => {
+    await toPayment(page);
+    await payBizum(page, "600000002");
+    await expect(page.locator("#pago-mensaje")).not.toBeEmpty({ timeout: 60_000 });
+    await expect(page).toHaveURL(/\/checkout\//);
+    await expect(page.getByRole("button", { name: /^Pagar y realizar pedido/ })).toBeEnabled();
+  });
+
+  test("PayPal: redirección a la página de prueba, vuelve y el pedido queda autorizado", async ({
+    page,
+  }) => {
+    await toPayment(page);
+    await stripeFrame(page).getByRole("button", { name: "PayPal", exact: true }).click();
+    await page.getByRole("button", { name: /^Pagar y realizar pedido/ }).click();
+    // Página de pruebas de Stripe (payments.stripe.com): «Authorize Test Payment».
+    await expect(page).toHaveURL(/payments\.stripe\.com/, { timeout: 30_000 });
+    await page.getByRole("link", { name: "Authorize Test Payment" }).click();
+    await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 60_000 });
+    await expect(page.getByText("El cargo se hace cuando preparamos el envío.")).toBeVisible();
+  });
+
   test("tarjeta 4242: pedido creado y página de confirmación", async ({ page }) => {
     await toPayment(page);
     await fillCard(page, "4242 4242 4242 4242");

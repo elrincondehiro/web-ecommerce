@@ -33,6 +33,8 @@ export type OrderReceivedShopProps = EmailLinks & {
   hasAccount: boolean;
   shippingAddress?: EmailAddress | null;
   pets: ShopPet[];
+  /** Método y estado del pago (Fase PG): «Bizum · cobrado», «Tarjeta · pendiente de capturar». */
+  payment?: string | null;
   /** Ficha del pedido en el Admin. */
   adminOrderUrl?: string | null;
 };
@@ -64,6 +66,7 @@ export function OrderReceivedShop(props: OrderReceivedShopProps) {
           value={props.shippingTotal > 0 ? formatMoney(props.shippingTotal, c) : "Gratis"}
         />
         <AmountRow label="Total (IVA incluido)" value={formatMoney(props.total, c)} strong />
+        {props.payment ? <AmountRow muted label="Pago" value={props.payment} /> : null}
       </Section>
 
       {props.shippingAddress ? (
@@ -155,6 +158,7 @@ OrderReceivedShop.PreviewProps = {
     { name: "Nube", summary: "Gato · Común europeo · 2 años (aprox.)" },
   ],
   adminOrderUrl: "http://localhost:9000/app/orders/order_01PREVIEW",
+  payment: "Tarjeta · pendiente de capturar",
 } satisfies OrderReceivedShopProps;
 
 export default OrderReceivedShop;

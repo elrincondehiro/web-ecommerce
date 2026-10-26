@@ -32,6 +32,7 @@ import { isValidId } from "$lib/cart";
 import {
   CHECKOUT_FIELDS,
   getCartPoints,
+  getTransferAvailability,
   listShippingOptions,
   retrieveCustomer,
   type StoreCart,
@@ -43,6 +44,7 @@ import AddressFields from "../../components/checkout/AddressFields.astro";
 import Field from "../../components/checkout/Field.astro";
 import OrderSummary from "../../components/checkout/OrderSummary.astro";
 import StripePayment from "../../components/checkout/StripePayment.astro";
+import StripePreload from "../../components/checkout/StripePreload.astro";
 
 export const prerender = false;
 
@@ -126,6 +128,15 @@ try {
 }
 const canUsePoints =
   step2 && customer !== null && points !== null && (points.applied > 0 || (points.max ?? 0) > 0);
+// Transferencia (Fase PG-3): solo clientes con sesión y si el backend la tiene configurada.
+let transfer: { enabled: boolean; days?: number } = { enabled: false };
+if (step2 && customer && Astro.locals.customerToken) {
+  try {
+    transfer = await getTransferAvailability(Astro.locals.customerToken);
+  } catch (err) {
+    Astro.logger.error(`checkout transferencia: ${err instanceof Error ? err.message : err}`);
+  }
+}
 // Avisos informativos (no errores): se ven en el paso de pago, con otro estilo (Fase P).
 const INFO_NOTICES = new Set(["points_adjusted", "points_removed"]);
 const infoNotice = flash.code && INFO_NOTICES.has(flash.code) ? CHECKOUT_NOTICES[flash.code] : null;
@@ -138,6 +149,9 @@ const infoNotice = flash.code && INFO_NOTICES.has(flash.code) ? CHECKOUT_NOTICES
   cartCount={itemCount(cart)}
   cartClient={false}
 >
+  {step2 && PUBLIC_STRIPE_PUBLISHABLE_KEY && session.state === "pending" && (
+    <StripePreload slot="head" />
+  )}
   <h1 class="mb-6 text-3xl font-semibold tracking-tight">Finalizar compra</h1>
 
   {flash.code && !infoNotice && (
@@ -488,25 +502,77 @@ const infoNotice = flash.code && INFO_NOTICES.has(flash.code) ? CHECKOUT_NOTICES
           ) : !PUBLIC_STRIPE_PUBLISHABLE_KEY ? (
             <p class="text-sm text-destructive">El pago no está disponible en este momento.</p>
           ) : session.state === "pending" ? (
-            <div class="flex flex-col gap-4">
-              <StripePayment
-                publishableKey={PUBLIC_STRIPE_PUBLISHABLE_KEY}
-                clientSecret={session.clientSecret}
-                total={cart.total ?? 0}
-                currency={currency}
-              />
-              <p class="text-xs text-muted-foreground">
-                Al pulsar «Pagar y realizar pedido» aceptas las
-                <a href="/condiciones/" class="underline underline-offset-4">
-                  condiciones de compra
-                </a>
-                y confirmas que has leído la
-                <a href="/privacidad/" class="underline underline-offset-4">
-                  política de privacidad
-                </a>
-                . El cargo se hace en tu tarjeta cuando preparamos el envío.
-              </p>
-            </div>
+            transfer.enabled ? (
+              /* Con transferencia (Fase PG-3, solo con cuenta): dos opciones de primer nivel con
+                 <details name> exclusivos (HTML nativo, sin JS: abrir uno cierra el otro). */
+              <div class="flex flex-col gap-3">
+                <details
+                  name="pago-metodo"
+                  open
+                  class="pago-opcion rounded-md border-2 border-line"
+                >
+                  <summary class="pago-opcion-titulo">Tarjeta, Bizum o PayPal</summary>
+                  <div class="px-4 pb-4">
+                    <div class="flex flex-col gap-4">
+                      <StripePayment
+                        publishableKey={PUBLIC_STRIPE_PUBLISHABLE_KEY}
+                        clientSecret={session.clientSecret}
+                        total={cart.total ?? 0}
+                        currency={currency}
+                      />
+                      <p class="text-xs text-muted-foreground">
+                        Al pulsar «Pagar y realizar pedido» aceptas las
+                        <a href="/condiciones/" class="underline underline-offset-4">
+                          condiciones de compra
+                        </a>
+                        y confirmas que has leído la
+                        <a href="/privacidad/" class="underline underline-offset-4">
+                          política de privacidad
+                        </a>
+                        . Con tarjeta o PayPal, el cargo se hace cuando preparamos el envío; con
+                        Bizum, al momento.
+                      </p>
+                    </div>
+                  </div>
+                </details>
+                <details name="pago-metodo" class="pago-opcion rounded-md border-2 border-line">
+                  <summary class="pago-opcion-titulo">Transferencia bancaria</summary>
+                  <div class="flex flex-col gap-3 px-4 pb-4">
+                    <p class="text-sm text-muted-foreground">
+                      Te enviamos el IBAN y el concepto por email y los tienes en tu pedido. Tienes{" "}
+                      {transfer.days ?? 3} días para hacerla; preparamos el pedido cuando la
+                      recibimos.
+                    </p>
+                    <form method="post" action={checkoutActionUrl("checkout.transfer")}>
+                      <button type="submit" class={buttonVariants({ size: "lg" })}>
+                        Realizar pedido por transferencia · {formatPrice(cart.total ?? 0, currency)}
+                      </button>
+                    </form>
+                  </div>
+                </details>
+              </div>
+            ) : (
+              <div class="flex flex-col gap-4">
+                <StripePayment
+                  publishableKey={PUBLIC_STRIPE_PUBLISHABLE_KEY}
+                  clientSecret={session.clientSecret}
+                  total={cart.total ?? 0}
+                  currency={currency}
+                />
+                <p class="text-xs text-muted-foreground">
+                  Al pulsar «Pagar y realizar pedido» aceptas las
+                  <a href="/condiciones/" class="underline underline-offset-4">
+                    condiciones de compra
+                  </a>
+                  y confirmas que has leído la
+                  <a href="/privacidad/" class="underline underline-offset-4">
+                    política de privacidad
+                  </a>
+                  . Con tarjeta o PayPal, el cargo se hace cuando preparamos el envío; con Bizum, al
+                  momento.
+                </p>
+              </div>
+            )
           ) : session.state === "authorized" ? (
             <a href="/checkout/completar/" class={buttonVariants()}>
               Pago autorizado: finalizar el pedido

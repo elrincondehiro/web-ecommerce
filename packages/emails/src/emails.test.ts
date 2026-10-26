@@ -108,6 +108,24 @@ describe("renderEmail", () => {
     expect(noPets.text).not.toMatch(/Sus peques/i);
   });
 
+  it("transferencia (Fase PG-3): datos en el pedido, recordatorio y cancelación", async () => {
+    const transfer = previewProps("transfer-reminder").transfer;
+    const order = await renderEmail("order-placed", { ...previewProps("order-placed"), transfer });
+    expect(order.text).toContain("ES91 2100 0418 4502 0005 1332");
+    expect(order.text).toContain("Pedido 1042");
+    expect(order.text).toContain("28 de octubre de 2026");
+    expect(order.text).toContain("en cuanto recibamos la transferencia");
+    const remind = await renderEmail("transfer-reminder", previewProps("transfer-reminder"));
+    expect(remind.subject).toBe("Hoy es el último día para pagar el pedido n.º 1042");
+    expect(remind.text).toContain("ES91 2100 0418 4502 0005 1332");
+    const canceled = await renderEmail("transfer-reminder", {
+      ...previewProps("transfer-reminder"),
+      kind: "canceled",
+    });
+    expect(canceled.subject).toBe("Hemos cancelado el pedido n.º 1042");
+    expect(canceled.text).not.toContain("ES91");
+  });
+
   it("escapa los datos del cliente", async () => {
     const { html } = await renderEmail("order-placed", {
       ...previewProps("order-placed"),

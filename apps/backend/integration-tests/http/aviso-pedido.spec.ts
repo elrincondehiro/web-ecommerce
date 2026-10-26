@@ -204,6 +204,8 @@ medusaIntegrationTestRunner({
           hasAccount: true,
           adminOrderUrl: `https://admin.example.com/app/orders/${order.id}`,
           pets: [{ name: "Hiro", health: "Alergia al pollo" }],
+          // Pago manual de Medusa = transferencia (Fase PG)
+          payment: "Transferencia · pendiente de recibir",
         });
         // La confirmación al cliente sigue saliendo.
         expect(sent.some((n) => n.template === "order-placed")).toBe(true);
@@ -219,7 +221,9 @@ medusaIntegrationTestRunner({
           authorization: "Bearer tk_test",
         });
         expect(push.body).toMatch(
-          new RegExp(`^Pedido n\\.º ${order.display_id} · .+ · 2 artículos$`),
+          new RegExp(
+            `^Pedido n\\.º ${order.display_id} · .+ · 2 artículos · Transferencia · pendiente de recibir$`,
+          ),
         );
         // Sin datos personales en el push.
         const raw = JSON.stringify(push);

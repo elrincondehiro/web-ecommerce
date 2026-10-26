@@ -1,0 +1,11 @@
+---
+// Descarga anticipada del pago (Fase PG). Va en `slot="head"` de /checkout/ solo cuando el paso
+// de pago está listo: Stripe.js empieza a bajar mientras el navegador pinta la página, en vez de
+// después de ejecutar nuestro script. `loadStripe` (@stripe/stripe-js 9.17.0, `findScript`)
+// reutiliza este <script>; la URL tiene que ser exactamente la del paquete (release train
+// `dahlia`). `async`: no bloquea el pintado. CSP: js.stripe.com ya está en script-src.
+// preconnect a api.stripe.com: la primera llamada (elements/sessions) ahorra DNS + TLS.
+---
+
+<link rel="preconnect" href="https://api.stripe.com" />
+<script is:inline async src="https://js.stripe.com/dahlia/stripe.js"></script>

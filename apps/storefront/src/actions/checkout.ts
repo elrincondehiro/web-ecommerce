@@ -27,6 +27,7 @@ import {
   initiateStripeSession,
   retrieveCustomer,
   transferCart,
+  initiateTransferSession,
   listShippingOptions,
   retrieveCart,
   setShippingMethod,
@@ -36,7 +37,7 @@ import {
 /** Resultado de una action del checkout: a dónde volver y qué mostrar. */
 export interface CheckoutResult {
   /** Fragmento de /checkout/ al que volver (paso). "carrito" = volver a /carrito/. */
-  step: "datos" | "envio" | "pago" | "carrito";
+  step: "datos" | "envio" | "pago" | "carrito" | "completar";
   flash?: Flash;
 }
 
@@ -241,6 +242,29 @@ export const checkout = {
   }),
 
   /** Reintento manual de la sesión de pago (si no se pudo crear o caducó). */
+  /**
+   * Transferencia (Fase PG-3): solo con sesión. Cambia el pago a transferencia (Medusa borra la
+   * sesión de Stripe) y completa el pedido en /checkout/completar/. El backend lo vuelve a
+   * comprobar (middleware y hook al completar).
+   */
+  transfer: defineAction({
+    accept: "form",
+    handler: async (_form, ctx): Promise<CheckoutResult> => {
+      const cartId = cartIdOf(ctx);
+      if (!cartId) return { step: "carrito" };
+      const token = ctx.locals.customerToken;
+      if (!token) return { step: "pago", flash: { code: "transfer_login" } };
+      try {
+        const cart = await retrieveCart(cartId, CHECKOUT_FIELDS);
+        if (!cart.shipping_methods?.length) return { step: "envio" };
+        await initiateTransferSession(cart, token);
+        return { step: "completar" };
+      } catch (err) {
+        logError(ctx, "transfer", err);
+        return { step: "pago", flash: { code: "error" } };
+      }
+    },
+  }),
   payment: defineAction({
     accept: "form",
     handler: async (_form, ctx): Promise<CheckoutResult> => {

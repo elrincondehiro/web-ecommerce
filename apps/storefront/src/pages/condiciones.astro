@@ -1,7 +1,8 @@
 ---
 // Condiciones de compra (texto PROVISIONAL, LegalPage). Fase P: apartado de códigos descuento
 // (#codigos) con el orden real de Medusa 2.21.2 (spike P-0: primero la promoción de mayor valor
-// numérico, sin distinguir % y €), por decisión del usuario (Q1 = A, avisado).
+// numérico, sin distinguir % y €), por decisión del usuario (Q1 = A, avisado). Fase PG: formas de
+// pago (#pago). Los 3 días son los de TRANSFER_DAYS por defecto: si se cambian, cambiar el texto.
 import LegalPage from "../components/legal/LegalPage.astro";
 ---
 
@@ -10,6 +11,29 @@ import LegalPage from "../components/legal/LegalPage.astro";
   description="Condiciones generales de compra de El Rincón de Hiro."
 >
   <p>Condiciones de compra, envíos, devoluciones y derecho de desistimiento.</p>
+
+  <h2 id="pago" class="mt-4 scroll-mt-4 text-xl font-semibold">
+    Formas de pago
+  </h2>
+  <ul class="list-disc space-y-1 pl-5">
+    <li>
+      <strong>Tarjeta</strong> (también Apple Pay y Google Pay) y <strong>PayPal</strong>: al hacer
+      el pedido solo se reserva el importe; el cargo se hace cuando preparamos el envío.
+    </li>
+    <li>
+      <strong>Bizum</strong>: el cargo se hace al momento, al aprobarlo en la app de tu banco.
+    </li>
+    <li>
+      <strong>Transferencia bancaria</strong> (solo con cuenta): te enviamos el IBAN y el concepto
+      por email y los tienes en tu pedido. Tienes 3 días naturales para hacerla; el último día te lo
+      recordamos y, si no la recibimos, el pedido se cancela al día siguiente. Preparamos el pedido
+      cuando llega la transferencia.
+    </li>
+    <li>
+      Los pagos con tarjeta, PayPal y Bizum los procesa Stripe. No cobramos ningún recargo por la
+      forma de pago.
+    </li>
+  </ul>
 
   <h2 id="codigos" class="mt-4 scroll-mt-4 text-xl font-semibold">
     Códigos descuento
