@@ -31,13 +31,14 @@ export interface StoreRegionRef {
 
 const COUNTRY_CODE = "es";
 const ORDER = "title";
-// `updated_at`: `lastmod` del sitemap (Fase E).
+// `updated_at`: `lastmod` del sitemap (Fase E). `created_at`: novedades de la home (Fase H).
 const CATALOG_FIELDS =
-  "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,updated_at,*images,*categories,*options,*options.values,*tags";
+  "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,created_at,updated_at,*images,*categories,*options,*options.values,*tags";
 // `*variants.images` (Fase O): fotos de cada variante (las suyas + las generales; Medusa 2.21.2,
 // product-module-service `assignImagesToVariants`). Las usa la galería del selector de opciones.
 const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.images,*variants.calculated_price,+variants.inventory_quantity`;
-const CATEGORY_FIELDS = "id,name,handle,description,rank,parent_category_id";
+// `metadata`: foto propia de la categoría (Fase H, `imagen_url`/`imagen_alt`; widget del Admin).
+const CATEGORY_FIELDS = "id,name,handle,description,rank,parent_category_id,metadata";
 const PAGE = 100;
 
 // Constante de build (astro.config.mjs, vite.define): sin fixtures, sus import() son código muerto
@@ -143,17 +144,36 @@ async function loadCatalog(): Promise<StoreProduct[]> {
   return out;
 }
 
-/** Collection por handle (carrusel de la home, I-Interficie). Null si no existe. */
-export async function getCollectionByHandle(handle: string): Promise<StoreCollection | null> {
-  const all = useFixtures
-    ? await fixtures.collections()
-    : (await sdk().store.collection.list({ handle, fields: "id,title,handle" })).collections;
-  return all.find((c) => c.handle === handle) ?? null;
+let collectionsPromise: Promise<StoreCollection[]> | undefined;
+
+/**
+ * Todas las Collections (Fase H: páginas /coleccion/<handle>/ y tarjetas de la home), con su
+ * `metadata` (foto y descripción propias: `imagen_url`, `imagen_alt`, `descripcion`). Una vez
+ * por proceso. Medusa 2.22.1 permite `metadata` en la Store API de colecciones
+ * (`allowedStoreCollectionExtraFields`).
+ */
+export function getCollections(): Promise<StoreCollection[]> {
+  collectionsPromise ??= (async () => {
+    if (useFixtures) return fixtures.collections();
+    const out: StoreCollection[] = [];
+    for (let offset = 0; ; offset += PAGE) {
+      const { collections, count } = await sdk().store.collection.list({
+        limit: PAGE,
+        offset,
+        fields: "id,title,handle,metadata",
+      });
+      out.push(...collections);
+      if (out.length >= count || collections.length === 0) break;
+    }
+    return out;
+  })();
+  collectionsPromise.catch(() => (collectionsPromise = undefined));
+  return collectionsPromise;
 }
 
-/** Productos de una Collection, del catálogo del build (mismo orden: título). */
-export async function getCollectionProducts(collectionId: string): Promise<StoreProduct[]> {
-  return (await getListedProducts()).filter((p) => p.collection_id === collectionId);
+/** Collection por handle (carrusel de la home, I-Interficie). Null si no existe. */
+export async function getCollectionByHandle(handle: string): Promise<StoreCollection | null> {
+  return (await getCollections()).find((c) => c.handle === handle) ?? null;
 }
 
 /**

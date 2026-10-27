@@ -3,6 +3,7 @@ import {
   planProductImages,
   sourceFileFromUrl,
   valueSlug,
+  imageOrder,
 } from "../lib/image-files";
 
 describe("parseImageFileName", () => {
@@ -51,6 +52,25 @@ describe("planProductImages", () => {
     ]);
     expect(plan.ignored).toEqual(["notas.txt"]);
     expect(plan.duplicates).toEqual(["b_02.jpeg"]);
+  });
+});
+
+describe("imageOrder (Fase H)", () => {
+  it("generales por posición y después las de cada valor", () => {
+    const list = [
+      { value: "rojo", position: 1 },
+      { value: null, position: 9 },
+      { value: null, position: 1 },
+      { value: "azul", position: 2 },
+      { value: "azul", position: 1 },
+    ];
+    expect(list.sort(imageOrder)).toEqual([
+      { value: null, position: 1 },
+      { value: null, position: 9 },
+      { value: "azul", position: 1 },
+      { value: "azul", position: 2 },
+      { value: "rojo", position: 1 },
+    ]);
   });
 });
 

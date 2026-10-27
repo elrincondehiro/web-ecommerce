@@ -1,0 +1,44 @@
+---
+// Home · Carrusel de productos (I-Interficie; Fase H: común a «Nuestros favoritos» y
+// «Novedades»). Solo CSS (scroll-snap) + arrastre con ratón (ScrollDrag, deduplicado por Astro).
+// Con teclado, la región recibe el foco y se desplaza con las flechas (tabindex=0 + role=region
+// con nombre, WAI); la región es el carrusel (no la <section>: así no hay dos regiones).
+// Precio/stock: build + <LiveSync pageKey> (la clave de sus ids está en el manifiesto).
+import type { StoreProduct } from "$lib/catalog";
+import { CAROUSEL_CARD_SIZES } from "$lib/images";
+import { listingPageKey } from "$lib/listing-pages";
+import LiveSync from "../LiveSync.astro";
+import ProductCard from "../ProductCard.astro";
+import ScrollDrag from "../ScrollDrag.astro";
+
+interface Props {
+  /** id del título (`home-…`), también nombre de la región. */
+  id: string;
+  titulo: string;
+  products: StoreProduct[];
+  link: { href: string; text: string };
+}
+const { id, titulo, products, link } = Astro.props;
+---
+
+<section class="mb-14">
+  <div class="mb-5 flex items-baseline justify-between gap-4">
+    <h2 id={id} class="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+      {titulo}
+    </h2>
+    <a href={link.href} class="text-sm font-semibold underline-offset-4 hover:underline">
+      {link.text}
+    </a>
+  </div>
+  <div role="region" aria-labelledby={id} tabindex="0" class="carousel -mx-4 px-4" data-drag-scroll>
+    <ul class="carousel__track">
+      {products.map((p) => (
+        <li class="carousel__item flex">
+          <ProductCard product={p} headingLevel={3} back="/" imageSizes={CAROUSEL_CARD_SIZES} />
+        </li>
+      ))}
+    </ul>
+  </div>
+  <LiveSync pageKey={listingPageKey(products.map((p) => p.id))} />
+  <ScrollDrag />
+</section>

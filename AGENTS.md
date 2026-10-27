@@ -49,13 +49,13 @@ Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referenci
 
 | Pieza       | Versión                                       | Notas                                                                                                                  |
 | ----------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Node        | **24.22.0** (`.node-version`)                 | gestionado con fnm                                                                                                     |
-| pnpm        | **12.14.0** (`packageManager`)                | workspaces, `node-linker` isolated (por defecto), `save-exact=true`                                                    |
-| Medusa      | **2.21.2**                                    | `@medusajs/*` todos en la **misma** versión                                                                            |
-| Astro       | **7.4.1**                                     | `@astrojs/node` 11.1.9 standalone, `@astrojs/svelte` 9.1.0                                                             |
+| Node        | **24.22.1** (`.node-version`)                 | gestionado con fnm                                                                                                     |
+| pnpm        | **12.15.0** (`packageManager`)                | workspaces, `node-linker` isolated (por defecto), `save-exact=true`                                                    |
+| Medusa      | **2.22.1**                                    | `@medusajs/*` todos en la **misma** versión                                                                            |
+| Astro       | **7.4.2**                                     | `@astrojs/node` 11.1.9 standalone, `@astrojs/svelte` 9.1.1                                                             |
 | Svelte      | **5.57.2** (runes)                            | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
 | Tailwind    | **4.3.3**                                     | plugin `@tailwindcss/vite`, config CSS-first (`@theme` en `global.css`); **no** `tailwind.config.js`                   |
-| UI          | shadcn-svelte 1.7.0 + bits-ui 2.19.5          | componentes copiados en `src/lib/components/ui`                                                                        |
+| UI          | shadcn-svelte 1.7.0 + bits-ui 2.20.2          | componentes copiados en `src/lib/components/ui`                                                                        |
 | TypeScript  | **6.0.3**                                     | TS 7 no soportado aún por Astro/Medusa                                                                                 |
 | PostgreSQL  | `postgres:17.11-alpine`                       |                                                                                                                        |
 | Redis       | `redis:8.10.2-alpine`                         |                                                                                                                        |

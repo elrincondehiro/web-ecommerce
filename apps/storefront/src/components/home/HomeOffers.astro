@@ -1,0 +1,31 @@
+---
+// Home · Banner de ofertas (I-Interficie): solo si hay ofertas en el build (lo decide la página).
+import { buttonVariants } from "$lib/components/ui/button";
+import { OFFERS_PATH } from "$lib/constants";
+import Icon from "../Icon.astro";
+
+interface Props {
+  titulo: string;
+  texto: string;
+  cta: string;
+}
+const { titulo, texto, cta } = Astro.props;
+---
+
+<section
+  aria-labelledby="home-ofertas"
+  class="mb-14 flex flex-col items-start gap-4 rounded-md border-2 border-line bg-accent p-6 text-accent-foreground shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-8"
+>
+  <div class="flex items-start gap-4">
+    <Icon name="tag" class="size-10 shrink-0" />
+    <div>
+      <h2 id="home-ofertas" class="font-display text-2xl font-bold">
+        {titulo}
+      </h2>
+      <p class="mt-1">{texto}</p>
+    </div>
+  </div>
+  <a href={OFFERS_PATH} class={buttonVariants({ size: "lg", variant: "outline" })}>
+    {cta}
+  </a>
+</section>

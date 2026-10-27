@@ -16,6 +16,8 @@ export interface CategoryNode {
   description: string;
   rank: number;
   parentId: string | null;
+  /** Metadata de Medusa (Fase H: foto propia `imagen_url`/`imagen_alt`, lib/entity-image.ts). */
+  metadata: Record<string, unknown> | null;
   children: CategoryNode[];
   /** Raíz → este nodo (incluido). */
   path: CategoryNode[];
@@ -45,6 +47,7 @@ export function buildCategoryTree(list: StoreCategory[]): CategoryTree {
       description: c.description ?? "",
       rank: c.rank ?? 0,
       parentId: c.parent_category_id ?? null,
+      metadata: (c.metadata as Record<string, unknown> | null | undefined) ?? null,
       children: [],
       path: [],
       depth: 0,
@@ -112,6 +115,7 @@ export function pruneEmpty(tree: CategoryTree, products: StoreProduct[]): Catego
         description: n.description,
         rank: n.rank,
         parent_category_id: n.parentId,
+        metadata: n.metadata,
       })) as StoreCategory[],
   );
 }

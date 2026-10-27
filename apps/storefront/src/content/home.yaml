@@ -1,5 +1,9 @@
-# Home (I-Interficie). Textos editoriales; los productos salen de Medusa
+# Home (I-Interficie; Fase H). Textos editoriales; los productos salen de Medusa
 # (Collection `destacados.coleccion` y Price Lists de tipo sale para las ofertas).
+# - `hero` y `categorias` son obligatorios; el resto, opcional: si quitas un bloque, no sale.
+# - `orden`: los bloques se pintan de menor a mayor (el hero, siempre el primero). Sin repetir.
+# - `categorias.handles`: categorías de cualquier nivel (raíz, intermedia u hoja), en este orden.
+#   Foto: la propia de la categoría (Admin → categoría → «Foto») o la de su primer producto.
 - id: home
   hero:
     antetitulo: Especialistas en perros (y gatos)
@@ -11,15 +15,37 @@
     # Provisional: el logo hasta tener foto del hero (src/assets/hero/…)
     imagen: ../assets/marca/logo.png
     imagenAlt: Ilustración de Hiro, el border collie de la tienda
+  categorias:
+    orden: 1
+    titulo: Categorías
+    handles: [perro, alimentacion-perro, ropa-perro, para-ti]
   destacados:
+    orden: 2
     titulo: Nuestros favoritos
     coleccion: destacados
     maximo: 12
+  novedades:
+    orden: 3
+    titulo: Novedades
+    # Nuevos de los últimos `dias` (y no antes de `desde`: la carga inicial del catálogo no
+    # cuenta) o con la etiqueta «novedad» en Medusa.
+    dias: 30
+    maximo: 12
+  colecciones:
+    orden: 4
+    titulo: Colecciones
+    handles: [destacados]
   ofertas:
+    orden: 5
     titulo: Ofertas de temporada
     texto: Precios rebajados por tiempo limitado en productos que ya conoces.
     cta: Ver ofertas
+  etiquetas:
+    orden: 6
+    titulo: Busca por…
+    valores: [sin cereales, hipoalergénico, natural, ideal para regalo]
   valores:
+    orden: 7
     titulo: Cómo trabajamos
     items:
       - icono: heart

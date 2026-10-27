@@ -1153,8 +1153,19 @@
   grid-auto-columns: calc((100% - 2.5rem) / 2.3);
   /* Móvil: más aire entre tarjetas (los botones con sombra casi se tocaban). */
   gap: 1.25rem;
-  /* Que la sombra de la última tarjeta no se recorte al final del scroll. */
-  padding-right: 0.25rem;
+}
+/*
+ * Final del scroll (Fase H): tras la última tarjeta, una columna vacía de 1px. Con el `gap`, la
+ * última tarjeta queda separada del borde y su sombra (3px) no se corta al llegar al final (en
+ * una rejilla, ni el padding del track ni un margen de la última columna amplían el área de
+ * scroll: medido en Chromium). El snap de la última, por el final.
+ */
+.carousel__track::after {
+  content: "";
+  width: 1px;
+}
+.carousel__item:last-child {
+  scroll-snap-align: end;
 }
 @media (min-width: 40rem) {
   .carousel__track {

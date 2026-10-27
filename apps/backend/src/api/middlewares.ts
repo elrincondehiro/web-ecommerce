@@ -20,6 +20,12 @@ import { StoreOrderTransferQuery } from "./store/order-transfers/[id]/route";
 import { PetBody, PetPhotoBody } from "../lib/pets-schema";
 import { withStripeSessionData } from "../lib/stripe-session";
 import { TRANSFER_PROVIDER_ID, transferConfig, transferGuarded } from "../lib/transfer";
+import {
+  folderFromReferer,
+  knownFolder,
+  UPLOAD_FOLDER_HEADER,
+  withFolder,
+} from "../lib/upload-folders";
 
 /**
  * Códigos descuento (Fase P): la Store API estándar deja aplicar códigos a cualquiera (también a
@@ -48,6 +54,26 @@ const noPromoCodes = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextF
  */
 const blockStoreTransferRequest = (_req: MedusaRequest, res: MedusaResponse) => {
   res.status(403).json({ type: "not_allowed", message: "Usa /store/customers/me/order-claims" });
+};
+
+/**
+ * Carpetas del bucket (Fase H, lib/upload-folders.ts): las subidas del Admin estándar
+ * (`POST /admin/uploads`, formulario de productos y widgets) van a una carpeta: la de la cabecera
+ * `x-upload-folder` (nuestros widgets) o, si no, según la página desde la que se suben (`Referer`). Medusa no tiene hook en la subida: se renombran los ficheros
+ * que deja multer (`req.files[].originalname`), que es el nombre que la ruta pasa a
+ * `uploadFilesWorkflow` y el proveedor `file-s3` respeta como carpeta. Nuestro middleware se
+ * registra DESPUÉS del de Medusa (multer) en la misma ruta: si aún no hay ficheros (orden
+ * distinto), no hace nada y la subida va a la raíz como antes.
+ */
+const uploadFolder = (req: MedusaRequest, _res: MedusaResponse, next: MedusaNextFunction) => {
+  const files = (req as MedusaRequest & { files?: { originalname: string }[] }).files;
+  if (Array.isArray(files) && files.length) {
+    // Nuestros widgets la dicen (cabecera); el formulario estándar, por la página (Referer).
+    const folder =
+      knownFolder(req.get(UPLOAD_FOLDER_HEADER)) ?? folderFromReferer(req.get("referer"));
+    for (const f of files) f.originalname = withFolder(folder, f.originalname);
+  }
+  next();
 };
 
 /**
@@ -187,6 +213,8 @@ export default defineMiddlewares({
       methods: ["POST"],
       middlewares: [validateAndTransformBody(StoreAddWishlistItemBody)],
     },
+    // Carpetas del bucket (Fase H)
+    { matcher: "/admin/uploads", methods: ["POST"], middlewares: [uploadFolder] },
     // Pagos (Fase PG): métodos y captura de Stripe impuestos por el servidor.
     {
       matcher: "/store/payment-collections/:id/payment-sessions",

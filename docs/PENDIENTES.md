@@ -21,6 +21,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Copiar al VPS `compose.prod.yml`, `Caddyfile` y `monitoring/compose.agents.yml` nuevos (Dozzle v11.3.4 también en la VM).
 - [ ] Purge Everything en Cloudflare y comprobar HIT.
 - [ ] Automatizar la purga con un token de solo «Cache Purge» (fase11 §7) y, quizá, un script `deploy` con estos pasos.
+- [ ] **Fase H** (home): nada que configurar en el VPS (las carpetas del bucket y los widgets van en la imagen). Tras desplegar, poner fotos a las categorías destacadas y a las colecciones desde el Admin y reconstruir el storefront.
 - [ ] **Fase PG** (pagos): `TRANSFER_IBAN` y `TRANSFER_HOLDER` reales en `.env.prod` (y `TRANSFER_DAYS`/`TRANSFER_CANCEL_CRON` si no valen los de por defecto) y, tras desplegar, `./dc exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/stripe-region.js`. En el panel de Stripe, dejar solo tarjeta, PayPal y Bizum. Probar a mano un pago con cada método (también Google Pay en el móvil: solo sale en https) y revisar los e2e de tarjeta intermitentes (fasePG §5).
 - [ ] **Fase M** (mascotas y avisos): crear en ntfy el tema solo para pedidos y poner `NTFY_URL`, `NTFY_ORDERS_TOPIC` y `ADMIN_URL=https://admin.<dominio>` en `.env.prod` (server y worker los leen del bloque común). La tabla `pet` la crea el `server` al arrancar (`db:migrate`).
 
@@ -36,6 +37,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Rate limiting en Cloudflare del formulario de reclamar pedidos (`/cuenta/pedidos/?_action=account.claimOrder`) y de `POST /store/customers/me/order-claims` en `api.` (Fase G).
 - [ ] Quitar Access de la tienda, `ROBOTS=index`, decidir el **robots.txt gestionado de Cloudflare** (`Content-Signal`, SEO 61 en Lighthouse).
 - [ ] `CART_CLEANUP_DAYS=30` (hoy 5).
+- [ ] **Fase H**: al cargar el catálogo real, poner `novedades.desde: <fecha de la carga>` en `apps/storefront/src/content/home.yaml` (si no, todo el catálogo sale como novedad 30 días) y cambiar `etiquetas.valores` y `colecciones.handles` por los reales.
 - [ ] Borrar los productos mock y cargar el catálogo real: herramientas en `migracion/loyverse/` (Fase V/W), revisión por categorías en curso; inventario → stock real; fotos reales (`images:import`); script de limpieza de objetos huérfanos del bucket (fase6 §7).
 - [ ] Normalizar los **valores de opciones** del catálogo real («L 69-81cm», «S/M» frente a «S-M», «400gr» frente a «400g»…) antes de producción (faseV §7).
 - [ ] Revocar el token de Loyverse al acabar la migración.
@@ -90,6 +92,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - **Correas** (faseE): fotos de mosquetones (rejilla), plazo de fabricación provisional, ofertas en correas (rompen el build a propósito).
 - **Puntos** (faseL §8): devolución automática de puntos canjeados en devoluciones (plan en §6.4); revisar el widget del Admin; unificar con la tienda física (`channel: "tienda"`).
 - **Códigos** (faseP): no crear códigos sobre el envío ni promociones automáticas sin revisar `checkCodes`.
+- **Home** (faseH §7): el Admin en LibreWolf sube fotos con rayas (canvas con ruido; si molesta, reducir en el backend con sharp); `metadata.descripcion` de categorías no se usa (tienen la suya). Las novedades y los chips se calculan en el build.
 - **Pagos** (fasePG §7): estado propio «esperando transferencia» en «Mis pedidos»; conciliación bancaria; PayPal directo o TPV Sabadell si el volumen lo justifica; espaciar los e2e de pago si el hCaptcha de Stripe molesta en CI.
 - **Emails** (fase8): webhook de rebotes y quejas de Resend cuando haya volumen; Resend Free = 100/día.
 - **Pedidos de invitado** (faseG §7): botón en el Admin para la asignación manual (hoy `orders:assign`).

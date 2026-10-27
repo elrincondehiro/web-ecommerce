@@ -209,7 +209,7 @@ Las correas configurables (largo y mosquetones, stock por piezas) **no van en `p
 
 ## Fotos
 
-Las fotos van **por producto**, con `images:import`: ficheros `handle_01.jpg`, `handle_02.jpg`… (dos cifras, de `01` a `99`, en el orden de la galería). `_01` es la miniatura y solo se admite JPG (`.jpg` o `.jpeg`). Fotos de un valor de opción (Fase O): `handle--valor_01.jpg`, ver [Fichas con plantilla y selector](#fichas-con-plantilla-y-selector). Se suben al bucket (SeaweedFS en dev, R2 en producción). Ya importadas se omiten; `replace` las sustituye todas.
+Las fotos van **por producto**, con `images:import`: ficheros `handle_01.jpg`, `handle_02.jpg`… (dos cifras, de `01` a `99`, en el orden de la galería). `_01` es la miniatura y solo se admite JPG (`.jpg` o `.jpeg`). Fotos de un valor de opción (Fase O): `handle--valor_01.jpg`, ver [Fichas con plantilla y selector](#fichas-con-plantilla-y-selector). Se suben al bucket (SeaweedFS en dev, R2 en producción), a la carpeta `productos/`. Ya importadas se omiten; importar solo algunas (p. ej. una `_09` nueva) las añade en su posición sin tocar las demás; `replace` las sustituye todas.
 
 - **Tamaño**: la tienda genera AVIF/WebP del tamaño de cada sitio (tarjeta 240 px, galería hasta 720 px). Bastan unos **1500 px** de lado mayor; más solo alarga el build. **Cuadradas** (1:1) para que la rejilla no baile.
 - Los cambios de fotos se ven tras un **rebuild** del storefront.

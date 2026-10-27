@@ -48,6 +48,18 @@ export function parseImageFileName(file: string): ParsedImageFile | null {
   return { file, handle: match[1] as string, value: match[2] ?? null, position };
 }
 
+/** Orden de las fotos de un producto: generales por posición y después las de cada valor. */
+export function imageOrder(
+  a: Pick<ParsedImageFile, "value" | "position">,
+  b: Pick<ParsedImageFile, "value" | "position">,
+): number {
+  return (
+    Number(a.value !== null) - Number(b.value !== null) ||
+    (a.value ?? "").localeCompare(b.value ?? "") ||
+    a.position - b.position
+  );
+}
+
 /**
  * Agrupa ficheros por handle y los ordena: generales por posición y después las de cada valor
  * (alfabético) por posición. Devuelve también los nombres
@@ -79,12 +91,7 @@ export function planProductImages(files: string[]): {
   const products = [...byHandle.entries()]
     .map(([handle, positions]) => ({
       handle,
-      files: [...positions.values()].sort(
-        (a, b) =>
-          Number(a.value !== null) - Number(b.value !== null) ||
-          (a.value ?? "").localeCompare(b.value ?? "") ||
-          a.position - b.position,
-      ),
+      files: [...positions.values()].sort(imageOrder),
     }))
     .sort((a, b) => a.handle.localeCompare(b.handle));
   return { products, ignored, duplicates };

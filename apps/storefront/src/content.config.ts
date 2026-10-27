@@ -18,7 +18,14 @@ const anuncios = defineCollection({
   }),
 });
 
-/** Bloques de la home (un único fichero `home.yaml` con id "home"). */
+/**
+ * Bloques de la home (un único fichero `home.yaml` con id "home"). Fase H:
+ * - `hero` y `categorias` OBLIGATORIOS (sin ellos el build falla: nunca una home vacía); el resto
+ *   OPCIONALES: si no están en el yaml, no se pintan.
+ * - Cada bloque salvo el hero lleva `orden` (entero ≥ 1): se pintan de menor a mayor. Dos bloques
+ *   con el mismo orden hacen fallar el build (lib/home.ts). El hero va siempre el primero.
+ */
+const orden = z.number().int().min(1).max(99);
 const home = defineCollection({
   loader: file("src/content/home.yaml"),
   schema: ({ image }) =>
@@ -32,25 +39,73 @@ const home = defineCollection({
         imagen: image(),
         imagenAlt: z.string(),
       }),
-      destacados: z.object({
+      // Categorías destacadas: handles de cualquier nivel, en este orden. Las que no existan o
+      // no tengan productos se omiten (aviso en el build); si no queda ninguna, el build falla.
+      categorias: z.object({
+        orden,
         titulo: z.string(),
-        coleccion: z.string(),
-        maximo: z.number().int().min(1).max(24),
+        handles: z.array(z.string().min(1)).min(1).max(24),
       }),
-      ofertas: z.object({ titulo: z.string(), texto: z.string(), cta: z.string() }),
-      valores: z.object({
-        titulo: z.string(),
-        items: z
-          .array(
-            z.object({
-              icono: z.enum(["heart", "seal-check", "paw-print"]),
-              titulo: z.string(),
-              texto: z.string(),
-            }),
-          )
-          .min(1)
-          .max(4),
-      }),
+      destacados: z
+        .object({
+          orden,
+          titulo: z.string(),
+          coleccion: z.string(),
+          maximo: z.number().int().min(1).max(24),
+        })
+        .optional(),
+      // Novedades: creados en los últimos `dias` (y no antes de `desde`, YYYY-MM-DD: fecha de
+      // corte para la carga inicial) o con la etiqueta `novedad`. «Ver todas» → /buscar/ por
+      // novedades. Se calcula en el build (lo mantiene al día el siguiente build).
+      novedades: z
+        .object({
+          orden,
+          titulo: z.string(),
+          dias: z.number().int().min(1).max(365),
+          desde: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
+          maximo: z.number().int().min(1).max(24),
+        })
+        .optional(),
+      // Tarjetas de colecciones (handles de Medusa, en este orden; las vacías se omiten). Foto: la
+      // propia de la colección o la de su primer producto. Enlazan a /coleccion/<handle>/.
+      colecciones: z
+        .object({
+          orden,
+          titulo: z.string(),
+          handles: z.array(z.string().min(1)).min(1).max(12),
+        })
+        .optional(),
+      ofertas: z
+        .object({ orden, titulo: z.string(), texto: z.string(), cta: z.string() })
+        .optional(),
+      // «Busca por…»: chips de etiquetas de Medusa → /buscar/?etiqueta=… (sin páginas propias:
+      // páginas finas/duplicadas perjudican el SEO). Las etiquetas sin productos se omiten.
+      etiquetas: z
+        .object({
+          orden,
+          titulo: z.string(),
+          valores: z.array(z.string().min(1)).min(1).max(24),
+        })
+        .optional(),
+      valores: z
+        .object({
+          orden,
+          titulo: z.string(),
+          items: z
+            .array(
+              z.object({
+                icono: z.enum(["heart", "seal-check", "paw-print"]),
+                titulo: z.string(),
+                texto: z.string(),
+              }),
+            )
+            .min(1)
+            .max(4),
+        })
+        .optional(),
     }),
 });
 

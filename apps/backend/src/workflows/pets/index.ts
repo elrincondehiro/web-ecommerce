@@ -4,6 +4,7 @@ import {
   when,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk";
+import { UPLOAD_FOLDERS } from "../../lib/upload-folders";
 import { deleteFilesWorkflow, uploadFilesWorkflow } from "@medusajs/medusa/core-flows";
 import { randomBytes } from "node:crypto";
 import type { PetFields } from "../../lib/pets";
@@ -49,7 +50,7 @@ export const setPetPhotoWorkflow = createWorkflow(
       const files = transform({ input }, ({ input }) => ({
         files: [
           {
-            filename: `mascotas/${randomBytes(12).toString("base64url")}.webp`,
+            filename: `${UPLOAD_FOLDERS.pet}/${randomBytes(12).toString("base64url")}.webp`,
             mimeType: "image/webp",
             content: input.content!,
             access: "public" as const,

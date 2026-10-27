@@ -8,7 +8,8 @@
  *   `uploadFilesWorkflow` y la asocia al producto con `updateProductsWorkflow`.
  * - Idempotente: cada imagen guarda `metadata.source_file` (y, como respaldo, el nombre se
  *   deduce de la URL `<nombre>-<ULID>.jpg`); las ya importadas se omiten.
- *   Las imágenes subidas desde el Admin (sin nombre `handle_XX`) se conservan detrás.
+ *   Las fotos del producto que no vienen en la carpeta (subidas desde el Admin o importadas
+ *   en otra pasada) se conservan detrás.
  * - `replace`: sustituye todas las imágenes del producto por las de la carpeta.
  *   Los objetos antiguos quedan en el bucket (limpieza pendiente, ver docs/fases/fase6.md).
  * - Fase O: `<handle>--<valor>_XX.jpg` = fotos de un valor de la opción `metadata.opcion_fotos`
@@ -17,6 +18,7 @@
  * - `dry-run`: solo informa, no sube ni modifica nada.
  * - La ruta de la carpeta es relativa a apps/backend (o absoluta).
  */
+import { UPLOAD_FOLDERS, withFolder } from "../lib/upload-folders";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ExecArgs } from "@medusajs/framework/types";
@@ -28,9 +30,12 @@ import {
 } from "@medusajs/medusa/core-flows";
 import {
   MIME_BY_EXT,
+  imageOrder,
+  parseImageFileName,
   valueSlug,
   planProductImages,
   sourceFileFromUrl,
+  type ParsedImageFile,
   type ProductImagePlan,
 } from "./lib/image-files";
 import { clearMedusaCache } from "./lib/clear-cache";
@@ -186,7 +191,9 @@ export default async function importImages({ container, args }: ExecArgs) {
       input: {
         files: await Promise.all(
           pending.map(async (f) => ({
-            filename: f.file,
+            // Carpeta `productos/` del bucket (Fase H, lib/upload-folders.ts). La idempotencia va por
+            // `metadata.source_file` (el nombre del fichero local), no por la URL.
+            filename: withFolder(UPLOAD_FOLDERS.product, f.file),
             mimeType: MIME_BY_EXT[path.extname(f.file).toLowerCase()] ?? "image/jpeg",
             content: (await readFile(path.join(root, f.file))).toString("base64"),
             access: "public" as const,
@@ -196,20 +203,39 @@ export default async function importImages({ container, args }: ExecArgs) {
     });
     const newUrl = new Map(pending.map((f, i) => [f.file, uploaded[i]?.url]));
 
-    // Orden: fotos de la carpeta por posición; después, las subidas a mano desde el Admin.
+    // Orden (Fase H): todas las fotos importadas del producto (las de esta carpeta y las de
+    // pasadas anteriores) por su nombre `handle[--valor]_XX`, como en `planProductImages`; detrás,
+    // las subidas a mano desde el Admin. La primera es la miniatura. Así importar solo `_09` la
+    // añade al final sin perder ni reordenar las demás (antes de la Fase H se perdían).
+    type Ordered = {
+      file: ParsedImageFile;
+      image: { id?: string; url: string; metadata: Record<string, unknown> };
+    };
     const urlOf = new Map<string, string>();
-    const ours = item.files
-      .map((f) => {
-        const url = newUrl.get(f.file);
-        if (url) {
-          urlOf.set(f.file, url);
-          return { url, metadata: { source_file: f.file } };
-        }
-        const prev = imported.get(f.file);
-        if (prev) urlOf.set(f.file, prev.url);
-        return prev ? { id: prev.id, url: prev.url, metadata: prev.metadata ?? {} } : null;
-      })
-      .filter((img): img is NonNullable<typeof img> => img !== null);
+    const fromFolder = item.files.flatMap((f): Ordered[] => {
+      const url = newUrl.get(f.file);
+      if (url) {
+        urlOf.set(f.file, url);
+        return [{ file: f, image: { url, metadata: { source_file: f.file } } }];
+      }
+      const prev = imported.get(f.file);
+      if (!prev) return [];
+      urlOf.set(f.file, prev.url);
+      return [{ file: f, image: { id: prev.id, url: prev.url, metadata: prev.metadata ?? {} } }];
+    });
+    const inFolder = new Set(item.files.map((f) => f.file));
+    const previous = replace
+      ? []
+      : existing.flatMap((img): Ordered[] => {
+          const src = sourceFile(img);
+          const parsed = src && !inFolder.has(src) ? parseImageFileName(src) : null;
+          return parsed
+            ? [{ file: parsed, image: { id: img.id, url: img.url, metadata: img.metadata ?? {} } }]
+            : [];
+        });
+    const ours = [...fromFolder, ...previous]
+      .sort((a, b) => imageOrder(a.file, b.file))
+      .map((x) => x.image);
     const manual = replace ? [] : existing.filter((img) => !sourceFile(img));
     const images = [...ours, ...manual.map((img) => ({ id: img.id, url: img.url }))];
 

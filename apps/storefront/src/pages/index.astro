@@ -1,38 +1,58 @@
 ---
-// Home (I-Interficie). Estática (0 JS propio): hero, categorías, carrusel de destacados
-// (Collection de Medusa, scroll-snap CSS), banner de ofertas (solo si hay ofertas en el build) y
-// valores. Textos en src/content/home.yaml; productos de Medusa. Precio/stock del carrusel: build
-// + <LiveSync pageKey> (clave del bloque, D-S1: lib/listing-pages.ts). Categorías: las raíces
-// del árbol de la tienda (Fase S), con la foto del primer producto de su subárbol.
+// Home (I-Interficie; Fase H). Estática (0 JS propio). El hero va siempre el primero; el resto
+// de bloques salen de src/content/home.yaml en su `orden` y solo si están (lib/home.ts):
+// - categorias (obligatorio): categorías destacadas de cualquier nivel, con su foto propia o la
+//   de su primer producto;
+// - destacados: carrusel de una Collection, con «Ver los N» a /coleccion/<handle>/;
+// - novedades: carrusel de los productos nuevos (últimos N días o etiqueta `novedad`);
+// - colecciones: tarjetas a /coleccion/<handle>/;
+// - ofertas: banner, solo si hay ofertas en el build;
+// - etiquetas: chips «Busca por…» a /buscar/?etiqueta=…;
+// - valores.
+// Un yaml incoherente (orden repetido, ninguna categoría válida) hace FALLAR el build: nunca se
+// publica una home vacía. Precio/stock del carrusel: build + <LiveSync pageKey>.
 import { Picture } from "astro:assets";
 import { getEntry } from "astro:content";
 import { buttonVariants } from "$lib/components/ui/button";
 import { getListedProducts, getSaleProductIds } from "$lib/medusa";
-import { productsInSubtree } from "$lib/categories";
-import { listingPageKey } from "$lib/listing-pages";
-import { getFeaturedProducts, getShopTree } from "$lib/shop";
-import { OFFERS_PATH, SITE_NAME } from "$lib/constants";
+import { featuredCategories, orderedBlocks, tagChips } from "$lib/home";
+import { emptyParams, searchUrl } from "$lib/search";
+import { getFeaturedBlock, getNewBlock, getShopCollections, getShopTree } from "$lib/shop";
+import { SITE_NAME } from "$lib/constants";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Icon from "../components/Icon.astro";
-import ScrollDrag from "../components/ScrollDrag.astro";
-import LiveSync from "../components/LiveSync.astro";
-import ProductCard from "../components/ProductCard.astro";
-import ProductImage from "../components/ProductImage.astro";
-import { CAROUSEL_CARD_SIZES, CATEGORY_CARD_SIZES } from "$lib/images";
+import HomeCategories from "../components/home/HomeCategories.astro";
+import HomeCarousel from "../components/home/HomeCarousel.astro";
+import HomeCollections from "../components/home/HomeCollections.astro";
+import HomeOffers from "../components/home/HomeOffers.astro";
+import HomeTags from "../components/home/HomeTags.astro";
+import HomeValues from "../components/home/HomeValues.astro";
 
 const home = (await getEntry("home", "home"))!.data;
-const [products, tree, featured, saleIds] = await Promise.all([
+const [products, tree, featured, fresh, shopCollections, saleIds] = await Promise.all([
   getListedProducts(),
   getShopTree(true),
-  getFeaturedProducts(),
-  getSaleProductIds(),
+  home.destacados ? getFeaturedBlock() : null,
+  home.novedades ? getNewBlock() : null,
+  home.colecciones ? getShopCollections() : [],
+  home.ofertas ? getSaleProductIds() : [],
 ]);
-// Categoría → imagen de su primer producto con foto (orden del catálogo).
-const categoryCards = tree.roots.map((c) => {
-  const first = productsInSubtree(products, c).find((p) => p.thumbnail ?? p.images?.[0]);
-  return { ...c, image: first ? (first.thumbnail ?? first.images?.[0]?.url ?? null) : null };
+const blocks = orderedBlocks(home);
+const { categories, missing } = featuredCategories(home.categorias.handles, tree.byHandle);
+if (missing.length) {
+  Astro.logger.warn(`categorías destacadas sin página (se omiten): ${missing.join(", ")}`);
+}
+// Colecciones de la home: las de home.yaml que tienen página (con productos), en su orden.
+const byHandle = new Map(shopCollections.map((c) => [c.collection.handle, c]));
+const homeCollections = [...new Set(home.colecciones?.handles ?? [])].flatMap((h) => {
+  const c = byHandle.get(h);
+  if (!c) Astro.logger.warn(`colección de la home sin productos (se omite): ${h}`);
+  return c ? [c] : [];
 });
-const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
+const chips = home.etiquetas ? tagChips(home.etiquetas.valores, products) : [];
+const newLink = {
+  href: searchUrl({ ...emptyParams(), orden: "novedades" }),
+  text: "Ver todas",
+};
 ---
 
 <BaseLayout
@@ -76,94 +96,35 @@ const heading = "font-display text-2xl font-bold tracking-tight sm:text-3xl";
     </div>
   </section>
 
-  {categoryCards.length > 0 && (
-    <section aria-labelledby="home-categorias" class="mb-14">
-      <h2 id="home-categorias" class:list={[heading, "mb-5"]}>
-        Categorías
-      </h2>
-      <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {categoryCards.map((c) => (
-          <li>
-            <a
-              href={`/categoria/${c.handle}/`}
-              class="group flex flex-col overflow-hidden rounded-md border-2 border-line bg-card shadow-sm transition-[translate,box-shadow] hover:translate-x-px hover:translate-y-px hover:shadow-xs"
-            >
-              <ProductImage src={c.image} alt="" sizes={CATEGORY_CARD_SIZES} />
-              <span class="border-t-2 border-line px-3 py-2 font-display font-bold group-hover:underline">
-                {c.name}
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </section>
+  {blocks.map((b) =>
+    b === "categorias" ? (
+      <HomeCategories titulo={home.categorias.titulo} categories={categories} products={products} />
+    ) : b === "destacados" && home.destacados && featured ? (
+      <HomeCarousel
+        id="home-destacados"
+        titulo={home.destacados.titulo}
+        products={featured.products}
+        link={{
+          href: featured.href,
+          text:
+            featured.total > featured.products.length ? `Ver los ${featured.total}` : "Ver todo",
+        }}
+      />
+    ) : b === "novedades" && home.novedades && fresh ? (
+      <HomeCarousel
+        id="home-novedades"
+        titulo={home.novedades.titulo}
+        products={fresh.products}
+        link={newLink}
+      />
+    ) : b === "colecciones" && home.colecciones && homeCollections.length > 0 ? (
+      <HomeCollections titulo={home.colecciones.titulo} collections={homeCollections} />
+    ) : b === "ofertas" && home.ofertas && saleIds.length > 0 ? (
+      <HomeOffers {...home.ofertas} />
+    ) : b === "etiquetas" && home.etiquetas && chips.length > 0 ? (
+      <HomeTags titulo={home.etiquetas.titulo} chips={chips} />
+    ) : b === "valores" && home.valores ? (
+      <HomeValues titulo={home.valores.titulo} items={home.valores.items} />
+    ) : null,
   )}
-
-  {featured.length > 0 && (
-    <section class="mb-14">
-      <div class="mb-5 flex items-baseline justify-between gap-4">
-        <h2 id="home-destacados" class={heading}>
-          {home.destacados.titulo}
-        </h2>
-        <a href="/productos/" class="text-sm font-semibold underline-offset-4 hover:underline">
-          Ver todo
-        </a>
-      </div>
-      {/* Carrusel solo CSS (scroll-snap): sin flechas ni JS; con teclado, la región recibe el foco
-          y se desplaza con las flechas (tabindex=0 + role=region con nombre, WAI). La región
-          es el carrusel (no la <section>, que no lleva nombre: así no hay dos regiones). */}
-      <div
-        role="region"
-        aria-labelledby="home-destacados"
-        tabindex="0"
-        class="carousel -mx-4 px-4"
-        data-drag-scroll
-      >
-        <ul class="carousel__track">
-          {featured.map((p) => (
-            <li class="carousel__item flex">
-              <ProductCard product={p} headingLevel={3} back="/" imageSizes={CAROUSEL_CARD_SIZES} />
-            </li>
-          ))}
-        </ul>
-      </div>
-      <LiveSync pageKey={listingPageKey(featured.map((p) => p.id))} />
-      <ScrollDrag />
-    </section>
-  )}
-
-  {saleIds.length > 0 && (
-    <section
-      aria-labelledby="home-ofertas"
-      class="mb-14 flex flex-col items-start gap-4 rounded-md border-2 border-line bg-accent p-6 text-accent-foreground shadow-md sm:flex-row sm:items-center sm:justify-between sm:p-8"
-    >
-      <div class="flex items-start gap-4">
-        <Icon name="tag" class="size-10 shrink-0" />
-        <div>
-          <h2 id="home-ofertas" class="font-display text-2xl font-bold">
-            {home.ofertas.titulo}
-          </h2>
-          <p class="mt-1">{home.ofertas.texto}</p>
-        </div>
-      </div>
-      <a href={OFFERS_PATH} class={buttonVariants({ size: "lg", variant: "outline" })}>
-        {home.ofertas.cta}
-      </a>
-    </section>
-  )}
-
-  <section aria-labelledby="home-valores">
-    <h2 id="home-valores" class:list={[heading, "mb-5"]}>
-      {home.valores.titulo}
-    </h2>
-    <ul class="grid gap-6 md:grid-cols-3">
-      {home.valores.items.map((v) => (
-        <li class="flex flex-col gap-2 rounded-md border-2 border-line bg-card p-5 shadow-sm">
-          <Icon name={v.icono} class="size-8 text-accent-text" />
-          <h3 class="font-display text-lg leading-snug font-bold">{v.titulo}</h3>
-          <p class="text-muted-foreground">{v.texto}</p>
-        </li>
-      ))}
-    </ul>
-  </section>
 </BaseLayout>

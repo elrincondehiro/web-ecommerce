@@ -2,7 +2,7 @@
 
 > **Léeme primero** (agentes de IA): resume dónde está el proyecto, cómo se trabaja y qué sigue.
 > Después lee `AGENTS.md` (reglas, **obligatorio**) y solo lo que necesites de `README.md` y `docs/fases/`.
-> Última actualización: 26-oct-2026 · **Fase PG (pagos) hecha** ([fasePG-pagos.md](./fases/fasePG-pagos.md)): tarjeta, PayPal y Bizum por Stripe con métodos y captura fijados en el servidor (Bizum se cobra al momento; el resto se autoriza y se captura desde el Admin) y transferencia para clientes con cuenta (3 días, recordatorio y cancelación automática; `TRANSFER_IBAN`, `TRANSFER_HOLDER`). Tag **`v0.2.0`** (G–M) desplegado en el VPS. Antes: **Fase M (mascotas y aviso de pedidos) hecha** ([faseM-mascotas.md](./fases/faseM-mascotas.md)): «Mis peques» en la cuenta (fichas de mascotas sin JS, foto pública con consentimiento y sin metadatos, salud con consentimiento, fallecidas en gris), widgets en el Admin (cliente y pedido) y aviso de cada pedido nuevo por email a `SHOP_NOTIFY_EMAIL` y push ntfy (`NTFY_URL` + `NTFY_ORDERS_TOPIC`). Antes: **Fase R (rendimiento)** ([faseR-rendimiento.md](./fases/faseR-rendimiento.md)). **Siguiente**: más peticiones de frontend y backend del usuario. Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). Después: mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
+> Última actualización: 27-oct-2026 · **Fase H (home) hecha** ([faseH-home.md](./fases/faseH-home.md)): home configurable en `home.yaml` (hero y categorías obligatorios, resto opcional, `orden`; el build falla si es incoherente), categorías destacadas, novedades (30 días o etiqueta `novedad`), páginas `/coleccion/<handle>/`, tarjetas de colecciones, chips de etiquetas, foto y descripción propias de categorías y colecciones desde el Admin y carpetas por tipo en el bucket. Medusa 2.22.1 (Renovate #73). Antes: **Fase PG (pagos) hecha** ([fasePG-pagos.md](./fases/fasePG-pagos.md)): tarjeta, PayPal y Bizum por Stripe con métodos y captura fijados en el servidor (Bizum se cobra al momento; el resto se autoriza y se captura desde el Admin) y transferencia para clientes con cuenta (3 días, recordatorio y cancelación automática; `TRANSFER_IBAN`, `TRANSFER_HOLDER`). Tag **`v0.2.0`** (G–M) desplegado en el VPS. Antes: **Fase M (mascotas y aviso de pedidos) hecha** ([faseM-mascotas.md](./fases/faseM-mascotas.md)): «Mis peques» en la cuenta (fichas de mascotas sin JS, foto pública con consentimiento y sin metadatos, salud con consentimiento, fallecidas en gris), widgets en el Admin (cliente y pedido) y aviso de cada pedido nuevo por email a `SHOP_NOTIFY_EMAIL` y push ntfy (`NTFY_URL` + `NTFY_ORDERS_TOPIC`). Antes: **Fase R (rendimiento)** ([faseR-rendimiento.md](./fases/faseR-rendimiento.md)). **Siguiente**: más peticiones de frontend y backend del usuario. Antes: **Fase V/W (migración desde Loyverse) cerrada** (herramientas; la revisión por categorías sigue a mano). Antes: Fase G (#65), fase 11 (tag `v0.1.0`). Pendientes en [PENDIENTES.md](./PENDIENTES.md). Después: mejoras visuales y de contenido y optimizaciones (fase 13) → empezar por **§6.0 Handover**.
 
 ## 1. Dónde estamos
 
@@ -40,15 +40,16 @@
 | R Rendimiento (imágenes, cachés, CSS)       | ✅     | [faseR-rendimiento.md](./fases/faseR-rendimiento.md)                 |
 | M Mascotas y aviso de pedidos               | ✅     | [faseM-mascotas.md](./fases/faseM-mascotas.md)                       |
 | PG Pagos (PayPal, Bizum, transferencia)     | ✅     | [fasePG-pagos.md](./fases/fasePG-pagos.md)                           |
+| H Home configurable y colecciones           | ✅     | [faseH-home.md](./fases/faseH-home.md)                               |
 
 Roadmap completo y tiempos: README §13.
 
 ## 2. Qué hay construido
 
-- **Monorepo pnpm 12.14.0**, Node **24.22.0** (fnm). Workspaces: `apps/*`, `packages/*`.
+- **Monorepo pnpm 12.15.0**, Node **24.22.1** (fnm). Workspaces: `apps/*`, `packages/*`.
   - `packages/config`: TS base, ESLint 10 flat (incluye CommonJS/jest), Prettier.
-  - `apps/backend`: **Medusa 2.21.2**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
-  - `apps/storefront`: Astro 7.4.1 (`@astrojs/node` 11.1.9) estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), el común `SiteClient` (~1,4 KB), `ScrollDrag` en carruseles, otro en `/buscar/` (`SearchLive`, ~0,9 KB gzip), `CartLive` en `/carrito/` (~0,6 KB) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
+  - `apps/backend`: **Medusa 2.22.1**, TS 6.0.3 (funciona; plan B: 5.9.3 solo en backend).
+  - `apps/storefront`: Astro 7.4.2 (`@astrojs/node` 11.1.9) estático, shadcn-svelte (preset `vega`) sin hidratar; solo un bundle JS en el catálogo (`CartClient`, ~1 KB gzip), el común `SiteClient` (~1,4 KB), `ScrollDrag` en carruseles, otro en `/buscar/` (`SearchLive`, ~0,9 KB gzip), `CartLive` en `/carrito/` (~0,6 KB) y otro en el checkout (`StripePayment`, ~2 KB gzip). Modo `STOREFRONT_DATA=fixtures` para CI. Detalle en [fase3.md](./fases/fase3.md).
     - **Precio/stock**: se escriben en el build y la island invisible `LiveSyncData` devuelve solo datos (`<template>` JSON), que aplica el script estático de `LiveSync` (modo C, compatible con CSP) ([fase6.md](./fases/fase6.md)).
     - **Carrito** (fase 4): cookie `cart_id` httpOnly (`COOKIE_SECURE`). Los formularios hacen POST a `/carrito/?_action=cart.*` y `src/middleware.ts` responde con un 303 a la página de origen + `#carrito-<código>` (sin JS, avisos con `:target`) o con JSON (con JS: toast + contador + flyout en escritorio). Contador en la server island `CartCount`; `/carrito/` on-demand (con JS, `CartLive` aplica los cambios sin recargar; Fase D). e2e: `pnpm --filter storefront test:e2e` ([fase4.md](./fases/fase4.md)).
     - **Checkout** (fase 5): `/checkout/` on-demand (datos → envío → pago). Fase PG: tarjeta y PayPal se autorizan (captura desde el Admin), Bizum se cobra al momento y la transferencia (solo con cuenta) se marca pagada capturándola en el Admin. Script de pago de ~2 KB gzip; confirmación en `/pedido/<id>/` con la cookie `last_order`. Páginas legales provisionales `noindex` ([fase5.md](./fases/fase5.md)).
@@ -158,6 +159,15 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 
 **Pendientes antes de abrir de verdad** (fase11 §7): `CART_CLEANUP_DAYS` a 30, quitar Access de la tienda y `ROBOTS=index`, dominio/emails/tokens definitivos, borrar `ssh.` e IP nueva, decidir el robots.txt gestionado de Cloudflare, purga automática en el despliegue, bucket lock de backups. Caducidades: tokens R2/Resend/service token oct-2027, AOP cliente 17-oct-2031.
 
+**Fase H — home: ✅ cerrada** ([faseH-home.md](./fases/faseH-home.md)):
+
+- **`home.yaml`**: `hero` y `categorias` obligatorios; `destacados`, `novedades`, `colecciones`, `ofertas`, `etiquetas` y `valores` opcionales, cada uno con `orden`. Orden repetido o ninguna categoría válida → **el build falla** (`lib/home.ts`). Bloque sin datos → no sale.
+- **Novedades**: últimos `dias` (30) o etiqueta `novedad`. ⚠️ Al cargar el catálogo real, poner `novedades.desde: <fecha de la carga>` (si no, sale todo como novedad 30 días).
+- **Colecciones**: página `/coleccion/<handle>/` por cada una con productos (paginada, LiveSync, sitemap); «Ver los N» del carrusel enlaza a ella.
+- **Admin**: widget «Foto (y descripción) de la tienda» en categorías y colecciones (`metadata.imagen_url`/`imagen_alt`/`descripcion`); sin foto, la del primer producto. ⚠️ En LibreWolf la foto sale con rayas (canvas con ruido): usar otro navegador para el Admin.
+- **Bucket**: carpetas `productos/`, `categorias/`, `colecciones/`, `mascotas/`, `contenido/` para lo nuevo (también desde el formulario estándar del Admin, por un middleware en `/admin/uploads`). `images:import` ya no pierde las fotos importadas antes.
+- Lighthouse móvil: home y colección 100 en todo (LCP 1,51 s).
+
 **Fase PG — pagos: ✅ cerrada** ([fasePG-pagos.md](./fases/fasePG-pagos.md)):
 
 - **Stripe**: middleware en `POST /store/payment-collections/:id/payment-sessions` que impone `payment_method_types` (card, paypal, bizum; sin Link) y captura mixta (`src/lib/stripe-session.ts`); `automaticPaymentMethods: false` en `medusa-config.ts`. Mismo proveedor y webhook.
@@ -213,7 +223,7 @@ Datos en `migracion/loyverse/datos/`, **fuera de git y de las imágenes**. El us
 
 **Lista completa de pendientes y próximos pasos, para elegir: [PENDIENTES.md](./PENDIENTES.md).**
 
-**Al empezar:** Node 24.22.0 (`fnm install 24.22.0 && fnm default 24.22.0`, lo subió Renovate #62) y `pnpm install`. **Siguiente despliegue en el VPS**: Meilisearch 1.55 necesita arrancar una vez con `MEILI_UPGRADE_DB=true` (PENDIENTES §1).
+**Al empezar:** Node 24.22.1 (`fnm install 24.22.1 && fnm default 24.22.1`, lo subió Renovate #73) y `pnpm install`. **Siguiente despliegue en el VPS**: Meilisearch 1.55 necesita arrancar una vez con `MEILI_UPGRADE_DB=true` (PENDIENTES §1).
 
 **Siguiente** (decidido con el usuario): **mejoras visuales y de contenido** (las trae el usuario); después optimizaciones de la tienda (fase 13: LCP de fichas, capacidad sin CDN, rebuild por webhook). La fase 12 (GlitchTip, vigilante externo) sigue pendiente.
 

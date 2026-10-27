@@ -1,0 +1,25 @@
+---
+// Home · Valores (I-Interficie).
+import Icon from "../Icon.astro";
+
+interface Props {
+  titulo: string;
+  items: { icono: "heart" | "seal-check" | "paw-print"; titulo: string; texto: string }[];
+}
+const { titulo, items } = Astro.props;
+---
+
+<section aria-labelledby="home-valores" class="mb-14">
+  <h2 id="home-valores" class="mb-5 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+    {titulo}
+  </h2>
+  <ul class="grid gap-6 md:grid-cols-3">
+    {items.map((v) => (
+      <li class="flex flex-col gap-2 rounded-md border-2 border-line bg-card p-5 shadow-sm">
+        <Icon name={v.icono} class="size-8 text-accent-text" />
+        <h3 class="font-display text-lg leading-snug font-bold">{v.titulo}</h3>
+        <p class="text-muted-foreground">{v.texto}</p>
+      </li>
+    ))}
+  </ul>
+</section>

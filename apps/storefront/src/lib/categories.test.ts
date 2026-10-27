@@ -91,6 +91,21 @@ describe("subárboles y productos", () => {
       "p3",
     ]);
   });
+  it("conserva la metadata (foto propia, Fase H) al construir y al podar el árbol", () => {
+    const withMeta = buildCategoryTree([
+      { ...cat("perro", 0), metadata: { imagen_url: "https://x/perro.webp" } },
+      cat("piensos", 0, "perro"),
+    ] as unknown as Parameters<typeof buildCategoryTree>[0]);
+    expect(withMeta.byHandle.get("perro")?.metadata).toEqual({
+      imagen_url: "https://x/perro.webp",
+    });
+    expect(withMeta.byHandle.get("piensos")?.metadata).toBeNull();
+    const pruned = pruneEmpty(withMeta, [
+      { id: "p", categories: [{ id: "piensos" }] },
+    ] as unknown as Parameters<typeof pruneEmpty>[1]);
+    expect(pruned.byHandle.get("perro")?.metadata).toEqual({ imagen_url: "https://x/perro.webp" });
+  });
+
   it("pruneEmpty quita categorías sin productos en su subárbol", () => {
     const pruned = pruneEmpty(tree, products);
     expect(pruned.all.map((n) => n.handle)).toEqual([

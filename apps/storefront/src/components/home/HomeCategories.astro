@@ -1,0 +1,42 @@
+---
+// Home · Categorías destacadas (Fase H): las de `home.yaml` (`categorias.handles`, cualquier
+// nivel), en ese orden. Foto: la propia de la categoría (metadata, widget del Admin) o la de su
+// primer producto (lib/entity-image.ts). Estático, 0 JS.
+import { productsInSubtree, type CategoryNode } from "$lib/categories";
+import type { StoreProduct } from "$lib/catalog";
+import { cardImage } from "$lib/entity-image";
+import { CATEGORY_CARD_SIZES } from "$lib/images";
+import ProductImage from "../ProductImage.astro";
+
+interface Props {
+  titulo: string;
+  categories: CategoryNode[];
+  products: StoreProduct[];
+}
+const { titulo, categories, products } = Astro.props;
+const cards = categories.map((c) => ({
+  ...c,
+  image: cardImage(c.metadata, productsInSubtree(products, c)),
+}));
+---
+
+<section aria-labelledby="home-categorias" class="mb-14">
+  <h2 id="home-categorias" class="mb-5 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+    {titulo}
+  </h2>
+  <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+    {cards.map((c) => (
+      <li>
+        <a
+          href={`/categoria/${c.handle}/`}
+          class="group flex flex-col overflow-hidden rounded-md border-2 border-line bg-card shadow-sm transition-[translate,box-shadow] hover:translate-x-px hover:translate-y-px hover:shadow-xs"
+        >
+          <ProductImage src={c.image?.src} alt={c.image?.alt ?? ""} sizes={CATEGORY_CARD_SIZES} />
+          <span class="border-t-2 border-line px-3 py-2 font-display font-bold group-hover:underline">
+            {c.name}
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>

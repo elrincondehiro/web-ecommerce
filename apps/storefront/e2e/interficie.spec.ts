@@ -88,6 +88,42 @@ test.describe("sin JS", () => {
       "/ofertas/",
     );
     await expect(page.getByRole("heading", { name: "Cómo trabajamos" })).toBeVisible();
+    // Fase H: bloques en el `orden` de home.yaml (categorías → destacados → ofertas → valores)
+    const ids = await page
+      .locator("main h2[id^='home-']")
+      .evaluateAll((els) => els.map((e) => e.id));
+    // (los bloques opcionales sin datos no salen: con fixtures, sin novedades ni etiquetas)
+    const order = [
+      "home-categorias",
+      "home-destacados",
+      "home-novedades",
+      "home-colecciones",
+      "home-ofertas",
+      "home-etiquetas",
+      "home-valores",
+    ];
+    expect(ids.length).toBeGreaterThanOrEqual(4);
+    expect(ids).toEqual(order.filter((id) => ids.includes(id)));
+    // «Ver los N» / «Ver todo» lleva a la página de la colección, no a /productos/
+    await expect(page.getByRole("link", { name: /^Ver (los \d+|todo)$/ })).toHaveAttribute(
+      "href",
+      "/coleccion/destacados/",
+    );
+  });
+
+  test("colección (Fase H): página propia con migas, listado paginado y LiveSync", async ({
+    page,
+  }) => {
+    await page.goto("/coleccion/destacados/");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: /migas|breadcrumb/i })).toContainText(
+      "Inicio",
+    );
+    const cards = page.locator("main article");
+    expect(await cards.count()).toBeGreaterThan(0);
+    await expect(page.locator("main [data-pid]").first()).toBeAttached();
+    // Sin «Filtrar» (/buscar/ no filtra por colección)
+    await expect(page.getByRole("button", { name: /Filtrar/ })).toHaveCount(0);
   });
 
   test("/ofertas/: precio anterior tachado y descuento en cada tarjeta", async ({ page }) => {
@@ -222,7 +258,7 @@ test.describe("con JS", () => {
   test("carrusel: arrastrar con el ratón desplaza y no abre el producto", async ({ page }) => {
     test.skip(isMobile(page), "solo ratón");
     await page.goto("/");
-    const carousel = page.locator(".carousel[data-drag-scroll]");
+    const carousel = page.locator(".carousel[data-drag-scroll]").first();
     await carousel.scrollIntoViewIfNeeded();
     const box = (await carousel.boundingBox())!;
     const y = box.y + 80;

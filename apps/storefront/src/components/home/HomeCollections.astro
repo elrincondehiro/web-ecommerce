@@ -1,0 +1,43 @@
+---
+// Home · Colecciones (Fase H, d): tarjetas de las colecciones de home.yaml, en su orden, a
+// /coleccion/<handle>/. Foto: la propia (metadata, widget del Admin) o la del primer producto.
+// Estático, 0 JS. Mismo estilo que las categorías destacadas.
+import { cardImage } from "$lib/entity-image";
+import { CATEGORY_CARD_SIZES } from "$lib/images";
+import { collectionHref, type ShopCollection } from "$lib/shop";
+import ProductImage from "../ProductImage.astro";
+
+interface Props {
+  titulo: string;
+  collections: ShopCollection[];
+}
+const { titulo, collections } = Astro.props;
+const cards = collections.map(({ collection, products }) => ({
+  href: collectionHref(collection.handle),
+  title: collection.title ?? collection.handle,
+  count: products.length,
+  image: cardImage(collection.metadata, products),
+}));
+---
+
+<section aria-labelledby="home-colecciones" class="mb-14">
+  <h2 id="home-colecciones" class="mb-5 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+    {titulo}
+  </h2>
+  <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    {cards.map((c) => (
+      <li>
+        <a
+          href={c.href}
+          class="group flex h-full flex-col overflow-hidden rounded-md border-2 border-line bg-card shadow-sm transition-[translate,box-shadow] hover:translate-x-px hover:translate-y-px hover:shadow-xs"
+        >
+          <ProductImage src={c.image?.src} alt={c.image?.alt ?? ""} sizes={CATEGORY_CARD_SIZES} />
+          <span class="flex flex-1 flex-col border-t-2 border-line px-3 py-2">
+            <span class="font-display font-bold group-hover:underline">{c.title}</span>
+            <span class="text-sm text-muted-foreground">{c.count} productos</span>
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>

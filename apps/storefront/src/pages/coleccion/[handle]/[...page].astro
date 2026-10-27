@@ -1,0 +1,62 @@
+---
+// Página de colección (Fase H): TODAS las Collections de Medusa con productos (las vacías no se
+// generan), paginadas como las categorías. URL /coleccion/<handle>/. Indexable (sitemap).
+// - Cabecera con la foto y la descripción propias de la colección (`metadata.imagen_url`,
+//   `imagen_alt`, `descripcion`; widget del Admin), si las tiene.
+// - Sin botón «Filtrar»: /buscar/ no filtra por colección (el índice no la tiene).
+// - Precio/stock: build + <LiveSync> por la clave de la página (CatalogPage, D-S1).
+// Fuente: astro-docs (routing: nested pagination, `paginate()` con `params`).
+import type { GetStaticPaths } from "astro";
+import { metaDescription } from "$lib/catalog";
+import { PAGE_SIZE, SITE_NAME } from "$lib/constants";
+import { metadataDescription, metadataImage } from "$lib/entity-image";
+import { collectionHref, getShopCollections } from "$lib/shop";
+import { breadcrumbJsonLd } from "$lib/seo";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
+import CatalogPage from "../../../components/CatalogPage.astro";
+import EntityHeader from "../../../components/EntityHeader.astro";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const collections = await getShopCollections();
+  return collections.flatMap(({ collection, products }) =>
+    paginate(products, {
+      pageSize: PAGE_SIZE,
+      params: { handle: collection.handle },
+      props: {
+        collection: {
+          handle: collection.handle,
+          title: collection.title ?? collection.handle,
+          description: metadataDescription(collection.metadata),
+          image: metadataImage(collection.metadata),
+        },
+      },
+    }),
+  );
+}) satisfies GetStaticPaths;
+
+const { page, collection } = Astro.props;
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  { name: collection.title, href: collectionHref(collection.handle) },
+];
+const title =
+  page.currentPage > 1 ? `${collection.title} (página ${page.currentPage})` : collection.title;
+---
+
+<BaseLayout
+  title={title}
+  description={
+    metaDescription(collection.description) ||
+    `${collection.title}: selección de productos de ${SITE_NAME}.`
+  }
+  jsonLd={[breadcrumbJsonLd(crumbs, Astro.site!)]}
+>
+  <Breadcrumbs items={crumbs} />
+  <EntityHeader
+    title={collection.title}
+    description={page.currentPage === 1 ? collection.description : ""}
+    image={page.currentPage === 1 ? collection.image : null}
+  />
+  <CatalogPage page={page} />
+</BaseLayout>

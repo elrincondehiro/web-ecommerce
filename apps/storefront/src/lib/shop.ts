@@ -1,5 +1,5 @@
 // Catálogo de la TIENDA (Fase S, S-1; sin descatalogados, Fase E), solo servidor: árbol de categorías sin las vacías y los
-// listados (categorías con su subárbol, /productos/, /ofertas/, carrusel de la home) con sus
+// listados (categorías con su subárbol, /productos/, /ofertas/, colecciones, carrusel de la home) con sus
 // claves de LiveSync (lib/listing-pages.ts, D-S1).
 // - Build: se calcula del catálogo del build (memorizado) → páginas, menú, sitemap y los dos
 //   manifiestos privados (src/pages/listados/*.json.ts → dist/server, astro.config.mjs).
@@ -21,12 +21,15 @@ import {
 import { groupCorreas, isCorrea, tableProducts } from "./correa";
 import { listingPagesManifest, LISTING_PAGES_MANIFEST } from "./listing-pages";
 import { productRelated } from "./related";
+import { newProducts } from "./home";
 import {
   getAllProducts,
   getCategoryList,
   getCollectionByHandle,
+  getCollections,
   getListedProducts,
   getSaleProducts,
+  type StoreCollection,
 } from "./medusa";
 
 export const SHOP_CATEGORIES_MANIFEST = "shop-categories.json";
@@ -69,6 +72,7 @@ export function shopCategoriesManifest(tree: CategoryTree): Record<string, Store
         description: n.description,
         rank: n.rank,
         parent_category_id: n.parentId,
+        metadata: n.metadata,
       } as StoreCategory,
     ]),
   );
@@ -95,14 +99,76 @@ export async function getCategoryProducts(node: CategoryNode): Promise<StoreProd
   return productsInSubtree(await getListingProducts(), node);
 }
 
-/** Productos del carrusel de la home: Collection de content/home.yaml, hasta `maximo`. */
-export async function getFeaturedProducts(): Promise<StoreProduct[]> {
-  const home = (await getEntry("home", "home"))!.data;
-  const collection = await getCollectionByHandle(home.destacados.coleccion);
-  if (!collection) return [];
-  return (await getListingProducts())
-    .filter((p) => p.collection_id === collection.id)
-    .slice(0, home.destacados.maximo);
+export interface ShopCollection {
+  collection: StoreCollection;
+  /** Productos de las tarjetas (orden del catálogo; correas agrupadas). */
+  products: StoreProduct[];
+}
+
+let collectionsPromise: Promise<ShopCollection[]> | undefined;
+
+/**
+ * Colecciones con productos (Fase H): una página /coleccion/<handle>/ por cada una. Las vacías
+ * no tienen página (como las categorías vacías). Orden: título.
+ */
+export function getShopCollections(): Promise<ShopCollection[]> {
+  return (collectionsPromise ??= (async () => {
+    const [collections, products] = await Promise.all([getCollections(), getListingProducts()]);
+    return collections
+      .filter((c) => c.handle)
+      .map((collection) => ({
+        collection,
+        products: products.filter((p) => p.collection_id === collection.id),
+      }))
+      .filter((c) => c.products.length > 0)
+      .sort((a, b) => (a.collection.title ?? "").localeCompare(b.collection.title ?? "", "es"));
+  })());
+}
+
+export const collectionHref = (handle: string) => `/coleccion/${handle}/`;
+
+export interface FeaturedBlock {
+  products: StoreProduct[];
+  /** Total de la colección (para «Ver los N»). */
+  total: number;
+  href: string;
+}
+
+/**
+ * Carrusel de la home: Collection de content/home.yaml (bloque `destacados`), hasta `maximo`.
+ * Null si el bloque no está en el yaml o la colección no tiene productos (Fase H: no se pinta).
+ */
+export async function getFeaturedBlock(): Promise<FeaturedBlock | null> {
+  const destacados = (await getEntry("home", "home"))!.data.destacados;
+  if (!destacados) return null;
+  const collection = await getCollectionByHandle(destacados.coleccion);
+  if (!collection?.handle) return null;
+  const all = (await getListingProducts()).filter((p) => p.collection_id === collection.id);
+  if (!all.length) return null;
+  return {
+    products: all.slice(0, destacados.maximo),
+    total: all.length,
+    href: collectionHref(collection.handle),
+  };
+}
+
+/** Fecha del build: la misma para la home y para el manifiesto de LiveSync. */
+const BUILD_NOW = new Date();
+
+export interface NewBlock {
+  products: StoreProduct[];
+  total: number;
+}
+
+/**
+ * Novedades de la home (Fase H, c): bloque `novedades` de home.yaml, hasta `maximo`, de la más
+ * reciente a la más antigua. Null si el bloque no está o no hay ninguna.
+ */
+export async function getNewBlock(): Promise<NewBlock | null> {
+  const novedades = (await getEntry("home", "home"))!.data.novedades;
+  if (!novedades) return null;
+  const all = newProducts(await getListingProducts(), novedades, BUILD_NOW);
+  return all.length ? { products: all.slice(0, novedades.maximo), total: all.length } : null;
 }
 
 let relatedPromise: Promise<Map<string, StoreProduct[]>> | undefined;
@@ -134,19 +200,24 @@ export function getRelatedByProduct(): Promise<Map<string, StoreProduct[]>> {
 
 /** Manifiesto { clave → ids } de TODOS los listados del build (D-S1). */
 export async function buildListingManifest(): Promise<Record<string, string[]>> {
-  const [tree, products, sale, featured, correas, related] = await Promise.all([
+  const [tree, products, sale, featured, fresh, correas, related, collections] = await Promise.all([
     computeShopTree(),
     getListingProducts(),
     getSaleProducts(),
-    getFeaturedProducts(),
+    getFeaturedBlock(),
+    getNewBlock(),
     getCorreaProducts(),
     getRelatedByProduct(),
+    getShopCollections(),
   ]);
   const ids = (list: StoreProduct[]) => list.map((p) => p.id);
   return listingPagesManifest([
     { ids: ids(products) },
     { ids: ids(sale) },
-    { ids: ids(featured), size: Infinity },
+    { ids: ids(featured?.products ?? []), size: Infinity },
+    { ids: ids(fresh?.products ?? []), size: Infinity },
+    // Páginas de colección (Fase H), paginadas como las categorías
+    ...collections.map((c) => ({ ids: ids(c.products) })),
     // Landing de la correa a medida (E-2c): las correas de la tabla de precios (una por material)
     { ids: ids(tableProducts(correas)), size: Infinity },
     ...tree.all.map((n) => ({ ids: ids(productsInSubtree(products, n)) })),

@@ -1,0 +1,31 @@
+---
+// Home · «Busca por…» (Fase H, d): chips de etiquetas de home.yaml → /buscar/?etiqueta=… (sin
+// páginas propias por SEO: serían finas o duplicarían categorías). Las etiquetas sin productos
+// se omiten. Estático, 0 JS; Fila que salta de línea (sin carrusel).
+import { emptyParams, searchUrl } from "$lib/search";
+
+interface Props {
+  titulo: string;
+  chips: { value: string; count: number }[];
+}
+const { titulo, chips } = Astro.props;
+---
+
+<section aria-labelledby="home-etiquetas" class="mb-14">
+  <h2 id="home-etiquetas" class="mb-5 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+    {titulo}
+  </h2>
+  <ul class="flex flex-wrap gap-3">
+    {chips.map((c) => (
+      <li>
+        <a
+          href={searchUrl({ ...emptyParams(), etiqueta: [c.value] })}
+          class="inline-flex items-center gap-2 rounded-full border-2 border-line bg-card px-4 py-2 font-semibold shadow-sm transition-[translate,box-shadow] hover:translate-x-px hover:translate-y-px hover:shadow-xs"
+        >
+          <span class="first-letter:uppercase">{c.value}</span>
+          <span class="text-sm font-normal text-muted-foreground">{c.count}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
