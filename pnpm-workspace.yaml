@@ -52,6 +52,9 @@ overrides:
   "zod@>=4.0.0 <4.6.6": "4.6.7"
   # undici: DoS por error sin capturar (unifont, fuentes de Astro en el build).
   "undici@>=8.0.0 <8.12.2": "8.12.3"
+  # GHSA-mrwp-f3q8-3g9p alto (30-oct-2026): cabeceras sensibles y credenciales que siguen a una
+  # redirección. Lo trae axios (@medusajs/telemetry, desactivada; y otras de @medusajs/*). Patch.
+  "follow-redirects@>=1.16.0 <1.16.2": "1.16.2"
 
 # `pnpm audit --prod` en CI (fase 10-3): falla con avisos altos o críticos. Excepciones: avisos
 # altos que solo llegan por herramientas de build/CLI de @medusajs/* y aún no tienen versión

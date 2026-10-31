@@ -7,7 +7,7 @@ Leyenda: **🔴 bloquea abrir la tienda** · 🟠 importante · 🟢 mejora / cu
 
 ## 0. Al empezar la próxima sesión (5 min)
 
-- [ ] Portátil: `fnm install 24.22.0 && fnm default 24.22.0` (Renovate #62 subió Node; `engineStrict` hace fallar `pnpm install` con 24.21), `pnpm install`, `pnpm infra:up` (Meilisearch local migra solo con `MEILI_UPGRADE_DB=true`).
+- [ ] Portátil: `fnm install 24.22.1 && fnm default 24.22.1` (Renovate #73 subió Node; `engineStrict` hace fallar `pnpm install` con 24.21), `pnpm install`, `pnpm infra:up` (Meilisearch local migra solo con `MEILI_UPGRADE_DB=true`).
 - [ ] (Opcional) Runner de Gitea: la etiqueta `ubuntu-latest` apunta a `docker://node:24.21.0-trixie` (config del runner en el LXC, fuera del repo). Funciona igual (`setup-node` instala la de `.node-version`); cambiarla a `24.22.0-trixie` para alinear, y entonces actualizar README §4.1, AGENTS §8.2 y ESTADO §5.
 - [ ] Gitea: si el siguiente PR de Renovate entra en conflicto con otro merge, **Actions → Renovate → Run workflow** (lo regenera; nunca resolver el lockfile a mano).
 
@@ -38,6 +38,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - [ ] Quitar Access de la tienda, `ROBOTS=index`, decidir el **robots.txt gestionado de Cloudflare** (`Content-Signal`, SEO 61 en Lighthouse).
 - [ ] `CART_CLEANUP_DAYS=30` (hoy 5).
 - [ ] **Fase H**: al cargar el catálogo real, poner `novedades.desde: <fecha de la carga>` en `apps/storefront/src/content/home.yaml` (si no, todo el catálogo sale como novedad 30 días) y cambiar `etiquetas.valores` y `colecciones.handles` por los reales.
+- [ ] **Entorno «real» local** ([entorno-real.md](./entorno-real.md), temporal): el catálogo real se prepara en local en `:4322`/`:9002` con infra propia, sin tocar los mocks. Al pasarlo a producción, **limpiarlo** (entorno-real.md §Limpieza): volúmenes, `.env.real`, `scripts/real-env.sh` y los scripts `real:*` del `package.json` raíz.
 - [ ] Borrar los productos mock y cargar el catálogo real: herramientas en `migracion/loyverse/` (Fase V/W), revisión por categorías en curso; inventario → stock real; fotos reales (`images:import`); script de limpieza de objetos huérfanos del bucket (fase6 §7).
 - [ ] Normalizar los **valores de opciones** del catálogo real («L 69-81cm», «S/M» frente a «S-M», «400gr» frente a «400g»…) antes de producción (faseV §7).
 - [ ] Revocar el token de Loyverse al acabar la migración.
