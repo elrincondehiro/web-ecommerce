@@ -31,6 +31,7 @@ import WishButton from "../../components/WishButton.astro";
 import RelatedProducts from "../../components/RelatedProducts.astro";
 import ProductGuides from "../../components/ProductGuides.astro";
 import HeadStyle from "../../components/HeadStyle.astro";
+import RichText from "../../components/RichText.astro";
 
 // Todas las fichas, también las descatalogadas (Fase E, opción i): su URL sigue respondiendo.
 export const getStaticPaths = (async () => {
@@ -204,7 +205,10 @@ const onward = replacement
           <h2 id="descripcion" class="mb-2 font-semibold">
             Descripción
           </h2>
-          <p class="max-w-prose leading-relaxed text-muted-foreground">{product.description}</p>
+          <RichText
+            text={product.description}
+            class="max-w-prose leading-relaxed text-muted-foreground"
+          />
         </section>
       )}
 

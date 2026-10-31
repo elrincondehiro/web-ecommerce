@@ -93,7 +93,7 @@ Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilise
 - **Correas** (faseE): fotos de mosquetones (rejilla), plazo de fabricación provisional, ofertas en correas (rompen el build a propósito).
 - **Puntos** (faseL §8): devolución automática de puntos canjeados en devoluciones (plan en §6.4); revisar el widget del Admin; unificar con la tienda física (`channel: "tienda"`).
 - **Códigos** (faseP): no crear códigos sobre el envío ni promociones automáticas sin revisar `checkCodes`.
-- **Home** (faseH §7): el Admin en LibreWolf sube fotos con rayas (canvas con ruido; si molesta, reducir en el backend con sharp); `metadata.descripcion` de categorías no se usa (tienen la suya). Las novedades y los chips se calculan en el build.
+- **Home** (faseH §7): el Admin en LibreWolf sube fotos con rayas (canvas con ruido; si molesta, reducir en el backend con sharp); `metadata.descripcion` de categorías no se usa (tienen la suya). Las descripciones admiten formato (`lib/rich-text.ts`, LEEME §Descripciones con formato). Las novedades y los chips se calculan en el build.
 - **Pagos** (fasePG §7): estado propio «esperando transferencia» en «Mis pedidos»; conciliación bancaria; PayPal directo o TPV Sabadell si el volumen lo justifica; espaciar los e2e de pago si el hCaptcha de Stripe molesta en CI.
 - **Emails** (fase8): webhook de rebotes y quejas de Resend cuando haya volumen; Resend Free = 100/día.
 - **Pedidos de invitado** (faseG §7): botón en el Admin para la asignación manual (hoy `orders:assign`).

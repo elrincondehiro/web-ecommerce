@@ -56,7 +56,7 @@ Una fila por categoría.
 
 - Cada categoría tiene su página `/categoria/<handle>/` con la miga de pan (Perro › Paseo › Correas) y el menú «Tienda» de la cabecera.
 - **Fila de categorías** encima de la rejilla: en un padre, sus hijas; en una hoja, sus hermanas con ella marcada; si no tiene hermanas, ella sola marcada (para subir, la miga de pan).
-- `orden` decide el orden en el menú y en la fila; con el mismo `orden`, alfabético por nombre. `descripcion` es la meta descripción de la página (SEO, ≤ 160 caracteres).
+- `orden` decide el orden en el menú y en la fila; con el mismo `orden`, alfabético por nombre. `descripcion` sale bajo el título de la página de la categoría (admite [formato](#descripciones-con-formato)) y, sin marcas y recortada a 160 caracteres, como meta descripción (SEO).
 - Una categoría **sin productos publicados** (en ella o en sus hijas) no sale en la tienda. `activa = no` la oculta aunque tenga productos.
 - Árbol nuevo o cambiado → **rebuild del storefront** (las páginas de categoría se generan en el build).
 
@@ -71,7 +71,7 @@ Una fila por categoría.
 | `handle`        | sí          | `collar-nylon`                | En todas las filas del producto.                                                                                                                                                                                                             |
 | `titulo`        | al crear    | `Collar de nailon`            | Empieza en mayúscula: la tienda ordena distinguiendo mayúsculas (aviso si no).                                                                                                                                                               |
 | `subtitulo`     | no          | `Hebilla rápida`              |                                                                                                                                                                                                                                              |
-| `descripcion`   | no          |                               | Admite saltos de línea (entre comillas, como hace Excel).                                                                                                                                                                                    |
+| `descripcion`   | no          |                               | Admite saltos de línea (entre comillas, como hace Excel) y [formato](#descripciones-con-formato).                                                                                                                                            |
 | `categorias`    | no          | `collares-perro`              | Handles separados por `\|`. Si tiene valor, **sustituye** las actuales. `-` = ninguna.                                                                                                                                                       |
 | `etiquetas`     | no          | `novedad\|reflectante`        | Separadas por `\|`. Las que no existan se crean. Sustituye las actuales. `-` = ninguna. Salen como **filtro** en la tienda y se buscan: solo etiquetas para el cliente.                                                                      |
 | `iva`           | no          | `reducido`                    | `general` (21 %), `reducido` (10 %), `superreducido` (4 %). Por defecto, general.                                                                                                                                                            |
@@ -142,6 +142,25 @@ Para piensos, latas y snacks. Porcentajes **tal cual** (como en la etiqueta), de
 La **oferta va con su precio**: si una fila escribe su propio `precio` y deja `precio_oferta` vacío, **no** hereda la oferta de arriba (la variante queda sin oferta). En la plantilla, «L Rojo» trae 15,95 con oferta 13,95, y «L Azul», con las dos celdas vacías, hereda ambas.
 
 **Ofertas**: `precio_oferta` va a la Price List `sale` «Catálogo — ofertas», que gestiona el importador: no la edites a mano. La hoja manda: una variante de la hoja sin oferta sale de la lista. Las listas de precios creadas en el Admin no se tocan. El precio tachado de la tienda es `precio`.
+
+## Descripciones con formato
+
+Las descripciones de **productos y categorías** (hoja o Admin) y de **colecciones** (widget del Admin) se escriben en texto y la tienda les da formato en el build (`apps/storefront/src/lib/rich-text.ts`):
+
+| Escribe                                                            | Sale                                  |
+| ------------------------------------------------------------------ | ------------------------------------- |
+| Una línea en blanco                                                | Párrafo nuevo                         |
+| Un salto de línea                                                  | Salto de línea (dentro del párrafo)   |
+| `- Texto`, `* Texto`, `• Texto` (o `*Texto` pegado)                | Lista con viñetas                     |
+| `1. Texto` o `1) Texto`                                            | Lista numerada                        |
+| `## Título` (`###` para uno más pequeño)                           | Subtítulo                             |
+| `---` sola en su línea                                             | Separador                             |
+| `**negrita**` · `*cursiva*` o `_cursiva_` · `~~tachado~~`          | **negrita** · _cursiva_ · ~~tachado~~ |
+| `[texto](/guia-tallas/)`, `[texto](https://…)`, `mailto:` y `tel:` | Enlace                                |
+
+- El HTML que se escriba **sale como texto** (no se interpreta) y los enlaces solo admiten esos tipos.
+- La meta descripción (Google) y el JSON-LD usan el texto **sin** las marcas.
+- Se ve tras un **rebuild** del storefront, como el resto del catálogo.
 
 ## Granel
 

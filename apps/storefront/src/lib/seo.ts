@@ -1,5 +1,6 @@
 // Constructores de JSON-LD (schema.org). Puros: testeables.
 import type { StoreProduct } from "./catalog";
+import { richTextPlain } from "./rich-text";
 
 export interface Crumb {
   name: string;
@@ -30,7 +31,8 @@ export function productJsonLd(product: StoreProduct, site: URL | string, image?:
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
-    ...(product.description ? { description: product.description } : {}),
+    // Sin marcas de formato (lib/rich-text.ts): schema.org `description` es texto
+    ...(product.description ? { description: richTextPlain(product.description) } : {}),
     url,
     ...(image ? { image: new URL(image, site).href } : {}),
     ...(product.categories?.[0] ? { category: product.categories[0].name } : {}),

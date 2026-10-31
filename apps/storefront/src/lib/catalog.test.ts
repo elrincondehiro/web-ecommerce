@@ -176,6 +176,10 @@ describe("componentes analíticos (S-2)", () => {
 describe("utilidades de listado", () => {
   it("metaDescription recorta sin partir palabras", () => {
     expect(metaDescription("  hola   mundo ")).toBe("hola mundo");
+    // Sin marcas de formato (lib/rich-text.ts)
+    expect(metaDescription("## Ficha\n**Arnés** [Alpha](/a/)\n\n*RPET\n*Reflectante")).toBe(
+      "Ficha Arnés Alpha RPET Reflectante",
+    );
     const out = metaDescription("palabra ".repeat(40), 30);
     expect(out.length).toBeLessThanOrEqual(30);
     expect(out.endsWith("…")).toBe(true);

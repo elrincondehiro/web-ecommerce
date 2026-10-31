@@ -75,6 +75,18 @@ De aquí en adelante cada fichero nuevo va a una carpeta (`lib/upload-folders.ts
 - Enlaces: «Ver todas» de novedades → `/buscar/?orden=novedades`; chips → `/buscar/?etiqueta=<valor>`; tarjetas → `/coleccion/<handle>/`.
 - **Admin**: en las colecciones, el widget se llama «Foto y descripción de la tienda» y tiene el campo **Descripción** (`metadata.descripcion`, ≤ 600 caracteres; vacía = se borra). Se puede guardar solo la descripción, sin foto. Las categorías usan su descripción nativa de Medusa.
 
+### 2.7 Descripciones con formato (después del cierre, 30-oct-2026)
+
+Medusa guarda las descripciones como **texto plano** (con sus saltos de línea); la ficha las pintaba en un `<p>` y salían de corrido. Ahora `lib/rich-text.ts` (`richTextHtml`, `richTextPlain`, puras, sin dependencias) las convierte en HTML en el build y `RichText.astro` las pinta (`set:html`, 0 JS):
+
+- **Dónde**: descripción del producto (ficha), de la categoría (bajo el H1, solo en la página 1) y de la colección (`EntityHeader`).
+- **Formato** (subconjunto de Markdown, tabla en `catalog/plantilla/LEEME.md` §Descripciones con formato): párrafos, `<br>`, listas (`- `, `* `, `• ` y `*Texto` pegado, como las fichas de proveedor), listas numeradas, `##`/`###`, `---`, negrita, cursiva, tachado y enlaces (`/ruta`, `https`, `mailto:`, `tel:`).
+- **Seguridad**: se escapa TODO antes de dar formato (el HTML del Admin o de la hoja sale como texto); enlaces solo con esos esquemas. Sin `style` ni `on*`: compatible con la CSP.
+- Meta description y JSON-LD `Product.description` con `richTextPlain` (sin marcas).
+- Estilos: `.prose-page` (ya existía) + `.rich-text` (más compacto, subtítulos pequeños) y `ol`/`hr` en `global.css`.
+- Admin: el campo «Descripción» de colecciones explica el formato y sube de 600 a 2000 caracteres.
+- Descartado: Markdown completo con `marked` (dependencia + saneado, y `*Texto` pegado no sería lista) y un editor enriquecido en el Admin (widget propio y HTML que sanear).
+
 ## 3. Decisiones tomadas
 
 | Decisión                                                                                      | Motivo                                                                                                                                                               | Fuente consultada                                                                                                                                            |

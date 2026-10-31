@@ -1,0 +1,17 @@
+---
+// Descripción con formato (productos, categorías y colecciones): texto plano de Medusa → HTML en
+// el build con `$lib/rich-text` (escapado, enlaces seguros, sin `style` ni `on*`: apto para la
+// CSP). Estático, 0 JS. Estilos: `.prose-page` + `.rich-text` (global.css).
+// Fuente: astro-docs (reference/directives-reference: `set:html` inyecta HTML sin escapar, así
+// que solo recibe la salida de richTextHtml, que escapa todo el texto).
+import { richTextHtml, type RichTextOptions } from "$lib/rich-text";
+
+interface Props extends RichTextOptions {
+  text: string | null | undefined;
+  class?: string;
+}
+const { text, headingLevel, class: className = "" } = Astro.props;
+const html = richTextHtml(text, headingLevel ? { headingLevel } : {});
+---
+
+{html && <div class:list={["prose-page rich-text", className]} set:html={html} />}

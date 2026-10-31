@@ -1,5 +1,6 @@
 // Funciones puras sobre productos de la Store API (sin I/O): testeables con Vitest.
 import type { HttpTypes } from "@medusajs/types";
+import { richTextPlain } from "./rich-text";
 import {
   bulkInStock,
   bulkRule,
@@ -206,7 +207,8 @@ export function minimumNote(pricing: ProductPricing): string | null {
 
 /** Descripción corta para meta description (≤ 160 caracteres, sin cortar palabras). */
 export function metaDescription(text: string | null | undefined, max = 160): string {
-  const clean = (text ?? "").replace(/\s+/g, " ").trim();
+  // Sin las marcas de formato de las descripciones (`**`, listas, enlaces…: lib/rich-text.ts)
+  const clean = richTextPlain(text).replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
   const cut = clean.slice(0, max - 1);
   return `${cut.slice(0, cut.lastIndexOf(" ") > 0 ? cut.lastIndexOf(" ") : cut.length)}…`;

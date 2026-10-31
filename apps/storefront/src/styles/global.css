@@ -1261,6 +1261,28 @@
 .prose-page li + li {
   margin-top: 0.5rem;
 }
+.prose-page ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+.prose-page hr {
+  border-color: var(--border);
+}
+/* Descripciones de producto, categoría y colección (RichText.astro, lib/rich-text.ts): más
+   compactas que una página de contenido y con subtítulos pequeños. */
+.rich-text > * + * {
+  margin-top: 0.75rem;
+}
+.rich-text li + li {
+  margin-top: 0.25rem;
+}
+.rich-text :is(h2, h3, h4, h5, h6) {
+  margin-top: 1.25rem;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
 .prose-page a {
   font-weight: 600;
   text-decoration: underline;

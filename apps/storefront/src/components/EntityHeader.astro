@@ -1,6 +1,6 @@
 ---
-// Cabecera de una página de colección (Fase H): título y, si la colección los tiene, la foto y
-// la descripción propias (metadata, widget del Admin). Estática, 0 JS.
+// Cabecera de una página de colección o categoría (Fase H): título y, si los tiene, la foto y la
+// descripción con formato (RichText). Estática, 0 JS.
 // - Foto panorámica 3:1 (16:9 en móvil) recortada al centro: es la LCP de la página → carga
 //   inmediata y prioridad alta (AGENTS §3.3). <Picture> AVIF/WebP en el build, como las de
 //   producto (mismo origen: el bucket, image.remotePatterns).
@@ -8,6 +8,7 @@
 import { Picture } from "astro:assets";
 import { IMAGE_FALLBACK_FORMAT, IMAGE_FORMATS } from "$lib/images";
 import type { EntityImage } from "$lib/entity-image";
+import RichText from "./RichText.astro";
 
 interface Props {
   title: string;
@@ -37,5 +38,5 @@ const { title, description = "", image = null } = Astro.props;
     />
   )}
   <h1 class="mb-2 text-2xl font-semibold tracking-tight">{title}</h1>
-  {description && <p class="max-w-prose text-muted-foreground">{description}</p>}
+  <RichText text={description} headingLevel={2} class="max-w-prose text-muted-foreground" />
 </header>

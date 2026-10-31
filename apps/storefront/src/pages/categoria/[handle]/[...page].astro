@@ -15,6 +15,7 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../../components/Breadcrumbs.astro";
 import CatalogPage from "../../../components/CatalogPage.astro";
 import CategoryNav from "../../../components/CategoryNav.astro";
+import RichText from "../../../components/RichText.astro";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const tree = await getShopTree(true);
@@ -52,6 +53,7 @@ const crumbs = [
 const parent = category.path.at(-2);
 const baseTitle = parent ? `${category.name} · ${parent.name}` : category.name;
 const title = page.currentPage > 1 ? `${baseTitle} (página ${page.currentPage})` : baseTitle;
+const showDesc = false;
 ---
 
 <BaseLayout
@@ -61,6 +63,13 @@ const title = page.currentPage > 1 ? `${baseTitle} (página ${page.currentPage})
 >
   <Breadcrumbs items={crumbs} />
   <h1 class="mb-2 text-2xl font-semibold tracking-tight">{category.name}</h1>
+  {page.currentPage === 1 && showDesc && (
+    <RichText
+      text={category.description}
+      headingLevel={2}
+      class="mb-4 max-w-prose text-muted-foreground"
+    />
+  )}
   <CategoryNav
     links={category.row}
     label={category.hasChildren ? `Subcategorías de ${category.name}` : "Categorías"}

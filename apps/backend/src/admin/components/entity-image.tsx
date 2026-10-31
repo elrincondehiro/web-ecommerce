@@ -203,13 +203,14 @@ export function EntityImageWidget({
         </label>
         {withDescription && (
           <label className="flex flex-col gap-1 text-sm">
-            Descripción (sale bajo el título de la página; vacía = sin descripción)
+            Descripción (sale bajo el título de la página; vacía = sin descripción). Formato: línea
+            en blanco = párrafo, «- » = lista, **negrita**, *cursiva*, [texto](/enlace/)
             <textarea
               key={description}
               name="descripcion"
               defaultValue={description}
-              maxLength={600}
-              rows={3}
+              maxLength={2000}
+              rows={6}
               className={input}
               disabled={busy}
             />
