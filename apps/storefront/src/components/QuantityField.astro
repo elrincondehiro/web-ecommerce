@@ -20,6 +20,11 @@ interface Props {
   step?: number;
   /** Lo que suma o resta cada botón, para su nombre accesible (por defecto «Una unidad»). */
   unit?: string;
+  /**
+   * Réplica desactivada (ficha agotada, AddToCart `keepLayout`): mismo tamaño, sin `id` ni
+   * `name` (no se envía), botones e input `disabled` (sin foco) y oculta a lectores de pantalla.
+   */
+  inert?: boolean;
 }
 const {
   id,
@@ -31,34 +36,38 @@ const {
   name = "quantity",
   step,
   unit = "Una unidad",
+  inert = false,
 } = Astro.props;
 const h = size === "sm" ? "h-8" : size === "lg" ? "h-10" : "h-9";
 const btn = `${h} w-8 shrink-0 font-bold hover:bg-muted disabled:opacity-40`;
 ---
 
 <div
-  class="qty flex rounded-md border-2 border-line bg-background"
-  data-qty={name === "quantity" ? "" : undefined}
+  class:list={["qty flex rounded-md border-2 border-line bg-background", inert && "opacity-50"]}
+  data-qty={name === "quantity" && !inert ? "" : undefined}
+  aria-hidden={inert ? "true" : undefined}
 >
   <button
     type="button"
     class={`${btn} border-r-2 border-line`}
     data-qty-step="-1"
     aria-label={`${unit} menos de ${label}`}
-    aria-controls={id}
+    aria-controls={inert ? undefined : id}
+    disabled={inert}
   >
     −
   </button>
   <input
-    id={id}
-    name={name}
+    id={inert ? undefined : id}
+    name={inert ? undefined : name}
+    disabled={inert}
     type="number"
     inputmode="numeric"
     min={min}
     max={max}
     step={step}
     value={value}
-    required
+    required={!inert}
     class={`${h} ${name === "grams" ? "w-16" : "w-12"} min-w-0 bg-transparent px-1 text-center text-sm tabular-nums`}
   />
   <button
@@ -66,7 +75,8 @@ const btn = `${h} w-8 shrink-0 font-bold hover:bg-muted disabled:opacity-40`;
     class={`${btn} border-l-2 border-line`}
     data-qty-step="1"
     aria-label={`${unit} más de ${label}`}
-    aria-controls={id}
+    aria-controls={inert ? undefined : id}
+    disabled={inert}
   >
     +
   </button>

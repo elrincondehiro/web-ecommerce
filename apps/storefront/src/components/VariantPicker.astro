@@ -25,11 +25,22 @@ const showPrice = picker.priceRange;
 const chip =
   "vp-opt relative flex cursor-pointer flex-col items-center gap-1 rounded-md border-2 border-line bg-card px-3 py-1.5 text-sm font-medium shadow-xs has-checked:border-primary has-checked:ring-2 has-checked:ring-primary has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring";
 const label = (o: PickerOption) => o.title;
+// Rejilla (no flex-wrap): en cada fila todas las tarjetas miden lo mismo y llenan el ancho,
+// aunque los nombres tengan longitudes muy distintas («Lime Mix» / «Northern Lights»). Con foto
+// o color, columnas de ≥ 5,5 rem y el nombre en 2 líneas fijas (line-clamp + altura reservada):
+// misma altura para todas; el nombre entero sigue en `title` y para lectores de pantalla.
+// `auto-rows-fr`: todas las filas con la altura de la más alta (sin foto, un nombre en 2 líneas).
+// Foto del valor en un marco BLANCO también en modo oscuro (las fotos son de producto sobre
+// fondo blanco: como una muestra impresa, sin un cuadro blanco «suelto» sobre el azul).
+const gridA = "grid auto-rows-fr grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2";
+const gridB = "grid auto-rows-fr grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2";
+const gridText = "grid auto-rows-fr grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2";
+const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tight break-words";
 ---
 
 <fieldset class="flex flex-col gap-2">
   <legend class="mb-2 text-sm font-semibold">{label(a)}</legend>
-  <div class="flex flex-wrap gap-2">
+  <div class={a.values.some((v) => v.images[0] || v.color) ? gridA : gridText}>
     {a.values.map((v, i) => {
       const image = v.images[0];
       const cell = b ? null : (cells[i]?.[0] ?? null);
@@ -45,7 +56,12 @@ const label = (o: PickerOption) => o.title;
             class="sr-only"
           />
           {image ? (
-            <ProductImage src={image} alt="" variant="thumb" class="size-14 rounded-sm" />
+            <ProductImage
+              src={image}
+              alt=""
+              variant="thumb"
+              class="size-14 rounded-sm border border-black bg-white p-0.5"
+            />
           ) : v.color ? (
             <span
               class="swatch size-9 rounded-full border-2 border-line"
@@ -53,7 +69,7 @@ const label = (o: PickerOption) => o.title;
               aria-hidden="true"
             />
           ) : null}
-          <span class:list={[(image || v.color) && "px-1 text-xs"]}>{v.value}</span>
+          <span class:list={[image || v.color ? twoLines : "my-auto text-center"]}>{v.value}</span>
           {!b && (
             <span
               class="text-xs font-normal tabular-nums"
@@ -84,9 +100,9 @@ const label = (o: PickerOption) => o.title;
 {b && (
   <fieldset class="flex flex-col gap-2">
     <legend class="mb-2 text-sm font-semibold">{label(b)}</legend>
-    <div class="flex flex-wrap gap-2">
+    <div class={gridB}>
       {b.values.map((v, j) => (
-        <label class:list={[chip, "min-w-14"]}>
+        <label class={chip}>
           <input
             type="radio"
             name={OPTION_FIELDS[1]}
@@ -95,7 +111,7 @@ const label = (o: PickerOption) => o.title;
             required
             class="sr-only"
           />
-          <span>{v.value}</span>
+          <span class="text-center">{v.value}</span>
           {a.values.map((_, i) => {
             const cell = cells[i]?.[j] ?? null;
             return (

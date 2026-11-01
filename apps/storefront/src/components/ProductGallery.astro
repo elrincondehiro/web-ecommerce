@@ -7,6 +7,10 @@
 // de posición. Cada foto lleva `data-pa` y el CSS del selector (dentro de `.vp`) deja ver solo
 // las del valor elegido; las generales (`images`) salen siempre, detrás. Las ocultas no se
 // descargan (lazy + display:none); la LCP es la primera del valor preseleccionado (`selected`).
+// Miniaturas de ancho fijo en una fila con scroll propio (y arrastre con ratón, ScrollDrag): con
+// muchas fotos no deben ensanchar la columna (min-w-0) ni, con ella, la página en móvil.
+// Carrusel enfocable (lista con nombre + tabindex; sin role=region, que le quitaría la semántica
+// de lista): con teclado, ← → pasa fotos (axe scrollable-region-focusable).
 import ProductImage from "./ProductImage.astro";
 import ScrollDrag from "./ScrollDrag.astro";
 
@@ -58,13 +62,15 @@ const many = visible > 1;
 const frame = "rounded-md border-2 border-line shadow-sm";
 ---
 
-<div class="flex flex-col gap-3">
+{/* min-w-0: en la columna de la grid, sin él las miniaturas (ancho fijo) ensanchan la página */}
+<div class="flex min-w-0 flex-col gap-3">
   {shots.length === 0 ? (
     <ProductImage alt="" variant="detail" priority class={frame} />
   ) : (
     <ul
       class="flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain pr-1 pb-1 [scrollbar-width:none]"
       aria-label={many ? `Fotos de ${alt}` : undefined}
+      tabindex={many ? 0 : undefined}
       data-drag-scroll={many ? "" : undefined}
     >
       {shots.map((s) => (
@@ -82,8 +88,11 @@ const frame = "rounded-md border-2 border-line shadow-sm";
     </ul>
   )}
   {many && (
-    <nav aria-label="Elegir foto">
-      <ul class="flex gap-2 overflow-x-auto pr-1 pb-1">
+    <nav aria-label="Elegir foto" class="min-w-0">
+      <ul
+        class="flex gap-2 overflow-x-auto overscroll-x-contain pr-1 pb-1 [scrollbar-width:thin]"
+        data-drag-scroll
+      >
         {shots.map((s) => (
           <li class="w-16 shrink-0 sm:w-20" data-pa={s.pa}>
             <a

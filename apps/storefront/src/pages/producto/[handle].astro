@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
 import {
+  analyticRows,
   getProductPricing,
   isDiscontinued,
   metaDescription,
@@ -62,6 +63,7 @@ export const getStaticPaths = (async () => {
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 const { product, replacement, siblings, related } = Astro.props as Props;
 const discontinued = isDiscontinued(product);
+const hasAnalytics = analyticRows(product).length > 0;
 const correa = isCorrea(product);
 // Selector de color (ficha de una correa): sus estilos van al <head> (SwatchStyles, CSP)
 const showPicker = !discontinued && correa && siblings.length > 1;
@@ -143,7 +145,7 @@ const onward = replacement
       groups={photoGroups}
       selected={picker?.selected.a}
     />
-    <div class="flex flex-col gap-6">
+    <div class="flex min-w-0 flex-col gap-6">
       <div class="flex items-start justify-between gap-4">
         <div class="flex min-w-0 flex-col gap-2">
           <h1 class="text-3xl font-semibold tracking-tight">{product.title}</h1>
@@ -199,22 +201,23 @@ const onward = replacement
           ))}
         </dl>
       )}
-
+    </div>
+  </div>
+  {/* Fila 2: información del producto a todo el ancho, bajo galería y compra (en móvil, apilada
+      igual que antes: detrás de la columna de compra). */}
+  {(product.description || hasAnalytics) && (
+    <div class="mt-10 flex max-w-prose flex-col gap-8">
       {product.description && (
         <section aria-labelledby="descripcion">
           <h2 id="descripcion" class="mb-2 font-semibold">
             Descripción
           </h2>
-          <RichText
-            text={product.description}
-            class="max-w-prose leading-relaxed text-muted-foreground"
-          />
+          <RichText text={product.description} class="leading-relaxed text-muted-foreground" />
         </section>
       )}
-
       <AnalyticsTable product={product} />
     </div>
-  </div>
+  )}
   {/* Una island para la ficha y sus relacionados (Fase R-2, P6): la clave es la del bloque. */}
   {!discontinued && (
     <LiveSync

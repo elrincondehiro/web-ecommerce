@@ -1268,6 +1268,32 @@
 .prose-page hr {
   border-color: var(--border);
 }
+/* Selector de opciones (Fase O): tarjeta agotada. El CSS generado (variant-picker.css,
+   OUT_STYLE de lib/variant-picker.ts) solo activa --vp-stripes/--vp-img en la tarjeta; aquí se
+   pintan: rayas por ENCIMA de la foto (::after, sin capturar clics) y foto en blanco y negro.
+   Fondo oscurecido con negro en los dos temas; el texto conserva su color (AA, medido con axe:
+   ≥ 5:1 también sobre la raya). */
+:root {
+  --vp-out-bg: color-mix(in oklab, #000 14%, var(--card));
+  --vp-out-stripes: repeating-linear-gradient(
+    45deg,
+    color-mix(in oklab, var(--destructive) 40%, transparent) 0 2px,
+    transparent 2px 9px
+  );
+  --vp-out-img: grayscale(1) opacity(0.6);
+}
+.vp-opt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--vp-stripes, none);
+  pointer-events: none;
+}
+.vp-opt img {
+  filter: var(--vp-img, none);
+}
+
 /* Descripciones de producto, categoría y colección (RichText.astro, lib/rich-text.ts): más
    compactas que una página de contenido y con subtítulos pequeños. */
 .rich-text > * + * {
@@ -1282,6 +1308,16 @@
   font-size: 1rem;
   font-weight: 700;
   color: var(--foreground);
+}
+.rich-text hr {
+  border-color: var(--accent-text);
+}
+.rich-text p {
+  hyphens: auto;
+  text-align: justify;
+}
+.rich-text li::marker {
+  color: var(--accent-text);
 }
 .prose-page a {
   font-weight: 600;

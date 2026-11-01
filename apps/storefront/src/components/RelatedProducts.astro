@@ -18,11 +18,12 @@ const { products, back } = Astro.props;
 ---
 
 {products.length > 0 && (
-  <section aria-labelledby="relacionados" class="mt-14">
+  <section class="mt-14">
     <h2 id="relacionados" class="mb-4 text-2xl font-semibold tracking-tight">
       También te puede interesar
     </h2>
-    {/* La región con nombre es el carrusel (como en la home): con teclado, se desplaza. */}
+    {/* La región con nombre es el carrusel (como en la home): con teclado, se desplaza. La
+        sección no repite el nombre (axe landmark-unique: dos regiones con el mismo nombre). */}
     <div
       role="region"
       aria-labelledby="relacionados"

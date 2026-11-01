@@ -245,9 +245,20 @@ export function findVariantByOptions(
  * depende de él: fotos, miniaturas y las celdas de cada talla). Sin `:has()` anidados (no los
  * admite CSS): el botón mira la celda HERMANA del radio de B marcado (`~`).
  *   1. lo de otros valores de A, oculto;
- *   2. talla agotada (con el A elegido) tachada; con una sola opción, la celda sin `data-pa`;
+ *   2. talla agotada (con el A elegido) marcada (OUT_STYLE); con una sola opción, la celda sin
+ *      `data-pa`; y el valor de A cuyas combinaciones están TODAS agotadas;
  *   3. combinación agotada → «Agotado» en vez de cantidad + Añadir (y la insignia de stock).
  */
+/**
+ * Tarjeta agotada: tachada, borde discontinuo, fondo oscurecido y, ENCIMA de todo (también de la
+ * foto), rayas rojas a 45°; la foto del valor en blanco y negro. Las rayas y el filtro los pinta
+ * global.css (`.vp-opt::after` y `.vp-opt img`) con las variables que activa esta regla; los
+ * valores largos están en global.css (`--vp-out-*`), así el CSS generado no crece.
+ */
+const OUT_STYLE =
+  "text-decoration:line-through;border-style:dashed;background-color:var(--vp-out-bg);" +
+  "--vp-stripes:var(--vp-out-stripes);--vp-img:var(--vp-out-img)";
+
 export function pickerCss(n = MAX_VALUES): string {
   const range = Array.from({ length: n }, (_, k) => k + 1);
   const a = (i: number) => `.vp:has([data-ai="${i}"]:checked)`;
@@ -257,11 +268,18 @@ export function pickerCss(n = MAX_VALUES): string {
   const strike = [
     ...range.map((i) => `${a(i)} .vp-opt:has(>[data-pa="${i}"][data-vstock=out])`),
     ".vp-opt:has(>[data-vstock=out]:not([data-pa]))",
+    // Con dos opciones, valor de A sin ninguna combinación con stock (todas sus tallas agotadas):
+    // ninguna celda `[data-pa=i]` de las tarjetas de B está «in» (con una opción ya lo cubre la
+    // regla anterior). LiveSync cambia data-vstock → se actualiza solo.
+    ...range.map(
+      (i) =>
+        `.vp:not(:has(.vp-opt>[data-pa="${i}"][data-vstock=in])) .vp-opt:has(>[data-ai="${i}"])`,
+    ),
   ].join(",");
   const combo = [...range.map((i) => `${a(i)}:has(${outCell(i)})`), single];
   return (
     `${hide}{display:none}\n` +
-    `${strike}{color:var(--muted-foreground);text-decoration:line-through}\n` +
+    `${strike}{${OUT_STYLE}}\n` +
     `${combo.map((s) => `${s} [data-if-stock=in]`).join(",")}{display:none!important}\n` +
     `${combo.map((s) => `${s} [data-if-stock=out]`).join(",")}{display:inline-flex!important}\n`
   );

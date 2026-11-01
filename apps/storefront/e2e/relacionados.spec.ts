@@ -16,7 +16,7 @@ const WITH_SHEET = "/producto/mock-abrigo-esencial-017/";
 const CART_SOURCE = "/producto/mock-mordedor-premium-025/";
 const NO_SHEET = "/producto/mock-clicker-esencial-018/";
 
-const related = (page: Page) => page.locator('section[aria-labelledby="relacionados"]');
+const related = (page: Page) => page.locator("section:has(> h2#relacionados)");
 const suggested = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll("[data-cart-suggestions]")].map((s) => ({

@@ -105,6 +105,51 @@ test("guía con esquema: imagen del Markdown, solo se descarga al abrir la guía
   await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
 });
 
+test("elegir una combinación agotada no mueve la página (misma altura del formulario)", async ({
+  page,
+}) => {
+  await page.goto(ESTAMPADO);
+  const form = page.locator("form[data-cart-form]");
+  const height = () => form.evaluate((f) => Math.round(f.getBoundingClientRect().height));
+  await pick(page, "Estampado:Rayas").click();
+  await pick(page, "Talla:S").click();
+  await expect(add(page)).toBeVisible();
+  const inStock = await height();
+  await pick(page, "Talla:M").click();
+  await expect(soldOut(page)).toBeVisible();
+  expect(await height()).toBe(inStock);
+  // La réplica de la cantidad no se envía ni se puede enfocar
+  await expect(form.locator("input[name=quantity]")).toHaveCount(1);
+  await expect(form.locator(".qty input:disabled")).toHaveCount(1);
+});
+
+test("agotadas bien visibles: talla con rayas y estampado sin ninguna talla también", async ({
+  page,
+}) => {
+  await page.goto(ESTAMPADO);
+  const striped = (sel: string) =>
+    page.locator(sel).evaluateAll((ls) =>
+      ls
+        // Rayas en la capa de encima (::after: también sobre la foto)
+        .filter((l) =>
+          getComputedStyle(l, "::after").backgroundImage.includes("repeating-linear-gradient"),
+        )
+        .map((l) => l.querySelector("input")!.value),
+    );
+  await pick(page, "Estampado:Rayas").click();
+  expect(await striped(".vp fieldset:last-of-type .vp-opt")).toEqual(["Talla:M", "Talla:L"]);
+  expect(await striped(".vp fieldset:first-of-type .vp-opt")).toEqual([]);
+  // Si se agotan TODAS las tallas de Rayas (como haría LiveSync), su tarjeta también se marca
+  const rayas = await pick(page, "Estampado:Rayas").locator("input").getAttribute("data-ai");
+  await page
+    .locator(`.vp-opt > [data-pa="${rayas}"][data-vstock]`)
+    .evaluateAll((cells) => cells.forEach((c) => c.setAttribute("data-vstock", "out")));
+  expect(await striped(".vp fieldset:first-of-type .vp-opt")).toEqual(["Estampado:Rayas"]);
+  // …y su foto, en blanco y negro
+  await expect(pick(page, "Estampado:Rayas").locator("img")).toHaveCSS("filter", /grayscale\(1\)/);
+  await expect(pick(page, "Estampado:Flores").locator("img")).toHaveCSS("filter", "none");
+});
+
 test("combinación que no existe: aviso y nada en el carrito", async ({ page }) => {
   await page.goto(ESTAMPADO);
   const res = await page.evaluate(async () => {
@@ -119,4 +164,31 @@ test("combinación que no existe: aviso y nada en el carrito", async ({ page }) 
     return (await r.json()) as { code: string };
   });
   expect(res.code).toBe("variant");
+});
+
+test("móvil: muchas miniaturas no ensanchan la página; tarjetas del selector iguales", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto(ESTAMPADO);
+  const thumbs = page.locator("nav[aria-label='Elegir foto'] ul");
+  // 20 miniaturas más (como un producto con muchas fotos): la fila hace scroll, la página no
+  await thumbs.evaluate((ul) => {
+    const li = ul.querySelector("li")!;
+    for (let i = 0; i < 20; i++) ul.append(li.cloneNode(true));
+  });
+  expect(await thumbs.evaluate((ul) => ul.scrollWidth > ul.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+  await expect(thumbs).toHaveAttribute("data-drag-scroll", "");
+  // Rejilla: dentro de cada opción, todas las tarjetas con el mismo ancho y alto
+  for (const fs of await page.locator(".vp fieldset").all()) {
+    const sizes = await fs
+      .locator("label")
+      .evaluateAll((ls) => ls.map((l) => l.getBoundingClientRect()))
+      .then((rs) => ({
+        w: new Set(rs.map((r) => Math.round(r.width))).size,
+        h: new Set(rs.map((r) => Math.round(r.height))).size,
+      }));
+    expect(sizes).toEqual({ w: 1, h: 1 });
+  }
 });

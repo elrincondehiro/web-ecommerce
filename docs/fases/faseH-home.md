@@ -87,6 +87,18 @@ Medusa guarda las descripciones como **texto plano** (con sus saltos de línea);
 - Admin: el campo «Descripción» de colecciones explica el formato y sube de 600 a 2000 caracteres.
 - Descartado: Markdown completo con `marked` (dependencia + saneado, y `*Texto` pegado no sería lista) y un editor enriquecido en el Admin (widget propio y HTML que sanear).
 
+### 2.8 Ficha: móvil, selector y accesibilidad (`fix/ficha-movil`, 1-nov-2026)
+
+- **Scroll lateral en móvil**: con muchas fotos, las miniaturas (ancho fijo) ensanchaban la columna de la grid (`min-width: auto`) y con ella la página (516 px en un móvil de 390). `min-w-0` en galería y columna de compra; las miniaturas hacen scroll en su fila (`data-drag-scroll`).
+- **Selector en rejilla** (`VariantPicker.astro`): `grid` con `repeat(auto-fill, minmax(…))` y `auto-rows-fr` en vez de `flex-wrap`: tarjetas iguales en ancho y alto; el nombre con foto o color en 2 líneas fijas (`line-clamp-2` + `min-h-[2lh]`, nombre entero en `title`).
+- **Descripción y analíticos** a todo el ancho bajo galería y compra (fila 2, `max-w-prose`); en móvil, igual que antes.
+- **Sin salto al elegir una combinación agotada**: junto a «Agotado», una réplica desactivada de la cantidad (`AddToCart keepLayout`, `QuantityField inert`: sin `name`, `disabled`, `aria-hidden`): el formulario mide igual (318 px) con y sin stock.
+- **Agotadas bien visibles**: tarjeta con fondo oscurecido, borde discontinuo, tachada y rayas rojas a 45° **por encima** de la foto (`.vp-opt::after`), foto en blanco y negro; también el valor de A sin ninguna combinación con stock (regla `:not(:has(…[data-vstock=in]))`). El CSS generado solo activa variables (`--vp-stripes`, `--vp-img`); los valores en `global.css` (`--vp-out-*`). 942 B gzip (límite 1 KB).
+- **Foto del color en un marco blanco** también en modo oscuro (fotos de producto sobre fondo blanco). Muestras con transparencia: PENDIENTES §5.
+- **Accesibilidad (axe)**: carrusel de fotos enfocable (`tabindex`, ← → con teclado; `scrollable-region-focusable`) y la sección de relacionados sin repetir el nombre de su carrusel (`landmark-unique`). Contraste del texto sobre las rayas medido aparte: 5,1:1 (claro) y 6,0:1 (oscuro), ≥ 4,5 AA.
+- **e2e de accesibilidad** `e2e/accesibilidad.spec.ts` con `@axe-core/playwright` 4.14.0 (dev; Fuente: context7 `/dequelabs/axe-core-npm`): home y ficha con combinación agotada, WCAG 2.2 A/AA + buenas prácticas, tema claro y oscuro.
+- Descripciones (tu CSS): párrafos justificados con guiones, separador y viñetas en `--accent-text`.
+
 ## 3. Decisiones tomadas
 
 | Decisión                                                                                      | Motivo                                                                                                                                                               | Fuente consultada                                                                                                                                            |

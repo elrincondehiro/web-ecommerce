@@ -32,6 +32,12 @@ interface Props {
   unitKey?: string | undefined;
   /** Id del formulario (ficha: lo usa el ♡ del título, WishButton `form`). */
   id?: string | undefined;
+  /**
+   * Ficha: al estar agotado, una réplica DESACTIVADA de la cantidad junto a «Agotado», para que
+   * la fila mida lo mismo y no salte la página al elegir una combinación agotada (CLS). En las
+   * tarjetas no: no cambian de variante y sería HTML de más en cada una.
+   */
+  keepLayout?: boolean;
 }
 const {
   variantId,
@@ -43,6 +49,7 @@ const {
   bulk,
   unitKey = "",
   id,
+  keepLayout = false,
 } = Astro.props;
 const qtyId = `qty-${productId}`;
 const quick = bulk ? quickGrams(bulk) : [];
@@ -90,6 +97,22 @@ const quick = bulk ? quickGrams(bulk) : [];
     >
       Añadir
     </button>
+    {keepLayout && (
+      <div class="flex flex-col gap-1" data-if-stock="out" aria-hidden="true">
+        <span class="text-xs text-muted-foreground">{bulk ? "Cantidad (g)" : "Cantidad"}</span>
+        <QuantityField
+          id={`${qtyId}-agotado`}
+          value={bulk ? bulk.minG : 1}
+          min={bulk ? bulk.minG : 1}
+          max={bulk ? BULK_MAX_G : MAX_QUANTITY}
+          {...(bulk ? { step: bulk.stepG } : {})}
+          size={size}
+          label={productTitle}
+          name={bulk ? "grams" : "quantity"}
+          inert
+        />
+      </div>
+    )}
     <button
       type="button"
       class={buttonVariants({ size, variant: "secondary" })}
