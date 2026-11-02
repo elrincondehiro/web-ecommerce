@@ -60,8 +60,9 @@ test("filtrar (OR dentro, AND entre grupos), chips y quitar todo", async ({ page
   await expect(page).toHaveURL(/opcion=Talla%3AL&opcion=Talla%3AM#f-talla$/);
   await filters(page, isMobile);
   await toggle(page, "color", "Rojo");
+  // Color tiene familias (Fase FO, catalog/prueba-arnes/familias.csv): se filtra por familia
   await expect(page).toHaveURL(
-    /categoria=ropa-perro&opcion=Color%3ARojo&opcion=Talla%3AL&opcion=Talla%3AM#f-color$/,
+    /categoria=ropa-perro&opcion=Talla%3AL&opcion=Talla%3AM&familia=Color%3Arojo#f-color$/,
   );
   const filtered = Number((await status(page).textContent())!.match(/\d+/)![0]);
   expect(filtered).toBeGreaterThan(0);
@@ -257,9 +258,9 @@ test("botón Filtrar de una categoría estática → /buscar/ con la categoría"
   await page.goto("/categoria/ropa-perro/");
   await page.getByRole("button", { name: "Filtrar" }).click();
   await page.locator("#filtros details#f-color summary").click();
-  await page.locator("#filtros input[value='Color:Azul']").check();
+  await page.locator("#filtros input[value='Color:azul']").check();
   await page.locator("#filtros").getByRole("button", { name: "Aplicar filtros" }).click();
-  await expect(page).toHaveURL(/\/buscar\/\?categoria=ropa-perro&opcion=Color%3AAzul$/);
+  await expect(page).toHaveURL(/\/buscar\/\?categoria=ropa-perro&familia=Color%3Aazul$/);
   await expect(page.getByRole("link", { name: "Quitar filtro Color: Azul" })).toBeVisible();
 });
 
@@ -329,7 +330,7 @@ test.describe("con JS (modelo híbrido: en el sitio)", () => {
     await link.scrollIntoViewIfNeeded();
     const y = await page.evaluate(() => scrollY);
     await link.click();
-    await expect(page).toHaveURL(/\/buscar\/\?categoria=ropa-perro&opcion=Color%3ARojo$/);
+    await expect(page).toHaveURL(/\/buscar\/\?categoria=ropa-perro&familia=Color%3Arojo$/);
     await expect(status(page)).not.toHaveText(before!);
     await expect(box(page, "color", "Rojo")).toHaveAttribute("aria-checked", "true");
     await expect(box(page, "color", "Rojo")).toBeFocused();
@@ -343,7 +344,7 @@ test.describe("con JS (modelo híbrido: en el sitio)", () => {
     await page.getByRole("link", { name: "Quitar filtro Color: Rojo" }).click();
     await expect(page).toHaveURL(/\/buscar\/\?categoria=ropa-perro$/);
     await page.goBack();
-    await expect(page).toHaveURL(/opcion=Color%3ARojo$/);
+    await expect(page).toHaveURL(/familia=Color%3Arojo$/);
     await expect(page.getByRole("link", { name: "Quitar filtro Color: Rojo" })).toBeVisible();
     expect(await marked(page)).toBe(true);
   });

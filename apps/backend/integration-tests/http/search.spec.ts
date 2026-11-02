@@ -11,10 +11,13 @@ import {
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
   updateInventoryLevelsWorkflow,
+  updateProductOptionValuesWorkflow,
+  updateProductOptionsWorkflow,
   updateProductVariantsWorkflow,
   updateProductsWorkflow,
 } from "@medusajs/medusa/core-flows";
 import { syncStockToSearch } from "../../src/lib/search-stock-sync";
+import { COLOR_FAMILIES } from "../../src/lib/option-families";
 
 /**
  * Índice de búsqueda `product` (fase 7-1). En tests no hay Meilisearch: Medusa registra su
@@ -209,6 +212,57 @@ medusaIntegrationTestRunner({
           (h) => h?.document.in_stock === false,
         );
         expect(hit?.document.in_stock).toBe(false);
+      });
+
+      it("option_families (FO-3): cambiar las familias de un valor reindexa sus productos", async () => {
+        await eventually(
+          () => byHandle(published.handle),
+          (h) => Boolean(h),
+        );
+        // Lo que hacen catalog:import (familias.csv) y el widget: los workflows oficiales, que
+        // emiten product-option.updated y product-option-value.updated (sin tocar el producto)
+        // La opción «Color» de la lámpara PUBLICADA (cada lámpara del beforeEach crea la suya:
+        // con `title` a secas saldría a veces la del borrador, que el índice no tiene)
+        const query = container.resolve("query");
+        const {
+          data: [withOptions],
+        } = await query.graph({
+          entity: "product",
+          fields: ["options.id", "options.title", "options.values.id", "options.values.value"],
+          filters: { id: published.id },
+        });
+        const option = withOptions!.options!.find((o) => o?.title === "Color")!;
+        await updateProductOptionsWorkflow(container).run({
+          input: {
+            selector: { id: option.id },
+            update: { metadata: { familias: COLOR_FAMILIES } },
+          },
+        });
+        const inFamily = (key: string) => search({ $and: [{ option_families: { $in: [key] } }] });
+        // 1) Valor con familia y opción reindexada: «Color:rojo»
+        const rojo = option.values!.find((v) => v?.value === "Rojo")!;
+        await updateProductOptionValuesWorkflow(container).run({
+          input: { id: rojo.id, update: { metadata: { familias: ["rojo"] } } },
+        });
+        await eventually(
+          () => inFamily("Color:rojo"),
+          (h) => h.some((x) => x.document.handle === published.handle),
+        );
+        // 2) Solo cambia el VALOR: lo reindexa product-option-value.updated (el de la opción ya
+        // pasó). Sin ese evento en src/search/product.ts el producto seguiría en «Color:rojo».
+        await updateProductOptionValuesWorkflow(container).run({
+          input: { id: rojo.id, update: { metadata: { familias: ["rosa"] } } },
+        });
+        const hits = await eventually(
+          () => inFamily("Color:rosa"),
+          (h) => h.some((x) => x.document.handle === published.handle),
+        );
+        expect(hits.map((h) => h.document.handle)).toContain(published.handle);
+        // El borrador no sale (como siempre) y otra familia no lo encuentra
+        expect(hits.map((h) => h.document.handle)).not.toContain("lampara-draft");
+        expect((await inFamily("Color:rojo")).map((h) => h.document.handle)).not.toContain(
+          published.handle,
+        );
       });
 
       it("category_tree_handles: el filtro por un padre incluye las subcategorías (S-1)", async () => {

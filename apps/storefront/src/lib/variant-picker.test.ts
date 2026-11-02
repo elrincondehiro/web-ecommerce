@@ -8,13 +8,18 @@ import {
   MAX_VALUES,
   pickerColorCss,
   pickerCss,
+  pickerHasFamilies,
 } from "./variant-picker";
 
 const CSS_FILE = new URL("../styles/variant-picker.css", import.meta.url);
 const HEADER =
   "/* GENERADO por lib/variant-picker.ts (pickerCss). No editar: PICKER_CSS=write pnpm --filter storefront test. */\n";
 
-type Opt = { title: string; values: (string | { value: string; color?: string })[] };
+type Opt = {
+  title: string;
+  values: (string | { value: string; color?: string; familias?: string[] })[];
+  metadata?: Record<string, unknown>;
+};
 /** Producto con las combinaciones de `opts`; `out` = títulos de variante agotados. */
 function product(
   opts: Opt[],
@@ -29,10 +34,17 @@ function product(
   const options = opts.map((opt, k) => ({
     id: `opt_${k}`,
     title: opt.title,
+    metadata: opt.metadata ?? null,
     values: opt.values.map((v) =>
       typeof v === "string"
         ? { value: v, metadata: null }
-        : { value: v.value, metadata: v.color ? { color: v.color } : null },
+        : {
+            value: v.value,
+            metadata: {
+              ...(v.color ? { color: v.color } : {}),
+              ...(v.familias ? { familias: v.familias } : {}),
+            },
+          },
     ),
   }));
   const combos: string[][] = options.reduce<string[][]>(
@@ -71,6 +83,32 @@ const ESTAMPADO: Opt = { title: "Estampado", values: ["Rayas", "Flores", "Huella
 const TALLA: Opt = { title: "Talla", values: ["L", "XS", "M"] };
 
 describe("buildVariantPicker", () => {
+  it("familias de cada valor (Fase FO-6): claves «Título:id» en el orden de la opción", () => {
+    const color: Opt = {
+      title: "Color",
+      metadata: {
+        familias: [
+          { id: "verde", nombre: "Verde", color: null },
+          { id: "azul", nombre: "Azul", color: null },
+        ],
+      },
+      values: [
+        { value: "Deep Teal", familias: ["azul", "verde"] },
+        { value: "Navy", familias: ["azul", "otra"] },
+        "Sin familia",
+      ],
+    };
+    const p = buildVariantPicker(product([color, TALLA]))!;
+    expect(p.a.values.map((v) => [v.value, v.families])).toEqual([
+      ["Deep Teal", ["Color:verde", "Color:azul"]],
+      ["Navy", ["Color:azul"]],
+      ["Sin familia", []],
+    ]);
+    expect(p.b?.values.every((v) => v.families.length === 0)).toBe(true);
+    expect(pickerHasFamilies(p)).toBe(true);
+    expect(pickerHasFamilies(buildVariantPicker(product([ESTAMPADO, TALLA]))!)).toBe(false);
+  });
+
   it("dos opciones: A = la que no es de tallas; valores ordenados; preselección con stock", () => {
     const p = buildVariantPicker(
       product([TALLA, ESTAMPADO], { out: ["XS / Flores", "M / Flores", "L / Flores"] }),

@@ -8,6 +8,8 @@ import { breadcrumbJsonLd } from "$lib/seo";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CatalogPage from "../../components/CatalogPage.astro";
+import HeadStyle from "../../components/HeadStyle.astro";
+import { swatchCss } from "$lib/family-swatches";
 import CategoryNav from "../../components/CategoryNav.astro";
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -37,6 +39,8 @@ const title = page.currentPage > 1 ? `Productos (página ${page.currentPage})` :
   description="Todos los productos de El Rincón de Hiro."
   jsonLd={[breadcrumbJsonLd(crumbs, Astro.site!)]}
 >
+  {/* Fase FO: puntos de color propios de las familias del filtro (lib/family-swatches.ts) */}
+  <HeadStyle slot="head" css={swatchCss(facets)} />
   <Breadcrumbs items={crumbs} />
   <h1 class="mb-2 text-2xl font-semibold tracking-tight">Productos</h1>
   <CategoryNav links={row} label="Categorías" />

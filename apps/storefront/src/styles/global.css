@@ -50,6 +50,7 @@
   --header-hover-bg: var(--muted); /* hover de la cabecera (Fase D, 1.3) */
   --header-hover-fg: var(--foreground);
   --header-hover-ring: var(--line);
+  --prose-mark: var(--primary); /* separador y viñetas de las descripciones (rich-text) */
   --radius: 0; /* Retro 80: esquinas rectas (rounded-full se mantiene en contadores y chips) */
 }
 
@@ -104,6 +105,7 @@
   --header-hover-bg: var(--secondary);
   --header-hover-fg: var(--secondary-foreground);
   --header-hover-ring: transparent;
+  --prose-mark: var(--accent);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -130,6 +132,7 @@
     --header-hover-bg: var(--secondary);
     --header-hover-fg: var(--secondary-foreground);
     --header-hover-ring: transparent;
+    --prose-mark: var(--accent);
   }
 }
 
@@ -649,6 +652,18 @@
 
 .filter-group > summary {
   list-style-position: outside;
+}
+/* Fase FO: punto de color de una familia en los filtros (lib/family-swatches.ts). El color es
+   una clase con su regla en el <head> (HeadStyle: la CSP no deja style=""); sin color propio,
+   un degradado de varios (p. ej. «Multicolor»). Las familias sin colores (tallas) no tienen punto. */
+.fam-dot {
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: var(--fam, conic-gradient(#c62828, #f2c230, #3f9a55, #2f6fd1, #7b4fb0, #c62828));
 }
 /* Casilla dibujada para los enlaces-casilla (filtros de /buscar/ sin JS). */
 .link-box {
@@ -1309,15 +1324,17 @@
   font-weight: 700;
   color: var(--foreground);
 }
+/* Color de marca de las descripciones: primary en claro, accent en oscuro (por sistema o elegido;
+   token --prose-mark en los bloques de tema). [cambios del usuario] */
 .rich-text hr {
-  border-color: var(--accent-text);
+  border-color: var(--prose-mark);
 }
 .rich-text p {
   hyphens: auto;
   text-align: justify;
 }
 .rich-text li::marker {
-  color: var(--accent-text);
+  color: var(--prose-mark);
 }
 .prose-page a {
   font-weight: 600;

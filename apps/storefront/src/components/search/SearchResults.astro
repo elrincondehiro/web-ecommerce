@@ -25,7 +25,17 @@ interface Props {
   params: SearchParams;
 }
 const { page, params } = Astro.props;
-const chips = activeFilters(params, { categoria: (h) => page.categories.get(h) ?? h, path });
+// Fase FO: el chip de una familia lleva su nombre («Color: Azul»), del panel o del manifiesto
+const familyNames = new Map(
+  page.facets.groups
+    .filter((g) => g.key === "familia")
+    .flatMap((g) => g.values.map((v) => [v.value, v.label] as const)),
+);
+const chips = activeFilters(params, {
+  categoria: (h) => page.categories.get(h) ?? h,
+  familia: (key) => familyNames.get(key),
+  path,
+});
 const clearHref = clearFiltersUrl(params, path);
 const back = searchUrl(params, path);
 const filtersEmpty = !page.facets.groups.length && !page.facets.price && !page.facets.stockFilter;
@@ -76,7 +86,13 @@ const filtersEmpty = !page.facets.groups.length && !page.facets.price && !page.f
       </div>
     ) : (
       <>
-        <ProductGrid products={page.products} priorityCount={2} images={page.images} back={back} />
+        <ProductGrid
+          products={page.products}
+          priorityCount={2}
+          images={page.images}
+          back={back}
+          families={params.familia}
+        />
         <SearchPagination params={params} total={page.total} path={path} />
       </>
     )}

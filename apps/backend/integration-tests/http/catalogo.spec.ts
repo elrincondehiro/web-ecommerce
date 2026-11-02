@@ -274,6 +274,72 @@ medusaIntegrationTestRunner({
       expect(back?.metadata?.sustituto).toBeUndefined();
     });
 
+    it("familias (Fase FO-2): definir, asignar, conservar el resto de la metadata y reindexar", async () => {
+      // 1.ª carga SIN familias.csv (crea las opciones); la opción tiene otra clave (filtrable),
+      // que no debe perderse al escribir las familias
+      const famFile = path.join(dir, "familias.csv");
+      const famText = await readFile(famFile, "utf8");
+      await rm(famFile);
+      await run();
+      await writeFile(famFile, famText);
+      const productModule = container.resolve(Modules.PRODUCT);
+      const optionOf = async (title: string) =>
+        (
+          await productModule.listProductOptions(
+            { title, is_exclusive: false },
+            { relations: ["values"] },
+          )
+        )[0]!;
+      const talla = await optionOf("Talla");
+      await productModule.updateProductOptions(talla.id, {
+        metadata: { ...talla.metadata, filtrable: true },
+      });
+
+      const events: string[] = [];
+      const eventBus = container.resolve(Modules.EVENT_BUS);
+      const emit = eventBus.emit.bind(eventBus);
+      const spy = jest.spyOn(eventBus, "emit").mockImplementation(async (data, options) => {
+        for (const m of Array.isArray(data) ? data : [data]) events.push(m.name);
+        return emit(data, options);
+      });
+      await run();
+      spy.mockRestore();
+
+      const color = await optionOf("Color");
+      expect((color.metadata?.familias as { id: string }[]).map((f) => f.id)).toHaveLength(12);
+      const value = (o: typeof color, v: string) => o.values?.find((x) => x.value === v)?.metadata;
+      expect(value(color, "Rojo")).toEqual({ familias: ["rojo"], color: "#c0392b" });
+      expect(value(color, "Azul")).toEqual({ familias: ["azul"] });
+      const tallaAfter = await optionOf("Talla");
+      expect(tallaAfter.metadata).toMatchObject({ filtrable: true });
+      expect((tallaAfter.metadata?.familias as { id: string }[]).map((f) => f.id)).toEqual([
+        "pequena",
+        "grande",
+      ]);
+      expect(value(tallaAfter, "S")).toEqual({ familias: ["pequena"] });
+      // Eventos de los workflows oficiales: reindexan los productos (src/search/product.ts)
+      expect(events).toContain("product-option.updated");
+      expect(events).toContain("product-option-value.updated");
+
+      // Segunda carga: nada que escribir
+      events.length = 0;
+      const spy2 = jest.spyOn(eventBus, "emit").mockImplementation(async (data, options) => {
+        for (const m of Array.isArray(data) ? data : [data]) events.push(m.name);
+        return emit(data, options);
+      });
+      await run();
+      spy2.mockRestore();
+      expect(events).not.toContain("product-option-value.updated");
+
+      // `-` borra de verdad (Medusa fusiona la metadata: se manda "" para quitar la clave)
+      await writeFile(
+        famFile,
+        "opcion,familia,nombre,color,valor,familias,color_muestra\nColor,,,,Rojo,-,-\n",
+      );
+      await run();
+      expect(value(await optionOf("Color"), "Rojo")).toEqual({});
+    });
+
     it("una hoja con errores no escribe nada", async () => {
       const file = path.join(dir, "productos.csv");
       await writeFile(file, (await readFile(file, "utf8")).replace("pienso-perro,", "no-existe,"));

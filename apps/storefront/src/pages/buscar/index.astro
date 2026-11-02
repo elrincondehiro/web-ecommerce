@@ -11,7 +11,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import SearchResults from "../../components/search/SearchResults.astro";
 import SearchLive from "../../components/search/SearchLive.astro";
-import { loadSearchPage, type SearchPage } from "$lib/search-server";
+import HeadStyle from "../../components/HeadStyle.astro";
+import { catalogSwatchCss } from "$lib/family-swatches";
+import { loadSearchPage, optionFamilyCatalog, type SearchPage } from "$lib/search-server";
 import { SEARCH_PATH, parseSearchParams, searchUrl, toSearchString } from "$lib/search";
 import { Timings } from "$lib/server-timing";
 import { SERVER_TIMING } from "astro:env/server";
@@ -51,6 +53,8 @@ const crumbs = [
   path={searchUrl({ ...params, pagina: 1 })}
   noindex
 >
+  {/* Fase FO: puntos de color de TODAS las familias (SearchLive cambia el panel sin recargar) */}
+  <HeadStyle slot="head" css={catalogSwatchCss(optionFamilyCatalog())} />
   <Breadcrumbs items={crumbs} />
   <h1 class="mb-6 text-2xl font-semibold tracking-tight">
     {params.q ? <>Resultados para «{params.q}»</> : "Todos los productos"}

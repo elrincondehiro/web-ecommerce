@@ -1,0 +1,42 @@
+---
+// Preselección del selector de la ficha al llegar desde un filtro por familias (Fase FO-6). UN
+// bundle en /_astro/ (≤ 1 KB gzip, sin imports; excepción de AGENTS §3.4), SOLO en las fichas
+// cuyo selector tiene valores con familias (radios con `data-fam`; lo incluye VariantPicker).
+// Las tarjetas de /buscar/ filtrado enlazan a `/producto/x/?familia=Color:azul` (misma página
+// estática). Con JS: marca la primera combinación CON STOCK (según el HTML; LiveSync lo corrige
+// después) cuyos valores son de esas familias: en cada opción filtrada, un valor de alguna de
+// sus familias (OR); las demás opciones, cualquiera. Sin coincidencia con stock, la primera que
+// exista; sin ninguna, la variante por defecto. Dispara `change` (el ♡ sigue a la variante);
+// fotos, precio y Añadir/Agotado los cambia el CSS, como al elegir a mano.
+// Sin JS (o sin `familia` en la URL): la variante por defecto, como siempre.
+---
+
+<script>
+  const want = new URLSearchParams(location.search).getAll("familia");
+  const radios = (n: string) => [
+    ...document.querySelectorAll<HTMLInputElement>(`.vp [name=opcion_${n}]`),
+  ];
+  const title = (v: string) => v.slice(0, v.indexOf(":"));
+  const titles = new Set(want.map(title));
+  // Valor admitido: su opción no está filtrada o tiene alguna de las familias pedidas
+  const ok = (r: HTMLInputElement) =>
+    !titles.has(title(r.value)) || (r.dataset.fam ?? "").split("|").some((k) => want.includes(k));
+  const B = radios("2").filter(ok);
+  let first: (HTMLInputElement | null)[] | undefined;
+  let hit: (HTMLInputElement | null)[] | undefined;
+  for (const a of want.length ? radios("1").filter(ok) : [])
+    for (const b of radios("2").length ? B : [null]) {
+      // Marca de la combinación: en la etiqueta de B (`data-pa` = posición de A) o en la de A
+      const cell = b
+        ? b.parentElement!.querySelector(`[data-pa="${a.dataset.ai}"]`)
+        : a.parentElement!.querySelector("[data-vstock]");
+      if (!cell?.hasAttribute("data-pid")) continue;
+      first ??= [a, b];
+      if (!hit && cell.getAttribute("data-vstock") == "in") hit = [a, b];
+    }
+  for (const r of hit ?? first ?? [])
+    if (r && !r.checked) {
+      r.checked = true;
+      r.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+</script>

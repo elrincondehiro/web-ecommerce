@@ -4,7 +4,8 @@
 import { readBuildManifest } from "./build-manifest";
 import { getCardImages } from "./card-images";
 import type { StoreProduct } from "./catalog";
-import { facetsFromSearch, type ListingFacets } from "./facets";
+import { facetsFromSearch, type FamilyCatalog, type ListingFacets } from "./facets";
+import type { OptionFamily } from "./option-families";
 import type { CardImage } from "./images";
 import { categoryIndent, categoryNames, facetCategories, narrowCategories } from "./categories";
 import { CORREA_OPTION_TITLES, groupSearchIds } from "./correa";
@@ -25,6 +26,9 @@ export interface SearchPage {
 
 /** Opciones no filtrables (Fase O): manifiesto del build `hidden-options.json`. */
 const hiddenOptions = () => readBuildManifest<number>("hidden-options.json");
+/** Familias de cada opción (Fase FO): manifiesto del build `option-families.json`. */
+export const optionFamilyCatalog = (): FamilyCatalog =>
+  readBuildManifest<OptionFamily[]>("option-families.json");
 
 /** `timings` (opcional): mide cada llamada para la cabecera Server-Timing (lib/server-timing). */
 export async function loadSearchPage(params: SearchParams, timings?: Timings): Promise<SearchPage> {
@@ -60,11 +64,18 @@ export async function loadSearchPage(params: SearchParams, timings?: Timings): P
         const title = f.value.slice(0, f.value.indexOf(":"));
         return !CORREA_OPTION_TITLES.has(title) && !hiddenOptions().has(title);
       }),
+      familia: outcome.facets.familia,
     },
     {
       // Filtro por niveles (Fase S): raíces, o las hijas de lo elegido
       categories: facetCategories(tree, params.categoria),
-      selected: new Set([...params.categoria, ...params.etiqueta, ...params.opcion]),
+      families: optionFamilyCatalog(),
+      selected: new Set([
+        ...params.categoria,
+        ...params.etiqueta,
+        ...params.opcion,
+        ...params.familia,
+      ]),
       total: outcome.total,
       disponible: params.disponible,
     },

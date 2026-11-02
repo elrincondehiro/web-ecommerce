@@ -9,7 +9,13 @@
 // La action `cart.add` recibe `product_id` + `opcion_1` / `opcion_2` y busca la variante.
 // Debe ir dentro de un contenedor `.vp` que incluya la galería (ficha, [handle].astro).
 import { discountPercent } from "$lib/catalog";
-import { OPTION_FIELDS, type PickerOption, type VariantPicker } from "$lib/variant-picker";
+import {
+  OPTION_FIELDS,
+  pickerHasFamilies,
+  type PickerOption,
+  type VariantPicker,
+} from "$lib/variant-picker";
+import PickerLive from "./PickerLive.astro";
 import Price from "./Price.astro";
 import ProductImage from "./ProductImage.astro";
 // Reglas por posición, iguales para todas las fichas (generadas: lib/variant-picker pickerCss)
@@ -22,6 +28,11 @@ interface Props {
 const { picker, currency } = Astro.props;
 const { a, b, cells, selected } = picker;
 const showPrice = picker.priceRange;
+// Fase FO-6: familias de cada valor («Color:azul|Color:verde») para PickerLive (preselección al
+// llegar desde un filtro). Sin familias en el selector, ni la marca ni el bundle.
+const withFamilies = pickerHasFamilies(picker);
+const fam = (families: string[]) =>
+  withFamilies && families.length ? families.join("|") : undefined;
 const chip =
   "vp-opt relative flex cursor-pointer flex-col items-center gap-1 rounded-md border-2 border-line bg-card px-3 py-1.5 text-sm font-medium shadow-xs has-checked:border-primary has-checked:ring-2 has-checked:ring-primary has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring";
 const label = (o: PickerOption) => o.title;
@@ -53,6 +64,7 @@ const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tigh
             checked={i === selected.a}
             required
             data-ai={i + 1}
+            data-fam={fam(v.families)}
             class="sr-only"
           />
           {image ? (
@@ -109,6 +121,7 @@ const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tigh
             value={v.field}
             checked={j === selected.b}
             required
+            data-fam={fam(v.families)}
             class="sr-only"
           />
           <span class="text-center">{v.value}</span>
@@ -143,3 +156,4 @@ const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tigh
     </div>
   </fieldset>
 )}
+{withFamilies && <PickerLive />}

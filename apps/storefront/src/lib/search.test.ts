@@ -23,6 +23,7 @@ describe("parseSearchParams", () => {
       categoria: [],
       etiqueta: [],
       opcion: [],
+      familia: [],
       precioMin: null,
       precioMax: null,
       disponible: false,
@@ -250,6 +251,90 @@ describe("rango de precio (Fase F)", () => {
       min: 9.95,
       max: 9.95,
     });
+  });
+});
+
+describe("familias (Fase FO)", () => {
+  it("parámetro `familia`: «Título:id» válido, ordenado y en la URL canónica", () => {
+    const p = parse(
+      "familia=Color:verde&familia=Color:Azul&familia=Talla:m&familia=sin&familia=Color:azul",
+    );
+    expect(p.familia).toEqual(["Color:azul", "Color:verde", "Talla:m"]);
+    expect(toSearchString(p)).toBe("familia=Color%3Aazul&familia=Color%3Averde&familia=Talla%3Am");
+    expect(hasFilters(p)).toBe(true);
+    expect(selectedCount(p)).toBe(3);
+  });
+
+  it("filtro por option_families (OR en la opción, AND entre opciones) y recuentos aparte", () => {
+    const [main, ...rest] = buildSearchQueries(
+      parse("familia=Color:azul&familia=Color:verde&familia=Talla:m&opcion=Tamaño:3 kg"),
+    );
+    expect(main!.filters).toEqual({
+      $and: [
+        { discontinued: { $ne: true } },
+        { option_values: { $in: ["Tamaño:3 kg"] } },
+        { option_families: { $in: ["Color:azul", "Color:verde"] } },
+        { option_families: { $in: ["Talla:m"] } },
+      ],
+    });
+    expect(main!.search_options.facets).not.toContain("option_families");
+    expect(main!.search_options.facets).not.toContain("option_values");
+    // [1] con todo; un grupo por opción marcada (Tamaño, Color, Talla), cada uno sin el suyo
+    expect(rest).toHaveLength(4);
+    expect(rest[0]!.search_options.facets).toEqual(["option_values", "option_families"]);
+    const withoutColor = JSON.stringify(rest[2]!.filters);
+    expect(withoutColor).not.toContain("Color:azul");
+    expect(withoutColor).toContain("Talla:m");
+    expect(withoutColor).toContain("Tamaño:3 kg");
+  });
+
+  it("sin nada marcado: una consulta que pide la faceta option_families", () => {
+    const [main, ...rest] = buildSearchQueries(parse(""));
+    expect(rest).toHaveLength(0);
+    expect(main!.search_options.facets).toContain("option_families");
+  });
+
+  it("parseSearchResults: recuentos de familias por grupo", () => {
+    const p = parse("familia=Color:azul");
+    const out = parseSearchResults(p, [
+      { hits: [{ id: "a" }], metadata: { count: 1 }, facets: {} },
+      {
+        facets: {
+          option_families: {
+            values: [
+              { value: "Color:azul", count: 1 },
+              { value: "Talla:m", count: 1 },
+            ],
+          },
+        },
+      },
+      {
+        facets: {
+          option_families: {
+            values: [
+              { value: "Color:azul", count: 3 },
+              { value: "Color:verde", count: 2 },
+              { value: "Talla:m", count: 7 },
+            ],
+          },
+        },
+      },
+    ]);
+    // Talla (no marcada) con todos los filtros; Color (marcada) sin su propio filtro
+    expect(out.facets.familia).toEqual([
+      { value: "Talla:m", count: 1 },
+      { value: "Color:azul", count: 3 },
+      { value: "Color:verde", count: 2 },
+    ]);
+  });
+
+  it("chip con el nombre de la familia y enlace que la quita", () => {
+    const p = parse("familia=Color:marron-beige&familia=Color:azul");
+    const chips = activeFilters(p, {
+      familia: (k) => ({ "Color:marron-beige": "Marrón y beige" })[k],
+    });
+    expect(chips.map((c) => c.label)).toEqual(["Color: azul", "Color: Marrón y beige"]);
+    expect(chips[1]!.href).toBe("/buscar/?familia=Color%3Aazul");
   });
 });
 

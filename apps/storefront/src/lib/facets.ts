@@ -8,6 +8,7 @@
 // Funciones PURAS (Vitest).
 import { dryMatter, getProductPricing, type StoreProduct } from "./catalog";
 import { dryMatterFilters, type DryMatterKey, type FacetValue } from "./search";
+import { familyKey, optionFamilies, valueFamilies, type OptionFamily } from "./option-families";
 
 export const MIN_PRODUCTS = 2;
 /** Productos que tienen que compartir un valor de OPCIÓN para ofrecerlo (Fase O). */
@@ -33,8 +34,8 @@ export function hiddenOptionTitles(products: readonly StoreProduct[]): Set<strin
 }
 
 export interface FacetGroup {
-  /** Clave del parámetro de URL. */
-  key: "categoria" | "etiqueta" | "opcion";
+  /** Clave del parámetro de URL (`familia`: opción con familias, Fase FO). */
+  key: "categoria" | "etiqueta" | "opcion" | "familia";
   /** Para `opcion`, el título de la opción (Talla, Color…). */
   title: string;
   values: {
@@ -43,7 +44,48 @@ export interface FacetGroup {
     count?: number | undefined;
     /** Categoría (Fase F): nivel respecto a la menos profunda ofrecida (sangría del panel). */
     depth?: number | undefined;
+    /**
+     * Familia (Fase FO): color del punto (`#rrggbb`); null = punto sin color propio (degradado,
+     * «Multicolor»); undefined = sin punto (familias sin colores, p. ej. tallas).
+     */
+    color?: string | null | undefined;
   }[];
+}
+
+/**
+ * Familias de las opciones (Fase FO): título de la opción → sus familias en orden. Del build
+ * (metadata de las opciones de los productos); `/buscar/` lo lee del manifiesto
+ * `option-families.json` para poner nombre, color y orden a las facetas del motor.
+ */
+export type FamilyCatalog = Map<string, OptionFamily[]>;
+
+/** Familias de las opciones filtrables de un conjunto de productos (la 1.ª definición gana). */
+export function familyCatalog(products: readonly StoreProduct[]): FamilyCatalog {
+  const out: FamilyCatalog = new Map();
+  for (const p of products) {
+    for (const o of p.options ?? []) {
+      const title = o?.title?.trim();
+      if (!title || out.has(title) || !isFilterableOption(o)) continue;
+      const families = optionFamilies(o?.metadata as Record<string, unknown> | null | undefined);
+      if (families.length) out.set(title, families);
+    }
+  }
+  return out;
+}
+
+/** Valores de un grupo de familias en el orden de la opción (solo las que tienen productos). */
+function familyValues(
+  title: string,
+  families: readonly OptionFamily[],
+  count: (key: string) => number | undefined,
+  keep: (key: string) => boolean,
+): FacetGroup["values"] {
+  return families.flatMap((f) => {
+    const value = familyKey(title, f.id);
+    // Punto: si la opción tiene algún color (en la de tallas, ninguno → sin punto)
+    const color = families.some((x) => x.color) ? f.color : undefined;
+    return keep(value) ? [{ value, label: f.nombre, color, count: count(value) }] : [];
+  });
 }
 
 export interface ListingFacets {
@@ -101,6 +143,9 @@ export function buildListingFacets(
   const categories = new Map<string, Set<string>>();
   const tags = new Map<string, Set<string>>();
   const options = new Map<string, Map<string, Set<string>>>();
+  // Fase FO: opciones con familias → productos por familia (en vez de por valor)
+  const catalog = familyCatalog(products);
+  const families = new Map<string, Map<string, Set<string>>>();
   let lo = Infinity;
   let hi = -Infinity;
   let inStock = 0;
@@ -125,6 +170,18 @@ export function buildListingFacets(
     for (const o of p.options ?? []) {
       const title = o?.title?.trim();
       if (!title || !isFilterableOption(o)) continue;
+      const optionFams = catalog.get(title);
+      if (optionFams) {
+        const byFamily = families.get(title) ?? new Map<string, Set<string>>();
+        for (const v of o.values ?? []) {
+          const meta = v?.metadata as Record<string, unknown> | null | undefined;
+          for (const id of valueFamilies(meta, optionFams)) {
+            addCount(byFamily, familyKey(title, id), p.id);
+          }
+        }
+        families.set(title, byFamily);
+        continue;
+      }
       const byValue = options.get(title) ?? new Map<string, Set<string>>();
       for (const v of o.values ?? []) {
         const value = v?.value?.trim();
@@ -152,8 +209,21 @@ export function buildListingFacets(
       .sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
     if (values.length > 1) groups.push({ key: "categoria", title: "Categoría", values });
   }
-  for (const [title, byValue] of [...options.entries()].sort(([a], [b]) => compareValues(a, b))) {
-    const values = frequent(byValue, minOption)
+  const titles = [...new Set([...options.keys(), ...families.keys()])].sort(compareValues);
+  for (const title of titles) {
+    const byFamily = families.get(title);
+    if (byFamily) {
+      // Sin recuentos en el build (se quedarían viejos), como el resto de facetas del listado
+      const values = familyValues(
+        title,
+        catalog.get(title)!,
+        () => undefined,
+        (key) => (byFamily.get(key)?.size ?? 0) >= minOption,
+      );
+      if (values.length > 1) groups.push({ key: "familia", title, values });
+      continue;
+    }
+    const values = frequent(options.get(title)!, minOption)
       .map(([value]) => ({ value: `${title}:${value}`, label: value }))
       .sort((a, b) => compareValues(a.label, b.label));
     if (values.length > 1) groups.push({ key: "opcion", title, values });
@@ -181,12 +251,15 @@ export function facetsFromSearch(
     categoria: FacetValue[];
     etiqueta: FacetValue[];
     opcion: FacetValue[];
+    familia?: FacetValue[];
     disponible: number;
     price: { min: number; max: number } | null;
     ms?: Partial<Record<DryMatterKey, { min: number; max: number }>>;
   },
   opts: {
     categories: Map<string, string>;
+    /** Fase FO: familias por opción (manifiesto del build); sin él no hay grupos de familia. */
+    families?: FamilyCatalog;
     selected: Set<string>;
     total: number;
     /** "Disponible" marcado: se sigue mostrando para poder desmarcarlo. */
@@ -204,26 +277,46 @@ export function facetsFromSearch(
     .sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
   if (categoria.length) groups.push({ key: "categoria", title: "Categoría", values: categoria });
 
+  // Fase FO: las opciones con familias se ofrecen por familias, nunca por valores
+  const familyTitles = new Set(opts.families?.keys() ?? []);
+  const familyCounts = new Map((facets.familia ?? []).map((f) => [f.value, f.count]));
+  const familyGroups: FacetGroup[] = [];
+  for (const [title, fams] of opts.families ?? []) {
+    const values = familyValues(
+      title,
+      fams,
+      (key) => familyCounts.get(key) ?? 0,
+      (key) => (familyCounts.get(key) ?? 0) >= 1 || opts.selected.has(key),
+    );
+    if (values.length < 2 && !values.some((v) => opts.selected.has(v.value))) continue;
+    familyGroups.push({ key: "familia", title, values });
+  }
+
   const byTitle = new Map<string, FacetGroup["values"]>();
   for (const f of facets.opcion.filter(keep)) {
     const i = f.value.indexOf(":");
     if (i < 1) continue;
     const title = f.value.slice(0, i);
+    if (familyTitles.has(title)) continue;
     byTitle.set(title, [
       ...(byTitle.get(title) ?? []),
       { value: f.value, label: f.value.slice(i + 1), count: f.count },
     ]);
   }
-  for (const [title, values] of [...byTitle.entries()].sort(([a], [b]) => compareValues(a, b))) {
+  const optionGroupsList: FacetGroup[] = [];
+  for (const [title, values] of byTitle.entries()) {
     // Igual que en los listados (Fase O/F): un grupo con un solo valor no filtra nada
     // («Formato: Única»), salvo que ese valor esté marcado (para poder desmarcarlo).
     if (values.length < 2 && !values.some((v) => opts.selected.has(v.value))) continue;
-    groups.push({
+    optionGroupsList.push({
       key: "opcion",
       title,
       values: values.sort((a, b) => compareValues(a.label, b.label)),
     });
   }
+  groups.push(
+    ...[...familyGroups, ...optionGroupsList].sort((a, b) => compareValues(a.title, b.title)),
+  );
   const etiqueta = facets.etiqueta
     .filter(keep)
     .map((f) => ({ value: f.value, label: f.value, count: f.count }))

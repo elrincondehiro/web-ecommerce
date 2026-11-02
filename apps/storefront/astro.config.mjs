@@ -113,6 +113,8 @@ const LEGAL_PATHS = [
  *     las páginas on-demand; Fase S)
  *   - listados/opciones.json → hidden-options.json (opciones con `metadata.filtrable = false`,
  *     para /buscar/; Fase O)
+ *   - listados/familias.json → option-families.json (familias de cada opción para /buscar/;
+ *     Fase FO)
  * Fuente: astro-docs (integrations-reference: astro:config:done `config.build.server`,
  * astro:build:done `dir` = salida del cliente; comprobado en astro 7.3.5 integrations/hooks.js).
  * @returns {import("astro").AstroIntegration}
@@ -124,6 +126,7 @@ function privateBuildManifests() {
     { from: "listados/categorias.json", to: "shop-categories.json" },
     { from: "listados/correas.json", to: "correa-cards.json" },
     { from: "listados/opciones.json", to: "hidden-options.json" },
+    { from: "listados/familias.json", to: "option-families.json" },
   ];
   /** @type {URL | undefined} */
   let serverDir;
@@ -377,10 +380,11 @@ export default defineConfig({
       // en vez de inline en cada HTML (Astro inlinea scripts < 4 KB): carrito (CartClient,
       // fase 4), /buscar/ (SearchLive, fase 7-1) y JS común de la web (SiteClient: sugerencias,
       // fase 7-2), arrastre de carruseles (ScrollDrag, Fase D), /carrito/ (CartLive, Fase D) y
-      // configurador de la correa a medida (CorreaLive, Fase E-2c).
+      // configurador de la correa a medida (CorreaLive, Fase E-2c) y preselección del selector
+      // al llegar desde un filtro por familias (PickerLive, Fase FO-6).
       // Resto: por defecto (undefined).
       assetsInlineLimit: (/** @type {string} */ file) =>
-        /CartClient|CartLive|CorreaLive|SearchLive|SiteClient|ScrollDrag/.test(file)
+        /CartClient|CartLive|CorreaLive|PickerLive|SearchLive|SiteClient|ScrollDrag/.test(file)
           ? false
           : undefined,
     },

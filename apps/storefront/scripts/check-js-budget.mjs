@@ -6,7 +6,9 @@
 //   - UN bundle de arrastre de carruseles (ScrollDrag, ≤ 1 KB gzip, Fase D) SOLO en páginas con
 //     un [data-drag-scroll] y obligatorio en ellas (un carrusel nuevo debe incluir <ScrollDrag />);
 //   - UN bundle del configurador de la correa a medida (CorreaLive, ≤ 1 KB gzip, Fase E-2c) SOLO
-//     en las fichas con el formulario [data-correa] y obligatorio en ellas.
+//     en las fichas con el formulario [data-correa] y obligatorio en ellas;
+//   - UN bundle de preselección del selector (PickerLive, ≤ 1 KB gzip, Fase FO-6) SOLO en las
+//     fichas cuyo selector tiene familias (radios con `data-fam`) y obligatorio en ellas.
 // Se permite el script inline de las server
 // islands (lo genera Astro) y el aplicador de LiveSync, ≤ 1,2 KB gzip en total (margen: las props
 // cifradas de las islands cambian de longitud en cada build).
@@ -43,10 +45,15 @@ const PAGE_BUNDLES = [
   { name: "común", re: /^SiteClient\.[^/]*\.js$/, max: 2048, required: true },
   { name: "arrastre", re: /^ScrollDrag\.[^/]*\.js$/, max: 1024, required: "drag" },
   { name: "correa", re: /^CorreaLive\.[^/]*\.js$/, max: 1024, required: "correa" },
+  { name: "selector", re: /^PickerLive\.[^/]*\.js$/, max: 1024, required: "familias" },
 ];
 /** Bundles que solo pueden (y deben) ir en las páginas con cierta marca. */
 // Marcas en ATRIBUTOS de etiquetas, no en el CSS inline (Fase R-3b: `[data-drag-scroll]` del CSS).
-const MARKS = { drag: /<[^>]*\sdata-drag-scroll\b/, correa: /<[^>]*\sdata-correa=/ };
+const MARKS = {
+  drag: /<[^>]*\sdata-drag-scroll\b/,
+  correa: /<[^>]*\sdata-correa=/,
+  familias: /<input\b[^>]*\sdata-fam=/,
+};
 /** Mejora progresiva de /buscar/ (modelo híbrido, fase 7-1). */
 const SEARCH_BUNDLE = /^SearchLive\.[^/]*\.js$/;
 const SEARCH_GZIP_MAX = 1024;

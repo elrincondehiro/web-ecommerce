@@ -11,6 +11,7 @@
 // colores → la que no es de tallas → la primera. Opción B: la otra.
 import { getProductPricing, type StoreProduct, type VariantAvailability } from "./catalog";
 import { compareValues } from "./facets";
+import { familyKey, optionFamilies, valueFamilies } from "./option-families";
 
 /** Tope de valores por opción (el CSS tiene reglas para 1..MAX_VALUES). Más → tabla. */
 export const MAX_VALUES = 20;
@@ -32,6 +33,11 @@ export interface PickerValue {
   color: string | null;
   /** Fotos propias del valor (solo en la opción A con `opcion_fotos`). */
   images: string[];
+  /**
+   * Familias del valor («Color:azul», Fase FO), para preseleccionarlo al llegar desde un filtro
+   * (`?familia=`, PickerLive). [] si su opción no tiene familias.
+   */
+  families: string[];
 }
 
 export interface PickerOption {
@@ -140,15 +146,19 @@ export function buildVariantPicker(product: StoreProduct): VariantPicker | null 
       )
     : { byValue: new Map<string, string[]>(), general: new Set<string>() };
 
-  const toOption = (o: Option, values: typeof aValues, withImages: boolean): PickerOption => ({
-    title: o.title ?? "",
-    values: values.map((v) => ({
-      value: v!.value!,
-      field: `${o.title}:${v!.value}`,
-      color: valueColor(v),
-      images: withImages ? (byValue.get(v!.value!) ?? []) : [],
-    })),
-  });
+  const toOption = (o: Option, values: typeof aValues, withImages: boolean): PickerOption => {
+    const families = optionFamilies(o.metadata);
+    return {
+      title: o.title ?? "",
+      values: values.map((v) => ({
+        value: v!.value!,
+        field: `${o.title}:${v!.value}`,
+        color: valueColor(v),
+        images: withImages ? (byValue.get(v!.value!) ?? []) : [],
+        families: valueFamilies(v!.metadata, families).map((id) => familyKey(o.title ?? "", id)),
+      })),
+    };
+  };
 
   const availability = new Map(pricing.variants.map((v) => [v.id, v]));
   const cells = aValues.map((av) =>
@@ -284,6 +294,10 @@ export function pickerCss(n = MAX_VALUES): string {
     `${combo.map((s) => `${s} [data-if-stock=out]`).join(",")}{display:inline-flex!important}\n`
   );
 }
+
+/** El selector tiene algún valor con familias (lleva `data-fam` y PickerLive). */
+export const pickerHasFamilies = (picker: VariantPicker) =>
+  [picker.a, picker.b].some((o) => o?.values.some((v) => v.families.length));
 
 /** Colores de las muestras (HeadStyle): `.vp [data-sw="a1"]{--sw:#c0392b}` (hex validado). */
 export function pickerColorCss(picker: VariantPicker): string {

@@ -14,6 +14,7 @@ import { StoreOfertasQuery } from "./store/ofertas/route";
 import { StoreAddWishlistItemBody } from "./store/customers/me/wishlist/items/route";
 import { StoreApplyPointsBody } from "./store/carts/[id]/points/route";
 import { AdminAdjustPointsBody } from "./admin/customers/[id]/points/route";
+import { AdminOptionFamiliesBody } from "./admin/option-families/[id]/route";
 import { StoreApplyCodeBody } from "./store/carts/[id]/code/route";
 import { StoreOrderClaimBody } from "./store/customers/me/order-claims/route";
 import { StoreOrderTransferQuery } from "./store/order-transfers/[id]/route";
@@ -187,6 +188,12 @@ export default defineMiddlewares({
       matcher: "/admin/customers/:id/points",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(AdminAdjustPointsBody)],
+    },
+    // Familias de una opción desde el widget del Admin (Fase FO-5)
+    {
+      matcher: "/admin/option-families/:id",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminOptionFamiliesBody)],
     },
     // Pedidos de invitado (Fase G-2)
     {

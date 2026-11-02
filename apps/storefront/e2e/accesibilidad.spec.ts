@@ -29,6 +29,25 @@ for (const colorScheme of ["light", "dark"] as const) {
       expect(await violations(page)).toEqual([]);
     });
 
+    test("/buscar/ filtrado por familia (Fase FO) sin fallos de accesibilidad", async ({
+      page,
+    }) => {
+      skipIfRemote("familias del catálogo local (prueba-arnes/familias.csv)");
+      await page.goto("/buscar/?categoria=ropa-perro&familia=Color%3Aazul");
+      expect(await violations(page)).toEqual([]);
+    });
+
+    test("categoría con el panel de familias abierto sin fallos de accesibilidad", async ({
+      page,
+    }) => {
+      skipIfRemote("familias del catálogo local (prueba-arnes/familias.csv)");
+      await page.goto("/categoria/ropa-perro/");
+      await page.getByRole("button", { name: "Filtrar" }).click();
+      await page.locator("#filtros details#f-color summary").click();
+      await expect(page.locator("#filtros input[name=familia]").first()).toBeVisible();
+      expect(await violations(page)).toEqual([]);
+    });
+
     test("ficha con selector y combinación agotada sin fallos de accesibilidad", async ({
       page,
     }) => {

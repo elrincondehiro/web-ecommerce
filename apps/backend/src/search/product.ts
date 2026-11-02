@@ -9,6 +9,7 @@ import {
 import { DRY_MATTER_FIELDS, dryMatter } from "../lib/dry-matter";
 import { bulkMinimumAmount, bulkRule } from "../lib/granel";
 import { isDiscontinued } from "../lib/descatalogado";
+import { productFamilyKeys } from "../lib/option-families";
 
 /**
  * Índice de búsqueda de productos (fase 7-1), servido por Meilisearch (decisión D1 = A).
@@ -62,7 +63,12 @@ type ProductRow = {
   tags?: ({ value?: string | null } | null)[] | null;
   metadata?: Record<string, unknown> | null;
   options?:
-    | ({ title?: string | null; values?: ({ value?: string | null } | null)[] | null } | null)[]
+    | ({
+        title?: string | null;
+        metadata?: Record<string, unknown> | null;
+        values?:
+          ({ value?: string | null; metadata?: Record<string, unknown> | null } | null)[] | null;
+      } | null)[]
     | null;
 };
 
@@ -209,6 +215,10 @@ const fields = search.define({
     .filterable()
     .facetable()
     .retrievable(),
+  // Fase FO: familias de las opciones («Color:azul», lib/option-families.ts). Filtro y faceta de
+  // /buscar/ en vez de los valores de las opciones con familias. No buscable: el texto sigue
+  // encontrando los nombres originales (option_values).
+  option_families: search.keyword().array().filterable().facetable().retrievable(false),
   min_price_eur: search
     .float()
     .filterable()
@@ -258,7 +268,9 @@ const source = {
     "tags.value",
     "metadata",
     "options.title",
+    "options.metadata",
     "options.values.value",
+    "options.values.metadata",
   ],
   transform: async (rows: ProductRow[], context: IngestionContext) => {
     const [prices, stock, trees] = await Promise.all([
@@ -286,6 +298,7 @@ const source = {
         category_names: compact((p.categories ?? []).map((c) => c?.name)),
         tags: compact((p.tags ?? []).map((t) => t?.value)),
         option_values: toOptionValues(p.options),
+        option_families: productFamilyKeys(p.options),
         ...(price ? { min_price_eur: price.min, max_price_eur: price.max } : {}),
         in_stock: stock.get(p.id) ?? false,
         discontinued: isDiscontinued(p.metadata),
@@ -346,6 +359,21 @@ async function resolveProductIds(
         (row) => [row.product_id as string | undefined],
         deleted,
       );
+    // Fase FO: un valor de opción (familias, color de la muestra) → SOLO los productos que lo
+    // usan (sus variantes): en Medusa 2.22 un valor global no es de todos los productos de su
+    // opción (@medusajs/product: product_option_value.variants / product_options).
+    case "product-option-value":
+      return relatedProductIds(
+        container.query,
+        "product_option_value",
+        ["variants.product_id"],
+        ids,
+        (row) =>
+          ((row.variants as ({ product_id?: string } | null)[] | undefined) ?? []).map(
+            (v) => v?.product_id,
+          ),
+        deleted,
+      );
     case "product-option":
       return relatedProductIds(
         container.query,
@@ -404,6 +432,7 @@ export default defineSearchIndex({
     "product-variant.updated",
     "product-variant.deleted",
     "product-option.updated",
+    "product-option-value.updated",
     "product-tag.updated",
     "product-tag.deleted",
     "product-category.updated",

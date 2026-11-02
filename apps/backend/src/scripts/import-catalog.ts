@@ -35,6 +35,7 @@ import {
   createProductTagsWorkflow,
   setProductProductOptionsWorkflow,
   updateProductCategoriesWorkflow,
+  updateProductOptionValuesWorkflow,
   updateProductOptionsWorkflow,
   updateProductsWorkflow,
 } from "@medusajs/medusa/core-flows";
@@ -68,6 +69,13 @@ import {
   type DbProduct,
 } from "./lib/catalog-plan";
 import { clearMedusaCache } from "./lib/clear-cache";
+import { FAMILIES_FILE, readFamilies, type FamiliesSheet } from "./lib/families-sheet";
+import {
+  planFamilies,
+  withPendingOptions,
+  type DbFamilyOption,
+  type FamiliesPlan,
+} from "./lib/families-plan";
 
 export const SALE_LIST_TITLE = "Catálogo — ofertas";
 const PRODUCT_BATCH = 20;
@@ -315,6 +323,62 @@ function report(plan: CatalogPlan, logger: { info: (m: string) => void }, prefix
     ];
     logger.info(`${prefix}  ~ ${u.sheet.handle}: ${parts.join("; ")}`);
   }
+}
+
+// ── Familias (Fase FO-2) ─────────────────────────────────────────────────────
+
+/** Opciones globales con su metadata y la de sus valores. */
+async function loadFamilyOptions(container: MedusaContainer): Promise<DbFamilyOption[]> {
+  const productModule = container.resolve(Modules.PRODUCT);
+  const options = await productModule.listProductOptions(
+    { is_exclusive: false },
+    { relations: ["values"], take: null },
+  );
+  return options.map((o) => ({
+    id: o.id,
+    title: o.title,
+    metadata: (o.metadata as Record<string, unknown> | null) ?? null,
+    values: (o.values ?? []).map((v) => ({
+      id: v.id,
+      value: v.value,
+      metadata: (v.metadata as Record<string, unknown> | null) ?? null,
+    })),
+  }));
+}
+
+function reportFamilies(plan: FamiliesPlan, logger: { info: (m: string) => void }, prefix: string) {
+  for (const o of plan.options) {
+    const ids = o.families.map((f) => f.id).join(", ");
+    logger.info(`${prefix}Familias de ${o.title}: ${ids || "ninguna"}`);
+  }
+  logger.info(`${prefix}Familias: ${plan.values.length} valores a actualizar.`);
+  for (const v of plan.values.slice(0, MAX_REPORT)) {
+    logger.info(`${prefix}  ~ ${v.option}: ${v.value} (${v.changes.join(", ")})`);
+  }
+}
+
+/**
+ * Escribe con los workflows oficiales (compensación incluida): `updateProductOptionsWorkflow`
+ * emite `product-option.updated` y `updateProductOptionValuesWorkflow`
+ * `product-option-value.updated`, que reindexan los productos (src/search/product.ts).
+ * Fuente: @medusajs/core-flows 2.22.1 (product/workflows/update-product-option(-values)).
+ */
+async function applyFamilies(container: MedusaContainer, plan: FamiliesPlan) {
+  for (const o of plan.options) {
+    await updateProductOptionsWorkflow(container).run({
+      input: { selector: { id: o.id }, update: { metadata: o.metadata } },
+    });
+  }
+  const queue = [...plan.values];
+  await Promise.all(
+    Array.from({ length: UPDATE_CONCURRENCY }, async () => {
+      for (let v = queue.shift(); v; v = queue.shift()) {
+        await updateProductOptionValuesWorkflow(container).run({
+          input: { id: v.id, update: { metadata: v.metadata } },
+        });
+      }
+    }),
+  );
 }
 
 // ── Escritura ───────────────────────────────────────────────────────────────
@@ -642,12 +706,13 @@ export default async function importCatalog({ container, args }: ExecArgs) {
   const prefix = dryRun ? "[dry-run] " : "";
 
   // 1. Hojas
-  const [catText, prodText] = await Promise.all([
+  const [catText, prodText, famText] = await Promise.all([
     readSheet(root, CATEGORIES_FILE),
     readSheet(root, PRODUCTS_FILE),
+    readSheet(root, FAMILIES_FILE),
   ]);
-  if (catText === null && prodText === null) {
-    throw new Error(`No hay ${CATEGORIES_FILE} ni ${PRODUCTS_FILE} en ${root}`);
+  if (catText === null && prodText === null && famText === null) {
+    throw new Error(`No hay ${CATEGORIES_FILE}, ${PRODUCTS_FILE} ni ${FAMILIES_FILE} en ${root}`);
   }
   const errors: SheetIssue[] = [];
   const warnings: SheetIssue[] = [];
@@ -663,7 +728,11 @@ export default async function importCatalog({ container, args }: ExecArgs) {
   const prodTable = prodText !== null ? parse(PRODUCTS_FILE, prodText) : null;
   const cats = catTable ? readCategories(catTable) : { categories: [], errors: [], warnings: [] };
   const prods = prodTable ? readProducts(prodTable) : { products: [], errors: [], warnings: [] };
-  errors.push(...cats.errors, ...prods.errors);
+  const famTable = famText !== null ? parse(FAMILIES_FILE, famText) : null;
+  const fams: FamiliesSheet = famTable
+    ? readFamilies(famTable)
+    : { definitions: [], assignments: [], errors: [] };
+  errors.push(...cats.errors, ...prods.errors, ...fams.errors);
   warnings.push(...cats.warnings, ...prods.warnings);
   logger.info(
     `${prefix}Hojas: ${cats.categories.length} categorías, ${prods.products.length} productos ` +
@@ -675,6 +744,15 @@ export default async function importCatalog({ container, args }: ExecArgs) {
   const plan = planCatalog({ categories: cats.categories, products: prods.products }, snapshot);
   errors.push(...plan.errors);
   warnings.push(...plan.warnings);
+  // Familias contra las opciones de Medusa + lo que esta carga va a crear (validar el dry-run)
+  const hasFamilies = fams.definitions.length + fams.assignments.length > 0;
+  const famPlan = hasFamilies
+    ? planFamilies(fams, withPendingOptions(await loadFamilyOptions(container), plan.options))
+    : null;
+  if (famPlan) {
+    errors.push(...famPlan.errors);
+    warnings.push(...famPlan.warnings);
+  }
 
   for (const w of warnings.slice(0, MAX_REPORT)) logger.warn(`Aviso: ${formatIssue(w)}`);
   if (errors.length) {
@@ -683,6 +761,7 @@ export default async function importCatalog({ container, args }: ExecArgs) {
     throw new Error(`${errors.length} errores en las hojas: no se ha importado nada.`);
   }
   report(plan, logger, prefix);
+  if (famPlan) reportFamilies(famPlan, logger, prefix);
 
   if (dryRun) {
     const sale = await applySale(container, prods.products, true);
@@ -768,11 +847,25 @@ export default async function importCatalog({ container, args }: ExecArgs) {
   // 6. Ofertas
   const sale = await applySale(container, prods.products, false);
 
+  // 7. Familias (Fase FO-2): con los valores ya creados, el plan se recalcula contra Medusa
+  let familyValues = 0;
+  if (hasFamilies) {
+    const final = planFamilies(fams, await loadFamilyOptions(container));
+    if (final.errors.length) {
+      for (const e of final.errors.slice(0, MAX_REPORT)) logger.error(formatIssue(e));
+      throw new Error(
+        `${final.errors.length} errores en ${FAMILIES_FILE} tras importar productos.`,
+      );
+    }
+    await applyFamilies(container, final);
+    familyValues = final.values.length;
+  }
+
   logger.info(
     `Catálogo importado: ${plan.categories.create.length} categorías nuevas y ` +
       `${plan.categories.update.length} actualizadas; ${plan.products.create.length} productos nuevos y ` +
       `${plan.products.update.length} actualizados; ${levels} niveles de stock; ofertas +${sale.create} ` +
-      `~${sale.update} −${sale.delete}.`,
+      `~${sale.update} −${sale.delete}; familias en ${familyValues} valores.`,
   );
   await clearMedusaCache(container);
 }

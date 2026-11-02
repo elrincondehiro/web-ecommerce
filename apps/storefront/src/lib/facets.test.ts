@@ -218,3 +218,115 @@ describe("facetsFromSearch", () => {
     expect(f.stockFilter).toBe(false);
   });
 });
+
+describe("familias (Fase FO)", () => {
+  const COLOR = {
+    familias: [
+      { id: "verde", nombre: "Verde", color: "#3f9a55" },
+      { id: "azul", nombre: "Azul", color: "#2f6fd1" },
+      { id: "multicolor", nombre: "Multicolor" },
+    ],
+  };
+  const TALLA = {
+    familias: [
+      { id: "s", nombre: "S" },
+      { id: "m", nombre: "M" },
+    ],
+  };
+  /** Producto con opciones con metadata (de opción y de valor). */
+  const withFamilies = (
+    id: string,
+    color: [string, string[]][],
+    talla: [string, string[]][] = [],
+    stock = 1,
+  ) =>
+    ({
+      ...product(id, { stock }),
+      options: [
+        {
+          title: "Color",
+          metadata: COLOR,
+          values: color.map(([value, familias]) => ({ value, metadata: { familias } })),
+        },
+        ...(talla.length
+          ? [
+              {
+                title: "Talla",
+                metadata: TALLA,
+                values: talla.map(([value, familias]) => ({ value, metadata: { familias } })),
+              },
+            ]
+          : []),
+      ],
+    }) as unknown as StoreProduct;
+
+  it("build: grupo por familias (orden de la opción, con color) en vez de por valores", () => {
+    const f = buildListingFacets([
+      withFamilies("a", [
+        ["Sea Foam", ["verde", "azul"]],
+        ["Huckleberry", []],
+      ]),
+      withFamilies("b", [["Deep Teal", ["azul"]]], [["35–45 cm", ["s", "m"]]]),
+      withFamilies("c", [["Lime Mix", ["multicolor"]]], [["50 cm", ["m"]]]),
+    ]);
+    const color = f.groups.find((g) => g.title === "Color")!;
+    expect(color.key).toBe("familia");
+    expect(color.values).toEqual([
+      { value: "Color:verde", label: "Verde", color: "#3f9a55", count: undefined },
+      { value: "Color:azul", label: "Azul", color: "#2f6fd1", count: undefined },
+      { value: "Color:multicolor", label: "Multicolor", color: null, count: undefined },
+    ]);
+    // Tallas: familias sin colores → sin punto
+    const talla = f.groups.find((g) => g.title === "Talla")!;
+    expect(talla.values.map((v) => [v.value, v.color])).toEqual([
+      ["Talla:s", undefined],
+      ["Talla:m", undefined],
+    ]);
+    // Los nombres de marca no aparecen como filtros
+    expect(JSON.stringify(f.groups)).not.toContain("Sea Foam");
+  });
+
+  it("build: una sola familia con productos no filtra nada (no sale el grupo)", () => {
+    const f = buildListingFacets([
+      withFamilies("a", [["Deep Teal", ["azul"]]]),
+      withFamilies("b", [["Pacific Blue", ["azul"]]]),
+    ]);
+    expect(f.groups).toEqual([]);
+  });
+
+  it("/buscar/: familias con recuentos, en el orden de la opción; los valores de esa opción no salen", () => {
+    const f = facetsFromSearch(
+      {
+        categoria: [],
+        etiqueta: [],
+        opcion: [
+          { value: "Color:Sea Foam", count: 4 },
+          { value: "Tamaño:3 kg", count: 2 },
+          { value: "Tamaño:12 kg", count: 1 },
+        ],
+        familia: [
+          { value: "Color:azul", count: 6 },
+          { value: "Color:verde", count: 4 },
+        ],
+        disponible: 0,
+        price: null,
+      },
+      {
+        categories: new Map(),
+        families: new Map([["Color", COLOR.familias.map((x) => ({ color: null, ...x }))]]),
+        selected: new Set(["Color:multicolor"]),
+        total: 10,
+      },
+    );
+    expect(f.groups.map((g) => [g.key, g.title])).toEqual([
+      ["familia", "Color"],
+      ["opcion", "Tamaño"],
+    ]);
+    // «Multicolor» marcado sin resultados: se queda (para poder desmarcarlo), con 0
+    expect(f.groups[0]!.values.map((v) => [v.label, v.count])).toEqual([
+      ["Verde", 4],
+      ["Azul", 6],
+      ["Multicolor", 0],
+    ]);
+  });
+});

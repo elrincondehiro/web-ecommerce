@@ -29,10 +29,24 @@ interface Props {
   prebuilt?: CardImage | null | undefined;
   /** `sizes` de la imagen si la tarjeta no está en la rejilla (carrusel de la home). */
   imageSizes?: string | undefined;
+  /**
+   * Familias del filtro activo («Color:azul», /buscar/, Fase FO-6): van en el enlace a la ficha
+   * (`?familia=`) para que PickerLive preseleccione esa combinación. Misma página estática.
+   */
+  families?: readonly string[] | undefined;
 }
-const { product, headingLevel = 2, priority = false, back, prebuilt, imageSizes } = Astro.props;
+const {
+  product,
+  headingLevel = 2,
+  priority = false,
+  back,
+  prebuilt,
+  imageSizes,
+  families = [],
+} = Astro.props;
 const Heading = headingLevel === 3 ? "h3" : "h2";
-const href = `/producto/${product.handle}/`;
+const query = new URLSearchParams(families.map((f) => ["familia", f])).toString();
+const href = `/producto/${product.handle}/${query ? `?${query}` : ""}`;
 const pricing = getProductPricing(product);
 const image = product.thumbnail ?? product.images?.[0]?.url ?? null;
 // Añadir desde el listado solo con UNA variante; con varias → ficha para elegir (fase 4).

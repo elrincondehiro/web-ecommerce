@@ -700,6 +700,7 @@ Versiones publicadas (tags; las crea el usuario): **`v0.1.0`** (fase 11, primer 
 | M Mascotas y aviso de pedidos          | [faseM-mascotas.md](./docs/fases/faseM-mascotas.md)                                              | ✅     |
 | PG Pagos: PayPal, Bizum, transferencia | [fasePG-pagos.md](./docs/fases/fasePG-pagos.md)                                                  | ✅     |
 | H Home configurable y colecciones      | [faseH-home.md](./docs/fases/faseH-home.md)                                                      | ✅     |
+| FO Familias de opciones (filtros)      | [faseFO-familias.md](./docs/fases/faseFO-familias.md)                                            | ✅     |
 | 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

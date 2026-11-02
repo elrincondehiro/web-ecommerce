@@ -30,6 +30,8 @@ export interface SearchParams {
   etiqueta: string[];
   /** `"Título:valor"`, igual que `option_values` en el índice. */
   opcion: string[];
+  /** Fase FO: `"Título:id"` de familia, igual que `option_families` en el índice. */
+  familia: string[];
   precioMin: number | null;
   precioMax: number | null;
   disponible: boolean;
@@ -39,7 +41,7 @@ export interface SearchParams {
   pagina: number;
 }
 
-export type MultiKey = "categoria" | "etiqueta" | "opcion";
+export type MultiKey = "categoria" | "etiqueta" | "opcion" | "familia";
 
 /**
  * Filtros de rango sobre MATERIA SECA (Fase S, S-2): parámetro de URL → campo del índice
@@ -66,6 +68,11 @@ const optionSchema = z
   .string()
   .max(MAX_VALUE_LENGTH)
   .refine((v) => /^[^:]+:.+$/.test(v));
+/** «Título:id» con el id de familia de lib/option-families.ts (minúsculas, números y guiones). */
+const familySchema = z
+  .string()
+  .max(MAX_VALUE_LENGTH)
+  .refine((v) => /^[^:]+:[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v));
 const priceSchema = z.coerce.number().min(0).max(1_000_000);
 const percentSchema = z.coerce.number().min(0).max(100);
 const pageSchema = z.coerce.number().int().min(1).max(MAX_PAGE);
@@ -112,6 +119,7 @@ export function parseSearchParams(search: URLSearchParams): SearchParams {
     categoria: multi(search.getAll("categoria"), handleSchema),
     etiqueta: multi(search.getAll("etiqueta"), z.string().min(1).max(MAX_VALUE_LENGTH)),
     opcion: multi(search.getAll("opcion"), optionSchema),
+    familia: multi(search.getAll("familia"), familySchema),
     precioMin,
     precioMax,
     disponible: search.get("disponible") === "1",
@@ -135,6 +143,7 @@ export function toSearchString(p: SearchParams): string {
   for (const v of p.categoria) s.append("categoria", v);
   for (const v of p.etiqueta) s.append("etiqueta", v);
   for (const v of p.opcion) s.append("opcion", v);
+  for (const v of p.familia) s.append("familia", v);
   if (p.precioMin !== null) s.set("precio_min", String(p.precioMin));
   if (p.precioMax !== null) s.set("precio_max", String(p.precioMax));
   if (p.disponible) s.set("disponible", "1");
@@ -180,6 +189,8 @@ export function activeFilters(
   p: SearchParams,
   opts: {
     categoria?: (handle: string) => string;
+    /** Fase FO: nombre de una familia («Color:azul» → «Azul»), si se conoce. */
+    familia?: (key: string) => string | undefined;
     path?: string | undefined;
     fixed?: FixedFilters | undefined;
   } = {},
@@ -193,6 +204,13 @@ export function activeFilters(
   for (const v of p.opcion) {
     const { title, value } = splitOption(v);
     out.push({ label: `${title}: ${value}`, href: toggleUrl(p, "opcion", v, path) });
+  }
+  for (const v of p.familia) {
+    const { title, value } = splitOption(v);
+    out.push({
+      label: `${title}: ${opts.familia?.(v) ?? value}`,
+      href: toggleUrl(p, "familia", v, path),
+    });
   }
   for (const v of p.etiqueta) out.push({ label: v, href: toggleUrl(p, "etiqueta", v, path) });
   if (p.precioMin !== null || p.precioMax !== null) {
@@ -239,7 +257,7 @@ export function emptyParams(): SearchParams {
 export function hasFilters(p: SearchParams, fixed: FixedFilters = {}): boolean {
   const categorias = p.categoria.filter((c) => c !== fixed.categoria).length;
   return (
-    categorias + p.etiqueta.length + p.opcion.length > 0 ||
+    categorias + p.etiqueta.length + p.opcion.length + p.familia.length > 0 ||
     p.precioMin !== null ||
     p.precioMax !== null ||
     p.disponible ||
@@ -252,6 +270,7 @@ export function selectedCount(p: SearchParams, fixed: FixedFilters = {}): number
   return (
     p.etiqueta.length +
     p.opcion.length +
+    p.familia.length +
     p.categoria.filter((c) => c !== fixed.categoria).length +
     (p.precioMin !== null || p.precioMax !== null ? 1 : 0) +
     (p.disponible ? 1 : 0) +
@@ -297,7 +316,13 @@ export interface SearchQueryBody {
  * padre incluye sus subcategorías. Filtro y faceta en el MISMO campo (faceta disyuntiva).
  */
 export const CATEGORY_FIELD = "category_tree_handles";
-export const FACET_FIELDS = [CATEGORY_FIELD, "tags", "option_values", "in_stock"] as const;
+export const FACET_FIELDS = [
+  CATEGORY_FIELD,
+  "tags",
+  "option_values",
+  "option_families",
+  "in_stock",
+] as const;
 // Rango de precio real (Fase F): mínimo de los precios más baratos y máximo de los más caros de
 // cada producto. Solo `min_price_eur` daba como máximo el del producto con la variante barata más
 // cara (en Ropa, 28 € en vez de 36 €).
@@ -305,6 +330,26 @@ const PRICE_FACETS = [
   { field: "min_price_eur", type: "stats" },
   { field: "max_price_eur", type: "stats" },
 ] as const;
+
+/** Campo del índice de cada filtro de opciones (valores o familias, Fase FO). */
+type OptionField = "option_values" | "option_families";
+const OPTION_FIELDS: Record<"opcion" | "familia", OptionField> = {
+  opcion: "option_values",
+  familia: "option_families",
+};
+/** Grupo marcado: campo + título de la opción («option_families» + «Color»). */
+const groupKey = (field: OptionField, title: string) => `${field}\u0000${title}`;
+
+/** Grupos marcados de `opcion` y `familia`: dentro de un grupo OR, entre grupos AND. */
+function markedGroups(p: SearchParams): { field: OptionField; title: string; values: string[] }[] {
+  const out: { field: OptionField; title: string; values: string[] }[] = [];
+  for (const key of ["opcion", "familia"] as const) {
+    for (const [title, values] of optionGroups(p[key])) {
+      out.push({ field: OPTION_FIELDS[key], title, values });
+    }
+  }
+  return out;
+}
 
 /** Opciones marcadas agrupadas por título: dentro de un grupo OR, entre grupos AND. */
 export function optionGroups(opcion: string[]): Map<string, string[]> {
@@ -322,12 +367,12 @@ export function optionGroups(opcion: string[]): Map<string, string[]> {
  */
 export const LISTED_FILTER: Filter = { discontinued: { $ne: true } };
 
-function filtersFor(p: SearchParams, skipOptionGroup?: string): Filter {
+function filtersFor(p: SearchParams, skipGroup?: string): Filter {
   const and: Filter[] = [LISTED_FILTER];
   if (p.categoria.length) and.push({ [CATEGORY_FIELD]: { $in: p.categoria } });
   if (p.etiqueta.length) and.push({ tags: { $in: p.etiqueta } });
-  for (const [title, values] of optionGroups(p.opcion)) {
-    if (title !== skipOptionGroup) and.push({ option_values: { $in: values } });
+  for (const g of markedGroups(p)) {
+    if (groupKey(g.field, g.title) !== skipGroup) and.push({ [g.field]: { $in: g.values } });
   }
   // Rango que se solapa con [min, max] de las variantes: alguna variante cae en el rango.
   if (p.precioMin !== null) and.push({ max_price_eur: { $gte: p.precioMin } });
@@ -374,13 +419,13 @@ function orderFor(p: SearchParams): Record<string, "ASC" | "DESC"> | undefined {
  * NO se envía `typo_tolerance`: Meilisearch lo configura por índice y rechaza la opción.
  */
 export function buildSearchQueries(p: SearchParams, take = PAGE_SIZE): SearchQueryBody[] {
-  const groups = [...optionGroups(p.opcion).keys()];
+  const groups = markedGroups(p);
   const optionsOnly = (filters: Filter): SearchQueryBody => ({
     entity: "product",
     fields: ["id"],
     filters,
     pagination: { skip: 0, take: 0 },
-    search_options: { facets: ["option_values"] },
+    search_options: { facets: ["option_values", "option_families"] },
   });
   const main: SearchQueryBody = {
     entity: "product",
@@ -393,7 +438,10 @@ export function buildSearchQueries(p: SearchParams, take = PAGE_SIZE): SearchQue
     },
     search_options: {
       facets: [
-        ...FACET_FIELDS.filter((f) => !groups.length || f !== "option_values"),
+        // Con grupos marcados, valores y familias se cuentan aparte (consultas [1..])
+        ...FACET_FIELDS.filter(
+          (f) => !groups.length || (f !== "option_values" && f !== "option_families"),
+        ),
         ...PRICE_FACETS,
         ...dryMatterFilters().map(({ field }) => ({ field, type: "stats" })),
       ],
@@ -404,7 +452,7 @@ export function buildSearchQueries(p: SearchParams, take = PAGE_SIZE): SearchQue
   return [
     main,
     optionsOnly(filtersFor(p)),
-    ...groups.map((title) => optionsOnly(filtersFor(p, title))),
+    ...groups.map((g) => optionsOnly(filtersFor(p, groupKey(g.field, g.title)))),
   ];
 }
 
@@ -433,6 +481,8 @@ export interface SearchOutcome {
     categoria: FacetValue[];
     etiqueta: FacetValue[];
     opcion: FacetValue[];
+    /** Fase FO: «Título:id» de familia con su recuento. */
+    familia: FacetValue[];
     disponible: number;
     price: { min: number; max: number } | null;
     /** Mínimo/máximo de materia seca en los resultados (null = ningún producto con el dato). */
@@ -465,21 +515,25 @@ export function statsRange(
 export function parseSearchResults(p: SearchParams, results: RawSearchResult[]): SearchOutcome {
   const [main, all, ...perGroup] = results;
   const facets = main?.facets ?? {};
-  let opcion = facets.option_values?.values ?? [];
-  const groups = [...optionGroups(p.opcion).keys()];
-  if (groups.length) {
+  const groups = markedGroups(p);
+  const counted = (field: OptionField): FacetValue[] => {
+    if (!groups.length) return facets[field]?.values ?? [];
     // § buildSearchQueries: grupos no marcados con todos los filtros; cada marcado, sin el suyo.
-    const marked = new Set(groups);
-    opcion = (all?.facets?.option_values?.values ?? []).filter(
+    const marked = new Set(groups.filter((g) => g.field === field).map((g) => g.title));
+    let out = (all?.facets?.[field]?.values ?? []).filter(
       (f) => !marked.has(splitOption(f.value).title),
     );
-    groups.forEach((title, i) => {
-      const own = (perGroup[i]?.facets?.option_values?.values ?? []).filter(
-        (f) => splitOption(f.value).title === title,
+    groups.forEach((g, i) => {
+      if (g.field !== field) return;
+      const own = (perGroup[i]?.facets?.[field]?.values ?? []).filter(
+        (f) => splitOption(f.value).title === g.title,
       );
-      opcion = [...opcion, ...own];
+      out = [...out, ...own];
     });
-  }
+    return out;
+  };
+  const opcion = counted("option_values");
+  const familia = counted("option_families");
   const lo = facets.min_price_eur;
   const hi = facets.max_price_eur;
   const ms: SearchOutcome["facets"]["ms"] = {};
@@ -498,6 +552,7 @@ export function parseSearchResults(p: SearchParams, results: RawSearchResult[]):
       categoria: facets[CATEGORY_FIELD]?.values ?? [],
       etiqueta: facets.tags?.values ?? [],
       opcion,
+      familia,
       disponible: facets.in_stock?.values?.find((v) => v.value === "true")?.count ?? 0,
       price,
       ms,

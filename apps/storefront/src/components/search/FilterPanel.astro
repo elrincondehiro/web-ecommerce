@@ -13,6 +13,7 @@ import FilterButton from "./FilterButton.astro";
 import StockToggle from "./StockToggle.astro";
 import { buttonVariants } from "$lib/components/ui/button";
 import type { ListingFacets } from "$lib/facets";
+import { swatchClass } from "$lib/family-swatches";
 import {
   DRY_MATTER,
   paramEntries,
@@ -20,6 +21,7 @@ import {
   selectedCount,
   toggleUrl,
   type FixedFilters,
+  type MultiKey,
   type SearchParams,
 } from "$lib/search";
 
@@ -48,8 +50,7 @@ const {
   id = "filtros",
 } = Astro.props;
 
-const isChecked = (key: "categoria" | "etiqueta" | "opcion", value: string) =>
-  params[key].includes(value);
+const isChecked = (key: MultiKey, value: string) => params[key].includes(value);
 const groups = facets.groups.filter((g) => !(g.key === "categoria" && fixed.categoria));
 // Lo que NO se edita en el panel viaja como hidden: texto, orden y filtros fijos.
 // En linkMode el formulario solo envía el precio: el resto de filtros viaja oculto.
@@ -65,7 +66,9 @@ const msRanges = DRY_MATTER.flatMap((d) => {
 });
 const hidden = paramEntries(
   { ...params, pagina: 1 },
-  linkMode ? RANGE_PARAMS : ["categoria", "etiqueta", "opcion", "disponible", ...RANGE_PARAMS],
+  linkMode
+    ? RANGE_PARAMS
+    : ["categoria", "etiqueta", "opcion", "familia", "disponible", ...RANGE_PARAMS],
 );
 if (fixed.categoria && !hidden.some(([k, v]) => k === "categoria" && v === fixed.categoria)) {
   hidden.push(["categoria", fixed.categoria]);
@@ -89,7 +92,7 @@ const slug = (t: string) =>
 // que el usuario tenía abiertos.
 // Sin JS, "Aplicar" vuelve a la altura de los resultados (solo páginas con #resultados).
 const formAction = sidebar ? `${action}#resultados` : action;
-const linkHref = (key: "categoria" | "etiqueta" | "opcion", value: string, title: string) =>
+const linkHref = (key: MultiKey, value: string, title: string) =>
   `${toggleUrl(params, key, value, action)}#f-${slug(title)}`;
 ---
 
@@ -169,6 +172,12 @@ const linkHref = (key: "categoria" | "etiqueta" | "opcion", value: string, title
                           class="flex items-center gap-2 text-sm hover:underline"
                         >
                           <span class:list={["link-box", box]} aria-hidden="true" />
+                          {v.color !== undefined && (
+                            <span
+                              class:list={["fam-dot", swatchClass(v.color)]}
+                              aria-hidden="true"
+                            />
+                          )}
                           <span class="flex-1">{v.label}</span>
                           {v.count !== undefined && (
                             <span class="text-xs text-muted-foreground tabular-nums">
@@ -185,6 +194,12 @@ const linkHref = (key: "categoria" | "etiqueta" | "opcion", value: string, title
                             checked={isChecked(g.key, v.value)}
                             class={box}
                           />
+                          {v.color !== undefined && (
+                            <span
+                              class:list={["fam-dot", swatchClass(v.color)]}
+                              aria-hidden="true"
+                            />
+                          )}
                           <span class="flex-1">{v.label}</span>
                           {v.count !== undefined && (
                             <span class="text-xs text-muted-foreground tabular-nums">

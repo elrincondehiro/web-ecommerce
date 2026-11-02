@@ -1,11 +1,11 @@
 # Importador de catálogo — plantillas
 
-`catalog:import` carga **categorías** y **productos con variantes** desde dos hojas CSV. Primero las categorías y después los productos. Detalle técnico y decisiones en [`docs/fases/faseC-catalogo.md`](../../../../docs/fases/faseC-catalogo.md).
+`catalog:import` carga **categorías** y **productos con variantes** desde dos hojas CSV y, si está, las **familias** de las opciones desde una tercera ([`familias.csv`](#familias)). Primero las categorías, después los productos y por último las familias. Detalle técnico y decisiones en [`docs/fases/faseC-catalogo.md`](../../../../docs/fases/faseC-catalogo.md).
 
 ```bash
 # 1. Copia esta carpeta a una tuya (apps/backend/catalog/* está fuera de git, salvo plantilla/)
 cp -r apps/backend/catalog/plantilla apps/backend/catalog/mi-carga
-# 2. Rellena categorias.csv y productos.csv (Excel, LibreOffice, Google Sheets…)
+# 2. Rellena categorias.csv y productos.csv (y, si quieres agrupar filtros, familias.csv)
 # 3. Comprueba (no escribe nada) y carga
 pnpm --filter backend catalog:import catalog/mi-carga dry-run
 pnpm --filter backend catalog:import catalog/mi-carga
@@ -142,6 +142,47 @@ Para piensos, latas y snacks. Porcentajes **tal cual** (como en la etiqueta), de
 La **oferta va con su precio**: si una fila escribe su propio `precio` y deja `precio_oferta` vacío, **no** hereda la oferta de arriba (la variante queda sin oferta). En la plantilla, «L Rojo» trae 15,95 con oferta 13,95, y «L Azul», con las dos celdas vacías, hereda ambas.
 
 **Ofertas**: `precio_oferta` va a la Price List `sale` «Catálogo — ofertas», que gestiona el importador: no la edites a mano. La hoja manda: una variante de la hoja sin oferta sale de la lista. Las listas de precios creadas en el Admin no se tocan. El precio tachado de la tienda es `precio`.
+
+## Familias
+
+Cada marca nombra sus colores a su manera («Huckleberry», «Sea Foam», «Rojo intenso»…) y algunas dan las tallas en centímetros. Con los nombres originales, el filtro «Color» se llena de valores con un solo producto. Las **familias** agrupan los valores de una opción para los **filtros** de la tienda: quien filtra por «Azul» ve todo lo que tiene algún color azul, de cualquier marca. La **ficha** y la **búsqueda por texto** siguen con los nombres originales (buscar «huckleberry» lo encuentra).
+
+Sirve para cualquier opción (Color, Talla, Sabor…). Una opción con familias se filtra por familias; una sin familias, por sus valores, como siempre. La hoja `familias.csv` es **opcional** y se aplica **después** de los productos (los valores tienen que existir).
+
+```csv
+opcion,familia,nombre,color,valor,familias,color_muestra
+Color,plantilla,,,,,
+Talla,s,S,,,,
+Talla,m,M,,,,
+Color,,,,Sea Foam,verde|azul,#8fd3c1
+Color,,,,Huckleberry,morado,
+Talla,,,,35–45 cm,s|m,
+```
+
+Hay dos tipos de fila:
+
+| Fila        | Columnas                                       | Qué hace                                                                                                                                                                                                                                                                                                                                                |
+| ----------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Definir** | `opcion`, `familia`, `nombre`, `color`         | Las familias de la opción, en el orden de las filas. `familia` = id (minúsculas, números y guiones; va en la URL del filtro), `nombre` = lo que sale en el filtro, `color` = punto de color `#rrggbb` (opcional). `plantilla` carga las 12 de color de una vez. **Sustituyen** a las que tenga la opción; una opción que no aparece conserva las suyas. |
+| **Asignar** | `opcion`, `valor`, `familias`, `color_muestra` | A qué familias pertenece el valor (varias con `\|`, como mucho 4; `-` = ninguna) y el color de su muestra en la ficha (`#rrggbb`; `-` = quitarlo; vacío = no tocar). Solo se tocan los valores de la hoja.                                                                                                                                              |
+
+Las 12 familias de la `plantilla`: Negro, Gris, Blanco, Marrón y beige, Rojo, Rosa, Naranja, Amarillo, Verde, Azul, Morado y Multicolor (ids `negro`, `gris`, `blanco`, `marron-beige`, `rojo`, `rosa`, `naranja`, `amarillo`, `verde`, `azul`, `morado`, `multicolor`).
+
+- El `dry-run` enseña las familias de cada opción y los valores que cambian. **Errores** (no se carga nada): opción o valor que no existen, familia no definida, id o color mal escrito, más de 4 familias por valor, filas repetidas. **Avisos**: valores de una opción con familias que se quedan sin ninguna (no saldrían en el filtro).
+- Volver a cargar la misma hoja no cambia nada. El resto de la metadata de opciones y valores (p. ej. `filtrable`) se conserva.
+- Los tonos frontera pueden ir en dos familias (`Sea Foam` → `verde|azul`). Las tallas por familias son orientativas: la talla exacta y la guía siguen en la ficha.
+- Las familias se ven en la tienda tras un **rebuild** (categorías); `/buscar/` en cuanto se reindexa (automático).
+- Si alguien filtra por una familia en `/buscar/` y abre un producto, la ficha llega con una combinación **con stock** de esa familia ya marcada (sin JS, la de siempre).
+
+### Desde el Admin (sin hoja)
+
+Lo mismo se puede hacer a mano en **Admin → Options → la opción** (p. ej. «Color»), en la tarjeta **«Familias para los filtros de la tienda»**:
+
+1. **Familias**: «Cargar las 12 de color» o «+ Añadir familia» (nombre; el id se rellena solo; color del punto, opcional). ▲▼ para ordenarlas (el orden es el del filtro). «Quitar» la saca también de los valores.
+2. **Valores**: una casilla por familia (como mucho 4 por valor) y **«Muestra en la ficha»** (el color del botón del valor en el selector si no tiene foto). «Solo sin familia» enseña los que faltan; el aviso «N sin familia ⚠» cuenta los que no saldrían en el filtro.
+3. **Guardar**. Hace lo mismo que la hoja (mismas reglas y validaciones) y reindexa `/buscar/` solo. «Descartar cambios» vuelve a lo guardado.
+
+Hoja y Admin se pueden mezclar: lo último que se guarda manda. En una opción exclusiva de un producto no hay familias.
 
 ## Descripciones con formato
 

@@ -12,6 +12,8 @@ interface Props {
   images?: Map<string, CardImage> | undefined;
   /** Vuelta tras "Añadir" sin JS. Por defecto, la ruta del listado (conocida en el build). */
   back?: string | undefined;
+  /** Familias del filtro activo para el enlace a la ficha (/buscar/, Fase FO-6; ProductCard). */
+  families?: readonly string[] | undefined;
 }
 const {
   products,
@@ -19,6 +21,7 @@ const {
   priorityCount = 0,
   images,
   back = Astro.url.pathname,
+  families,
 } = Astro.props;
 ---
 
@@ -31,6 +34,7 @@ const {
         priority={i < priorityCount}
         back={back}
         prebuilt={images ? (images.get(product.id) ?? null) : undefined}
+        families={families}
       />
     </li>
   ))}
