@@ -3,8 +3,8 @@
 // - Opción A (`opcion_1`): muestras con foto, color (`metadata.color` del valor) o texto.
 // - Opción B (`opcion_2`): etiquetas; dentro de cada una, una marca por valor de A con la
 //   variante (`data-pa`, `data-pid`, `data-vstock`) y su precio. El CSS por posición
-//   (styles/variant-picker.css) deja ver solo la del A elegido, tacha las agotadas y cambia
-//   Añadir ↔ Agotado. LiveSync corrige `data-vstock` y los precios como en la tabla.
+//   (pickerHeadCss, en el <head> de la ficha: [handle].astro) deja ver solo la del A elegido,
+//   tacha las agotadas y cambia Añadir ↔ Agotado. LiveSync corrige `data-vstock` y los precios como en la tabla.
 // - Una sola opción: la marca va en la propia muestra (sin `data-pa`).
 // La action `cart.add` recibe `product_id` + `opcion_1` / `opcion_2` y busca la variante.
 // Debe ir dentro de un contenedor `.vp` que incluya la galería (ficha, [handle].astro).
@@ -18,8 +18,6 @@ import {
 import PickerLive from "./PickerLive.astro";
 import Price from "./Price.astro";
 import ProductImage from "./ProductImage.astro";
-// Reglas por posición, iguales para todas las fichas (generadas: lib/variant-picker pickerCss)
-import "../styles/variant-picker.css";
 
 interface Props {
   picker: VariantPicker;

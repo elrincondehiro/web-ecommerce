@@ -1,4 +1,3 @@
-import { readFileSync, writeFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import type { StoreProduct } from "./catalog";
@@ -8,12 +7,9 @@ import {
   MAX_VALUES,
   pickerColorCss,
   pickerCss,
+  pickerHeadCss,
   pickerHasFamilies,
 } from "./variant-picker";
-
-const CSS_FILE = new URL("../styles/variant-picker.css", import.meta.url);
-const HEADER =
-  "/* GENERADO por lib/variant-picker.ts (pickerCss). No editar: PICKER_CSS=write pnpm --filter storefront test. */\n";
 
 type Opt = {
   title: string;
@@ -208,11 +204,20 @@ describe("findVariantByOptions", () => {
 });
 
 describe("pickerCss", () => {
-  it("styles/variant-picker.css está al día (si falla: PICKER_CSS=write pnpm --filter storefront test)", () => {
-    if (process.env.PICKER_CSS === "write") writeFileSync(CSS_FILE, HEADER + pickerCss());
-    expect(readFileSync(CSS_FILE, "utf8")).toBe(HEADER + pickerCss());
+  it("solo las posiciones del selector (n valores de A)", () => {
+    const two = pickerCss(2);
+    expect(two).toContain('[data-ai="2"]');
+    expect(two).not.toContain('[data-ai="3"]');
+    // Cuatro reglas: ocultar lo de otros valores, tachar, ocultar Añadir y mostrar Agotado
+    expect(two.trim().split("\n")).toHaveLength(4);
   });
-  it("cabe en el presupuesto: ≤ 1 KB gzip", () => {
-    expect(gzipSync(pickerCss(), { level: 9 }).length).toBeLessThanOrEqual(1024);
+  it("cabe en el presupuesto: ≤ 1 KB gzip con el máximo de valores", () => {
+    expect(gzipSync(pickerCss(MAX_VALUES), { level: 9 }).length).toBeLessThanOrEqual(1024);
+  });
+  it("pickerHeadCss: reglas del selector + colores de sus muestras", () => {
+    const p = buildVariantPicker(
+      product([{ title: "Color", values: ["Azul", { value: "Rojo", color: "#c0392b" }] }, TALLA]),
+    )!;
+    expect(pickerHeadCss(p)).toBe(pickerCss(2) + '.vp [data-sw="a2"]{--sw:#c0392b}');
   });
 });

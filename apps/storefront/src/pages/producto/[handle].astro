@@ -18,7 +18,7 @@ import { getAllProducts } from "$lib/medusa";
 import { getRelatedByProduct, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
 import { resolveSizeGuide, resolveTemplate } from "$lib/plantillas";
-import { buildVariantPicker, pickerColorCss } from "$lib/variant-picker";
+import { buildVariantPicker, pickerHeadCss } from "$lib/variant-picker";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import AnalyticsTable from "../../components/AnalyticsTable.astro";
@@ -135,7 +135,8 @@ const onward = replacement
   }
 >
   <SwatchStyles slot="head" swatches={showPicker ? siblings : []} />
-  <HeadStyle slot="head" css={picker ? pickerColorCss(picker) : ""} />
+  {/* Selector (Fase O; perf CSS-A): sus reglas y colores, solo en las fichas que lo tienen */}
+  <HeadStyle slot="head" css={picker ? pickerHeadCss(picker) : ""} />
   <Breadcrumbs items={crumbs} />
   {/* `.vp` (Fase O): el CSS del selector abarca la galería (fotos del valor elegido) */}
   <div class:list={["grid gap-8 md:grid-cols-2", picker && "vp"]}>

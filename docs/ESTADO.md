@@ -198,7 +198,7 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 
 **Fase O — opciones, variantes y plantillas de ficha: ✅ cerrada** (#67) ([faseO-variantes.md](./fases/faseO-variantes.md)):
 
-- Productos con 2 opciones (p. ej. estampado × talla): **un solo producto** con selector de muestras en la ficha, **sin JS**. La action busca la variante por las opciones; CSS por posición (`styles/variant-picker.css`, generado y comprobado por el test; 0,7 KB gzip).
+- Productos con 2 opciones (p. ej. estampado × talla): **un solo producto** con selector de muestras en la ficha, **sin JS**. La action busca la variante por las opciones; CSS por posición (`pickerHeadCss`, en el `<head>` de cada ficha con selector y solo para sus valores; perf CSS).
 - Fotos por valor: `opcion_fotos` en la hoja + `handle--valor_XX.jpg` en `images:import`.
 - Guías de tallas por modelo (`guia_tallas`, `src/content/guias/`; se cambian desde la metadata del producto en el Admin) y plantillas por categoría (`src/content/plantillas/`), en un `popover`. Fotos en el Markdown junto al `.md` (`![alt](./foto.jpg)`), optimizadas por Astro.
 - Filtros: opción con un solo producto, `metadata.filtrable = false` en el Admin y grupos plegados.

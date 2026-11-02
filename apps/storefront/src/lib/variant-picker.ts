@@ -250,7 +250,10 @@ export function findVariantByOptions(
 }
 
 /**
- * CSS del selector (src/styles/variant-picker.css, generado: lo comprueba variant-picker.test.ts).
+ * CSS del selector (perf CSS-A): va en el `<head>` de CADA ficha con selector (HeadStyle, con su
+ * hash en la CSP) y solo con las reglas de sus posiciones (`n` = valores de la opción A). Antes era
+ * un fichero común a todas las fichas (~1 KB gzip también en las que no tienen selector, y siempre
+ * para 20 valores). Las reglas fijas (rayas y foto de las agotadas) siguen en global.css.
  * Por posición `i` del valor elegido de la opción A (`data-ai` en su radio, `data-pa` en lo que
  * depende de él: fotos, miniaturas y las celdas de cada talla). Sin `:has()` anidados (no los
  * admite CSS): el botón mira la celda HERMANA del radio de B marcado (`~`).
@@ -298,6 +301,10 @@ export function pickerCss(n = MAX_VALUES): string {
 /** El selector tiene algún valor con familias (lleva `data-fam` y PickerLive). */
 export const pickerHasFamilies = (picker: VariantPicker) =>
   [picker.a, picker.b].some((o) => o?.values.some((v) => v.families.length));
+
+/** CSS de una ficha con selector: reglas de sus posiciones + colores de sus muestras. */
+export const pickerHeadCss = (picker: VariantPicker) =>
+  pickerCss(picker.a.values.length) + pickerColorCss(picker);
 
 /** Colores de las muestras (HeadStyle): `.vp [data-sw="a1"]{--sw:#c0392b}` (hex validado). */
 export function pickerColorCss(picker: VariantPicker): string {
