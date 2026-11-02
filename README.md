@@ -149,7 +149,7 @@ web-ecommerce/
 ├── .github/workflows/           # CI (Gitea Actions también los lee)
 ├── docs/fases/                  # prefase.md, fase0.md … faseN.md (qué se hizo y cómo testearlo)
 ├── .pi/mcp.json                 # MCPs de documentación del proyecto (sin secretos)
-├── .node-version                # versión de Node para fnm (24.22.1)
+├── .node-version                # versión de Node para fnm (24.22.2)
 ├── .npmrc
 ├── pnpm-workspace.yaml
 ├── package.json
@@ -173,8 +173,8 @@ Política:
 
 | Herramienta                       | Versión                                 | Dónde se fija                                                                                                                                    |
 | --------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Node.js (LTS "Krypton")           | **24.22.1**                             | `.node-version` (fnm) y `engines`                                                                                                                |
-| pnpm                              | **12.15.0**                             | `packageManager` en `package.json` raíz                                                                                                          |
+| Node.js (LTS "Krypton")           | **24.22.2**                             | `.node-version` (fnm) y `engines`                                                                                                                |
+| pnpm                              | **12.16.1**                             | `packageManager` en `package.json` raíz                                                                                                          |
 | fnm                               | 1.39.0                                  | host                                                                                                                                             |
 | Docker Engine                     | 29.9.1                                  | host / VPS                                                                                                                                       |
 | Docker Compose                    | 5.6.0                                   | host / VPS                                                                                                                                       |
@@ -186,19 +186,19 @@ Política:
 
 | Servicio                                            | Imagen                            | Uso                                                                           |
 | --------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
-| Node (base Dockerfiles)                             | `node:24.22.1-alpine3.24`         | build y runtime de backend y storefront (sintaxis `docker/dockerfile:1.28.0`) |
+| Node (base Dockerfiles)                             | `node:24.22.2-alpine3.24`         | build y runtime de backend y storefront (sintaxis `docker/dockerfile:1.28.0`) |
 | PostgreSQL                                          | `postgres:17.11-alpine`           | dev + prod                                                                    |
-| Redis                                               | `redis:8.10.2-alpine`             | dev + prod                                                                    |
-| Meilisearch                                         | `getmeili/meilisearch:v1.55.0`    | dev + prod                                                                    |
+| Redis                                               | `redis:8.10.3-alpine`             | dev + prod                                                                    |
+| Meilisearch                                         | `getmeili/meilisearch:v1.56.0`    | dev + prod                                                                    |
 | Caddy                                               | `caddy:2.11.7-alpine`             | prod                                                                          |
-| SeaweedFS (S3 local)                                | `chrislusf/seaweedfs:4.50`        | solo dev (en prod → Cloudflare R2)                                            |
-| Mailpit                                             | `axllent/mailpit:v1.32.0`         | solo dev                                                                      |
-| Stripe CLI                                          | `stripe/stripe-cli:v1.55.1`       | solo dev (webhooks)                                                           |
-| Renovate                                            | `renovate/renovate:44.181.9`      | CI (Gitea Actions, workflow `renovate.yml`)                                   |
-| Uptime Kuma                                         | `louislam/uptime-kuma:2.5.7`      | monitorización · homelab (VM `monitor-kbd`, fase 11-8)                        |
+| SeaweedFS (S3 local)                                | `chrislusf/seaweedfs:4.51`        | solo dev (en prod → Cloudflare R2)                                            |
+| Mailpit                                             | `axllent/mailpit:v1.33.0`         | solo dev                                                                      |
+| Stripe CLI                                          | `stripe/stripe-cli:v1.55.6`       | solo dev (webhooks)                                                           |
+| Renovate                                            | `renovate/renovate:44.200.1`      | CI (Gitea Actions, workflow `renovate.yml`)                                   |
+| Uptime Kuma                                         | `louislam/uptime-kuma:2.5.9`      | monitorización · homelab (VM `monitor-kbd`, fase 11-8)                        |
 | Beszel hub                                          | `henrygd/beszel:0.21.1`           | monitorización · homelab                                                      |
 | Beszel agent                                        | `henrygd/beszel-agent:0.21.1`     | monitorización · VPS Hetzner (y homelab)                                      |
-| Dozzle                                              | `amir20/dozzle:v11.3.5`           | logs · homelab (UI) + VPS (modo agent)                                        |
+| Dozzle                                              | `amir20/dozzle:v11.4.0`           | logs · homelab (UI) + VPS (modo agent)                                        |
 | k6                                                  | `grafana/k6:2.3.0`                | prueba de carga (`loadtest/`, fase 11-10) · desde la VM del homelab           |
 | GlitchTip _(propuesto)_                             | `glitchtip/glitchtip:6.2.6`       | errores de aplicación · homelab                                               |
 | cloudflared _(descartado en la fase 11: WireGuard)_ | `cloudflare/cloudflared:2026.9.3` | —                                                                             |
@@ -211,15 +211,15 @@ Política:
 
 | Paquete                                                                                                                   | Versión                   | App                                                                                                                                |
 | ------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `@medusajs/medusa`, `@medusajs/framework`, `@medusajs/cli`, `@medusajs/admin-sdk`, `@medusajs/test-utils`                 | **2.22.1**                | backend                                                                                                                            |
+| `@medusajs/medusa`, `@medusajs/framework`, `@medusajs/cli`, `@medusajs/admin-sdk`, `@medusajs/test-utils`                 | **2.22.2**                | backend                                                                                                                            |
 | `create-medusa-app`                                                                                                       | 2.21.2                    | scaffolding                                                                                                                        |
-| `@medusajs/js-sdk`, `@medusajs/types`                                                                                     | 2.22.1                    | storefront                                                                                                                         |
-| `astro`                                                                                                                   | **7.4.2**                 | storefront                                                                                                                         |
-| `@astrojs/svelte`                                                                                                         | 9.1.1                     | storefront                                                                                                                         |
+| `@medusajs/js-sdk`, `@medusajs/types`                                                                                     | 2.22.2                    | storefront                                                                                                                         |
+| `astro`                                                                                                                   | **7.4.4**                 | storefront                                                                                                                         |
+| `@astrojs/svelte`                                                                                                         | 9.1.2                     | storefront                                                                                                                         |
 | `@astrojs/node`                                                                                                           | 11.1.9                    | storefront                                                                                                                         |
 | `@astrojs/partytown` _(no instalado; fase 13)_                                                                            | 2.1.8                     | storefront                                                                                                                         |
 | `@astrojs/sitemap`                                                                                                        | 3.7.4                     | storefront                                                                                                                         |
-| `svelte`                                                                                                                  | **5.57.2**                | storefront                                                                                                                         |
+| `svelte`                                                                                                                  | **5.57.3**                | storefront                                                                                                                         |
 | `tailwindcss`, `@tailwindcss/vite`                                                                                        | **4.3.3**                 | storefront                                                                                                                         |
 | `shadcn-svelte` (CLI)                                                                                                     | 1.7.0                     | storefront (dev)                                                                                                                   |
 | `bits-ui`                                                                                                                 | 2.20.2                    | storefront                                                                                                                         |
@@ -229,12 +229,12 @@ Política:
 | `@stripe/stripe-js`                                                                                                       | 9.17.0                    | storefront                                                                                                                         |
 | Fuentes Baloo 2 · Nunito Sans _(Fonts API, Fontsource; no es un paquete npm)_                                             | —                         | storefront: titulares / texto (I-Marca), pesos 600–700 / 400–700                                                                   |
 | Iconos Phosphor _(SVG copiados en `src/lib/icons.ts`; no es un paquete npm)_                                              | core 2.1.1                | storefront: iconos de trazo (MIT, I-Marca; más en I-Interficie)                                                                    |
-| `@rokmohar/medusa-plugin-meilisearch`                                                                                     | 2.3.1                     | backend: proveedor Meilisearch del Search Module (fase 7; trae `meilisearch` 0.62.0)                                               |
+| `@rokmohar/medusa-plugin-meilisearch`                                                                                     | 2.4.0                     | backend: proveedor Meilisearch del Search Module (fase 7; trae `meilisearch` 0.62.0)                                               |
 | `stripe` (Node) _(no instalado)_                                                                                          | 22.6.2                    | backend: solo si se usa fuera del provider. El provider `@medusajs/payment-stripe` 2.22.1 trae su propio `stripe` 15.12.0 (fase 5) |
-| `resend`                                                                                                                  | 6.34.1                    | backend: SDK de Resend en el proveedor `resend-notification` (fase 8)                                                              |
-| `react-email` (componentes + `render` + CLI `email dev`)                                                                  | 6.11.3                    | emails (fase 8). Sustituye a `@react-email/components`, **obsoleto** en React Email 6                                              |
-| `@react-email/ui` (servidor de previsualización)                                                                          | 6.11.3                    | emails (dev; misma versión que `react-email`; trae Next 16)                                                                        |
-| `@react-email/render`                                                                                                     | 2.1.1                     | emails                                                                                                                             |
+| `resend`                                                                                                                  | 6.37.0                    | backend: SDK de Resend en el proveedor `resend-notification` (fase 8)                                                              |
+| `react-email` (componentes + `render` + CLI `email dev`)                                                                  | 6.11.6                    | emails (fase 8). Sustituye a `@react-email/components`, **obsoleto** en React Email 6                                              |
+| `@react-email/ui` (servidor de previsualización)                                                                          | 6.11.6                    | emails (dev; misma versión que `react-email`; trae Next 16)                                                                        |
+| `@react-email/render`                                                                                                     | 2.2.0                     | emails                                                                                                                             |
 | `react` · `react-dom` · `@types/react` · `@types/react-dom`                                                               | 18.3.1 · 18.3.31 · 18.3.7 | emails y backend (Admin de Medusa): una sola copia de React 18                                                                     |
 | `nodemailer` · `@types/nodemailer`                                                                                        | 10.2.1 · 8.0.2            | backend (dev): SMTP a Mailpit con `EMAIL_TRANSPORT=smtp`; no entra en producción                                                   |
 | `typescript`                                                                                                              | **6.0.3**                 | todo el monorepo                                                                                                                   |
@@ -242,7 +242,7 @@ Política:
 | `@playwright/test`                                                                                                        | 1.64.1                    | storefront (e2e, solo local; su Chromium lo usa Lighthouse CI)                                                                     |
 | `@axe-core/playwright`                                                                                                    | 4.14.0                    | storefront (dev, e2e de accesibilidad: `e2e/accesibilidad.spec.ts`; trae `axe-core` 4.14.0)                                        |
 | `@lhci/cli`                                                                                                               | 0.15.1                    | storefront (dev): Lighthouse CI en `ci.yml` (incluye Lighthouse 12.6.1, fase 10)                                                   |
-| `eslint` 10.13.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.72.0 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                         | `packages/config` (lint)                                                                                                           |
+| `eslint` 10.14.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.72.1 · `eslint-config-prettier` 10.1.8 · `globals` 17.13.0 | —                         | `packages/config` (lint)                                                                                                           |
 | `prettier`                                                                                                                | 3.9.10                    | `packages/config` (formato)                                                                                                        |
 | `eslint-plugin-astro` 3.2.1 · `eslint-plugin-svelte` 3.23.1                                                               | —                         | `packages/config` (lint, fase 3)                                                                                                   |
 | `prettier-plugin-astro` 1.1.1 · `prettier-plugin-svelte` 4.1.1 · `prettier-plugin-tailwindcss` 0.8.1                      | —                         | `packages/config` (formato, fase 3)                                                                                                |
@@ -337,8 +337,8 @@ Reglas: la cuenta **live** de Stripe **nunca** se conecta al MCP; las claves liv
   # ~/.bashrc o ~/.zshrc
   eval "$(fnm env --use-on-cd --version-file-strategy=recursive)"
   ```
-- **Node 24.22.1** (vía fnm, ver `.node-version`).
-- **pnpm 12.15.0** (el proyecto fija la versión en `packageManager`).
+- **Node 24.22.2** (vía fnm, ver `.node-version`).
+- **pnpm 12.16.1** (el proyecto fija la versión en `packageManager`).
 - **Docker** + **Docker Compose v2**.
 - **Stripe CLI**: no se instala; se usa como contenedor.
 - Cuentas: Stripe (modo test para desarrollo; live solo en producción), Resend, Cloudflare (R2 + DNS).
@@ -449,7 +449,7 @@ Implementados en la **fase 0** — ver [`docs/fases/fase0.md`](./docs/fases/fase
 
 | Fichero                                   | Contenido                                                                                                                                                                                                              |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `package.json`                            | `packageManager: pnpm@12.15.0`, `engines` (Node 24.22.1 / pnpm 12.15.0), scripts `infra:*`, `lint`, `format`, `typecheck`, `test`, `build`                                                                             |
+| `package.json`                            | `packageManager: pnpm@12.16.1`, `engines` (Node 24.22.2 / pnpm 12.16.1), scripts `infra:*`, `lint`, `format`, `typecheck`, `test`, `build`                                                                             |
 | `pnpm-workspace.yaml`                     | workspaces, `saveExact`, `engineStrict`, `publicHoistPattern` (requisito Medusa), `allowBuilds`                                                                                                                        |
 | `.npmrc`                                  | `public-hoist-pattern[]` exigido por la **doc oficial de Medusa**. pnpm ≥ 11 solo lee auth/registry de `.npmrc`, por eso los mismos patrones están también en `pnpm-workspace.yaml` (**mantener ambos sincronizados**) |
 | `.node-version`                           | `24.22.0` (fnm)                                                                                                                                                                                                        |
@@ -701,6 +701,7 @@ Versiones publicadas (tags; las crea el usuario): **`v0.1.0`** (fase 11, primer 
 | PG Pagos: PayPal, Bizum, transferencia | [fasePG-pagos.md](./docs/fases/fasePG-pagos.md)                                                  | ✅     |
 | H Home configurable y colecciones      | [faseH-home.md](./docs/fases/faseH-home.md)                                                      | ✅     |
 | FO Familias de opciones (filtros)      | [faseFO-familias.md](./docs/fases/faseFO-familias.md)                                            | ✅     |
+| CSS más ligero (por página)            | [faseCSS-por-pagina.md](./docs/fases/faseCSS-por-pagina.md)                                      | ✅     |
 | 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

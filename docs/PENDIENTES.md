@@ -7,22 +7,24 @@ Leyenda: **🔴 bloquea abrir la tienda** · 🟠 importante · 🟢 mejora / cu
 
 ## 0. Al empezar la próxima sesión (5 min)
 
-- [ ] Portátil: `fnm install 24.22.1 && fnm default 24.22.1` (Renovate #73 subió Node; `engineStrict` hace fallar `pnpm install` con 24.21), `pnpm install`, `pnpm infra:up` (Meilisearch local migra solo con `MEILI_UPGRADE_DB=true`).
+- [x] Portátil al día con Renovate #79 (2-nov-2026): Node **24.22.2** (`fnm default`), pnpm 12.16.1, `pnpm install`, las dos infras (`infra:up`, `real:infra:up`) con Meilisearch 1.56 y `db:migrate` en las dos BD (script `create-super-admin-role` de Medusa 2.22.2). En terminales abiertas antes: `fnm use`.
 - [ ] (Opcional) Runner de Gitea: la etiqueta `ubuntu-latest` apunta a `docker://node:24.21.0-trixie` (config del runner en el LXC, fuera del repo). Funciona igual (`setup-node` instala la de `.node-version`); cambiarla a `24.22.0-trixie` para alinear, y entonces actualizar README §4.1, AGENTS §8.2 y ESTADO §5.
+- [ ] 🟠 Runner de Gitea sin memoria: el `quality` del PR de Renovate #79 falló en el build en Gitea y pasó en GitHub con el mismo commit (y en local). Causa probable: LXC de 4 GB + 1 GB swap con `capacity: 2` (build del backend ~2,3 GB de pico + otro job a la vez). Si vuelve a pasar: «Re-run» con el runner libre; arreglo de fondo en el homelab: `capacity: 1` o más RAM/swap (ESTADO §5). Confirmar con el log (`Killed` / 137 / heap).
 - [ ] Gitea: si el siguiente PR de Renovate entra en conflicto con otro merge, **Actions → Renovate → Run workflow** (lo regenera; nunca resolver el lockfile a mano).
 
 ## 1. Siguiente despliegue en el VPS de pruebas (cuando haya algo que desplegar)
 
-Hoy el VPS corre `sha-4ad9972`. `main` ya lleva Astro 7.4.1, Node 24.22, Meilisearch 1.55 y los cambios de la fase 11.
+Hoy el VPS corre `v0.2.0` (G–M). `main` (2-nov-2026, `edf1743`) lleva además PG, H, descripciones con formato, ficha móvil, **FO (familias)**, perf CSS y Renovate #79 (Node 24.22.2, Medusa 2.22.2, Astro 7.4.4, **Meilisearch 1.56**). Candidato a tag `v0.3.0`.
 
 - [ ] e2e completos en local contra el backend real (el CI usa fixtures) con Astro 7.4.1.
 - [ ] Build del storefront en el portátil (fase11 §4.7) y backend `:0.1.x`/`sha-…` de GHCR.
-- [ ] 🟠 **Meilisearch 1.54.3 → 1.55.0**: no arranca sin migrar la BD (probado). Una vez con `MEILI_UPGRADE_DB=true` (override temporal de compose) y después sin él; si se corrompe, borrar el volumen y reindexar (`db:migrate`). Preparar los comandos exactos.
+- [ ] 🟠 **Meilisearch → 1.56.0** (el VPS sigue en la versión de `v0.2.0`): no arranca sin migrar la BD (probado con 1.55). Una vez con `MEILI_UPGRADE_DB=true` (override temporal de compose) y después sin él; si se corrompe, borrar el volumen y reindexar (`db:migrate`). Preparar los comandos exactos.
 - [ ] Copiar al VPS `compose.prod.yml`, `Caddyfile` y `monitoring/compose.agents.yml` nuevos (Dozzle v11.3.4 también en la VM).
 - [ ] Purge Everything en Cloudflare y comprobar HIT.
 - [ ] Automatizar la purga con un token de solo «Cache Purge» (fase11 §7) y, quizá, un script `deploy` con estos pasos.
 - [ ] **Fase H** (home): nada que configurar en el VPS (las carpetas del bucket y los widgets van en la imagen). Tras desplegar, poner fotos a las categorías destacadas y a las colecciones desde el Admin y reconstruir el storefront.
 - [ ] **Fase PG** (pagos): `TRANSFER_IBAN` y `TRANSFER_HOLDER` reales en `.env.prod` (y `TRANSFER_DAYS`/`TRANSFER_CANCEL_CRON` si no valen los de por defecto) y, tras desplegar, `./dc exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/stripe-region.js`. En el panel de Stripe, dejar solo tarjeta, PayPal y Bizum. Probar a mano un pago con cada método (también Google Pay en el móvil: solo sale en https) y revisar los e2e de tarjeta intermitentes (fasePG §5).
+- [ ] **Fase FO** (familias) y Medusa 2.22.2: el `server` hace `db:migrate` al arrancar (índice `product` con `option_families`, se llena solo; script `create-super-admin-role`). Nunca `--execute-all-search`. Después, familias con `familias.csv` o el widget (Admin → Options → Color) y reconstruir el storefront (filtros de categorías).
 - [ ] **Fase M** (mascotas y avisos): crear en ntfy el tema solo para pedidos y poner `NTFY_URL`, `NTFY_ORDERS_TOPIC` y `ADMIN_URL=https://admin.<dominio>` en `.env.prod` (server y worker los leen del bloque común). La tabla `pet` la crea el `server` al arrancar (`db:migrate`).
 
 ## 2. 🔴 Antes de abrir la tienda de verdad (fase «producción definitiva»)
