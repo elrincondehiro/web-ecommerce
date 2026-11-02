@@ -109,7 +109,7 @@ jobs:
     if: ${{ github.server_url == 'https://github.com' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    container: node:24.22.1-trixie
+    container: node:24.22.2-trixie
     services:
       postgres-localhost:
         image: postgres:17.11-alpine
@@ -120,7 +120,7 @@ jobs:
           --health-cmd "pg_isready -U medusa" --health-interval 5s --health-timeout 5s
           --health-retries 10
       redis-localhost:
-        image: redis:8.10.2-alpine
+        image: redis:8.10.3-alpine
         options: >-
           --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s
           --health-retries 10

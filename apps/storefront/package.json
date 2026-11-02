@@ -19,21 +19,21 @@
     "lhci:remote": "lhci autorun --config=./lighthouserc.remote.cjs"
   },
   "engines": {
-    "node": "24.22.1"
+    "node": "24.22.2"
   },
   "dependencies": {
     "@astrojs/node": "11.1.9",
     "@astrojs/sitemap": "3.7.4",
-    "@astrojs/svelte": "9.1.1",
-    "@medusajs/js-sdk": "2.22.1",
-    "@medusajs/types": "2.22.1",
+    "@astrojs/svelte": "9.1.2",
+    "@medusajs/js-sdk": "2.22.2",
+    "@medusajs/types": "2.22.2",
     "@stripe/stripe-js": "9.17.0",
     "@tailwindcss/vite": "4.3.3",
-    "astro": "7.4.2",
+    "astro": "7.4.4",
     "bits-ui": "2.20.2",
     "clsx": "2.1.1",
     "sharp": "0.35.5",
-    "svelte": "5.57.2",
+    "svelte": "5.57.3",
     "tailwind-merge": "3.7.0",
     "tailwind-variants": "3.3.1",
     "tailwindcss": "4.3.3"

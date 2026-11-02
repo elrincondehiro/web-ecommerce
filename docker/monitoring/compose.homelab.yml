@@ -19,7 +19,7 @@ name: monitor
 
 services:
   uptime-kuma:
-    image: louislam/uptime-kuma:2.5.7
+    image: louislam/uptime-kuma:2.5.9
     restart: unless-stopped
     # LAN (interfaz) y la IP del túnel WireGuard: el backup del VPS manda su heartbeat (push) a
     # http://10.77.0.3:3001/api/push/… por el túnel.
@@ -56,7 +56,7 @@ services:
       TOKEN: ${BESZEL_TOKEN_VM:-}
 
   dozzle:
-    image: amir20/dozzle:v11.3.5
+    image: amir20/dozzle:v11.4.0
     restart: unless-stopped
     environment:
       # Agente del VPS por el túnel; `|nombre` = cómo sale en la interfaz

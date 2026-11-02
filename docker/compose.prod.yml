@@ -174,7 +174,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:8.10.2-alpine
+    image: redis:8.10.3-alpine
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -186,7 +186,7 @@ services:
       retries: 20
 
   meilisearch:
-    image: getmeili/meilisearch:v1.55.0
+    image: getmeili/meilisearch:v1.56.0
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?}
