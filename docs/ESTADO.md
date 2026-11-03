@@ -115,6 +115,7 @@ pnpm --filter backend catalog:mock [300]          # genera catalog/mock/producto
 pnpm --filter backend catalog:import catalog/mock  # idempotente; antes: catalog:import catalog/mi-carga (categorías)
 pnpm --filter backend images:mock && pnpm --filter backend images:import .cache/mock-images
 pnpm backend:stock:mock      # idempotente: repone stock libre de los mock (los e2e de checkout lo gastan)
+pnpm backend:orders:cancel [dry-run]  # cancela los pedidos de prueba (@example.com) y libera su stock reservado (solo desarrollo)
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos a mano (borrado suave, fase 10-4)
 pnpm --filter backend points:accrue                        # abono de puntos a mano (el job lo hace a las 4:00, Fase L)
 pnpm --filter backend points:adjust <email|cus_…> <credit|debit> <importe> <motivo>   # ajuste manual
@@ -149,8 +150,8 @@ Publishable key actual (dev): `docker compose --env-file docker/.env -f docker/c
   - Sin `plantilla = correa` ni retrocompatibilidad (decisión del usuario: el despliegue definitivo regenera los datos). BD local migrada con `correas:sync`; la del entorno «real» y la del VPS de prueba **no** (ejecutar `correas:sync` o regenerarlas).
   - Comprobación usada: build de `main` (worktree en `~`, no en `/tmp`) y de la rama con el mismo catálogo y diff de todo el HTML normalizando islands y hashes CSP.
 - **Bases de tests**: backend unit 145, storefront unit 338, emails 24; e2e **278 pasan y 16 se saltan**.
-- **Stock local**: antes de los e2e se repusieron las piezas de correa reservadas por pedidos de prueba. Hay ~500 pedidos de e2e sin cancelar (`@example.com`): **siguiente rama** `chore/cancelar-pedidos-prueba` con un script `orders:cancel` (`cancelOrderWorkflow`, solo `@example.com`, `dry-run`, nunca en producción). No hay email de cancelación (decisión del usuario).
-- **Siguiente**: el script de cancelación, después la **Fase CS** ([faseCS-caja-snacks.md](./fases/faseCS-caja-snacks.md)): formulario de la mascota por completar con el usuario y spike de edición de pedidos en Medusa 2.22.2.
+- **Pedidos de prueba** (`chore/cancelar-pedidos-prueba`): `pnpm backend:orders:cancel [dry-run]` cancela con `cancelOrderWorkflow` los pedidos `@example.com` de los e2e (libera reservas, anula o devuelve pagos de Stripe test, puntos y códigos por sus subscribers; sin email de cancelación, decisión del usuario; nunca con `NODE_ENV=production`). **Ejecutarlo tras cada batería de e2e.** BD local: 499 cancelados el 3-nov-2026 (~0,5 s cada uno); quedan 6 pedidos de Gmail a mano (#90, #210, #211, #237, #238, #515) con sus reservas.
+- **Siguiente**: la **Fase CS** ([faseCS-caja-snacks.md](./fases/faseCS-caja-snacks.md)): formulario de la mascota por completar con el usuario y spike de edición de pedidos en Medusa 2.22.2.
 
 ## 6.0a Handover → sesión de la Fase FO (2-nov-2026, histórico)
 
@@ -217,7 +218,7 @@ CHROME_PATH=$(cd apps/storefront && node -p 'require("@playwright/test").chromiu
 - **CSS dentro del HTML** (`build.inlineStylesheets: "always"`) y **Speculation Rules** (`src/lib/speculation.ts`): cada KB de CSS se paga en cada página.
 - **Overrides de seguridad** nuevos (body-parser, multer, zod, undici; README §4): quitarlos cuando Renovate suba Medusa/Astro y `pnpm audit --prod` no los muestre.
 - **En el VPS, al desplegar**: añadir las variables a `.env.prod` (o dejar los valores por defecto del compose), repetir la tanda B de k6 (fase11 §5.7) y comprobar la invalidación de la caché (faseR §3).
-- **Datos locales**: 1068 productos (1000 mock); `e2e/correas.spec.ts` (7 m) falla en local porque `stock:mock` no repone las piezas de la correa (PENDIENTES §4).
+- **Datos locales**: 1068 productos (1000 mock). Tras los e2e, `pnpm backend:orders:cancel` libera las reservas de sus pedidos (también las piezas de la correa, que `stock:mock` no repone).
 
 **Fase F — mejoras en filtros: ✅ cerrada** ([faseF-filtros.md](./fases/faseF-filtros.md)): rango de precio real en `/buscar/` (`min_price_eur` + `max_price_eur`), sin materia seca ni «Formato: Única» fuera de contexto, subcategorías sangradas, «Solo disponibles» como interruptor lo primero del panel y sin saltos de la rejilla (fila de chips reservada; fila de categorías en todos los listados, con las hermanas en las hojas; las dos en una línea con scroll y `ScrollDrag`). `SearchLive` 982 B (límite 1 KB). ⚠️ En la BD local la cuerda azul de nailon está casi toda reservada por pedidos de e2e (falla `correas.spec.ts`). E2e en otro puerto: `E2E_BASE_URL=http://localhost:<puerto>` (no `127.0.0.1`: Stripe vuelve a `SITE_URL`).
 

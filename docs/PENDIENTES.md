@@ -83,7 +83,7 @@ Hoy el VPS corre `v0.2.0` (G–M). `main` (2-nov-2026, `edf1743`) lleva además 
 - [x] ~~Speculation Rules inline (P7)~~: Fase R-3.
 - [ ] View transitions CSS (sin JS; fase3 §7.1).
 - [ ] `stock:mock` solo repone los 100 primeros productos mock (`query.graph` sin paginación): el clicker de los e2e se agota (Fase PG).
-- [ ] `stock:mock` no repone las piezas de la correa: los e2e de la correa de 7 m fallan en local tras muchos pedidos de prueba. Solución prevista: script `orders:cancel` (cancela los pedidos de prueba `@example.com` y libera sus reservas), rama `chore/cancelar-pedidos-prueba`.
+- [x] ~~`stock:mock` no repone las piezas de la correa~~: `pnpm backend:orders:cancel` cancela los pedidos de prueba (`@example.com`) y libera sus reservas (ejecutarlo tras los e2e).
 - [ ] Partytown si se añaden terceros.
 - [ ] `ASTRO_KEY` fija (si se deja de purgar la CDN en cada despliegue; fase3).
 - [ ] Imagen del backend de ~1 GB: adelgazar (fase10 §7).

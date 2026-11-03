@@ -26,6 +26,7 @@
     "dev:storefront": "pnpm --filter storefront dev",
     "dev:emails": "pnpm --filter emails preview",
     "backend:seed": "pnpm --filter backend seed",
+    "backend:orders:cancel": "pnpm --filter backend orders:cancel",
     "backend:stock:mock": "pnpm --filter backend stock:mock",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

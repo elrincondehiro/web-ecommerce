@@ -298,7 +298,7 @@ git push -u origin feat/carrito-server-island    # origin empuja a Gitea y GitHu
   - Storefront: Vitest para `lib/`, Playwright para flujos críticos (incluido **con JS desactivado** para carrito/búsqueda).
 - No dejes código muerto, `TODO` sin issue asociado, ni `console.log`.
 - No dejes procesos en segundo plano (servidores de desarrollo, `medusa develop/start`, proxies, k6) al terminar: comprueba los puertos (`ss -ltnp`) y para por PID. `pkill -f <patrón>` puede matar tu propia shell si el patrón aparece en el comando; usa `[m]edusa` o el PID. Pon `timeout` a todo proceso largo.
-- Al cerrar una tarea o fase, **limpia los temporales**: ficheros en `/tmp` (logs, proxies, resultados de medidas), scripts `*.tmp.*` o `zz-*` dentro del repo, `test-results/` y las claves de prueba que hayas creado (usuarios, caché `mc:*` de Redis).
+- Al cerrar una tarea o fase, **limpia los temporales**: ficheros en `/tmp` (logs, proxies, resultados de medidas), scripts `*.tmp.*` o `zz-*` dentro del repo, `test-results/` y las claves de prueba que hayas creado (usuarios, caché `mc:*` de Redis). Tras los e2e, `pnpm backend:orders:cancel` (sus pedidos `@example.com` dejan stock reservado).
 
 ---
 

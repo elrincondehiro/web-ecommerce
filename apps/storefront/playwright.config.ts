@@ -1,7 +1,9 @@
 // e2e del storefront (fase 4). Solo en local (necesitan el backend con datos; CI: Lighthouse, fase 10).
 // Requisitos: `pnpm infra:up`, `pnpm dev:backend`, apps/storefront/.env con COOKIE_SECURE=false
 // y un build (`pnpm --filter storefront build`; vale STOREFRONT_MAX_PRODUCTS=100). Antes,
-// `pnpm backend:stock:mock` si los e2e de checkout ya han gastado stock. globalSetup espera a
+// `pnpm backend:stock:mock` si los e2e de checkout ya han gastado stock; después,
+// `pnpm backend:orders:cancel` (cancela sus pedidos `@example.com` y libera las reservas, también
+// las piezas de la correa). globalSetup espera a
 // que el backend responda de forma estable (e2e/global-setup.ts).
 // Navegador: Chromium 1243 ya instalado en ~/.cache/ms-playwright (revisión de 1.63.0).
 // Fuente: context7 /microsoft/playwright (test-configuration, emulation, webServer).
