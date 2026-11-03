@@ -41,14 +41,16 @@ Decisiones que conviene tomar **antes** de rellenar cientos de filas, porque cam
 
 Una fila por categoría.
 
-| Columna       | Obligatoria | Ejemplo              | Notas                                                                                                                                                                      |
-| ------------- | ----------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `handle`      | sí          | `pienso-perro`       | Único en toda la tienda.                                                                                                                                                   |
-| `nombre`      | al crear    | `Pienso`             | Empieza en mayúscula (aviso si no).                                                                                                                                        |
-| `padre`       | no          | `alimentacion-perro` | **`handle`** del padre (no su nombre): otra fila de la hoja o una categoría que ya exista. Vacío = categoría principal. Si escribes el nombre, el error propone el handle. |
-| `descripcion` | no          |                      | `-` = borrarla.                                                                                                                                                            |
-| `orden`       | no          | `0`                  | Posición entre las hermanas (0, 1, 2…).                                                                                                                                    |
-| `activa`      | no          | `sí`                 | `sí` / `no`. Por defecto `sí`.                                                                                                                                             |
+| Columna            | Obligatoria | Ejemplo              | Notas                                                                                                                                                                      |
+| ------------------ | ----------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handle`           | sí          | `pienso-perro`       | Único en toda la tienda.                                                                                                                                                   |
+| `nombre`           | al crear    | `Pienso`             | Empieza en mayúscula (aviso si no).                                                                                                                                        |
+| `padre`            | no          | `alimentacion-perro` | **`handle`** del padre (no su nombre): otra fila de la hoja o una categoría que ya exista. Vacío = categoría principal. Si escribes el nombre, el error propone el handle. |
+| `descripcion`      | no          |                      | `-` = borrarla.                                                                                                                                                            |
+| `orden`            | no          | `0`                  | Posición entre las hermanas (0, 1, 2…).                                                                                                                                    |
+| `activa`           | no          | `sí`                 | `sí` / `no`. Por defecto `sí`.                                                                                                                                             |
+| `diseno`           | no          | `estandar`           | Fase DS. Diseño de la **página** de la categoría (no pasa a sus subcategorías). Vacío = estándar; `-` = quitarlo. Ver [Diseños](#diseños).                                 |
+| `diseno_productos` | no          | `estandar`           | Fase DS. Diseño de las **fichas** de sus productos y de los de sus subcategorías (salvo que el producto tenga uno propio). `-` = quitarlo.                                 |
 
 **Productos solo en la subcategoría más concreta** (`pienso-perro`, no también `alimentacion-perro` ni `perro`): la página del padre suma los productos de sus hijas.
 
@@ -87,6 +89,7 @@ Una fila por categoría.
 | `plantilla`     | no          | `arnes`                       | Fase O. Plantilla de la ficha (`apps/storefront/src/content/plantillas/<id>.md`). Vacío: la de su categoría, si la tiene. `-` = quitarla. Ver [Fichas con plantilla y selector](#fichas-con-plantilla-y-selector).                           |
 | `guia_tallas`   | no          | `marca-m-arnes-a`             | Fase O. Guía de tallas del modelo (`apps/storefront/src/content/guias/<id>.md`). `-` = quitarla.                                                                                                                                             |
 | `opcion_fotos`  | no          | `Estampado`                   | Fase O. Opción cuyas fotos cambian la galería al elegirla (fotos `handle--valor_01.jpg`). Tiene que ser una de las opciones del producto. `-` = quitarla.                                                                                    |
+| `diseno`        | no          | `estandar`                    | Fase DS. Diseño de la ficha. Vacío = el de su categoría (`diseno_productos`) o el estándar; `-` = quitarlo. Ver [Diseños](#diseños).                                                                                                         |
 
 ### Componentes analíticos (primera fila)
 
@@ -262,6 +265,15 @@ Fase O. Para productos con varias opciones (p. ej. un arnés con 9 estampados ×
 - El `id` es el nombre del fichero sin `.md` (minúsculas y guiones). El importador no lo comprueba: un `id` que no existe **rompe el build del storefront** con un aviso que dice qué producto y qué fichero falta. Crea el `.md` antes del build (o corrige la hoja).
 - Plantillas y guías se publican con un **rebuild** del storefront.
 - Ejemplo completo (estampados con fotos, guía y plantilla): [`catalog/prueba-arnes/`](../prueba-arnes/).
+
+## Diseños
+
+Fase DS. Un **diseño** es la maquetación entera de una ficha o de la página de una categoría (las plantillas, en cambio, son texto **dentro** de la ficha estándar). Los diseños disponibles están en `apps/storefront/src/lib/disenos.ts` (copia igual en `apps/backend/src/lib/disenos.ts`); hoy: `estandar` y `correa`.
+
+- **Ficha**: el `diseno` del producto → el `diseno_productos` de su categoría más concreta → el de sus padres, hacia arriba → `estandar`.
+- **Página de categoría**: su `diseno` → `estandar` (no se hereda entre categorías).
+- Diseños **reservados**: `correa` lo pone `correas:sync`; la hoja da error si lo escribes. Tampoco se puede heredar de una categoría.
+- Un id que no existe da error en el dry-run. Se cambia también en el Admin (ficha del producto o de la categoría → «Diseño…»), y se ve en la tienda tras el siguiente **build**.
 
 ## Correa a medida
 

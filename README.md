@@ -702,6 +702,8 @@ Versiones publicadas (tags; las crea el usuario): **`v0.1.0`** (fase 11, primer 
 | H Home configurable y colecciones      | [faseH-home.md](./docs/fases/faseH-home.md)                                                      | ✅     |
 | FO Familias de opciones (filtros)      | [faseFO-familias.md](./docs/fases/faseFO-familias.md)                                            | ✅     |
 | CSS más ligero (por página)            | [faseCSS-por-pagina.md](./docs/fases/faseCSS-por-pagina.md)                                      | ✅     |
+| DS Diseños de ficha y categoría        | [faseDS-disenos.md](./docs/fases/faseDS-disenos.md)                                              | ✅     |
+| CS Caja de snacks                      | [faseCS-caja-snacks.md](./docs/fases/faseCS-caja-snacks.md) (propuesta)                          | ⏳     |
 | 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

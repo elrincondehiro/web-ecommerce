@@ -4,20 +4,21 @@
 // van solo en la categoría más concreta). URL plana /categoria/<handle>/ (handles únicos).
 // Migas y BreadcrumbList con la cadena de padres; enlaces a las hijas (HTML, 0 JS).
 // Fuente: astro-docs (routing: nested pagination, `paginate()` con `params`).
+// Fase DS: aquí solo lo COMÚN (`CategoriaData`); la página la pinta el diseño de la categoría
+// (`metadata.diseno`, sin herencia; lib/disenos.ts, componentes en src/disenos/categoria/).
 import type { GetStaticPaths } from "astro";
 import { metaDescription } from "$lib/catalog";
+import type { CategoriaData } from "$lib/categoria";
 import { categoryHref, categoryRow } from "$lib/categories";
+import { resolveCategoryDesign, type CategoryDesignId } from "$lib/disenos";
 import { buildListingFacets } from "$lib/facets";
 import { PAGE_SIZE } from "$lib/constants";
 import { getCategoryProducts, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd } from "$lib/seo";
-import BaseLayout from "../../../layouts/BaseLayout.astro";
-import Breadcrumbs from "../../../components/Breadcrumbs.astro";
-import CatalogPage from "../../../components/CatalogPage.astro";
-import HeadStyle from "../../../components/HeadStyle.astro";
-import { swatchCss } from "$lib/family-swatches";
-import CategoryNav from "../../../components/CategoryNav.astro";
-import RichText from "../../../components/RichText.astro";
+import Estandar from "../../../disenos/categoria/Estandar.astro";
+
+// Registro: id → componente (las propiedades, en lib/disenos.ts). El tipo obliga a tenerlos todos.
+const DISENOS: Record<CategoryDesignId, typeof Estandar> = { estandar: Estandar };
 
 export const getStaticPaths = (async ({ paginate }) => {
   const tree = await getShopTree(true);
@@ -36,17 +37,19 @@ export const getStaticPaths = (async ({ paginate }) => {
         row: categoryRow(tree, node),
         hasChildren: node.children.length > 0,
       };
+      // El build falla si la categoría pide un diseño que no existe
+      const design = resolveCategoryDesign(node);
       return paginate(products, {
         pageSize: PAGE_SIZE,
         params: { handle: node.handle },
-        props: { category, facets },
+        props: { category, facets, design },
       });
     }),
   );
   return perCategory.flat();
 }) satisfies GetStaticPaths;
 
-const { page, category, facets } = Astro.props;
+const { page, category, facets, design } = Astro.props;
 const crumbs = [
   { name: "Inicio", href: "/" },
   ...category.path.map((c) => ({ name: c.name, href: categoryHref(c) })),
@@ -55,28 +58,20 @@ const crumbs = [
 const parent = category.path.at(-2);
 const baseTitle = parent ? `${category.name} · ${parent.name}` : category.name;
 const title = page.currentPage > 1 ? `${baseTitle} (página ${page.currentPage})` : baseTitle;
-const showDesc = false;
+
+const data: CategoriaData = {
+  design,
+  page,
+  facets,
+  category,
+  crumbs,
+  seo: {
+    title,
+    description: metaDescription(category.description) || `${baseTitle} en El Rincón de Hiro.`,
+    jsonLd: [breadcrumbJsonLd(crumbs, Astro.site!)],
+  },
+};
+const Diseno = DISENOS[design];
 ---
 
-<BaseLayout
-  title={title}
-  description={metaDescription(category.description) || `${baseTitle} en El Rincón de Hiro.`}
-  jsonLd={[breadcrumbJsonLd(crumbs, Astro.site!)]}
->
-  {/* Fase FO: puntos de color propios de las familias del filtro (lib/family-swatches.ts) */}
-  <HeadStyle slot="head" css={swatchCss(facets)} />
-  <Breadcrumbs items={crumbs} />
-  <h1 class="mb-2 text-2xl font-semibold tracking-tight">{category.name}</h1>
-  {page.currentPage === 1 && showDesc && (
-    <RichText
-      text={category.description}
-      headingLevel={2}
-      class="mb-4 max-w-prose text-muted-foreground"
-    />
-  )}
-  <CategoryNav
-    links={category.row}
-    label={category.hasChildren ? `Subcategorías de ${category.name}` : "Categorías"}
-  />
-  <CatalogPage page={page} facets={facets} categoryHandle={category.handle} />
-</BaseLayout>
+<Diseno {...data} />

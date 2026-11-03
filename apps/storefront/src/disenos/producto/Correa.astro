@@ -1,0 +1,28 @@
+---
+// Diseño de ficha «correa» (Fase E-2c, como diseño desde la Fase DS): enlaces a los
+// otros colores y materiales (ColorPicker, estilos en el <head>), plazo de fabricación
+// (src/content/correa.md) y el configurador (CorreaBuilder, bundle CorreaLive). Sin plantilla,
+// guía de tallas ni resumen de opciones: se eligen en el configurador.
+import { getEntry } from "astro:content";
+import { correaSwatch } from "$lib/correa";
+import type { FichaData } from "$lib/ficha";
+import ColorPicker from "../../components/correa/ColorPicker.astro";
+import SwatchStyles from "../../components/correa/SwatchStyles.astro";
+import CorreaBuilder from "../../components/correa/CorreaBuilder.astro";
+import FichaLayout from "./FichaLayout.astro";
+
+type Props = FichaData;
+const data = Astro.props;
+const { product, discontinued } = data;
+const swatches = data.siblings.map(correaSwatch);
+// Selector de color: sus estilos van al <head> (SwatchStyles, CSP)
+const showPicker = !discontinued && swatches.length > 1;
+const plazo = (await getEntry("correa", "correa"))?.data.plazo;
+---
+
+<FichaLayout {...data} wishVariant={false} wishProductField={false}>
+  <SwatchStyles slot="head" swatches={showPicker ? swatches : []} />
+  {showPicker && <ColorPicker swatches={swatches} mode="link" current={product.handle} />}
+  {plazo && <p class="font-semibold">{plazo}</p>}
+  <CorreaBuilder product={product} />
+</FichaLayout>

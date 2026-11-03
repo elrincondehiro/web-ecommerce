@@ -8,7 +8,7 @@
 import { Image } from "astro:assets";
 import { buttonVariants } from "$lib/components/ui/button";
 import { getProductPricing, isDiscontinued, replacementHandle } from "$lib/catalog";
-import { isCorrea } from "$lib/correa";
+import { productDesign } from "$lib/disenos";
 import type { StoreProduct } from "$lib/catalog";
 import { wishRows, wishlistActionUrl } from "$lib/wishlist";
 import AddToCart from "./AddToCart.astro";
@@ -34,8 +34,9 @@ const rows = wishRows(items, products).map((row) => {
     href: `/producto/${row.product.handle}/`,
     pricing,
     chosen,
-    // Se puede añadir aquí si hay una variante concreta (no la correa: se configura en su ficha).
-    addable: !discontinued && !isCorrea(row.product) ? chosen : undefined,
+    // Se puede añadir aquí si hay una variante concreta (no los diseños configurables, como la
+    // correa: se configuran en su ficha; lib/disenos.ts).
+    addable: !discontinued && !productDesign(row.product).configurable ? chosen : undefined,
     discontinued,
     replacement: discontinued ? replacementHandle(row.product) : null,
     variantTitle:
@@ -124,7 +125,7 @@ const thumb = 80;
           ) : (
             !r.discontinued && (
               <a href={r.href} class={buttonVariants({ size: "sm", variant: "outline" })}>
-                {isCorrea(r.product) ? "Elegir medida" : "Elegir opciones"}
+                {productDesign(r.product).elegir ?? "Elegir opciones"}
               </a>
             )
           )}

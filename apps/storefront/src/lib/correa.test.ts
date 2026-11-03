@@ -46,7 +46,7 @@ function correa(
     id,
     handle: `correa-${id}`,
     title: `Correa ${id}`,
-    metadata: { plantilla: "correa", grupo: "correa", color, material },
+    metadata: { diseno: "correa", grupo: "correa", color, material },
     categories: [{ id: "pcat_correas", handle: "correas-perro", name: "Correas" }],
     variants: LENGTHS.flatMap((l) =>
       CLIPS.flatMap((d) =>

@@ -19,12 +19,9 @@ describe("resolveTemplate", () => {
     ).toBe("paseo");
     expect(resolveTemplate(p(), null, templates)).toBeNull();
   });
-  it("metadata.plantilla manda; la correa no cuenta; una que no existe rompe el build", () => {
+  it("metadata.plantilla manda; una que no existe rompe el build", () => {
     expect(resolveTemplate(p({ plantilla: "paseo" }), category("arneses-perro"), templates)).toBe(
       "paseo",
-    );
-    expect(resolveTemplate(p({ plantilla: "correa" }), category("arneses-perro"), templates)).toBe(
-      null,
     );
     expect(() => resolveTemplate(p({ plantilla: "otra" }), null, templates)).toThrow(/no existe/);
   });

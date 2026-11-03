@@ -126,7 +126,7 @@ medusaIntegrationTestRunner({
         filters: { handle: "correa-rojo-pvc" },
       });
       const p = data[0]!;
-      expect(p.metadata).toMatchObject({ plantilla: "correa", grupo: "correa" });
+      expect(p.metadata).toMatchObject({ diseno: "correa", grupo: "correa" });
       expect(p.categories!.map((c) => c!.handle)).toEqual(["correas-perro"]);
       expect(p.variants).toHaveLength(117);
       const v = p.variants!.find((x) => x!.sku === "CORREA-ROJO-PVC-07-MON-SEG")!;

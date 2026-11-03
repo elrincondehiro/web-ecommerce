@@ -8,8 +8,8 @@
  * disponibilidad y el storefront, y la validación de los datos que el cliente añade a la línea.
  */
 
-/** `product.metadata.plantilla`: el storefront pinta la ficha con el configurador. */
-export const CORREA_TEMPLATE = "correa";
+/** `product.metadata.diseno` (Fase DS, lib/disenos.ts): el storefront pinta la ficha con el configurador. */
+export const CORREA_DESIGN = "correa";
 /** `product.metadata.grupo`: las correas salen como una sola tarjeta en listados y búsqueda. */
 export const CORREA_GROUP = "correa";
 
@@ -20,7 +20,10 @@ export const CORREA_VARIANT_META = {
   handClip: "mosqueton_mano",
 } as const;
 
-/** Claves de `line_item.metadata` que puede mandar el cliente (solo en líneas de correa). */
+/**
+ * Claves de `line_item.metadata` que puede mandar el cliente: solo en variantes con largo
+ * (`largo_m`), es decir, de correa.
+ */
 export const CORREA_LINE_META = {
   notes: "observaciones",
   exactCm: "medida_cm",
@@ -28,8 +31,12 @@ export const CORREA_LINE_META = {
 
 export const NOTES_MAX = 200;
 
+/**
+ * Producto de la correa a medida (ruta de disponibilidad de la landing): está en el grupo. El
+ * hook del carrito no lo usa: valida por la variante (`variantLength`).
+ */
 export function isCorrea(metadata: Record<string, unknown> | null | undefined): boolean {
-  return metadata?.plantilla === CORREA_TEMPLATE;
+  return metadata?.grupo === CORREA_GROUP;
 }
 
 /** Largo de la variante (metros enteros) leído de su metadata. */
@@ -49,7 +56,7 @@ const CONTROL_RE = /[\u0000-\u0009\u000b-\u001f\u007f]/;
 
 /**
  * Valida la metadata que el cliente pone en una línea. `isCorreaLine` = la variante es de una
- * correa; `lengthM` = su largo. Devuelve el mensaje de error o `null`.
+ * correa (tiene `largo_m`); `lengthM` = su largo. Devuelve el mensaje de error o `null`.
  * - Las líneas que no son de correa no admiten metadata (nadie la usa; evita que un cliente
  *   guarde datos arbitrarios en el pedido).
  * - En las de correa solo `observaciones` (texto ≤ 200) y `medida_cm` (entero en el tramo del largo).

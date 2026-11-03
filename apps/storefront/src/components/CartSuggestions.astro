@@ -12,7 +12,7 @@ import { buttonVariants } from "$lib/components/ui/button";
 import { formatPrice } from "$lib/format";
 import { getProductsByHandle, getWishlist, getWishlistProducts, type StoreCart } from "$lib/medusa";
 import { getProductPricing, type StoreProduct } from "$lib/catalog";
-import { isCorrea } from "$lib/correa";
+import { productDesign } from "$lib/disenos";
 import {
   availableNow,
   cartRelatedHandles,
@@ -45,7 +45,7 @@ async function wishBlock(): Promise<WishCandidate[]> {
   const byId = new Map(products.map((p) => [p.id, p]));
   const candidates = saved.flatMap((i) => {
     const product = byId.get(i.product_id);
-    return product && !isCorrea(product)
+    return product && !productDesign(product).configurable
       ? [{ product, variantId: i.variant_id, createdAt: i.created_at }]
       : [];
   });
@@ -60,7 +60,7 @@ async function relatedBlock(): Promise<StoreProduct[]> {
   const byHandle = new Map(fresh.map((p) => [p.handle, p]));
   return handles
     .map((h) => byHandle.get(h))
-    .filter((p): p is StoreProduct => !!p && !isCorrea(p) && availableNow(p));
+    .filter((p): p is StoreProduct => !!p && !productDesign(p).configurable && availableNow(p));
 }
 
 let wish: WishCandidate[] = [];

@@ -15,7 +15,7 @@ import {
 } from "astro:env/server";
 import { CardCache } from "./card-cache";
 import { isDiscontinued, type StoreProduct, type StoreVariant } from "./catalog";
-import { isCorrea, maxLength } from "./correa";
+import { isCorrea, isCorreaGrouped, maxLength } from "./correa";
 import type { CartPoints, PointsSummary } from "./points";
 import type { Pet, PetBody } from "./pets";
 import type { RawSearchResult, SearchQueryBody } from "./search";
@@ -291,7 +291,7 @@ export async function getVariantsFresh(ids: string[]): Promise<StoreVariant[]> {
 export async function getCorreaMaxLengths(): Promise<Record<string, number>> {
   if (useFixtures) {
     return Object.fromEntries(
-      (await fixtures.products()).filter(isCorrea).map((p) => [p.handle, maxLength(p)]),
+      (await fixtures.products()).filter(isCorreaGrouped).map((p) => [p.handle, maxLength(p)]),
     );
   }
   const { correas } = await sdk().client.fetch<{ correas: { handle: string; max_m: number }[] }>(

@@ -10,7 +10,8 @@
  * Precio = precio_3m + suplemento del largo + recargo de cada mosquetón. Peso = peso_fijo_g +
  * gramos_m × largo.
  */
-import { CORREA_GROUP, CORREA_TEMPLATE, CORREA_VARIANT_META } from "../../lib/correas";
+import { CORREA_DESIGN, CORREA_GROUP, CORREA_VARIANT_META } from "../../lib/correas";
+import { DESIGN_KEY } from "../../lib/disenos";
 import type { CorreaClip, CorreaProductSheet, CorreaSheets } from "./correas-sheet";
 
 export const OPTION_LENGTH = "Largo";
@@ -102,7 +103,7 @@ export function buildWanted(sheets: CorreaSheets): CorreaWanted {
       material: p.material,
       status: p.status,
       metadata: {
-        plantilla: CORREA_TEMPLATE,
+        [DESIGN_KEY]: CORREA_DESIGN,
         grupo: CORREA_GROUP,
         color: p.color,
         ...(p.colorHex ? { color_hex: p.colorHex } : {}),

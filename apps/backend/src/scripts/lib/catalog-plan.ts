@@ -24,6 +24,7 @@ import {
   type Text,
   type VariantSheet,
 } from "./catalog-sheet";
+import { DESIGN_KEY, PRODUCTS_DESIGN_KEY } from "../../lib/disenos";
 
 export const CURRENCY = "eur";
 export const SINGLE_VARIANT_TITLE = "Única";
@@ -42,6 +43,8 @@ export interface DbCategory {
   rank: number;
   is_active: boolean;
   parent_category_id: string | null;
+  /** Fase DS: diseños (`diseno`, `diseno_productos`) y la foto de la Fase H. */
+  metadata: Record<string, unknown>;
 }
 
 export interface DbOption {
@@ -128,6 +131,8 @@ export const META = {
   template: "plantilla",
   sizeGuide: "guia_tallas",
   photoOption: "opcion_fotos",
+  /** Diseño de la ficha (Fase DS; lib/disenos.ts, igual en el storefront). */
+  design: DESIGN_KEY,
   stepG: "paso_g",
   minG: "min_g",
   netG: "neto_g",
@@ -285,6 +290,11 @@ export function planCatalog(
     if (textChanged(cat.description, existing.description)) changes.push("descripción");
     if (cat.rank !== undefined && cat.rank !== existing.rank) changes.push("orden");
     if (cat.active !== undefined && cat.active !== existing.is_active) changes.push("activa");
+    const catMeta = categoryMetadata(cat);
+    if (metaChanged(catMeta[DESIGN_KEY], existing.metadata[DESIGN_KEY])) changes.push("diseño");
+    if (metaChanged(catMeta[PRODUCTS_DESIGN_KEY], existing.metadata[PRODUCTS_DESIGN_KEY])) {
+      changes.push("diseño de sus productos");
+    }
     if (changes.length) plan.categories.update.push({ sheet: cat, id: existing.id, changes });
     else plan.categories.unchanged += 1;
   }
@@ -423,6 +433,7 @@ export function planCatalog(
       META.template,
       META.sizeGuide,
       META.photoOption,
+      META.design,
     ] as string[];
     if (changedKeys.includes(META.discontinued)) changes.push("descatalogado");
     if (changedKeys.includes(META.noPoints)) changes.push("sin puntos");
@@ -431,6 +442,7 @@ export function planCatalog(
     if (changedKeys.includes(META.template)) changes.push("plantilla");
     if (changedKeys.includes(META.sizeGuide)) changes.push("guía de tallas");
     if (changedKeys.includes(META.photoOption)) changes.push("opción de fotos");
+    if (changedKeys.includes(META.design)) changes.push("diseño");
     if (changedKeys.some((k) => !own.includes(k))) changes.push("analíticos");
     if (p.status && p.status !== existing.status) changes.push("estado");
     if (p.iva && IVA_TYPE[p.iva] !== existing.type) changes.push("iva");
@@ -560,7 +572,33 @@ export function productMetadata(p: ProductSheet): Record<string, unknown> {
   if (p.template !== undefined) meta[META.template] = p.template ?? "";
   if (p.sizeGuide !== undefined) meta[META.sizeGuide] = p.sizeGuide ?? "";
   if (p.photoOption !== undefined) meta[META.photoOption] = p.photoOption ?? "";
+  if (p.design !== undefined) meta[META.design] = p.design ?? "";
   return meta;
+}
+
+/** Diseños de la categoría que escribe la hoja (Fase DS; "" = borrar). */
+export function categoryMetadata(c: CategorySheet): Record<string, unknown> {
+  const meta: Record<string, unknown> = {};
+  if (c.design !== undefined) meta[DESIGN_KEY] = c.design ?? "";
+  if (c.productsDesign !== undefined) meta[PRODUCTS_DESIGN_KEY] = c.productsDesign ?? "";
+  return meta;
+}
+
+/**
+ * Metadata COMPLETA de una categoría tras aplicar la hoja: en Medusa 2.22 la de las categorías
+ * se SUSTITUYE al actualizar (no se fusiona; comprobado en la Fase H, admin/components/
+ * entity-image.tsx), así que se mandan también sus otras claves. "" = quitar la clave.
+ */
+export function mergedCategoryMetadata(
+  c: CategorySheet,
+  current: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...current };
+  for (const [k, v] of Object.entries(categoryMetadata(c))) {
+    if (v === "") delete out[k];
+    else out[k] = v;
+  }
+  return out;
 }
 
 /** Metadata de la variante: contenido neto y granel ("" = borrar). */

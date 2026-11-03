@@ -1,0 +1,42 @@
+---
+// Diseño de ficha «estandar» (Fase DS): compra con tabla de variantes o selector de opciones
+// (BuyBox), plantilla y guía de tallas, y el resumen de opciones si no hay selector.
+import { getProductPricing, preselectedVariantId } from "$lib/catalog";
+import type { FichaData } from "$lib/ficha";
+import BuyBox from "../../components/BuyBox.astro";
+import ProductGuides from "../../components/ProductGuides.astro";
+import FichaLayout from "./FichaLayout.astro";
+
+type Props = FichaData;
+const data = Astro.props;
+const { product, picker, guides } = data;
+const pricing = getProductPricing(product);
+// Lista de deseos (L-1, decisión B): ♡ junto al título, lejos de «Añadir». Varias variantes →
+// guarda la elegida (y se enciende si ESA está guardada); una sola → el producto.
+const wishVariant = pricing.variants.length > 1;
+const p = picker?.picker;
+const wishKey = p
+  ? (p.cells[p.selected.a]?.[p.selected.b]?.id ?? undefined)
+  : preselectedVariantId(pricing);
+// El resumen de opciones sobra si ya se eligen en el selector
+const options = p ? [] : (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
+---
+
+<FichaLayout {...data} wishVariant={wishVariant} wishKey={wishKey} wishProductField={!p}>
+  <BuyBox product={product} picker={p ?? null} />
+  <Fragment slot="after">
+    {!data.discontinued && (
+      <ProductGuides template={guides.template} sizeGuide={guides.sizeGuide} />
+    )}
+    {options.length > 0 && (
+      <dl class="grid gap-2 text-sm">
+        {options.map((o) => (
+          <div class="flex gap-2">
+            <dt class="text-muted-foreground">{o.title}:</dt>
+            <dd>{o.values!.map((v) => v.value).join(" · ")}</dd>
+          </div>
+        ))}
+      </dl>
+    )}
+  </Fragment>
+</FichaLayout>

@@ -59,7 +59,11 @@ describe("correas: hojas de la plantilla", () => {
     expect(wanted.pieces.map((p) => p.sku)).toContain("PIEZA-ANILLA");
     const pvc = wanted.products.find((p) => p.handle === "correa-rojo-pvc")!;
     expect(pvc.variants).toHaveLength(117);
-    expect(pvc.metadata).toMatchObject({ plantilla: "correa", grupo: "correa", color: "Rojo" });
+    expect(pvc.metadata).toMatchObject({
+      diseno: "correa",
+      grupo: "correa",
+      color: "Rojo",
+    });
     expect(pvc.options.map((o) => o.title)).toEqual([OPTION_LENGTH, OPTION_DOG, OPTION_HAND]);
     const v = (sku: string) => pvc.variants.find((x) => x.sku === sku)!;
     // Tabla aprobada: 3 m 25 €, 4 m 26,50, 5 m 28, +1 €/m hasta 15 m = 38 € (PVC)

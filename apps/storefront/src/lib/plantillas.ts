@@ -2,10 +2,10 @@
 // las Content Collections `plantillas` y `guias` (src/content.config.ts).
 // Orden: `metadata.plantilla` del producto (columna `plantilla` de la hoja) → la primera plantilla
 // cuya lista `categorias` contenga la categoría del producto o una de sus ancestras → ninguna.
-// La correa a medida (`plantilla = "correa"`) tiene su propia ficha: aquí no cuenta.
+// Solo se usa en los diseños de ficha que pintan guías (lib/disenos.ts `guias`): la correa a
+// medida (diseño `correa`) no llega aquí.
 import type { StoreProduct } from "./catalog";
 import type { CategoryNode } from "./categories";
-import { CORREA_TEMPLATE } from "./correa";
 
 export const TEMPLATE_KEY = "plantilla";
 export const SIZE_GUIDE_KEY = "guia_tallas";
@@ -24,7 +24,6 @@ export function resolveTemplate(
   templates: readonly TemplateRef[],
 ): string | null {
   const own = str(product.metadata?.[TEMPLATE_KEY]);
-  if (own === CORREA_TEMPLATE) return null;
   if (own) {
     if (!templates.some((t) => t.id === own)) {
       throw new Error(

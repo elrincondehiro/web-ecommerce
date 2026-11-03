@@ -1,6 +1,6 @@
 // Correa a medida (Fase E-2c). Funciones PURAS sobre los productos que genera `correas:sync`
 // (backend: src/scripts/correas-sync.ts y src/lib/correas.ts, mismas claves de metadata):
-//   - un producto por color × material (`metadata.plantilla = "correa"`, `grupo = "correa"`);
+//   - un producto por color × material (`metadata.diseno = "correa"`, `grupo = "correa"`);
 //   - una variante por largo × mosquetón lado perro × lado mano (`variant.metadata`: `largo_m`,
 //     `mosqueton_perro`, `mosqueton_mano`), cada una un inventory kit de piezas.
 // Listados y búsqueda: las correas salen como UNA tarjeta («Correa a medida», `groupCorreas`) que
@@ -9,8 +9,10 @@
 // mosquetón. El build falla si algún precio de Medusa no cumple ese modelo.
 // Disponibilidad: máscaras de 9 bits por largo (lado perro × lado mano), sin cantidades.
 import { isVariantInStock, variantAmount, type StoreProduct, type StoreVariant } from "./catalog";
+import { productDesign } from "./disenos";
 
-export const CORREA_TEMPLATE = "correa";
+/** `metadata.grupo` de las correas: una sola tarjeta y la landing en listados y búsqueda. */
+export const CORREA_GROUP = "correa";
 /** Handle (y id) de la página de grupo; ningún producto puede usarlo (lo comprueba el build). */
 export const CORREA_GROUP_HANDLE = "correa-a-medida";
 export const CORREA_GROUP_ID = CORREA_GROUP_HANDLE;
@@ -23,8 +25,17 @@ export const CORREA_LINE_META = { notes: "observaciones", exactCm: "medida_cm" }
 export const NOTES_MAX = 200;
 const OPTION_DOG = "Mosquetón lado perro";
 
+/** Ficha con el configurador (diseño `correa`, Fase DS): modelo de precio, máscaras, LiveSync. */
 export function isCorrea(product: Pick<StoreProduct, "metadata">): boolean {
-  return product.metadata?.["plantilla"] === CORREA_TEMPLATE;
+  return productDesign(product).live === "correa";
+}
+
+/**
+ * Se agrupa en la tarjeta y la landing «Correa a medida» (`metadata.grupo`). Solo las que son
+ * correa (la landing usa su modelo de precio).
+ */
+export function isCorreaGrouped(product: Pick<StoreProduct, "metadata">): boolean {
+  return product.metadata?.["grupo"] === CORREA_GROUP && isCorrea(product);
 }
 
 /** Tarjeta sintética del grupo (listados y búsqueda). */
@@ -366,7 +377,7 @@ export function correaGroupProduct(members: readonly StoreProduct[]): StoreProdu
     thumbnail: withImage ? (withImage.thumbnail ?? withImage.images?.[0]?.url ?? null) : null,
     images: [],
     collection_id: members.find((m) => m.collection_id)?.collection_id ?? null,
-    metadata: { grupo: CORREA_TEMPLATE, miembros: members.length },
+    metadata: { grupo: CORREA_GROUP, miembros: members.length },
     categories: [...categories.values()],
     options: [],
     tags: [],
@@ -380,13 +391,13 @@ export function correaGroupProduct(members: readonly StoreProduct[]): StoreProdu
  * `min`: nº mínimo de correas para agrupar (búsqueda: 2; con una sola, su ficha directamente).
  */
 export function groupCorreas(products: StoreProduct[], min = 1): StoreProduct[] {
-  const members = products.filter(isCorrea);
+  const members = products.filter(isCorreaGrouped);
   if (members.length < min) return products;
   const group = correaGroupProduct(members);
   const out: StoreProduct[] = [];
   let placed = false;
   for (const p of products) {
-    if (!isCorrea(p)) out.push(p);
+    if (!isCorreaGrouped(p)) out.push(p);
     else if (!placed) {
       out.push(group);
       placed = true;
@@ -436,7 +447,7 @@ function shortestVariantIds(p: StoreProduct): string[] {
 }
 
 export function correaCards(listed: readonly StoreProduct[]): CorreaCards | null {
-  const members = listed.filter(isCorrea);
+  const members = listed.filter(isCorreaGrouped);
   if (!members.length) return null;
   const card = (p: StoreProduct, v: string[]): CorreaCard => ({
     handle: p.handle,
@@ -517,7 +528,8 @@ export function cardProduct(
     subtitle: card.subtitle,
     thumbnail: card.thumbnail,
     images: [],
-    metadata: id === CORREA_GROUP_ID ? { grupo: CORREA_TEMPLATE } : { plantilla: CORREA_TEMPLATE },
+    metadata:
+      id === CORREA_GROUP_ID ? { grupo: CORREA_GROUP } : { diseno: "correa", grupo: CORREA_GROUP },
     variants: variants.filter((v) => set.has(v.id)),
   } as unknown as StoreProduct;
 }

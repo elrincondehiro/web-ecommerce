@@ -1,94 +1,94 @@
 ---
+// Ficha de producto (Fase DS): aquí solo lo COMÚN (rutas, datos y SEO, `FichaData`); la página la
+// pinta el diseño elegido (lib/disenos.ts: el del producto → `diseno_productos` de su categoría
+// y de sus padres → estándar; componentes en src/disenos/producto/). Componente elegido con una
+// variable (astro-docs, reference/astro-syntax «Dynamic Tags»: sin directivas client:*).
 import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
-import {
-  analyticRows,
-  getProductPricing,
-  isDiscontinued,
-  metaDescription,
-  preselectedVariantId,
-  replacementHandle,
-} from "$lib/catalog";
-import { BUY_FORM_ID } from "$lib/wishlist";
-import { buttonVariants } from "$lib/components/ui/button";
+import { analyticRows, isDiscontinued, metaDescription, replacementHandle } from "$lib/catalog";
 import { categoryHref, deepestCategory } from "$lib/categories";
-import { getCollection, getEntry } from "astro:content";
-import { CORREA_GROUP_HANDLE, CORREA_GROUP_PATH, correaSwatch, isCorrea } from "$lib/correa";
-import { listingPageKey } from "$lib/listing-pages";
+import { getCollection } from "astro:content";
+import { CORREA_GROUP_HANDLE, CORREA_GROUP_PATH, isCorreaGrouped } from "$lib/correa";
+import { PRODUCT_DESIGNS, resolveProductDesign, type ProductDesignId } from "$lib/disenos";
+import type { FichaData } from "$lib/ficha";
 import { getAllProducts } from "$lib/medusa";
 import { getRelatedByProduct, getShopTree } from "$lib/shop";
 import { breadcrumbJsonLd, productJsonLd } from "$lib/seo";
 import { resolveSizeGuide, resolveTemplate } from "$lib/plantillas";
 import { buildVariantPicker, pickerHeadCss } from "$lib/variant-picker";
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import AnalyticsTable from "../../components/AnalyticsTable.astro";
-import BuyBox from "../../components/BuyBox.astro";
-import ColorPicker from "../../components/correa/ColorPicker.astro";
-import SwatchStyles from "../../components/correa/SwatchStyles.astro";
-import CorreaBuilder from "../../components/correa/CorreaBuilder.astro";
-import ProductGallery from "../../components/ProductGallery.astro";
-import LiveSync from "../../components/LiveSync.astro";
-import WishButton from "../../components/WishButton.astro";
-import RelatedProducts from "../../components/RelatedProducts.astro";
-import ProductGuides from "../../components/ProductGuides.astro";
-import HeadStyle from "../../components/HeadStyle.astro";
-import RichText from "../../components/RichText.astro";
+import Estandar from "../../disenos/producto/Estandar.astro";
+import Correa from "../../disenos/producto/Correa.astro";
+
+// Registro: id → componente (las propiedades, en lib/disenos.ts). El tipo obliga a tenerlos todos.
+const DISENOS: Record<ProductDesignId, typeof Estandar> = { estandar: Estandar, correa: Correa };
 
 // Todas las fichas, también las descatalogadas (Fase E, opción i): su URL sigue respondiendo.
 export const getStaticPaths = (async () => {
-  const products = await getAllProducts();
+  const [products, tree] = await Promise.all([getAllProducts(), getShopTree(true)]);
   // /producto/correa-a-medida/ es la página de grupo (E-2c): ningún producto puede usar el handle
   if (products.some((p) => p.handle === CORREA_GROUP_HANDLE)) {
     throw new Error(`El handle «${CORREA_GROUP_HANDLE}» está reservado (página de grupo).`);
   }
   const titles = new Map(products.map((p) => [p.handle, p.title]));
-  // Correas a medida: enlaces a los otros colores y materiales (sin descatalogadas)
-  const correas = products.filter((p) => isCorrea(p) && !isDiscontinued(p)).map(correaSwatch);
+  // Diseño de cada ficha (el build falla si alguno no existe)
+  const designs = new Map(
+    products.map((p) => [p.id, resolveProductDesign(p, deepestCategory(tree, p)?.path ?? null)]),
+  );
+  // Hermanos: los demás productos (no descatalogados) con el mismo diseño de producto (no
+  // heredable): la correa enlaza sus otros colores y materiales.
+  const byDesign = new Map<string, typeof products>();
+  for (const p of products) {
+    const d = designs.get(p.id)!;
+    if (PRODUCT_DESIGNS[d].heredable || isDiscontinued(p)) continue;
+    byDesign.set(d, [...(byDesign.get(d) ?? []), p]);
+  }
   // Relacionados (Fase R): de la hoja + relleno de su categoría, calculados una vez por build
   const relatedBy = await getRelatedByProduct();
   return products.map((product) => {
     const handle = isDiscontinued(product) ? replacementHandle(product) : null;
     const replacement =
       handle && titles.has(handle) ? { handle, title: titles.get(handle)! } : null;
-    const siblings = isCorrea(product) ? correas : [];
+    const design = designs.get(product.id)!;
+    const siblings = byDesign.get(design) ?? [];
     // Descatalogado: su propio enlace al sustituto; sin bloque de relacionados.
     const related = isDiscontinued(product) ? [] : (relatedBy.get(product.id) ?? []);
     return {
       params: { handle: product.handle },
-      props: { product, replacement, siblings, related },
+      props: { product, replacement, siblings, related, design },
     };
   });
 }) satisfies GetStaticPaths;
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>;
-const { product, replacement, siblings, related } = Astro.props as Props;
+const { product, replacement, siblings, related, design } = Astro.props as Props;
+const info = PRODUCT_DESIGNS[design];
 const discontinued = isDiscontinued(product);
-const hasAnalytics = analyticRows(product).length > 0;
-const correa = isCorrea(product);
-// Selector de color (ficha de una correa): sus estilos van al <head> (SwatchStyles, CSP)
-const showPicker = !discontinued && correa && siblings.length > 1;
 // Migas: cadena completa de la categoría más concreta del producto (Fase S)
 const category = deepestCategory(await getShopTree(true), product);
 const crumbs = [
   { name: "Inicio", href: "/" },
   ...(category?.path ?? []).map((c) => ({ name: c.name, href: categoryHref(c) })),
-  ...(correa ? [{ name: "Correa a medida", href: CORREA_GROUP_PATH }] : []),
+  ...(isCorreaGrouped(product) ? [{ name: "Correa a medida", href: CORREA_GROUP_PATH }] : []),
   { name: product.title, href: `/producto/${product.handle}/` },
 ];
 // Plantilla y guía de tallas (Fase O): el build falla si apuntan a un fichero que no existe.
-const templates = (await getCollection("plantillas")).map((t) => ({
-  id: t.id,
-  categorias: t.data.categorias,
-}));
-const template = correa ? null : resolveTemplate(product, category, templates);
-const sizeGuide = correa
-  ? null
-  : resolveSizeGuide(
-      product,
-      (await getCollection("guias")).map((g) => g.id),
-    );
+const guides = info.guias
+  ? {
+      template: resolveTemplate(
+        product,
+        category,
+        (await getCollection("plantillas")).map((t) => ({
+          id: t.id,
+          categorias: t.data.categorias,
+        })),
+      ),
+      sizeGuide: resolveSizeGuide(
+        product,
+        (await getCollection("guias")).map((g) => g.id),
+      ),
+    }
+  : { template: null, sizeGuide: null };
 // Selector de opciones (Fase O): con 2 opciones (o 1 con fotos o colores), en vez de la tabla.
-const picker = discontinued || correa ? null : buildVariantPicker(product);
+const variantPicker = discontinued || !info.selector ? null : buildVariantPicker(product);
 const gallery = (product.images ?? [])
   .slice()
   .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
@@ -96,135 +96,43 @@ const gallery = (product.images ?? [])
   .filter(Boolean);
 if (!gallery.length && product.thumbnail) gallery.push(product.thumbnail);
 // Fotos por valor (opción de fotos): grupos en la galería; las generales detrás.
-const photoGroups = picker?.a.values.some((v) => v.images.length)
-  ? picker.a.values.map((v) => ({ label: v.value, images: v.images }))
+const photoGroups = variantPicker?.a.values.some((v) => v.images.length)
+  ? variantPicker.a.values.map((v) => ({ label: v.value, images: v.images }))
   : [];
-const generalPhotos = photoGroups.length ? (picker?.generalImages ?? []) : gallery;
-const image = photoGroups[picker?.selected.a ?? 0]?.images[0] ?? gallery[0] ?? null;
-// Correa: las opciones se eligen en el configurador (no se listan)
-// Lista de deseos (L-1, decisión B): ♡ junto al título, lejos de «Añadir». Varias variantes →
-// guarda la elegida (y se enciende si ESA está guardada); una sola o correa → el producto.
-const pricing = getProductPricing(product);
-const wishVariant = !correa && pricing.variants.length > 1;
-// El resumen de opciones sobra si ya se eligen en el selector
-const options =
-  correa || picker ? [] : (product.options ?? []).filter((o) => (o.values?.length ?? 0) > 0);
-// Plazo de fabricación de la correa (src/content/correa.md)
-const plazo = correa ? (await getEntry("correa", "correa"))?.data.plazo : undefined;
+const generalPhotos = photoGroups.length ? (variantPicker?.generalImages ?? []) : gallery;
+const image = photoGroups[variantPicker?.selected.a ?? 0]?.images[0] ?? gallery[0] ?? undefined;
 // Descatalogado: enlace al sustituto o, si no hay, a su categoría (o al catálogo)
 const onward = replacement
   ? { href: `/producto/${replacement.handle}/`, text: `Ver ${replacement.title}` }
   : category
     ? { href: categoryHref(category), text: `Ver más en ${category.name}` }
     : { href: "/productos/", text: "Ver todos los productos" };
+
+const data: FichaData = {
+  product,
+  design,
+  category,
+  crumbs,
+  seo: {
+    title: product.title,
+    description: metaDescription(product.description) || product.title,
+    type: "product",
+    image,
+    noindex: discontinued,
+    jsonLd: discontinued
+      ? [breadcrumbJsonLd(crumbs, Astro.site!)]
+      : [breadcrumbJsonLd(crumbs, Astro.site!), productJsonLd(product, Astro.site!, image)],
+  },
+  discontinued,
+  onward,
+  picker: variantPicker ? { picker: variantPicker, headCss: pickerHeadCss(variantPicker) } : null,
+  gallery: { general: generalPhotos, groups: photoGroups },
+  hasAnalytics: analyticRows(product).length > 0,
+  related,
+  guides,
+  siblings,
+};
+const Diseno = DISENOS[design];
 ---
 
-<BaseLayout
-  title={product.title}
-  description={metaDescription(product.description) || product.title}
-  type="product"
-  image={image ?? undefined}
-  noindex={discontinued}
-  jsonLd={
-    discontinued
-      ? [breadcrumbJsonLd(crumbs, Astro.site!)]
-      : [
-          breadcrumbJsonLd(crumbs, Astro.site!),
-          productJsonLd(product, Astro.site!, image ?? undefined),
-        ]
-  }
->
-  <SwatchStyles slot="head" swatches={showPicker ? siblings : []} />
-  {/* Selector (Fase O; perf CSS-A): sus reglas y colores, solo en las fichas que lo tienen */}
-  <HeadStyle slot="head" css={picker ? pickerHeadCss(picker) : ""} />
-  <Breadcrumbs items={crumbs} />
-  {/* `.vp` (Fase O): el CSS del selector abarca la galería (fotos del valor elegido) */}
-  <div class:list={["grid gap-8 md:grid-cols-2", picker && "vp"]}>
-    <ProductGallery
-      images={generalPhotos}
-      alt={product.title}
-      groups={photoGroups}
-      selected={picker?.selected.a}
-    />
-    <div class="flex min-w-0 flex-col gap-6">
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex min-w-0 flex-col gap-2">
-          <h1 class="text-3xl font-semibold tracking-tight">{product.title}</h1>
-          {product.subtitle && <p class="text-muted-foreground">{product.subtitle}</p>}
-        </div>
-        {!discontinued && (
-          <WishButton
-            variant="title"
-            form={BUY_FORM_ID}
-            wish={wishVariant ? "variant" : "product"}
-            initialKey={
-              wishVariant
-                ? picker
-                  ? (picker.cells[picker.selected.a]?.[picker.selected.b]?.id ?? undefined)
-                  : preselectedVariantId(pricing)
-                : undefined
-            }
-            productField={!correa && !picker}
-            productId={product.id}
-            productTitle={product.title}
-            back={`/producto/${product.handle}/`}
-          />
-        )}
-      </div>
-
-      {discontinued ? (
-        <div class="flex flex-col items-start gap-3 rounded-lg border border-border bg-muted p-4">
-          <p class="font-semibold">Este producto está descatalogado</p>
-          <p class="text-sm text-muted-foreground">Ya no lo vendemos.</p>
-          <a href={onward.href} class={buttonVariants({ variant: "default" })}>
-            {onward.text}
-          </a>
-        </div>
-      ) : correa ? (
-        <>
-          {showPicker && <ColorPicker swatches={siblings} mode="link" current={product.handle} />}
-          {plazo && <p class="font-semibold">{plazo}</p>}
-          <CorreaBuilder product={product} />
-        </>
-      ) : (
-        <BuyBox product={product} picker={picker} />
-      )}
-
-      {!discontinued && <ProductGuides template={template} sizeGuide={sizeGuide} />}
-
-      {options.length > 0 && (
-        <dl class="grid gap-2 text-sm">
-          {options.map((o) => (
-            <div class="flex gap-2">
-              <dt class="text-muted-foreground">{o.title}:</dt>
-              <dd>{o.values!.map((v) => v.value).join(" · ")}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-    </div>
-  </div>
-  {/* Fila 2: información del producto a todo el ancho, bajo galería y compra (en móvil, apilada
-      igual que antes: detrás de la columna de compra). */}
-  {(product.description || hasAnalytics) && (
-    <div class="mt-10 flex max-w-prose flex-col gap-8">
-      {product.description && (
-        <section aria-labelledby="descripcion">
-          <h2 id="descripcion" class="mb-2 font-semibold">
-            Descripción
-          </h2>
-          <RichText text={product.description} class="leading-relaxed text-muted-foreground" />
-        </section>
-      )}
-      <AnalyticsTable product={product} />
-    </div>
-  )}
-  {/* Una island para la ficha y sus relacionados (Fase R-2, P6): la clave es la del bloque. */}
-  {!discontinued && (
-    <LiveSync
-      productId={product.id}
-      relatedKey={related.length ? listingPageKey(related.map((p) => p.id)) : undefined}
-    />
-  )}
-  <RelatedProducts products={related} back={`/producto/${product.handle}/`} />
-</BaseLayout>
+<Diseno {...data} />

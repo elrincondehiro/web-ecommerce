@@ -18,7 +18,8 @@
 // número de tarjetas y no del de variantes. Medusa se consulta con los campos mínimos
 // (LIVE_FIELDS en lib/medusa.ts).
 // Correa a medida (E-2c): las tarjetas de correa (grupo o color) se piden aparte con solo las
-// variantes del largo más corto (lib/correa-server.ts); la ficha de una correa manda el precio
+// variantes del largo más corto (lib/correa-server.ts); la ficha de una correa (diseño con
+// `live: "correa"`, lib/disenos.ts; `isCorrea`) manda el precio
 // de cada largo y mosquetón y los datos del configurador (`_correa`, lib/live-sync.ts
 // correaLive); la landing (`correaLanding`), la tabla de precios y «hasta X m» por color.
 // Sin fallback: si falla o no hay JS, se queda lo del build.

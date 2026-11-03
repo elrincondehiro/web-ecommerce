@@ -8,7 +8,7 @@ import {
 } from "@medusajs/medusa/core-flows";
 import { bulkMinimumError, bulkRule } from "../../lib/granel";
 import { DISCONTINUED_MESSAGE, isDiscontinued } from "../../lib/descatalogado";
-import { isCorrea, lineMetadataError, variantLength } from "../../lib/correas";
+import { lineMetadataError, variantLength } from "../../lib/correas";
 import { KIT_SHORTAGE_MESSAGE, kitShortages, type DemandLine } from "../../lib/kit-demand";
 import { pointsDiscount } from "../../lib/points";
 import { CODE_MESSAGES, customerCodes } from "../../lib/codes";
@@ -102,8 +102,10 @@ async function check(
     const v = byId.get(line.variant_id) as
       | { metadata?: Record<string, unknown> | null; product?: { metadata?: unknown } | null }
       | undefined;
-    const correa = isCorrea(v?.product?.metadata as Record<string, unknown> | null | undefined);
-    const message = lineMetadataError(line.metadata, correa, variantLength(v?.metadata));
+    // Datos de la línea solo en variantes de correa: las que tienen largo (Fase DS: por la
+    // variante, sin depender de cómo se marca el producto)
+    const length = variantLength(v?.metadata);
+    const message = lineMetadataError(line.metadata, length !== null, length);
     if (message) throw new MedusaError(MedusaError.Types.INVALID_DATA, message);
   }
   if ((await kitShortages(container, lines, salesChannelId)).length) {

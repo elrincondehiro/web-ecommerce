@@ -84,7 +84,7 @@ const products = base.map((/** @type {any} */ p) => {
     ...p,
     thumbnail: null,
     images: [],
-    variants: p.metadata?.plantilla === "correa" ? variants.map(slimCorrea) : variants,
+    variants: p.metadata?.diseno === "correa" ? variants.map(slimCorrea) : variants,
   };
 });
 

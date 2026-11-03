@@ -9,6 +9,24 @@
  * `-` = borrar el valor.
  */
 import type { CsvTable } from "./csv";
+import {
+  CATEGORY_DESIGNS,
+  PRODUCT_DESIGNS,
+  PRODUCTS_DESIGN_KEY,
+  categoryDesignError,
+  isCategoryDesign,
+  isProductDesign,
+} from "../../lib/disenos";
+
+/** «estandar, correa» (mensajes de error de la hoja). */
+const designList = (designs: Record<string, unknown>) =>
+  `válidos: ${Object.keys(designs).join(", ")}`;
+/** Diseños de ficha que se pueden escribir en la hoja (sin los reservados a un script). */
+const sheetProductDesigns = () =>
+  Object.fromEntries(Object.entries(PRODUCT_DESIGNS).filter(([, d]) => !d.reservado));
+/** Diseños de ficha que una categoría puede pasar a sus productos. */
+const inheritableProductDesigns = () =>
+  Object.fromEntries(Object.entries(PRODUCT_DESIGNS).filter(([, d]) => d.heredable));
 
 export interface SheetIssue {
   file: string;
@@ -32,6 +50,12 @@ export interface CategorySheet {
   description?: Text;
   rank?: number;
   active?: boolean;
+  /**
+   * Fase DS (lib/disenos.ts): diseño de su página y diseño heredado por sus productos. `null` =
+   * borrar, `undefined` = no tocar.
+   */
+  design?: Text;
+  productsDesign?: Text;
 }
 
 export interface VariantSheet {
@@ -110,6 +134,8 @@ export interface ProductSheet {
   template?: Text;
   sizeGuide?: Text;
   photoOption?: Text;
+  /** Diseño de la ficha (Fase DS, lib/disenos.ts). `null` = borrar, `undefined` = no tocar. */
+  design?: Text;
   /** Títulos de las opciones del producto, en el orden de las columnas. */
   options: string[];
   variants: VariantSheet[];
@@ -137,7 +163,16 @@ export const fold = (s: string) =>
     .trim()
     .toLowerCase();
 
-const CATEGORY_COLUMNS = ["handle", "nombre", "padre", "descripcion", "orden", "activa"] as const;
+const CATEGORY_COLUMNS = [
+  "handle",
+  "nombre",
+  "padre",
+  "descripcion",
+  "orden",
+  "activa",
+  "diseno",
+  "diseno_productos",
+] as const;
 const PRODUCT_COLUMNS = [
   "handle",
   "titulo",
@@ -159,6 +194,7 @@ const PRODUCT_COLUMNS = [
   "plantilla",
   "guia_tallas",
   "opcion_fotos",
+  "diseno",
   "sku",
   "ean",
   "precio",
@@ -198,6 +234,7 @@ const PRODUCT_LEVEL: ProductColumn[] = [
   "plantilla",
   "guia_tallas",
   "opcion_fotos",
+  "diseno",
 ];
 /** Columnas de variante que heredan el valor de la fila de arriba (mismo producto). */
 type Inherited =
@@ -448,6 +485,20 @@ export function readCategories(table: CsvTable, file = CATEGORIES_FILE) {
       if (activa in BOOL) cat.active = BOOL[activa];
       else err("activa", "Valores válidos: sí / no.");
     }
+    // Diseños (Fase DS): ids de lib/disenos.ts; «-» = quitarlo
+    if (has("diseno")) {
+      const v = text(cell("diseno"));
+      if (v && !isCategoryDesign(v)) {
+        err("diseno", `Diseño de categoría desconocido: «${v}» (${designList(CATEGORY_DESIGNS)}).`);
+      } else if (v !== undefined) cat.design = v;
+    }
+    if (has("diseno_productos")) {
+      const v = text(cell("diseno_productos"));
+      const problem = v ? categoryDesignError({ [PRODUCTS_DESIGN_KEY]: v }) : null;
+      if (problem) {
+        err("diseno_productos", `${problem} (${designList(inheritableProductDesigns())}).`);
+      } else if (v !== undefined) cat.productsDesign = v;
+    }
     categories.push(cat);
   }
 
@@ -675,6 +726,18 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
       if (has("opcion_fotos")) {
         const v = text(cell("opcion_fotos"));
         if (v !== undefined) p.photoOption = v;
+      }
+      // Diseño de la ficha (Fase DS). Los reservados (correa) solo los escribe su script.
+      if (has("diseno")) {
+        const v = text(cell("diseno"));
+        if (v && !isProductDesign(v)) {
+          err(
+            "diseno",
+            `Diseño de ficha desconocido: «${v}» (${designList(sheetProductDesigns())}).`,
+          );
+        } else if (v && isProductDesign(v) && PRODUCT_DESIGNS[v].reservado) {
+          err("diseno", `El diseño «${v}» lo pone su script (p. ej. correas:sync), no la hoja.`);
+        } else if (v !== undefined) p.design = v;
       }
 
       // Componentes analíticos (% sobre producto tal cual)

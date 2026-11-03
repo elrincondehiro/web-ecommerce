@@ -161,7 +161,7 @@ const correa = defineCollection({
  * Plantillas de ficha (Fase O): `src/content/plantillas/<id>.md`. Contenido común (cómo medir,
  * consejos…) en Markdown; se aplica a los productos de las categorías de `categorias` (y de sus
  * subcategorías) o a los que lo pidan con `metadata.plantilla` (columna `plantilla` de la hoja).
- * La correa a medida NO es una de estas: tiene su propia ficha (lib/correa.ts).
+ * Solo en los diseños de ficha que pintan guías (lib/disenos.ts `guias`; no en la correa, Fase DS).
  */
 const plantillas = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/plantillas" }),

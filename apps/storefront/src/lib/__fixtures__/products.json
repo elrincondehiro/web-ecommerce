@@ -3798,7 +3798,7 @@
       "color": "Azul",
       "grupo": "correa",
       "material": "Nailon",
-      "plantilla": "correa",
+      "diseno": "correa",
       "color_hex": "#1E5AA8"
     },
     "variants": [
@@ -5828,7 +5828,7 @@
       "color": "Verde",
       "grupo": "correa",
       "material": "PVC",
-      "plantilla": "correa",
+      "diseno": "correa",
       "color_hex": "#2E8B57"
     },
     "variants": [

@@ -43,7 +43,7 @@ describe("relacionados (Fase R)", () => {
       productRelated(p("a"), new Map(), [p("x", { stock: 0 }), p("y")]).map((x) => x.handle),
     ).toEqual(["y", "x"]);
     // Las correas no rellenan
-    const correa = p("correa-roja", { meta: { plantilla: "correa" } });
+    const correa = p("correa-roja", { meta: { diseno: "correa" } });
     expect(productRelated(p("a"), new Map(), [correa]).length).toBe(0);
   });
 

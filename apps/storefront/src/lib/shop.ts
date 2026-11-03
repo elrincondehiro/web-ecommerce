@@ -18,7 +18,7 @@ import {
   type CategoryTree,
   type StoreCategory,
 } from "./categories";
-import { groupCorreas, isCorrea, tableProducts } from "./correa";
+import { groupCorreas, isCorreaGrouped, tableProducts } from "./correa";
 import { listingPagesManifest, LISTING_PAGES_MANIFEST } from "./listing-pages";
 import { productRelated } from "./related";
 import { newProducts } from "./home";
@@ -91,7 +91,7 @@ export function getListingProducts(): Promise<StoreProduct[]> {
 
 /** Correas a medida del catálogo listado (página de grupo, E-2c). */
 export async function getCorreaProducts(): Promise<StoreProduct[]> {
-  return (await getListedProducts()).filter(isCorrea);
+  return (await getListedProducts()).filter(isCorreaGrouped);
 }
 
 /** Productos de una categoría y de sus descendientes (orden del catálogo, sin duplicados). */

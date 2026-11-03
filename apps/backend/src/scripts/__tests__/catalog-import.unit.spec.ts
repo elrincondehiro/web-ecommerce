@@ -4,6 +4,7 @@ import { decodeUtf8, parseCsv } from "../lib/csv";
 import { parsePrice, readCategories, readProducts, stepPrice } from "../lib/catalog-sheet";
 import { bulkMinimumAmount, bulkMinimumError, bulkRule } from "../../lib/granel";
 import {
+  mergedCategoryMetadata,
   planCatalog,
   productCreateInput,
   productMetadata,
@@ -336,6 +337,7 @@ describe("plan", () => {
             rank: 0,
             is_active: true,
             parent_category_id: null,
+            metadata: {},
           },
         ],
         tags: ["Novedad"],
@@ -358,6 +360,7 @@ describe("plan", () => {
           rank: 0,
           is_active: true,
           parent_category_id: null,
+          metadata: {},
         },
       ],
       tags: ["novedad"],
@@ -410,6 +413,7 @@ describe("plan", () => {
           rank: 0,
           is_active: true,
           parent_category_id: null,
+          metadata: {},
         },
       ],
       products: [{ ...dbProduct(), options: [] }],
@@ -626,5 +630,84 @@ describe("plantilla, guía de tallas y opción de fotos (Fase O)", () => {
   it("id no válido y opción que el producto no tiene", () => {
     const { errors } = read(['arnes,Arnés,guia a,Color,Flores,S,A-1,"29,95"']);
     expect(errors.map((e) => e.column)).toEqual(["plantilla", "guia_tallas", "opcion_fotos"]);
+  });
+});
+
+describe("diseños (Fase DS)", () => {
+  it("productos: id del registro; «-» borra; desconocido o reservado (correa) → error", () => {
+    const { products, errors } = readProducts(
+      csv([
+        "handle,diseno,sku,precio",
+        'a,estandar,A-1,"9,95"',
+        'b,-,B-1,"9,95"',
+        'c,sin-galeria,C-1,"9,95"',
+        'd,correa,D-1,"9,95"',
+      ]),
+    );
+    expect(productMetadata(products[0]!)).toMatchObject({ diseno: "estandar" });
+    expect(productMetadata(products[1]!)).toMatchObject({ diseno: "" });
+    expect(errors.map((e) => [e.line, e.column])).toEqual([
+      [4, "diseno"],
+      [5, "diseno"],
+    ]);
+    expect(errors[1]!.message).toMatch(/correas:sync/);
+  });
+
+  it("categorías: diseño de la página y de sus productos (solo heredables)", () => {
+    const { categories, errors } = readCategories(
+      csv([
+        "handle,nombre,diseno,diseno_productos",
+        "a,A,estandar,estandar",
+        "b,B,-,-",
+        "c,C,otro,",
+        "d,D,,correa",
+      ]),
+    );
+    expect(categories[0]).toMatchObject({ design: "estandar", productsDesign: "estandar" });
+    expect(categories[1]).toMatchObject({ design: null, productsDesign: null });
+    expect(errors.map((e) => [e.line, e.column])).toEqual([
+      [4, "diseno"],
+      [5, "diseno_productos"],
+    ]);
+    expect(errors[1]!.message).toMatch(/no se hereda/);
+  });
+
+  it("plan: cambio de diseño de una categoría y metadata completa (conserva la foto)", () => {
+    const db = {
+      id: "c1",
+      handle: "ropa",
+      name: "Ropa",
+      description: null,
+      rank: 0,
+      is_active: true,
+      parent_category_id: null,
+      metadata: { imagen_url: "https://x/y.webp", diseno: "estandar" },
+    };
+    const sheetCat = { line: 2, handle: "ropa", design: null, productsDesign: "estandar" };
+    const plan = planCatalog(
+      { categories: [sheetCat], products: [] },
+      emptyDb({ categories: [db] }),
+    );
+    expect(plan.categories.update[0]!.changes).toEqual(["diseño", "diseño de sus productos"]);
+    expect(mergedCategoryMetadata(sheetCat, db.metadata)).toEqual({
+      imagen_url: "https://x/y.webp",
+      diseno_productos: "estandar",
+    });
+    const same = planCatalog(
+      { categories: [{ line: 2, handle: "ropa", design: "estandar" }], products: [] },
+      emptyDb({ categories: [db] }),
+    );
+    expect(same.categories.unchanged).toBe(1);
+  });
+});
+
+describe("copia del storefront", () => {
+  it("apps/storefront/src/lib/disenos.ts es idéntico a src/lib/disenos.ts", () => {
+    const here = readFileSync(path.join(__dirname, "../../lib/disenos.ts"), "utf8");
+    const storefront = readFileSync(
+      path.join(__dirname, "../../../../storefront/src/lib/disenos.ts"),
+      "utf8",
+    );
+    expect(storefront).toBe(here);
   });
 });

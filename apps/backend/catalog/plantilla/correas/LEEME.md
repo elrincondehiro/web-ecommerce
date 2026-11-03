@@ -2,6 +2,8 @@
 
 Cada **color y material** es un producto (p. ej. `/producto/correa-rojo-pvc/`). Cada producto tiene una variante por largo × mosquetón del lado del perro × mosquetón del lado de la mano: 13 × 3 × 3 = 117 con esta plantilla. Las hojas de esta carpeta las generan y actualizan; **no se editan a mano en el Admin** (la siguiente sincronización lo deshace).
 
+Cada producto lleva `metadata.diseno = correa` (ficha con el configurador, Fase DS) y `metadata.grupo = correa` (una sola tarjeta y la landing `/producto/correa-a-medida/` en listados y búsqueda).
+
 ```bash
 # 1. Copia esta carpeta a una tuya (apps/backend/catalog/* está fuera de git, salvo plantilla/)
 cp -r apps/backend/catalog/plantilla/correas apps/backend/catalog/mis-correas

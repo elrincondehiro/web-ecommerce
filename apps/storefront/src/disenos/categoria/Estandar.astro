@@ -1,0 +1,35 @@
+---
+// Diseño de categoría «estandar» (Fase DS): título, fila de categorías (hijas o hermanas), filtros
+// y rejilla paginada con LiveSync (CatalogPage). Los datos, de lib/categoria.ts (`CategoriaData`).
+import type { CategoriaData } from "$lib/categoria";
+import { swatchCss } from "$lib/family-swatches";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import CatalogPage from "../../components/CatalogPage.astro";
+import HeadStyle from "../../components/HeadStyle.astro";
+import CategoryNav from "../../components/CategoryNav.astro";
+import RichText from "../../components/RichText.astro";
+
+type Props = CategoriaData;
+const { page, facets, category, crumbs, seo } = Astro.props;
+const showDesc = false;
+---
+
+<BaseLayout {...seo}>
+  {/* Fase FO: puntos de color propios de las familias del filtro (lib/family-swatches.ts) */}
+  <HeadStyle slot="head" css={swatchCss(facets)} />
+  <Breadcrumbs items={crumbs} />
+  <h1 class="mb-2 text-2xl font-semibold tracking-tight">{category.name}</h1>
+  {page.currentPage === 1 && showDesc && (
+    <RichText
+      text={category.description}
+      headingLevel={2}
+      class="mb-4 max-w-prose text-muted-foreground"
+    />
+  )}
+  <CategoryNav
+    links={category.row}
+    label={category.hasChildren ? `Subcategorías de ${category.name}` : "Categorías"}
+  />
+  <CatalogPage page={page} facets={facets} categoryHandle={category.handle} />
+</BaseLayout>

@@ -56,6 +56,7 @@ import {
   GRAMS,
   IVA_TYPE,
   findByFold,
+  mergedCategoryMetadata,
   planCatalog,
   planSale,
   productCreateInput,
@@ -115,7 +116,16 @@ async function loadSnapshot(
   const categories = await productModule.listProductCategories(
     {},
     {
-      select: ["id", "handle", "name", "description", "rank", "is_active", "parent_category_id"],
+      select: [
+        "id",
+        "handle",
+        "name",
+        "description",
+        "rank",
+        "is_active",
+        "parent_category_id",
+        "metadata",
+      ],
       take: null,
     },
   );
@@ -222,6 +232,7 @@ async function loadSnapshot(
       rank: Number(c.rank ?? 0),
       is_active: Boolean(c.is_active),
       parent_category_id: c.parent_category_id ?? null,
+      metadata: (c.metadata as Record<string, unknown> | null) ?? {},
     })),
     collections: collections.map((c) => c.handle),
     tags: tags.map((t) => t.value),
@@ -410,6 +421,7 @@ async function applyCategories(
           parent_category_id: parentId(c.parent),
           ...(c.description ? { description: c.description } : {}),
           ...(c.rank !== undefined ? { rank: c.rank } : {}),
+          ...(c.design || c.productsDesign ? { metadata: mergedCategoryMetadata(c, {}) } : {}),
         })),
       },
     });
@@ -417,6 +429,7 @@ async function applyCategories(
     pending = pending.filter((c) => !ready.includes(c));
   }
 
+  const metaById = new Map(snapshot.categories.map((c) => [c.id, c.metadata]));
   for (const u of plan.categories.update) {
     const c = u.sheet;
     await updateProductCategoriesWorkflow(container).run({
@@ -428,6 +441,9 @@ async function applyCategories(
           ...(c.description !== undefined ? { description: c.description ?? "" } : {}),
           ...(c.rank !== undefined ? { rank: c.rank } : {}),
           ...(c.active !== undefined ? { is_active: c.active } : {}),
+          ...(u.changes.some((x) => x.startsWith("diseño"))
+            ? { metadata: mergedCategoryMetadata(c, metaById.get(u.id) ?? {}) }
+            : {}),
         },
       },
     });

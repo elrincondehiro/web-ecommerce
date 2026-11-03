@@ -7,7 +7,7 @@
 //     primero) y «Completa tu pedido» (relacionados de lo que lleva, por relevancia). Sin lo que
 //     ya está en el carrito, sin repetir entre bloques.
 import { getProductPricing, isDiscontinued, type StoreProduct } from "./catalog";
-import { isCorrea } from "./correa";
+import { productDesign } from "./disenos";
 
 /** Clave de metadata (backend: catalog-plan.ts META.related). Handles separados por «|». */
 export const RELATED_KEY = "relacionados";
@@ -48,7 +48,8 @@ export function productRelated(
   };
   for (const h of relatedHandles(product)) push(byHandle.get(h));
   if (out.length < max) {
-    const candidates = sameCategory.filter((p) => !isCorrea(p));
+    // Relleno: sin los diseños configurables (la correa se configura en su ficha)
+    const candidates = sameCategory.filter((p) => !productDesign(p).configurable);
     const inStock = candidates.filter((p) => getProductPricing(p).inStock);
     const rest = candidates.filter((p) => !getProductPricing(p).inStock);
     for (const p of [...inStock, ...rest]) push(p);
