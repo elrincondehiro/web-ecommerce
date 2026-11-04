@@ -17,7 +17,7 @@ import { earnsPoints, lookbackDays, retroactiveEnabled } from "./guest-orders";
 /**
  * Abono de puntos (Fase L-2, K1/P1): pedidos de clientes con cuenta, sin cancelar, cuyo ÚLTIMO
  * envío fue hace ≥ POINTS_CONSOLIDATE_DAYS días, y que aún no tienen abono. Base: líneas con IVA
- * tras descuentos (incluido el de puntos), sin envío, sin `sin_puntos`, netas de lo devuelto
+ * tras descuentos (incluido el de puntos), sin envío, sin los productos `genera_puntos: false`, netas de lo devuelto
  * (Medusa ya baja el total de la línea al recibir una devolución). Idempotente (índice único reference + reference_id + type). Lo ejecuta el
  * job diario `points-accrue` (worker) y `pnpm --filter backend points:accrue`.
  *

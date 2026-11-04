@@ -1,0 +1,299 @@
+---
+// Caja de snacks (Fase CS, diseño `caja`): importe y «¿Para quién es?». Formulario ESTÁTICO que
+// funciona sin JS: POST a la action `cart.addCaja` (303 de vuelta con el aviso). Con JS lo envía
+// CartClient (`data-cart-form`): 0 KB de JS nuevo.
+// - Importe: una variante por importe (radios con precio y marcas de LiveSync; sin stock).
+// - Cachorro: la etiqueta de la edad pasa a «meses» con CSS (:has, global.css `.caja-form`).
+// - Es un…: solo perro o gato (decisión del usuario).
+// - Salud: el campo se ve siempre (sin salto de layout), en gris y sin poder escribir hasta
+//   marcar el consentimiento (CSS); sin él, el servidor la descarta aunque venga escrita
+//   (lib/line-data.ts `cajaFromForm`).
+// - Sin `required` en lo que depende de otro campo (un campo oculto con required bloquea el
+//   envío): lo valida el servidor y, si falla, vuelve con el aviso #carrito-caja.
+import { buttonVariants } from "$lib/components/ui/button";
+import { actionUrl } from "$lib/cart";
+import { getProductPricing, type StoreProduct } from "$lib/catalog";
+import { BUY_FORM_ID } from "$lib/wishlist";
+import {
+  CAJA_AGE,
+  CAJA_ANIMALS,
+  CAJA_CHEW,
+  CAJA_HAIR,
+  CAJA_MAX,
+  CAJA_WEIGHT,
+} from "$lib/line-data";
+import Price from "../Price.astro";
+
+interface Props {
+  product: StoreProduct;
+}
+const { product } = Astro.props;
+const pricing = getProductPricing(product);
+const currency = pricing.currencyCode ?? "eur";
+const back = `/producto/${product.handle}/`;
+const variants = pricing.variants
+  .filter((v) => v.amount != null)
+  .sort((a, b) => (a.amount ?? 0) - (b.amount ?? 0));
+const preselected = variants.find((v) => v.inStock)?.id ?? variants[0]?.id;
+const id = (s: string) => `caja-${s}`;
+const input =
+  "h-10 w-full max-w-sm rounded-md border-2 border-line bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring";
+const number = `${input} max-w-28 tabular-nums`;
+const choice = "flex items-center gap-2 text-sm";
+const legend = "mb-2 font-semibold";
+const hint = "text-xs text-muted-foreground";
+const optional = '<span class="font-normal text-muted-foreground">(opcional)</span>';
+---
+
+<form
+  method="post"
+  action={actionUrl("cart.addCaja")}
+  data-cart-form
+  class="caja-form flex flex-col gap-6"
+  id={BUY_FORM_ID}
+>
+  <input type="hidden" name="back" value={back} />
+  <input type="hidden" name="product_id" value={product.id} />
+
+  <fieldset>
+    <legend class={legend}>¿De cuánto quieres la caja?</legend>
+    <div class="flex flex-wrap gap-2">
+      {variants.map((v) => (
+        <label
+          class="caja-amount flex cursor-pointer items-center gap-2 rounded-md border-2 border-line px-3 py-2"
+          data-pid={v.id}
+          data-vstock={v.inStock ? "in" : "out"}
+        >
+          <input
+            type="radio"
+            name="variant_id"
+            value={v.id}
+            checked={v.id === preselected}
+            required
+            data-if-vstock="in"
+            class="size-4 accent-primary"
+          />
+          <Price
+            id={v.id}
+            amount={v.amount!}
+            currency={currency}
+            wasAmount={v.wasAmount}
+            discountPercent={null}
+          />
+        </label>
+      ))}
+    </div>
+    <p class={`${hint} mt-2`}>IVA incluido. Elegimos los snacks por ese importe o más.</p>
+  </fieldset>
+
+  <fieldset class="flex flex-col gap-4 rounded-lg border-2 border-line p-4">
+    <legend class="px-1 font-display text-lg font-bold">¿Para quién es?</legend>
+
+    <fieldset>
+      <legend class={legend}>Es un…</legend>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {Object.entries(CAJA_ANIMALS).map(([k, l], i) => (
+          <label class={choice}>
+            <input
+              type="radio"
+              name="animal"
+              value={k}
+              checked={i === 0}
+              required
+              class="size-4 accent-primary"
+            />
+            {l}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div class="flex flex-col gap-1">
+        <label for={id("nombre")} class="font-semibold">
+          Nombre
+        </label>
+        <input
+          id={id("nombre")}
+          name="nombre"
+          required
+          maxlength={CAJA_MAX.short}
+          autocomplete="off"
+          class={input}
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for={id("raza")} class="font-semibold">
+          Raza o mezcla <Fragment set:html={optional} />
+        </label>
+        <input
+          id={id("raza")}
+          name="raza"
+          maxlength={CAJA_MAX.short}
+          placeholder="p. ej. Border collie, mestizo"
+          class={input}
+        />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <label class={choice}>
+        <input type="checkbox" name="cachorro" class="caja-puppy size-4 accent-primary" />
+        Es cachorro (menos de 1 año)
+      </label>
+      <div class="grid grid-cols-2 gap-4 sm:max-w-sm">
+        <div class="flex flex-col gap-1">
+          <label for={id("edad")} class="font-semibold">
+            Edad
+          </label>
+          <span class="flex items-center gap-2">
+            <input
+              id={id("edad")}
+              name="edad"
+              type="number"
+              inputmode="numeric"
+              required
+              min={CAJA_AGE.months.min}
+              max={CAJA_AGE.years.max}
+              step="1"
+              aria-describedby={id("edad-ayuda")}
+              class={number}
+            />
+            <span class="text-sm">
+              <span class="caja-age-years">años</span>
+              <span class="caja-age-months">meses</span>
+            </span>
+          </span>
+          <p id={id("edad-ayuda")} class={hint}>
+            En años (de {CAJA_AGE.years.min} a {CAJA_AGE.years.max}) o, si es cachorro, en meses (de{" "}
+            {CAJA_AGE.months.min} a {CAJA_AGE.months.max}).
+          </p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for={id("peso")} class="font-semibold">
+            Peso
+          </label>
+          <span class="flex items-center gap-2">
+            <input
+              id={id("peso")}
+              name="peso"
+              type="number"
+              inputmode="decimal"
+              required
+              min={CAJA_WEIGHT.min}
+              max={CAJA_WEIGHT.max}
+              step={CAJA_WEIGHT.step}
+              class={number}
+            />
+            <span class="text-sm">kg aprox.</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for={id("no-gusta")} class="font-semibold">
+        ¿Algo que no le guste? <Fragment set:html={optional} />
+      </label>
+      <input
+        id={id("no-gusta")}
+        name="no_gusta"
+        maxlength={CAJA_MAX.long}
+        placeholder="p. ej. el cordero"
+        class={input}
+      />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label for={id("probado")} class="font-semibold">
+        ¿Qué ha probado antes? <Fragment set:html={optional} />
+      </label>
+      <input
+        id={id("probado")}
+        name="probado"
+        maxlength={CAJA_MAX.long}
+        placeholder="p. ej. orejas de cerdo, galletas"
+        class={input}
+      />
+    </div>
+
+    <fieldset>
+      <legend class={legend}>¿Snacks con pelo?</legend>
+      <div class="flex flex-wrap gap-x-4 gap-y-2">
+        {Object.entries(CAJA_HAIR).map(([k, l]) => (
+          <label class={choice}>
+            <input
+              type="radio"
+              name="pelo"
+              value={k}
+              checked={k === "igual"}
+              class="size-4 accent-primary"
+            />
+            {l}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend class={legend}>
+        ¿Cómo mastica? <span class="font-normal text-muted-foreground">(una o varias)</span>
+      </legend>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {Object.entries(CAJA_CHEW).map(([k, l]) => (
+          <label class={choice}>
+            <input type="checkbox" name="mastica" value={k} class="size-4 accent-primary" />
+            {l}
+          </label>
+        ))}
+        <label class="flex items-center gap-2 text-sm">
+          <span class="sr-only">Otra forma de masticar</span>
+          <input
+            name="mastica_otro"
+            maxlength={CAJA_MAX.short}
+            placeholder="Otro"
+            class={`${input} max-w-44`}
+          />
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="flex flex-col gap-2">
+      <label class="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="salud_ok" class="caja-health-ok mt-0.5 size-4" />
+        <span>
+          Quiero contaros alergias o condiciones especiales. Acepto que guardéis esta información de
+          salud solo para preparar la caja. Más información en la{" "}
+          <a href="/privacidad/" class="underline underline-offset-4">
+            política de privacidad
+          </a>
+          .
+        </span>
+      </label>
+      {/* Siempre visible (sin salto de layout); en gris y sin poder escribir hasta marcar la
+          casilla (CSS, global.css `.caja-health`). Sin la casilla, el servidor la descarta. */}
+      <div class="caja-health flex flex-col gap-1">
+        <label for={id("salud")} class="font-semibold">
+          Alergias o condiciones especiales
+        </label>
+        <input
+          id={id("salud")}
+          name="salud"
+          maxlength={CAJA_MAX.long}
+          placeholder="p. ej. alergia al pollo, le faltan dientes"
+          aria-describedby={id("salud-ayuda")}
+          class={input}
+        />
+        <p id={id("salud-ayuda")} class={hint}>
+          Sin marcar la casilla de arriba no se guarda.
+        </p>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="flex flex-wrap items-center gap-3">
+    <button type="submit" class={buttonVariants({ size: "lg" })}>
+      Añadir caja al carrito
+    </button>
+    <p class={hint}>¿Otra caja para otra mascota? Añádela después con sus datos.</p>
+  </div>
+</form>

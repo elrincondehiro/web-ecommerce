@@ -4,7 +4,8 @@
  *   - 0,8 % de los productos pagados, CON IVA, SIN envío, después de descuentos (`item_total`):
  *     la parte pagada con puntos (es un descuento) no genera puntos (K2).
  *   - 1 punto = 1 €, con decimales; redondeo al céntimo HACIA ABAJO (P4).
- *   - Productos con `metadata.sin_puntos = true` no generan puntos (K3, hoja del catálogo).
+ *   - Productos con `metadata.genera_puntos = false` no generan puntos (K3; columna
+ *     `genera_puntos` de la hoja, Fase CS; antes `sin_puntos`).
  *   - Se consolidan a los `POINTS_CONSOLIDATE_DAYS` días (14) del ÚLTIMO envío (P1), sin
  *     cancelar. No caducan (U5). Solo web (M2: la tienda física va aparte, `channel`).
  *   - Canje: promoción de un uso; siempre quedan ≥ 0,50 € por pagar (mínimo de Stripe en EUR,
@@ -19,7 +20,8 @@ export const POINTS_ACCRUE_DEFAULT_CRON = "0 4 * * *";
 export const MIN_CHARGE_EUR = 0.5;
 /** Prefijo del código de las promociones de canje. */
 export const POINTS_PROMO_PREFIX = "PTS-";
-export const NO_POINTS_KEY = "sin_puntos";
+/** Metadata del producto: `false` = no genera puntos (por defecto, sí). */
+export const EARNS_POINTS_KEY = "genera_puntos";
 export const POINTS_CHANNEL_WEB = "web";
 
 /** Referencias de los movimientos (`points_transaction.reference`). */
@@ -62,10 +64,10 @@ export type AccrualItem = {
 
 const excluded = (i: AccrualItem): boolean => {
   const meta = i.product?.metadata ?? i.variant?.product?.metadata;
-  return meta?.[NO_POINTS_KEY] === true;
+  return meta?.[EARNS_POINTS_KEY] === false;
 };
 
-/** Base de cálculo: suma de `total` de las líneas (con IVA, tras descuentos), sin `sin_puntos`. */
+/** Base de cálculo: suma de `total` de las líneas (con IVA, tras descuentos), sin las que no generan. */
 export function accrualBase(
   items: (AccrualItem | null)[] | null | undefined,
   returned = 0,

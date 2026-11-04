@@ -1,0 +1,39 @@
+---
+// «*» tras el nombre de un producto con restricciones (Fase CS): sin códigos descuento ni pago
+// con puntos, o no genera puntos (lib/product-flags.ts). Botón que abre un cuadro con la
+// explicación: popover nativo (Baseline 2024), solo clic/toque, se cierra al tocar fuera o con
+// Esc; 0 JS (decisión del usuario: así la línea no crece en móvil). Anclado al botón con anchor
+// positioning (su invocador es el ancla implícita, MDN); sin soporte, panel fijo (global.css
+// `.line-flag`). En la ficha va como texto (FichaLayout), no aquí.
+import { productRestrictions } from "$lib/product-flags";
+
+interface Props {
+  /** Id de la línea (único en la página: el id del cuadro). */
+  lineId: string;
+  product?:
+    { discountable?: boolean | null; metadata?: Record<string, unknown> | null } | null | undefined;
+}
+const { lineId, product } = Astro.props;
+const restrictions = productRestrictions(product);
+const id = `flag-${lineId.replace(/[^\w-]/g, "")}`;
+---
+
+{restrictions.length > 0 && (
+  <>
+    <button
+      type="button"
+      class="line-flag"
+      popovertarget={id}
+      aria-label="Condiciones de este producto"
+      title="Condiciones de este producto"
+      data-restriction
+    >
+      *
+    </button>
+    <span popover="auto" id={id} class="line-flag__info" role="note">
+      {restrictions.map((r) => (
+        <span class="block">{r}.</span>
+      ))}
+    </span>
+  </>
+)}

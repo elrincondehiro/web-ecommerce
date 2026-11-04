@@ -1,0 +1,144 @@
+---
+// Caja de snacks propuesta (Fase CS-4): destino del enlace del email
+// (`?pedido=<id>&caja=<línea>&token=<token>`, de un solo uso). No pide sesión: el token demuestra
+// que es el cliente (también invitados). Se responde con un botón (POST), nunca al abrir la página:
+// los antivirus y las vistas previas de correo abren los enlaces (como /cuenta/transferir/).
+// «No me convence» abre un <details> con «¿Qué no le gusta?» (obligatorio). 0 JS.
+// Referrer-Policy same-origin: el token no sale a otros sitios. Por usuario: private, no-store.
+import { buttonVariants } from "$lib/components/ui/button";
+import { CAJA_PATH, accountActionUrl } from "$lib/account";
+import { accountPage } from "$lib/account-page";
+import { isValidId } from "$lib/cart";
+import { retrieveCajaPropuesta } from "$lib/medusa";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import AuthCard from "../../components/account/AuthCard.astro";
+
+export const prerender = false;
+
+const MOTIVO_MAX = 500;
+const flash = accountPage(Astro);
+Astro.response.headers.set("Referrer-Policy", "same-origin");
+const orderId = Astro.url.searchParams.get("pedido") ?? "";
+const lineId = Astro.url.searchParams.get("caja") ?? "";
+const token = Astro.url.searchParams.get("token") ?? "";
+let caja: Awaited<ReturnType<typeof retrieveCajaPropuesta>> = null;
+if (isValidId(orderId) && isValidId(lineId) && token.length > 0 && token.length <= 200) {
+  try {
+    caja = await retrieveCajaPropuesta(orderId, lineId, token);
+  } catch (err) {
+    Astro.logger.error(`caja: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+const deadline = caja?.vence_at
+  ? new Date(caja.vence_at).toLocaleString("es-ES", {
+      timeZone: "Europe/Madrid",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  : null;
+const who = caja?.name ?? "tu peque";
+const field =
+  "w-full rounded-md border-2 border-line bg-background px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-ring";
+---
+
+<BaseLayout
+  title="Tu caja de snacks"
+  description="Mira la caja de snacks que hemos preparado y dinos si te convence."
+  noindex
+>
+  <AuthCard title={caja ? `La caja de ${who}` : "Tu caja de snacks"}>
+    <AccountNotice code={flash.code} />
+    {caja ? (
+      <div class="flex flex-col gap-5">
+        <p class="text-sm text-muted-foreground">
+          Esta es la caja que hemos preparado
+          {caja.display_id && (
+            <>
+              {" "}
+              del pedido <strong class="text-foreground">n.º {caja.display_id}</strong>
+            </>
+          )}
+          . Si algo no le va a gustar, dínoslo y la cambiamos.
+        </p>
+        <section aria-labelledby="caja-contenido" class="rounded-md border-2 border-line p-4">
+          <h2 id="caja-contenido" class="mb-2 font-semibold">
+            {caja.title}
+          </h2>
+          <ul class="list-disc pl-5 text-sm">
+            {caja.content.map((l) => (
+              <li>{l}</li>
+            ))}
+          </ul>
+          <details class="mt-3 text-xs text-muted-foreground">
+            <summary class="cursor-pointer">Lo que nos contaste de {who}</summary>
+            <ul class="mt-1">
+              {caja.details.map((d) => (
+                <li class="break-words">{d}</li>
+              ))}
+            </ul>
+          </details>
+        </section>
+        {deadline && (
+          <p class="text-sm text-muted-foreground">
+            Si no nos dices nada antes del <strong class="text-foreground">{deadline}</strong>, la
+            daremos por buena.
+          </p>
+        )}
+        <form method="post" action={accountActionUrl(CAJA_PATH, "account.cajaAccept")}>
+          <input type="hidden" name="pedido" value={orderId} />
+          <input type="hidden" name="caja" value={lineId} />
+          <input type="hidden" name="token" value={token} />
+          <button type="submit" class:list={[buttonVariants(), "w-full"]}>
+            Me encanta, ¡adelante!
+          </button>
+        </form>
+        <details
+          id="no-convence"
+          open={flash.code === "caja_motivo"}
+          class="rounded-md border-2 border-line p-4"
+        >
+          <summary class="cursor-pointer font-semibold">No me convence</summary>
+          <form
+            method="post"
+            action={accountActionUrl(CAJA_PATH, "account.cajaReject")}
+            class="mt-3 flex flex-col gap-3"
+          >
+            <input type="hidden" name="pedido" value={orderId} />
+            <input type="hidden" name="caja" value={lineId} />
+            <input type="hidden" name="token" value={token} />
+            <label for="caja-motivo" class="text-sm font-medium">
+              ¿Qué no le gusta? Cuéntanos todo lo que nos ayude a acertar
+            </label>
+            <textarea
+              id="caja-motivo"
+              name="motivo"
+              rows="4"
+              required
+              maxlength={MOTIVO_MAX}
+              class={field}
+            ></textarea>
+            <button type="submit" class:list={[buttonVariants({ variant: "outline" }), "w-full"]}>
+              Enviar y rehacer la caja
+            </button>
+          </form>
+        </details>
+        <p class="text-xs text-muted-foreground">
+          Lo que nos escribas solo lo usamos para preparar esta caja (ver la{" "}
+          <a href="/privacidad/" class="underline underline-offset-4">
+            política de privacidad
+          </a>
+          ).
+        </p>
+      </div>
+    ) : !flash.code || flash.code === "caja_failed" ? (
+      <p class="text-sm text-muted-foreground">
+        El enlace no es válido o esta caja ya está respondida. Si quieres cambiar algo, contesta al
+        email y lo vemos.
+      </p>
+    ) : null}
+  </AuthCard>
+</BaseLayout>

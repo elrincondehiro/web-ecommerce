@@ -50,6 +50,19 @@ describe("diseño de la ficha (Fase DS)", () => {
     ).toThrow(/no se hereda/);
   });
 
+  it("caja (Fase CS): diseño de producto con datos de línea; no se hereda", () => {
+    expect(resolveProductDesign(product({ diseno: "caja" }), null)).toBe("caja");
+    expect(productDesign(product({ diseno: "caja" }))).toMatchObject({
+      configurable: true,
+      datos_linea: "caja",
+      selector: false,
+      guias: false,
+    });
+    expect(categoryDesignError({ diseno_productos: "caja" })).toMatch(/no se hereda/);
+    expect(productDesign(product({ diseno: "correa" })).datos_linea).toBe("correa");
+    expect(productDesign(product()).datos_linea).toBeNull();
+  });
+
   it("productDesign (servidor): solo la metadata del producto; desconocido → estándar", () => {
     expect(productDesign(product({ diseno: "correa" })).configurable).toBe(true);
     expect(productDesign(product()).configurable).toBe(false);

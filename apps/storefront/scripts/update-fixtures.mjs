@@ -40,8 +40,10 @@ const FIXTURE_MAX = 48;
 // Correa a medida (E-2c): dos colores de la plantilla (`correas:sync catalog/plantilla/correas`),
 // uno de cada material y uno con poca cuerda (verde PVC: hasta 8 m), para el build de CI.
 const FIXTURE_CORREAS = new Set(["correa-azul-nylon", "correa-verde-pvc"]);
+// Caja de snacks (Fase CS): `catalog:import catalog/plantilla/caja` (diseño `caja`, sin stock).
+const FIXTURE_SPECIAL = new Set(["caja-snacks"]);
 const inFixture = (/** @type {string} */ handle) => {
-  if (FIXTURE_CORREAS.has(handle)) return true;
+  if (FIXTURE_CORREAS.has(handle) || FIXTURE_SPECIAL.has(handle)) return true;
   const n = Number(/^mock-.*-(\d{3})$/.exec(handle)?.[1] ?? NaN);
   return n >= 1 && n <= FIXTURE_MAX;
 };
@@ -58,7 +60,7 @@ const query = new URLSearchParams({
   region_id: region.id,
   country_code: "es",
   fields:
-    "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,*images,*categories,*options,*options.values,*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity",
+    "id,handle,title,subtitle,description,thumbnail,collection_id,discountable,metadata,*images,*categories,*options,*options.values,*variants,*variants.options,*variants.calculated_price,+variants.inventory_quantity",
 });
 for (const id of ids) query.append("id[]", id);
 const { products: base } = await get(`/store/products?${query}`);

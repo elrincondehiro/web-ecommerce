@@ -288,6 +288,7 @@ describe("plan", () => {
     categories: ["ropa"],
     tags: ["novedad"],
     brand: null,
+    discountable: true,
     metadata: {},
     options: [{ id: "opt_talla", title: "Talla", values: [{ id: "v_s", value: "S" }] }],
     variants: [
@@ -303,6 +304,7 @@ describe("plan", () => {
         prices: [{ id: "price_s", currency_code: "eur", amount: 10, rules_count: 0 }],
         metadata: {},
         requiredQuantity: 1,
+        manageInventory: true,
       },
     ],
   });
@@ -539,7 +541,7 @@ describe("descatalogado y sustituto (Fase E)", () => {
   });
 });
 
-describe("sin_puntos (Fase L-2, K3)", () => {
+describe("genera_puntos y pago_descuento (Fase CS; antes sin_puntos)", () => {
   const refs = {
     salesChannelId: "sc",
     shippingProfileId: "sp",
@@ -548,19 +550,30 @@ describe("sin_puntos (Fase L-2, K3)", () => {
     tagIds: {},
     typeIds: {},
   } as unknown as Parameters<typeof productCreateInput>[1];
-  const read = (rows: string[]) => readProducts(csv(["handle,sin_puntos,sku,precio", ...rows]));
+  const read = (rows: string[]) =>
+    readProducts(csv(["handle,genera_puntos,pago_descuento,sku,precio", ...rows]));
 
-  it("sí → metadata.sin_puntos = true; no → se borra; vacío → no se toca", () => {
-    const { products, errors } = read(['a,sí,A-1,"9,95"', 'b,no,B-1,"9,95"', 'c,,C-1,"9,95"']);
+  it("genera_puntos: no → metadata false; sí → se borra la clave; vacío → no se toca", () => {
+    const { products, errors } = read(['a,no,,A-1,"9,95"', 'b,sí,,B-1,"9,95"', 'c,,,C-1,"9,95"']);
     expect(errors).toEqual([]);
-    expect(products.map((p) => p.noPoints)).toEqual([true, false, undefined]);
-    expect(productCreateInput(products[0]!, refs).metadata).toMatchObject({ sin_puntos: true });
-    expect(productCreateInput(products[1]!, refs).metadata).toMatchObject({ sin_puntos: "" });
-    expect(productCreateInput(products[2]!, refs).metadata?.sin_puntos).toBeUndefined();
+    expect(products.map((p) => p.earnsPoints)).toEqual([false, true, undefined]);
+    expect(productCreateInput(products[0]!, refs).metadata).toMatchObject({ genera_puntos: false });
+    expect(productCreateInput(products[1]!, refs).metadata).toMatchObject({ genera_puntos: "" });
+    expect(productCreateInput(products[2]!, refs).metadata?.genera_puntos).toBeUndefined();
   });
 
-  it("valor no válido", () => {
-    expect(read(['a,quizá,A-1,"9,95"']).errors.map((e) => e.column)).toEqual(["sin_puntos"]);
+  it("pago_descuento → discountable de Medusa (vacío = no tocar)", () => {
+    const { products } = read(['a,,no,A-1,"9,95"', 'b,,sí,B-1,"9,95"', 'c,,,C-1,"9,95"']);
+    expect(products.map((p) => p.discountable)).toEqual([false, true, undefined]);
+    expect(productCreateInput(products[0]!, refs)).toMatchObject({ discountable: false });
+    expect("discountable" in productCreateInput(products[2]!, refs)).toBe(false);
+  });
+
+  it("valores no válidos", () => {
+    expect(read(['a,quizá,talvez,A-1,"9,95"']).errors.map((e) => e.column)).toEqual([
+      "genera_puntos",
+      "pago_descuento",
+    ]);
   });
 });
 
@@ -698,6 +711,47 @@ describe("diseños (Fase DS)", () => {
       emptyDb({ categories: [db] }),
     );
     expect(same.categories.unchanged).toBe(1);
+  });
+});
+
+describe("sin stock (Fase CS)", () => {
+  const refs = {
+    shippingProfileId: "sp",
+    salesChannelId: "sc",
+    option: (t: string) => ({ id: `opt_${t}`, title: t, values: [] }),
+    categoryIds: {},
+    collectionIds: {},
+    tagIds: {},
+    typeIds: {},
+  } as unknown as Parameters<typeof productCreateInput>[1];
+
+  it("sin_stock = sí: sin stock en la hoja; incompatible con granel", () => {
+    const { products, errors } = readProducts(
+      csv([
+        "handle,diseno,sin_stock,iva,sku,precio,stock",
+        'caja-snacks,caja,sí,reducido,CAJA-15,"15,00",',
+        "otro,,sí,,O-1,5,3",
+      ]),
+    );
+    expect(products[0]).toMatchObject({ noStock: true, design: "caja", iva: "reducido" });
+    expect(errors.map((e) => [e.line, e.column])).toEqual([[3, "stock"]]);
+    const bulk = readProducts(
+      csv(["handle,granel,sin_stock,sku,paso_g,min_g,precio_kg", "g,sí,sí,G-1,5,100,20"]),
+    );
+    expect(bulk.errors.map((e) => e.column)).toContain("sin_stock");
+  });
+
+  it("variantes nuevas sin control de stock; cambiarlo en una existente sale en el plan", () => {
+    const { products } = readProducts(
+      csv(["handle,titulo,sin_stock,sku,precio", "caja,Caja,sí,CAJA-15,15"]),
+    );
+    const input = productCreateInput(products[0]!, refs) as {
+      variants: { manage_inventory: boolean }[];
+    };
+    expect(input.variants.map((v) => v.manage_inventory)).toEqual([false]);
+    const { products: normal } = readProducts(csv(["handle,titulo,sku,precio", "otro,Otro,O-1,5"]));
+    const normalInput = productCreateInput(normal[0]!, refs) as typeof input;
+    expect(normalInput.variants.map((v) => v.manage_inventory)).toEqual([true]);
   });
 });
 

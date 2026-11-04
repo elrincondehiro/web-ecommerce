@@ -188,6 +188,70 @@ test.describe("puntos sin JS", () => {
   });
 });
 
+test.describe("productos sin descuentos ni puntos (Fase CS), sin JS", () => {
+  test.use({ javaScriptEnabled: false });
+  // `mock-venda-cohesiva-natural-999`: pago_descuento = no y genera_puntos = no en la BD local
+  // (widget «Descuentos y puntos» del Admin); ningún otro e2e lo usa.
+  const FLAGGED = "/producto/mock-venda-cohesiva-natural-999/";
+  const NOTE = "No admite códigos descuento ni pago con puntos";
+
+  test("ficha: el texto; carrito y checkout: «*» con su cuadro; el tope de puntos no lo cuenta", async ({
+    page,
+  }) => {
+    skipIfRemote("usa un producto marcado en la BD local y points:adjust");
+    await page.goto(FLAGGED);
+    await expect(page.locator("main [data-restriction]")).toHaveText(
+      `* ${NOTE} · No genera puntos.`,
+    );
+    // Un producto normal: sin marca
+    await page.goto(PRODUCT);
+    await expect(page.locator("main [data-restriction]")).toHaveCount(0);
+
+    const email = testEmail("e2e-sin-desc");
+    await createAccount(page, email);
+    await login(page, email);
+    credit(email, 500);
+    for (const url of [PRODUCT, FLAGGED]) {
+      await page.goto(url);
+      await page
+        .locator("#comprar")
+        .getByRole("button", { name: /^Añadir .* al carrito$/ })
+        .click();
+    }
+    await page.goto("/carrito/");
+    const flagged = page.locator("main li", { has: page.locator("[data-restriction]") });
+    await expect(flagged).toHaveCount(1);
+    // «*» tras el nombre: el cuadro con la explicación se abre al pulsarlo (popover, sin JS)
+    const info = flagged.locator("[popover]");
+    await expect(info).toBeHidden();
+    await flagged.getByRole("button", { name: "Condiciones de este producto" }).click();
+    await expect(info).toBeVisible();
+    await expect(info).toContainText(NOTE);
+    await expect(info).toContainText("No genera puntos");
+    await page.keyboard.press("Escape");
+    await expect(info).toBeHidden();
+
+    await toPayment(page);
+    await page.locator("#resumen-titulo + ul [data-restriction]").first().click();
+    await expect(page.locator("#resumen-titulo + ul [popover]").first()).toContainText(NOTE);
+    await page.keyboard.press("Escape");
+    // El máximo de puntos solo cuenta el producto descontable (el otro está marcado)
+    const block = page.locator("#puntos");
+    await expect(block).toContainText("no se pueden pagar con puntos");
+    const offer = await block.getByRole("button", { name: /^Usar / }).innerText();
+    const max = Number(/Usar ([\d,.]+)/.exec(offer)![1]!.replace(".", "").replace(",", "."));
+    const clicker = await page
+      .locator("#resumen-titulo + ul li", { hasText: "Clicker" })
+      .locator("span.tabular-nums")
+      .last()
+      .innerText();
+    expect(max).toBeLessThanOrEqual(Number(clicker.replace(/[^\d,]/g, "").replace(",", ".")));
+    await block.getByRole("button", { name: /^Usar / }).click();
+    await expect(block).toContainText("Usas");
+    await block.getByRole("button", { name: "Quitar" }).click();
+  });
+});
+
 test.describe("códigos descuento sin JS (Fase P)", () => {
   test.use({ javaScriptEnabled: false });
 

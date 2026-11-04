@@ -17,6 +17,7 @@ import {
   DELETE_PATH,
   LOGIN_PATH,
   ORDERS_PATH,
+  CAJA_PATH,
   ORDER_TRANSFER_PATH,
   PROFILE_PATH,
   RECOVER_PATH,
@@ -44,6 +45,7 @@ import { CART_COOKIE, cartCookieOptions, isValidId } from "$lib/cart";
 import { WISH_PENDING_COOKIE, decodeWishPending } from "$lib/wishlist";
 import {
   addToWishlist,
+  answerCaja,
   answerOrderTransfer,
   claimOrder,
   confirmEmailVerification,
@@ -492,7 +494,57 @@ export const account = {
     accept: "form",
     handler: async (form, ctx): Promise<AccountResult> => answerTransfer(form, ctx, false),
   }),
+
+  // Caja de snacks propuesta (Fase CS-4): con el token del email, sin sesión (/cuenta/caja/)
+  cajaAccept: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<AccountResult> => answerCajaForm(form, ctx, "aceptar"),
+  }),
+
+  cajaReject: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<AccountResult> => answerCajaForm(form, ctx, "rechazar"),
+  }),
 };
+
+const CAJA_MOTIVO_MAX = 500;
+
+/**
+ * Respuesta a una caja propuesta: el backend comprueba el token (de un solo uso) y el motivo.
+ * Vuelve a /cuenta/caja/ con el aviso; si falta el motivo, a la misma caja para escribirlo.
+ */
+async function answerCajaForm(
+  form: FormData,
+  ctx: ActionAPIContext,
+  answer: "aceptar" | "rechazar",
+): Promise<AccountResult> {
+  const str = (k: string) => {
+    const v = form.get(k);
+    return typeof v === "string" ? v : "";
+  };
+  const orderId = str("pedido");
+  const lineId = str("caja");
+  const token = str("token");
+  if (!isValidId(orderId) || !isValidId(lineId) || !token || token.length > 200) {
+    return { to: CAJA_PATH, flash: { code: "caja_failed" } };
+  }
+  const motivo = str("motivo").trim();
+  if (answer === "rechazar" && (!motivo || [...motivo].length > CAJA_MOTIVO_MAX)) {
+    const q = new URLSearchParams({ pedido: orderId, caja: lineId, token });
+    return { to: `${CAJA_PATH}?${q.toString()}#no-convence`, flash: { code: "caja_motivo" } };
+  }
+  try {
+    await answerCaja(orderId, lineId, token, answer, answer === "rechazar" ? motivo : null);
+    return {
+      to: CAJA_PATH,
+      flash: { code: answer === "aceptar" ? "caja_accepted" : "caja_rejected" },
+    };
+  } catch (err) {
+    const status = (err as { status?: unknown } | null)?.status;
+    if (status !== 400 && status !== 404) logError(ctx, "caja de snacks", err);
+    return { to: CAJA_PATH, flash: { code: "caja_failed" } };
+  }
+}
 
 /**
  * Respuesta a una solicitud de transferencia: con el token del email (no hace falta sesión: quien

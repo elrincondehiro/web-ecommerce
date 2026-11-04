@@ -15,6 +15,11 @@ import { StoreAddWishlistItemBody } from "./store/customers/me/wishlist/items/ro
 import { StoreApplyPointsBody } from "./store/carts/[id]/points/route";
 import { AdminAdjustPointsBody } from "./admin/customers/[id]/points/route";
 import { AdminOptionFamiliesBody } from "./admin/option-families/[id]/route";
+import { AdminFillCajaBody } from "./admin/orders/[id]/cajas/[lineId]/route";
+import { StoreCajaAnswerBody, StoreCajaQuery } from "./store/cajas/[lineId]/route";
+import { StoreCajasQuery } from "./store/cajas/route";
+import { CAJA_MESSAGES } from "../lib/caja";
+import { shipBlockingCajas } from "../lib/caja-data";
 import { StoreApplyCodeBody } from "./store/carts/[id]/code/route";
 import { StoreOrderClaimBody } from "./store/customers/me/order-claims/route";
 import { StoreOrderTransferQuery } from "./store/order-transfers/[id]/route";
@@ -41,6 +46,24 @@ const noPromoCodes = (req: MedusaRequest, res: MedusaResponse, next: MedusaNextF
   const body = req.body as { promo_codes?: unknown } | undefined;
   if (body && body.promo_codes !== undefined) {
     res.status(403).json({ type: "not_allowed", message: "Usa /store/carts/:id/code" });
+    return;
+  }
+  next();
+};
+
+/**
+ * Caja de snacks (Fase CS-3/4): no se envía un pedido con cajas sin aceptar por el cliente.
+ * El workflow de envío de Medusa 2.22.2 solo tiene hook DESPUÉS de crearlo (`fulfillmentCreated`),
+ * así que se corta en la ruta del Admin. Los scripts que llamen al workflow directamente no pasan
+ * por aquí (no hay ninguno que cree envíos).
+ */
+const blockCajaShipping = async (
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction,
+) => {
+  if ((await shipBlockingCajas(req.scope, req.params.id ?? "")) > 0) {
+    res.status(400).json({ type: "not_allowed", message: CAJA_MESSAGES.shipBlocked });
     return;
   }
   next();
@@ -222,6 +245,33 @@ export default defineMiddlewares({
     },
     // Carpetas del bucket (Fase H)
     { matcher: "/admin/uploads", methods: ["POST"], middlewares: [uploadFolder] },
+    // Caja de snacks (Fase CS-3): rellenar desde el widget y no enviar sin prepararla
+    {
+      matcher: "/admin/orders/:id/cajas/:lineId",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminFillCajaBody)],
+    },
+    {
+      matcher: "/admin/orders/:id/fulfillments",
+      methods: ["POST"],
+      middlewares: [blockCajaShipping],
+    },
+    {
+      matcher: "/store/cajas",
+      methods: ["GET"],
+      middlewares: [validateAndTransformQuery(StoreCajasQuery, {})],
+    },
+    // Caja de snacks (Fase CS-4): ver y responder la propuesta con el token del email (sin sesión)
+    {
+      matcher: "/store/cajas/:lineId",
+      methods: ["GET"],
+      middlewares: [validateAndTransformQuery(StoreCajaQuery, {})],
+    },
+    {
+      matcher: "/store/cajas/:lineId",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreCajaAnswerBody)],
+    },
     // Pagos (Fase PG): métodos y captura de Stripe impuestos por el servidor.
     {
       matcher: "/store/payment-collections/:id/payment-sessions",

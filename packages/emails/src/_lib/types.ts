@@ -29,4 +29,13 @@ export type EmailLineItem = {
   bulk?: { grams: number; pricePerKg: number } | null;
   /** Líneas extra (correa a medida, Fase E-2: «Medida exacta: 6,40 m», «Observaciones: …»). */
   details?: string[] | null;
+  /**
+   * Caja de snacks (Fase CS): resumen en UNA línea («Para Toby (perro, 3 años, 12,5 kg)»); los
+   * `details` van debajo, en letra pequeña. Y su contenido, si ya se puede enseñar, indentado
+   * («3 × Orejas», «150 g · Premios»), sin precios.
+   */
+  summary?: string | null;
+  contents?: string[] | null;
+  /** Fuera de descuentos / no genera puntos (Fase CS): nota pequeña bajo el nombre. */
+  notes?: string[] | null;
 };

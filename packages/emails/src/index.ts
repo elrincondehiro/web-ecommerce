@@ -9,6 +9,8 @@ import * as accountDeletionRequest from "./account-deletion-request";
 import * as orderTransfer from "./order-transfer";
 import * as orderReceivedShop from "./order-received-shop";
 import * as transferReminder from "./transfer-reminder";
+import * as cajaPropuesta from "./caja-propuesta";
+import * as cajaTienda from "./caja-tienda";
 
 export type { EmailLinks } from "./_components/Layout";
 export type { EmailAddress, EmailLineItem } from "./_lib/types";
@@ -23,6 +25,8 @@ export type { OrderTransferProps } from "./order-transfer";
 export type { OrderReceivedShopProps, ShopPet } from "./order-received-shop";
 export type { TransferReminderProps } from "./transfer-reminder";
 export type { TransferInfo } from "./_components/transfer";
+export type { CajaPropuestaItem, CajaPropuestaProps } from "./caja-propuesta";
+export type { CajaTiendaProps } from "./caja-tienda";
 
 /** Plantillas disponibles: el id es el `template` de `createNotifications`. */
 const templates = {
@@ -35,6 +39,8 @@ const templates = {
   "order-transfer": orderTransfer,
   "order-received-shop": orderReceivedShop,
   "transfer-reminder": transferReminder,
+  "caja-propuesta": cajaPropuesta,
+  "caja-tienda": cajaTienda,
 } as const;
 
 export type TemplateId = keyof typeof templates;
@@ -49,6 +55,8 @@ export type TemplateProps = {
   "order-transfer": orderTransfer.OrderTransferProps;
   "order-received-shop": orderReceivedShop.OrderReceivedShopProps;
   "transfer-reminder": transferReminder.TransferReminderProps;
+  "caja-propuesta": cajaPropuesta.CajaPropuestaProps;
+  "caja-tienda": cajaTienda.CajaTiendaProps;
 };
 
 export const TEMPLATE_IDS = Object.keys(templates) as TemplateId[];

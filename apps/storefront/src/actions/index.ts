@@ -11,13 +11,8 @@ import { defineAction } from "astro:actions";
 import { COOKIE_SECURE } from "astro:env/server";
 import { z } from "astro/zod";
 import { bulkRule, checkGrams, lineRule } from "$lib/bulk";
-import {
-  CORREA_LINE_META,
-  NOTES_MAX,
-  cleanNotes,
-  exactRange,
-  findCorreaVariant,
-} from "$lib/correa";
+import { cleanNotes, findCorreaVariant } from "$lib/correa";
+import { CORREA_LINE_META, NOTES_MAX, cajaFromForm, exactRange } from "$lib/line-data";
 import {
   CART_COOKIE,
   ID_PATTERN,
@@ -77,7 +72,11 @@ function titleOf(cart: StoreCart, variantId: string): string | null {
 }
 
 const fail = (kind: ReturnType<typeof classifyCartError>): CartResult | null =>
-  kind === "stock" || kind === "minimum" || kind === "discontinued" || kind === "correa"
+  kind === "stock" ||
+  kind === "minimum" ||
+  kind === "discontinued" ||
+  kind === "correa" ||
+  kind === "caja"
     ? { code: kind, count: null }
     : null;
 
@@ -225,6 +224,58 @@ export const server = {
           variantId,
           quantity,
           Object.keys(metadata).length ? metadata : undefined,
+        );
+      },
+    }),
+
+    /**
+     * Caja de snacks (Fase CS, diseño `caja`, CajaForm.astro): importe (variante) y «¿Para quién
+     * es?». La variante tiene que ser del producto del formulario; los datos se limpian y validan
+     * aquí (lib/line-data.ts `cajaFromForm`; la salud solo con el consentimiento) y otra vez en el
+     * backend (hook validar-carrito). Una caja por envío del formulario (decisión del usuario),
+     * siempre en su línea (`caja_ref` aleatorio) y con cantidad 1: 10 perros = 10 envíos, 10
+     * líneas del mismo pedido. Campos vacíos llegan como null y las
+     * casillas con el mismo nombre como array (astro-docs, actions: form data).
+     */
+    addCaja: defineAction({
+      accept: "form",
+      input: z.object({
+        product_id: id,
+        variant_id: id,
+        animal: z.string().max(20).nullish(),
+        nombre: z.string().max(200).nullish(),
+        raza: z.string().max(200).nullish(),
+        cachorro: z.boolean().nullish(),
+        edad: z.number().nullish(),
+        peso: z.number().nullish(),
+        no_gusta: z.string().max(400).nullish(),
+        probado: z.string().max(400).nullish(),
+        pelo: z.string().max(20).nullish(),
+        mastica: z.array(z.string().max(20)).max(5).nullish(),
+        mastica_otro: z.string().max(200).nullish(),
+        salud: z.string().max(400).nullish(),
+        salud_ok: z.boolean().nullish(),
+      }),
+      handler: async (input, ctx): Promise<CartResult> => {
+        // caja_ref aleatorio: cada envío es una caja distinta (Medusa junta las líneas con la
+        // misma variante y la misma metadata; core-flows 2.22.2 find-matching-line-item)
+        const result = cajaFromForm(input, crypto.randomUUID());
+        if (!result.ok) return { code: "caja", count: null };
+        try {
+          const variants = await getProductVariantsMeta(input.product_id);
+          if (!variants.some((v) => v.id === input.variant_id)) {
+            return { code: "variant", count: null };
+          }
+        } catch (err) {
+          logError(ctx, "addCaja", err);
+          return { code: "error", count: null };
+        }
+        return addWithRetry(
+          ctx,
+          "addCaja",
+          input.variant_id,
+          1,
+          result.data as unknown as Record<string, unknown>,
         );
       },
     }),

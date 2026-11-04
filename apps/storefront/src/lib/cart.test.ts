@@ -95,6 +95,9 @@ describe("classifyCartError", () => {
         new FetchError("Para una correa de 7 m, la medida exacta va de 6,01 a 7 m.", 400),
       ),
     ).toBe("correa");
+    expect(classifyCartError(new FetchError("Revisa los datos de la caja de snacks.", 400))).toBe(
+      "caja",
+    );
     expect(classifyCartError(new FetchError("Cart with id 'cart_x' not found", 404))).toBe(
       "cart_invalid",
     );
@@ -146,6 +149,7 @@ describe("itemCount y avisos", () => {
       "discontinued",
       "maximum",
       "correa",
+      "caja",
       "variant",
       "error",
     ]);

@@ -25,12 +25,12 @@ describe("puntos: cálculo", () => {
     expect(floorCents(0.1 + 0.2)).toBe(0.3); // coma flotante
   });
 
-  it("base: líneas con IVA tras descuentos, sin productos sin_puntos ni lo devuelto", () => {
+  it("base: líneas con IVA tras descuentos, sin productos que no generan ni lo devuelto", () => {
     const items = [
       { total: 20 },
       { total: { valueOf: () => 10.5 } },
-      { total: 50, product: { metadata: { sin_puntos: true } } },
-      { total: 5, variant: { product: { metadata: { sin_puntos: true } } } },
+      { total: 50, product: { metadata: { genera_puntos: false } } },
+      { total: 5, variant: { product: { metadata: { genera_puntos: false } } } },
       null,
     ];
     expect(accrualBase(items)).toBe(30.5);

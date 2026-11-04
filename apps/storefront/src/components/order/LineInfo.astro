@@ -1,0 +1,62 @@
+---
+// Datos extra de una línea (carrito, checkout, pedido, «Mis pedidos»; Fase CS):
+// - la correa: sus detalles;
+// - la caja de snacks: su ESTADO destacado (pedidos), un <details> «Para Toby» con lo que nos
+//   contó (para que la línea no sea muy ancha, sin JS) y su contenido indentado (si se enseña);
+// Las restricciones del producto van en LineFlag.astro («*» junto al nombre).
+// Nada de <style> ni style= (CSP): clases de Tailwind y global.css.
+import { CAJA_CLIENT_LABEL, cajaSummary, lineDetails, type CajaClientState } from "$lib/line-data";
+
+interface Props {
+  metadata: Record<string, unknown> | null | undefined;
+  /** Estado de la caja para el cliente (solo en pedidos). */
+  state?: CajaClientState | undefined;
+  /** Contenido de la caja («3 × Orejas»), si ya se puede enseñar. */
+  contents?: string[] | undefined;
+}
+const { metadata, state, contents } = Astro.props;
+const caja = cajaSummary(metadata);
+const plain = caja ? [] : lineDetails(metadata);
+// Estado de la caja: destacado, el primero bajo el nombre. Color por estado (tokens del tema,
+// texto con contraste AA en claro y oscuro): espera al cliente → acento; preparando → azul;
+// aceptada → verde (decisión del usuario: se prueba así).
+const STATE_CLASS: Record<CajaClientState, string> = {
+  propuesta: "border-accent-text text-accent-text",
+  preparando: "border-primary text-primary",
+  aceptada: "border-success text-success",
+};
+---
+
+{caja ? (
+  <>
+    {state && (
+      <span
+        class:list={[
+          "my-1 block w-fit rounded-md border-2 px-2 py-0.5 text-sm font-bold",
+          STATE_CLASS[state],
+        ]}
+        data-caja-state={state}
+      >
+        {CAJA_CLIENT_LABEL[state]}
+      </span>
+    )}
+    <details class="mt-0.5 text-xs text-muted-foreground">
+      <summary class="cursor-pointer break-words">{caja.name}</summary>
+      <ul class="mt-1 pl-3">
+        {caja.details.map((d) => (
+          <li class="break-words">{d}</li>
+        ))}
+      </ul>
+    </details>
+    {contents && contents.length > 0 && (
+      <span class="mt-1 block border-l-2 border-line pl-3 text-xs">
+        <span class="block font-semibold text-muted-foreground">En la caja</span>
+        {contents.map((c) => (
+          <span class="block break-words">{c}</span>
+        ))}
+      </span>
+    )}
+  </>
+) : (
+  plain.map((d) => <span class="block text-xs break-words text-muted-foreground">{d}</span>)
+)}

@@ -60,7 +60,8 @@ export const CHECKOUT_NOTICES = {
   transfer_login: "Entra en tu cuenta para pagar por transferencia.",
   // Puntos (Fase L-3). `points_changed`: el backend rechaza completar (validar-carrito.ts).
   points_invalid: "Escribe un importe válido, por ejemplo 2,50.",
-  points_max: "Ese importe supera lo que puedes usar en este pedido.",
+  points_max:
+    "Ese importe supera lo que puedes usar en este pedido (los productos marcados con * no se pueden pagar con puntos).",
   points_changed: "Tu saldo de puntos ha cambiado. Vuelve a aplicar los puntos.",
   points_login: "Entra en tu cuenta para usar tus puntos.",
   // Códigos descuento (Fase P). `points_adjusted` lleva el importe en `values.points`.

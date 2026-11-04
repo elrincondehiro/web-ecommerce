@@ -22,7 +22,7 @@ import { pointsMovementWorkflow } from "../../src/workflows/points";
  * - Canje como promoción (spike L-0): baja el IVA, tope por saldo y ≥ 0,50 € por pagar,
  *   sustituir, quitar, carrito ajeno; al hacer el pedido se carga el descuento REAL.
  * - Dos carritos con el mismo saldo: el segundo no se puede pagar (hook validate).
- * - Abono al consolidar (14 días desde el envío): 0,8 % con IVA sin envío, sin `sin_puntos`,
+ * - Abono al consolidar (14 días desde el envío): 0,8 % con IVA sin envío, sin los productos `genera_puntos: false`,
  *   sin la parte pagada con puntos; idempotente; cancelado o sin enviar → nada.
  * - Cancelación devuelve lo canjeado (una vez). Devolución tras el abono → cargo.
  * - Admin: ajuste con nota, informe (G3).
@@ -44,7 +44,8 @@ medusaIntegrationTestRunner({
     let events: { name: string; data: Record<string, unknown> }[];
     let v21: string; // 30 € con IVA al 21 %
     let v10: string; // 70 € con IVA al 10 %
-    let vNo: string; // 50 €, producto sin_puntos
+    let vNo: string; // 50 €, producto que no genera puntos
+    let vNd: string; // 20 €, pago_descuento = no (discountable false): ni códigos ni puntos
 
     const query = () => container.resolve(ContainerRegistrationKeys.QUERY);
     const service = () => container.resolve<PointsModuleService>(POINTS_MODULE);
@@ -86,11 +87,12 @@ medusaIntegrationTestRunner({
           products: [
             mk("Collar", 30),
             mk("Pienso", 70, { type_id: type10!.id }),
-            mk("Tarjeta", 50, { metadata: { sin_puntos: true } }),
+            mk("Tarjeta", 50, { metadata: { genera_puntos: false } }),
+            mk("Caja", 20, { discountable: false }),
           ],
         },
       });
-      [v21, v10, vNo] = result.map((p) => p.variants[0]!.id);
+      [v21, v10, vNo, vNd] = result.map((p) => p.variants[0]!.id);
 
       events = [];
       const eventBus = container.resolve(Modules.EVENT_BUS);
@@ -281,6 +283,7 @@ medusaIntegrationTestRunner({
         max: 10,
         code: null,
         code_amount: 0,
+        excluded: 0,
       });
       const anon = await api.get(`/store/carts/${cartId}/points`, { headers });
       expect(anon.data).toEqual({
@@ -290,6 +293,7 @@ medusaIntegrationTestRunner({
         max: null,
         code: null,
         code_amount: 0,
+        excluded: 0,
       });
       const other = await api.get(`/store/carts/${cartId}/points`, luis.auth);
       expect(other.data.balance).toBeNull();
@@ -326,6 +330,35 @@ medusaIntegrationTestRunner({
         .catch(asRes);
       expect(over.status).toBe(400);
       expect(over.data.message).toMatch(/como máximo 30,00 €/);
+    });
+
+    it("pago_descuento = no (Fase CS): el tope de puntos no cuenta ese producto y lo dice", async () => {
+      const ana = await customer("nodesc@example.com");
+      await credit(ana.id, 100);
+      const cartId = await newCart(ana.auth, [
+        [v21, 1],
+        [vNd, 1],
+      ]); // 30 € + 20 € (no descontable) + 4,95 envío
+      const info = await api.get(`/store/carts/${cartId}/points`, ana.auth);
+      // Antes ofrecía 50 €: ahora solo los 30 € del collar (el resto cubre los 0,50 €)
+      expect(info.data).toMatchObject({ max: 30, excluded: 20 });
+      const over = await api
+        .post(`/store/carts/${cartId}/points`, { amount: 35 }, ana.auth)
+        .catch(asRes);
+      expect(over.status).toBe(400);
+      expect(over.data.message).toMatch(/como máximo 30,00 €.*no se pueden pagar con puntos/);
+      expect(
+        (await api.post(`/store/carts/${cartId}/points`, { amount: 30 }, ana.auth)).status,
+      ).toBe(200);
+      // Medusa no reparte la promoción de puntos sobre la línea no descontable
+      const { data } = await query().graph({
+        entity: "cart",
+        fields: ["total", "items.variant_id", "items.adjustments.amount"],
+        filters: { id: cartId },
+      });
+      const caja = data[0]!.items!.find((i) => i!.variant_id === vNd)!;
+      expect(caja.adjustments ?? []).toHaveLength(0);
+      expect(Number(data[0]!.total)).toBe(24.95);
     });
 
     it("pedido: se carga el descuento real; el segundo carrito con el mismo saldo falla", async () => {
@@ -365,7 +398,7 @@ medusaIntegrationTestRunner({
       expect(await list()).toBe(1);
     });
 
-    it("abono al consolidar: 0,8 % con IVA, sin envío ni sin_puntos ni lo canjeado; idempotente", async () => {
+    it("abono al consolidar: 0,8 % con IVA, sin envío ni lo que no genera ni lo canjeado; idempotente", async () => {
       const ana = await customer("abono@example.com");
       await credit(ana.id, 10);
       const cartId = await newCart(ana.auth, [

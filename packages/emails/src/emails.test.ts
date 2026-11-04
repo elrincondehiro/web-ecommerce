@@ -66,9 +66,48 @@ describe("renderEmail", () => {
     expect(text).toContain("Observaciones: Con el nombre de Hiro, por favor");
   });
 
+  it("caja de snacks propuesta (CS-4): contenido, enlace por caja y plazo", async () => {
+    const { subject, text } = await renderEmail("caja-propuesta", previewProps("caja-propuesta"));
+    expect(subject).toBe("Tu caja de snacks para Toby está lista: ¿te convence?");
+    expect(text).toContain("3 × Orejas de cerdo");
+    expect(text).toContain("150 g · Premios de pollo");
+    expect(text).toContain("/cuenta/caja/?pedido=order_preview&caja=ordli_preview&token=preview");
+    expect(text).toContain("el martes 4 de noviembre a las 18:30");
+    const two = await renderEmail("caja-propuesta", {
+      ...previewProps("caja-propuesta"),
+      cajas: [
+        ...previewProps("caja-propuesta").cajas,
+        {
+          name: "Luna",
+          title: "Caja de snacks · 15 €",
+          content: ["2 × Tiras"],
+          url: "https://x/2",
+        },
+      ],
+    });
+    expect(two.subject).toBe("Tus 2 cajas de snacks están listas: ¿te convencen?");
+    expect(two.text).toContain("Para Luna");
+  });
+
+  it("caja de snacks, aviso a la tienda (CS-4): rechazo con el motivo", async () => {
+    const { subject, text } = await renderEmail("caja-tienda", previewProps("caja-tienda"));
+    expect(subject).toBe("Caja rechazada: hay que rehacerla · pedido n.º 1042 · Toby");
+    expect(text).toContain("No le gustan las orejas");
+    const auto = await renderEmail("caja-tienda", {
+      ...previewProps("caja-tienda"),
+      kind: "aceptada_auto",
+      readyToShip: true,
+    });
+    expect(auto.text).toContain("ya se puede enviar");
+    expect(auto.text).not.toContain("No le gustan");
+  });
+
   it("el envío muestra el seguimiento", async () => {
     const { text } = await renderEmail("order-shipped", previewProps("order-shipped"));
     expect(text).toContain("PK123456789ES");
+    // Caja de snacks: resumen, datos y su contenido debajo («En la caja»)
+    expect(text).toContain("Para Toby (perro, Border collie)");
+    expect(text).toMatch(/En la caja\s+3 × Orejas de cerdo\s+150 g · Premios de pollo/);
   });
 
   it("los enlaces de cuenta salen en el texto plano", async () => {

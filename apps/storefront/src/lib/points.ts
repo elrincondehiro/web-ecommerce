@@ -38,6 +38,8 @@ export type CartPoints = {
   /** Código descuento aplicado (Fase P) y su descuento real. */
   code: string | null;
   code_amount: number;
+  /** Productos que no admiten pago con puntos (Fase CS, `pago_descuento = no`), en €. */
+  excluded?: number;
 };
 
 const REFERENCE_LABELS: Record<string, string> = {

@@ -5,6 +5,7 @@
     "title": "Abrigo Esencial",
     "subtitle": "Ropa",
     "description": "Abrigo Esencial: producto de prueba generado para desarrollo (Ropa).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -422,6 +423,7 @@
     "title": "Abrigo Natural",
     "subtitle": "Ropa",
     "description": "Abrigo Natural: producto de prueba generado para desarrollo (Ropa).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -827,6 +829,7 @@
     "title": "Aceite de salmón Original",
     "subtitle": "Suplementos",
     "description": "Aceite de salmón Original: producto de prueba generado para desarrollo (Suplementos).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -916,6 +919,7 @@
     "title": "Alfombra olfativa Original",
     "subtitle": "Estimulación mental",
     "description": "Alfombra olfativa Original: producto de prueba generado para desarrollo (Estimulación mental).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -1002,6 +1006,7 @@
     "title": "Botiquín Natural",
     "subtitle": "Primeros auxilios",
     "description": "Botiquín Natural: producto de prueba generado para desarrollo (Primeros auxilios).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -1088,6 +1093,7 @@
     "title": "Cama Confort",
     "subtitle": "Camas y sofás",
     "description": "Cama Confort: producto de prueba generado para desarrollo (Camas y sofás).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -1282,6 +1288,7 @@
     "title": "Cama Eco",
     "subtitle": "Camas y sofás",
     "description": "Cama Eco: producto de prueba generado para desarrollo (Camas y sofás).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -1470,6 +1477,7 @@
     "title": "Cama gato Confort",
     "subtitle": "Descanso",
     "description": "Cama gato Confort: producto de prueba generado para desarrollo (Descanso).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -1658,6 +1666,7 @@
     "title": "Cama refrescante Eco",
     "subtitle": "Camas refrescantes",
     "description": "Cama refrescante Eco: producto de prueba generado para desarrollo (Camas refrescantes).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -1846,6 +1855,7 @@
     "title": "Caña Esencial",
     "subtitle": "Juguetes",
     "description": "Caña Esencial: producto de prueba generado para desarrollo (Juguetes).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -1932,6 +1942,7 @@
     "title": "Champú Plus",
     "subtitle": "Para la ducha",
     "description": "Champú Plus: producto de prueba generado para desarrollo (Para la ducha).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -2076,6 +2087,7 @@
     "title": "Champú gato Original",
     "subtitle": "Higiene y cuidados",
     "description": "Champú gato Original: producto de prueba generado para desarrollo (Higiene y cuidados).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -2220,6 +2232,7 @@
     "title": "Clicker Esencial",
     "subtitle": "Entrenamiento",
     "description": "Clicker Esencial: producto de prueba generado para desarrollo (Entrenamiento).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -2306,6 +2319,7 @@
     "title": "Collar Natural",
     "subtitle": "Paseo",
     "description": "Collar Natural: producto de prueba generado para desarrollo (Paseo).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -2711,6 +2725,7 @@
     "title": "Collar Plus",
     "subtitle": "Paseo",
     "description": "Collar Plus: producto de prueba generado para desarrollo (Paseo).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -3116,6 +3131,7 @@
     "title": "Collar Sport",
     "subtitle": "Paseo",
     "description": "Collar Sport: producto de prueba generado para desarrollo (Paseo).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -3521,6 +3537,7 @@
     "title": "Collar antiparasitario Confort",
     "subtitle": "Antiparasitarios",
     "description": "Collar antiparasitario Confort: producto de prueba generado para desarrollo (Antiparasitarios).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -3607,6 +3624,7 @@
     "title": "Comedero Original",
     "subtitle": "Comederos y bebederos",
     "description": "Comedero Original: producto de prueba generado para desarrollo (Comederos y bebederos).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -3794,6 +3812,7 @@
     "handle": "correa-azul-nylon",
     "title": "Correa a medida azul de nailon",
     "description": "Correa larga de nailon trenzado, ligera y resistente. Elige el largo y los mosquetones.",
+    "discountable": true,
     "metadata": {
       "color": "Azul",
       "grupo": "correa",
@@ -5824,6 +5843,7 @@
     "handle": "correa-verde-pvc",
     "title": "Correa a medida verde de PVC",
     "description": "Correa larga de PVC: no absorbe agua ni barro, se limpia con un paño. Elige el largo y los mosquetones.",
+    "discountable": true,
     "metadata": {
       "color": "Verde",
       "grupo": "correa",
@@ -7855,6 +7875,7 @@
     "title": "Empapadores Eco",
     "subtitle": "Empapadores y toallitas",
     "description": "Empapadores Eco: producto de prueba generado para desarrollo (Empapadores y toallitas).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -7941,6 +7962,7 @@
     "title": "Guiso Eco",
     "subtitle": "Comida cocinada",
     "description": "Guiso Eco: producto de prueba generado para desarrollo (Comida cocinada).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 0.5,
@@ -8092,6 +8114,7 @@
     "title": "Guiso Eco",
     "subtitle": "Comida cocinada",
     "description": "Guiso Eco: producto de prueba generado para desarrollo (Comida cocinada).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 0.5,
@@ -8241,6 +8264,7 @@
     "title": "Guía Eco",
     "subtitle": "Libros",
     "description": "Guía Eco: producto de prueba generado para desarrollo (Libros).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -8379,6 +8403,7 @@
     "title": "Lata Confort",
     "subtitle": "Comida húmeda",
     "description": "Lata Confort: producto de prueba generado para desarrollo (Comida húmeda).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 0.5,
@@ -8532,6 +8557,7 @@
     "title": "Lata Eco",
     "subtitle": "Comida húmeda",
     "description": "Lata Eco: producto de prueba generado para desarrollo (Comida húmeda).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón",
       "fibra_pct": 0.5,
@@ -8681,6 +8707,7 @@
     "title": "Lata Natural",
     "subtitle": "Comida húmeda",
     "description": "Lata Natural: producto de prueba generado para desarrollo (Comida húmeda).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón",
       "fibra_pct": 0.5,
@@ -8830,6 +8857,7 @@
     "title": "Lata Sport",
     "subtitle": "Comida húmeda",
     "description": "Lata Sport: producto de prueba generado para desarrollo (Comida húmeda).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 0.5,
@@ -8979,6 +9007,7 @@
     "title": "Limpiador ótico Sport",
     "subtitle": "Ojos, oídos, piel y patas",
     "description": "Limpiador ótico Sport: producto de prueba generado para desarrollo (Ojos, oídos, piel y patas).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -9123,6 +9152,7 @@
     "title": "Menú BARF Plus",
     "subtitle": "Dieta BARF",
     "description": "Menú BARF Plus: producto de prueba generado para desarrollo (Dieta BARF).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 0.5,
@@ -9272,6 +9302,7 @@
     "title": "Menú BARF Plus",
     "subtitle": "Dieta BARF",
     "description": "Menú BARF Plus: producto de prueba generado para desarrollo (Dieta BARF).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 0.5,
@@ -9421,6 +9452,7 @@
     "title": "Mordedor Premium",
     "subtitle": "Motivadores",
     "description": "Mordedor Premium: producto de prueba generado para desarrollo (Motivadores).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -9507,6 +9539,7 @@
     "title": "Pelota Plus",
     "subtitle": "Más juguetes",
     "description": "Pelota Plus: producto de prueba generado para desarrollo (Más juguetes).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -9593,6 +9626,7 @@
     "title": "Peluche Esencial",
     "subtitle": "Peluches",
     "description": "Peluche Esencial: producto de prueba generado para desarrollo (Peluches).",
+    "discountable": true,
     "collection_id": "pcol_01M4S09P9K0QWERGS9PCD86EKD",
     "metadata": {
       "marca": "Hiro"
@@ -9782,6 +9816,7 @@
     "title": "Pienso Confort",
     "subtitle": "Piensos",
     "description": "Pienso Confort: producto de prueba generado para desarrollo (Piensos).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón",
       "fibra_pct": 2.5,
@@ -9932,6 +9967,7 @@
     "title": "Pienso Confort",
     "subtitle": "Piensos",
     "description": "Pienso Confort: producto de prueba generado para desarrollo (Piensos).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 4.5,
@@ -10086,6 +10122,7 @@
     "title": "Pienso Eco",
     "subtitle": "Piensos",
     "description": "Pienso Eco: producto de prueba generado para desarrollo (Piensos).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón",
       "fibra_pct": 2.5,
@@ -10236,6 +10273,7 @@
     "title": "Pienso Original",
     "subtitle": "Piensos",
     "description": "Pienso Original: producto de prueba generado para desarrollo (Piensos).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 3.5,
@@ -10386,6 +10424,7 @@
     "title": "Pienso Original",
     "subtitle": "Piensos",
     "description": "Pienso Original: producto de prueba generado para desarrollo (Piensos).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 4.5,
@@ -10536,6 +10575,7 @@
     "title": "Pienso Premium",
     "subtitle": "Piensos",
     "description": "Pienso Premium: producto de prueba generado para desarrollo (Piensos).",
+    "discountable": true,
     "collection_id": "pcol_01M4S09P9K0QWERGS9PCD86EKD",
     "metadata": {
       "marca": "Hiro",
@@ -10687,6 +10727,7 @@
     "title": "Pienso gato Esencial",
     "subtitle": "Alimentación",
     "description": "Pienso gato Esencial: producto de prueba generado para desarrollo (Alimentación).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón",
       "fibra_pct": 2.5,
@@ -10837,6 +10878,7 @@
     "title": "Pienso gato Natural",
     "subtitle": "Alimentación",
     "description": "Pienso gato Natural: producto de prueba generado para desarrollo (Alimentación).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "fibra_pct": 4.5,
@@ -10987,6 +11029,7 @@
     "title": "Premios Esencial",
     "subtitle": "Snacks y masticación",
     "description": "Premios Esencial: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón",
       "grasa_pct": 9,
@@ -11187,6 +11230,7 @@
     "title": "Premios Esencial",
     "subtitle": "Snacks y masticación",
     "description": "Premios Esencial: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "grasa_pct": 19,
@@ -11387,6 +11431,7 @@
     "title": "Premios Natural",
     "subtitle": "Snacks y masticación",
     "description": "Premios Natural: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "grasa_pct": 19,
@@ -11534,6 +11579,7 @@
     "title": "Premios Plus",
     "subtitle": "Snacks y masticación",
     "description": "Premios Plus: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro",
       "granel": true,
@@ -11627,6 +11673,7 @@
     "title": "Premios Plus",
     "subtitle": "Snacks y masticación",
     "description": "Premios Plus: producto de prueba generado para desarrollo (Snacks y masticación).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón",
       "grasa_pct": 9,
@@ -11774,6 +11821,7 @@
     "title": "Rascador Plus",
     "subtitle": "Accesorios",
     "description": "Rascador Plus: producto de prueba generado para desarrollo (Accesorios).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -11860,6 +11908,7 @@
     "title": "Taza Sport",
     "subtitle": "Accesorios",
     "description": "Taza Sport: producto de prueba generado para desarrollo (Accesorios).",
+    "discountable": true,
     "metadata": {
       "marca": "Hiro"
     },
@@ -11946,6 +11995,7 @@
     "title": "Transportín Eco",
     "subtitle": "Viaje",
     "description": "Transportín Eco: producto de prueba generado para desarrollo (Viaje).",
+    "discountable": true,
     "metadata": {
       "marca": "Rincón"
     },
@@ -12123,6 +12173,340 @@
             "value": "L",
             "rank": 2,
             "option_id": "opt_01M4S0R2V2H4FZSBDSHADAN383"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prod_01M6H6E0NZSKJX3ZV36TC9PNF2",
+    "handle": "caja-snacks",
+    "title": "Caja de snacks",
+    "subtitle": "Elegida para tu peque",
+    "description": "Dinos cuánto quieres gastar y para quién es: preparamos una caja de snacks a su medida (edad, tamaño, cómo mastica, alergias). Antes de enviarla te contamos qué lleva.",
+    "discountable": true,
+    "metadata": {
+      "diseno": "caja"
+    },
+    "variants": [
+      {
+        "id": "variant_01M6H6E0RN6JP9Q48Z9JBP4CX7",
+        "title": "15 €",
+        "sku": "CAJA-SNACKS-15",
+        "allow_backorder": false,
+        "manage_inventory": false,
+        "weight": 800,
+        "variant_rank": 0,
+        "product_id": "prod_01M6H6E0NZSKJX3ZV36TC9PNF2",
+        "options": [
+          {
+            "id": "optval_01M6H6E0KSXZFE0YKNF0V3J125",
+            "value": "15 €",
+            "rank": 0,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+            "option": {
+              "id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+              "title": "Importe",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M6H6E0SKDV9Q2QDYDW8ZMNGS",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 15,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 15,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M6H6E0SKKYPFXQYD7KDS39M1"
+          },
+          "original_price": {
+            "id": "price_01M6H6E0SKKYPFXQYD7KDS39M1"
+          },
+          "calculated_amount_with_tax": 15,
+          "calculated_amount_without_tax": 12.396694214876034,
+          "original_amount_with_tax": 15,
+          "original_amount_without_tax": 12.396694214876034
+        }
+      },
+      {
+        "id": "variant_01M6H6E0RN56GCB0A7Y3T7QGJ5",
+        "title": "20 €",
+        "sku": "CAJA-SNACKS-20",
+        "allow_backorder": false,
+        "manage_inventory": false,
+        "weight": 800,
+        "variant_rank": 0,
+        "product_id": "prod_01M6H6E0NZSKJX3ZV36TC9PNF2",
+        "options": [
+          {
+            "id": "optval_01M6H6E0KS53PXSJMJBB8D7FXF",
+            "value": "20 €",
+            "rank": 1,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+            "option": {
+              "id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+              "title": "Importe",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M6H6E0SK05WN8TMCPVXHGSNK",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 20,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 20,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M6H6E0SK35GHX97X6B1XXK98"
+          },
+          "original_price": {
+            "id": "price_01M6H6E0SK35GHX97X6B1XXK98"
+          },
+          "calculated_amount_with_tax": 20,
+          "calculated_amount_without_tax": 16.52892561983471,
+          "original_amount_with_tax": 20,
+          "original_amount_without_tax": 16.52892561983471
+        }
+      },
+      {
+        "id": "variant_01M6H6E0RN1HFD6D2K3EZ9Y8KQ",
+        "title": "25 €",
+        "sku": "CAJA-SNACKS-25",
+        "allow_backorder": false,
+        "manage_inventory": false,
+        "weight": 1000,
+        "variant_rank": 0,
+        "product_id": "prod_01M6H6E0NZSKJX3ZV36TC9PNF2",
+        "options": [
+          {
+            "id": "optval_01M6H6E0KSQT0280A1CEQHXGTY",
+            "value": "25 €",
+            "rank": 2,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+            "option": {
+              "id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+              "title": "Importe",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M6H6E0SM33HX60TZDBWMQAQ1",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 25,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 25,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M6H6E0SKR3FSRJFD8EE6QCE1"
+          },
+          "original_price": {
+            "id": "price_01M6H6E0SKR3FSRJFD8EE6QCE1"
+          },
+          "calculated_amount_with_tax": 25,
+          "calculated_amount_without_tax": 20.66115702479339,
+          "original_amount_with_tax": 25,
+          "original_amount_without_tax": 20.66115702479339
+        }
+      },
+      {
+        "id": "variant_01M6H6E0RP70G4E0K42TYT1BS5",
+        "title": "30 €",
+        "sku": "CAJA-SNACKS-30",
+        "allow_backorder": false,
+        "manage_inventory": false,
+        "weight": 1000,
+        "variant_rank": 0,
+        "product_id": "prod_01M6H6E0NZSKJX3ZV36TC9PNF2",
+        "options": [
+          {
+            "id": "optval_01M6H6E0KS3PWQDJSTD399Y4D1",
+            "value": "30 €",
+            "rank": 3,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+            "option": {
+              "id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+              "title": "Importe",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M6H6E0SM6ZZBHHD0TZHYZZR4",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 30,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 30,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M6H6E0SM5G7CNQHP6P31EVFZ"
+          },
+          "original_price": {
+            "id": "price_01M6H6E0SM5G7CNQHP6P31EVFZ"
+          },
+          "calculated_amount_with_tax": 30,
+          "calculated_amount_without_tax": 24.793388429752067,
+          "original_amount_with_tax": 30,
+          "original_amount_without_tax": 24.793388429752067
+        }
+      },
+      {
+        "id": "variant_01M6H6E0RP5EWGYK7GPM9KG6FB",
+        "title": "40 €",
+        "sku": "CAJA-SNACKS-40",
+        "allow_backorder": false,
+        "manage_inventory": false,
+        "weight": 1500,
+        "variant_rank": 0,
+        "product_id": "prod_01M6H6E0NZSKJX3ZV36TC9PNF2",
+        "options": [
+          {
+            "id": "optval_01M6H6E0KSJKG42DJ0CTPZ709N",
+            "value": "40 €",
+            "rank": 4,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+            "option": {
+              "id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+              "title": "Importe",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M6H6E0SM9JSMFNF87W7848PW",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 40,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 40,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M6H6E0SM7YHJZR0X8QB9KA71"
+          },
+          "original_price": {
+            "id": "price_01M6H6E0SM7YHJZR0X8QB9KA71"
+          },
+          "calculated_amount_with_tax": 40,
+          "calculated_amount_without_tax": 33.05785123966942,
+          "original_amount_with_tax": 40,
+          "original_amount_without_tax": 33.05785123966942
+        }
+      },
+      {
+        "id": "variant_01M6H6E0RPBPHJVVE54YPMQBV1",
+        "title": "50 €",
+        "sku": "CAJA-SNACKS-50",
+        "allow_backorder": false,
+        "manage_inventory": false,
+        "weight": 1500,
+        "variant_rank": 0,
+        "product_id": "prod_01M6H6E0NZSKJX3ZV36TC9PNF2",
+        "options": [
+          {
+            "id": "optval_01M6H6E0KSXKS6NRZPR8ZAVXV7",
+            "value": "50 €",
+            "rank": 5,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+            "option": {
+              "id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+              "title": "Importe",
+              "is_exclusive": false
+            }
+          }
+        ],
+        "calculated_price": {
+          "id": "pset_01M6H6E0SMQTZ2GB1VPH9N0NAS",
+          "is_calculated_price_price_list": false,
+          "is_calculated_price_tax_inclusive": true,
+          "calculated_amount": 50,
+          "is_original_price_price_list": false,
+          "is_original_price_tax_inclusive": true,
+          "original_amount": 50,
+          "currency_code": "eur",
+          "calculated_price": {
+            "id": "price_01M6H6E0SM0GSP9WZDVEAWTGEM"
+          },
+          "original_price": {
+            "id": "price_01M6H6E0SM0GSP9WZDVEAWTGEM"
+          },
+          "calculated_amount_with_tax": 50,
+          "calculated_amount_without_tax": 41.32231404958678,
+          "original_amount_with_tax": 50,
+          "original_amount_without_tax": 41.32231404958678
+        }
+      }
+    ],
+    "images": [],
+    "categories": [
+      {
+        "id": "pcat_01M4S0R2SSTWHSRPQZ1KGCC5VM",
+        "name": "Snacks y masticación",
+        "description": "Snacks y masticación para perros",
+        "handle": "snacks-perro",
+        "mpath": "pcat_01M4S0R2PXNWR9R03JQ6X88B53.pcat_01M4S0R2QYDE1M5VMM6A42WTVE.pcat_01M4S0R2SSTWHSRPQZ1KGCC5VM",
+        "is_active": true,
+        "is_internal": false,
+        "rank": 4,
+        "metadata": {},
+        "parent_category_id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE",
+        "parent_category": {
+          "id": "pcat_01M4S0R2QYDE1M5VMM6A42WTVE"
+        }
+      }
+    ],
+    "options": [
+      {
+        "id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB",
+        "title": "Importe",
+        "is_exclusive": false,
+        "values": [
+          {
+            "id": "optval_01M6H6E0KSXZFE0YKNF0V3J125",
+            "value": "15 €",
+            "rank": 0,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB"
+          },
+          {
+            "id": "optval_01M6H6E0KS53PXSJMJBB8D7FXF",
+            "value": "20 €",
+            "rank": 1,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB"
+          },
+          {
+            "id": "optval_01M6H6E0KSQT0280A1CEQHXGTY",
+            "value": "25 €",
+            "rank": 2,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB"
+          },
+          {
+            "id": "optval_01M6H6E0KS3PWQDJSTD399Y4D1",
+            "value": "30 €",
+            "rank": 3,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB"
+          },
+          {
+            "id": "optval_01M6H6E0KSJKG42DJ0CTPZ709N",
+            "value": "40 €",
+            "rank": 4,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB"
+          },
+          {
+            "id": "optval_01M6H6E0KSXKS6NRZPR8ZAVXV7",
+            "value": "50 €",
+            "rank": 5,
+            "option_id": "opt_01M6H6E0KTGKXXH8NZHP6NQCGB"
           }
         ]
       }

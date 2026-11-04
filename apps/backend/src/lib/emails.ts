@@ -13,7 +13,14 @@ import {
 import { bulkRule } from "./granel";
 import { paymentMethodInfo, type PaymentLike, type PaymentMethodInfo } from "./payment-method";
 import { formatDay, formatIban, lastPayDay, transferConcept, transferConfig } from "./transfer";
-import { CORREA_LINE_META } from "./correas";
+import {
+  CAJA_CONTENT_KEY,
+  cajaSummary,
+  customerLines,
+  isCajaContentLine,
+  isCajaLine,
+  lineDetails,
+} from "./line-data";
 import { codeDiscount } from "./codes";
 import {
   accrualBase,
@@ -74,7 +81,7 @@ export const ORDER_EMAIL_FIELDS = [
   "shipping_address.phone",
   // Cuenta del cliente (fase 9): solo si tiene cuenta se enlaza el pedido en "Mi cuenta".
   "customer.has_account",
-  // Puntos (Fase L-3): descuento de puntos (ajustes PTS-) y productos `sin_puntos`.
+  // Puntos (Fase L-3): descuento de puntos (ajustes PTS-) y productos `genera_puntos: false`.
   "items.adjustments.code",
   "items.adjustments.amount",
   "items.product.metadata",
@@ -102,7 +109,11 @@ type ItemLike = {
   tax_total?: Numeric;
   thumbnail?: string | null;
   tax_lines?: TaxLineLike[] | null;
-  variant?: { metadata?: Record<string, unknown> | null } | null;
+  variant?: {
+    metadata?: Record<string, unknown> | null;
+    inventory_items?:
+      ({ inventory_item_id?: string | null; required_quantity?: Numeric } | null)[] | null;
+  } | null;
   metadata?: Record<string, unknown> | null;
   product?: { metadata?: Record<string, unknown> | null } | null;
   adjustments?: ({ code?: string | null; amount?: Numeric } | null)[] | null;
@@ -165,17 +176,8 @@ const countryName = (code: string | null | undefined) => {
   }
 };
 
-/** «Medida exacta: 6,40 m» y «Observaciones: …» de una línea de correa a medida (E-2). */
-export function lineDetails(metadata: Record<string, unknown> | null | undefined): string[] {
-  const out: string[] = [];
-  const cm = metadata?.[CORREA_LINE_META.exactCm];
-  if (typeof cm === "number" && Number.isInteger(cm) && cm > 0) {
-    out.push(`Medida exacta: ${(cm / 100).toFixed(2).replace(".", ",")} m`);
-  }
-  const notes = metadata?.[CORREA_LINE_META.notes];
-  if (typeof notes === "string" && notes.trim()) out.push(`Observaciones: ${notes.trim()}`);
-  return out;
-}
+/** Detalles de la línea (correa, caja de snacks): lib/line-data.ts `lineDetails`. */
+export { lineDetails };
 
 /** Solo una variante "real": Medusa llama "Default variant"/"Única" a la de un solo modelo. */
 const variantLabel = (title: string | null | undefined) =>
@@ -218,8 +220,53 @@ export function toEmailItem(item: ItemLike, quantity?: number): EmailLineItem {
           pricePerKg: Math.round(((unitPrice * 1000) / rule.stepG) * 100) / 100,
         }
       : null,
-    details: lineDetails(item.metadata),
+    ...lineText(item.metadata),
   };
+}
+
+/** Caja: resumen en una línea + el resto en pequeño; el resto de líneas, sus detalles. */
+function lineText(metadata: Record<string, unknown> | null | undefined) {
+  const caja = cajaSummary(metadata);
+  return caja
+    ? { summary: caja.summary, details: caja.emailDetails }
+    : { details: lineDetails(metadata) };
+}
+
+/** «3 × Orejas» o, a granel, «150 g · Premios» (contenido de una caja, sin precio). */
+function contentText(item: ItemLike, quantity: number): string {
+  const rule = bulkRule(item.variant?.metadata);
+  const title = [item.product_title || item.title || "Producto", variantLabel(item.variant_title)]
+    .filter(Boolean)
+    .join(" · ");
+  return rule ? `${formatGramsEmail(quantity * rule.stepG)} · ${title}` : `${quantity} × ${title}`;
+}
+
+const formatGramsEmail = (g: number) =>
+  g >= 1000 && g % 100 === 0 ? `${String(g / 1000).replace(".", ",")} kg` : `${g} g`;
+
+/**
+ * Líneas del email: el contenido de cada caja va DENTRO de su caja (`contents`), no suelto; solo
+ * el de las cajas de `visible` (propuestas o aceptadas; null = todas, p. ej. el envío).
+ */
+function withCajas(
+  items: ItemLike[],
+  build: (i: ItemLike) => EmailLineItem,
+  visible: ReadonlySet<string> | null = null,
+): EmailLineItem[] {
+  const contents = new Map<string, string[]>();
+  for (const i of items) {
+    const box = i.metadata?.[CAJA_CONTENT_KEY];
+    if (typeof box !== "string" || (visible && !visible.has(box))) continue;
+    const q = toNumber(i.quantity);
+    if (q > 0) contents.set(box, [...(contents.get(box) ?? []), contentText(i, q)]);
+  }
+  return items
+    .filter((i) => !isCajaContentLine(i.metadata))
+    .map((i) => {
+      const line = build(i);
+      const inside = i.id && isCajaLine(i.metadata) ? contents.get(i.id) : undefined;
+      return inside?.length ? { ...line, contents: inside } : line;
+    });
 }
 
 export function orderTaxLines(order: OrderLike): TaxableLine[] {
@@ -244,7 +291,8 @@ export function orderTaxLines(order: OrderLike): TaxableLine[] {
 const firstName = (order: OrderLike) => order.shipping_address?.first_name?.trim() || null;
 
 export function buildOrderPlacedProps(order: OrderLike, links: EmailLinks): OrderPlacedProps {
-  const items = (order.items ?? []).filter((i): i is ItemLike => !!i);
+  // Sin el contenido de las cajas (a 0 €; al hacer el pedido aún no existe): no suma nada
+  const items = customerLines((order.items ?? []).filter((i): i is ItemLike => !!i));
   const method = (order.shipping_methods ?? []).find(Boolean);
   const pointsUsed = pointsDiscount(items).amount;
   const code = codeDiscount(items);
@@ -317,21 +365,62 @@ export function orderTransferInfo(order: OrderLike): TransferInfo | null {
 
 export type FulfillmentLike = {
   id: string;
-  items?: ({ line_item_id?: string | null; quantity?: Numeric } | null)[] | null;
+  items?:
+    | ({
+        line_item_id?: string | null;
+        inventory_item_id?: string | null;
+        quantity?: Numeric;
+      } | null)[]
+    | null;
   labels?: ({ tracking_number?: string | null; tracking_url?: string | null } | null)[] | null;
 };
+
+/**
+ * Unidades enviadas de cada línea. Medusa crea una línea del envío por CADA PIEZA de inventario
+ * de la variante (correa: cuerda, mosquetones, anilla…; granel: el artículo en gramos), con
+ * `quantity = required_quantity × unidades` (core-flows 2.22.2 create-fulfillment). Se agrupa por
+ * línea del pedido: unidades = piezas / required_quantity (la menor, por si acaso). Sin pieza
+ * (sin inventario, como la caja), la cantidad tal cual.
+ */
+function shippedUnits(items: ItemLike[], fulfillment: FulfillmentLike): Map<string, number> {
+  const required = new Map<string, number>();
+  for (const i of items) {
+    for (const link of i.variant?.inventory_items ?? []) {
+      if (link?.inventory_item_id) {
+        required.set(`${i.id}|${link.inventory_item_id}`, toNumber(link.required_quantity) || 1);
+      }
+    }
+  }
+  const out = new Map<string, number>();
+  for (const fi of fulfillment.items ?? []) {
+    if (!fi?.line_item_id) continue;
+    const q = toNumber(fi.quantity);
+    const r = fi.inventory_item_id
+      ? (required.get(`${fi.line_item_id}|${fi.inventory_item_id}`) ?? 1)
+      : 1;
+    const n = Math.round((q / r) * 1000) / 1000;
+    const prev = out.get(fi.line_item_id);
+    out.set(fi.line_item_id, prev === undefined ? n : Math.min(prev, n));
+  }
+  return out;
+}
 
 export function buildOrderShippedProps(
   order: OrderLike,
   fulfillment: FulfillmentLike,
   links: EmailLinks,
 ): OrderShippedProps {
-  const byId = new Map(
-    (order.items ?? []).filter((i): i is ItemLike => !!i?.id).map((i) => [i.id!, i]),
-  );
-  const items = (fulfillment.items ?? [])
-    .filter((fi) => fi?.line_item_id && byId.has(fi.line_item_id))
-    .map((fi) => toEmailItem(byId.get(fi!.line_item_id!)!, toNumber(fi!.quantity)));
+  const all = (order.items ?? []).filter((i): i is ItemLike => !!i?.id);
+  const units = shippedUnits(all, fulfillment);
+  const inShipment = all
+    .filter((i) => (units.get(i.id!) ?? 0) > 0)
+    .map((i) => ({ ...i, quantity: units.get(i.id!)! }));
+  // Caja de snacks (Fase CS-4): al enviar, todas están aceptadas: su contenido va dentro de ella.
+  // La cantidad es la enviada (envíos parciales): el total, proporcional.
+  const items = withCajas(inShipment, (i) => {
+    const full = all.find((o) => o.id === i.id)!;
+    return toEmailItem(full, toNumber(i.quantity));
+  });
   const tracking: TrackingInfo[] = (fulfillment.labels ?? [])
     .filter((l) => l?.tracking_number && l.tracking_number !== "-")
     .map((l) => ({
@@ -344,7 +433,7 @@ export function buildOrderShippedProps(
     customerName: firstName(order),
     currencyCode: order.currency_code ?? "eur",
     // Si el envío no trae líneas (raro), se listan todas las del pedido.
-    items: items.length ? items : [...byId.values()].map((i) => toEmailItem(i)),
+    items: items.length ? items : withCajas(all, (i) => toEmailItem(i)),
     tracking,
     shippingAddress: toEmailAddress(order.shipping_address),
   };

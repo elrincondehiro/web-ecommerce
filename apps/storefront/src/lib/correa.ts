@@ -10,6 +10,7 @@
 // Disponibilidad: máscaras de 9 bits por largo (lado perro × lado mano), sin cantidades.
 import { isVariantInStock, variantAmount, type StoreProduct, type StoreVariant } from "./catalog";
 import { productDesign } from "./disenos";
+import { NOTES_MAX } from "./line-data";
 
 /** `metadata.grupo` de las correas: una sola tarjeta y la landing en listados y búsqueda. */
 export const CORREA_GROUP = "correa";
@@ -20,9 +21,6 @@ export const CORREA_GROUP_PATH = `/producto/${CORREA_GROUP_HANDLE}/`;
 export const CORREA_GROUP_TITLE = "Correa a medida";
 
 const META = { length: "largo_m", dog: "mosqueton_perro", hand: "mosqueton_mano" } as const;
-/** Claves de `line_item.metadata` (las valida el backend: hook validar-carrito). */
-export const CORREA_LINE_META = { notes: "observaciones", exactCm: "medida_cm" } as const;
-export const NOTES_MAX = 200;
 const OPTION_DOG = "Mosquetón lado perro";
 
 /** Ficha con el configurador (diseño `correa`, Fase DS): modelo de precio, máscaras, LiveSync. */
@@ -306,16 +304,7 @@ export function correaLiveData(
 }
 
 // ── Medida exacta y observaciones ─────────────────────────────────────────────────────────
-
-/** Medida exacta válida para un largo: (largo − 1) m < medida ≤ largo m, en centímetros. */
-export function exactRange(lengthM: number): { minCm: number; maxCm: number } {
-  return { minCm: (lengthM - 1) * 100 + 1, maxCm: lengthM * 100 };
-}
-
-/** «6,40 m». */
-export function formatMeters(cm: number): string {
-  return `${(cm / 100).toFixed(2).replace(".", ",")} m`;
-}
+// Claves, límites y validación: lib/line-data.ts (común a las líneas con datos, Fase CS).
 
 // eslint-disable-next-line no-control-regex -- se rechazan caracteres de control a propósito
 const CONTROL = /[\u0000-\u0009\u000b-\u001f\u007f]/;
@@ -326,18 +315,6 @@ export function cleanNotes(raw: string | null | undefined): string | null | fals
   if (!s) return null;
   if ([...s].length > NOTES_MAX || CONTROL.test(s)) return false;
   return s;
-}
-
-/** Líneas extra de una línea de carrito o pedido («Medida exacta: 6,40 m», «Observaciones: …»). */
-export function lineDetails(metadata: Record<string, unknown> | null | undefined): string[] {
-  const out: string[] = [];
-  const cm = metadata?.[CORREA_LINE_META.exactCm];
-  if (typeof cm === "number" && Number.isInteger(cm) && cm > 0) {
-    out.push(`Medida exacta: ${formatMeters(cm)}`);
-  }
-  const notes = metadata?.[CORREA_LINE_META.notes];
-  if (typeof notes === "string" && notes.trim()) out.push(`Observaciones: ${notes.trim()}`);
-  return out;
 }
 
 // ── Agrupación en listados y búsqueda ─────────────────────────────────────────────────────

@@ -118,7 +118,7 @@ describe("emails: datos de Medusa → props", () => {
           ...order.items![1]!,
           total: big(29.2),
           adjustments: [{ code: "VERANO", amount: big(2) }],
-          product: { metadata: { sin_puntos: true } },
+          product: { metadata: { genera_puntos: false } },
         },
       ],
     };
@@ -130,7 +130,7 @@ describe("emails: datos de Medusa → props", () => {
     expect(p.discountCode).toBe("VERANO");
     expect(p.discountCodeAmount).toBe(2);
     expect(p.discountTotal).toBe(0);
-    // 0,8 % de 21,90 € (sin la línea sin_puntos) = 0,17 al céntimo hacia abajo
+    // 0,8 % de 21,90 € (sin la línea que no genera) = 0,17 al céntimo hacia abajo
     expect(p.pointsEarned).toBe(0.17);
     expect(p.pointsDays).toBe(14);
     const guest = buildOrderPlacedProps({ ...withPoints, customer: { has_account: false } }, links);
@@ -182,6 +182,108 @@ describe("emails: datos de Medusa → props", () => {
       toEmailItem({ ...line, metadata: { medida_cm: 640, observaciones: " Para Hiro " } }).details,
     ).toEqual(["Medida exacta: 6,40 m", "Observaciones: Para Hiro"]);
     expect(toEmailItem(line).details).toEqual([]);
+  });
+
+  it("envío: una línea por producto aunque Medusa cree una por pieza (correa de 5 piezas)", () => {
+    const withKit: OrderLike = {
+      ...order,
+      items: [
+        {
+          id: "item_correa",
+          product_title: "Correa a medida",
+          quantity: big(1),
+          unit_price: 38,
+          total: big(38),
+          variant: {
+            inventory_items: [
+              { inventory_item_id: "cuerda", required_quantity: 6.5 },
+              { inventory_item_id: "mosq", required_quantity: 1 },
+              { inventory_item_id: "anilla", required_quantity: 3 },
+              { inventory_item_id: "hebilla", required_quantity: 2 },
+              { inventory_item_id: "mosq2", required_quantity: 1 },
+            ],
+          },
+        },
+      ],
+    };
+    const p = buildOrderShippedProps(
+      withKit,
+      {
+        id: "ful_kit",
+        items: [
+          { line_item_id: "item_correa", inventory_item_id: "cuerda", quantity: big(6.5) },
+          { line_item_id: "item_correa", inventory_item_id: "mosq", quantity: big(1) },
+          { line_item_id: "item_correa", inventory_item_id: "anilla", quantity: big(3) },
+          { line_item_id: "item_correa", inventory_item_id: "hebilla", quantity: big(2) },
+          { line_item_id: "item_correa", inventory_item_id: "mosq2", quantity: big(1) },
+        ],
+        labels: [],
+      },
+      links,
+    );
+    expect(p.items.map((i) => [i.title, i.quantity])).toEqual([["Correa a medida", 1]]);
+  });
+
+  it("caja de snacks: en el del pedido sin contenido; en el del envío, cada caja con el suyo", () => {
+    const box = (id: string, name: string) => ({
+      id,
+      product_title: "Caja de snacks",
+      variant_title: "25 €",
+      quantity: big(1),
+      unit_price: 25,
+      total: big(25),
+      metadata: {
+        caja_animal: "perro",
+        caja_nombre: name,
+        caja_cachorro: false,
+        caja_edad: 3,
+        caja_peso: 12.5,
+        caja_pelo: "igual",
+        caja_mastica: ["engulle"],
+        caja_ref: `ref-${id}`,
+      },
+    });
+    const inside = (id: string, cajaDe: string, title: string, q: number, stepG?: number) => ({
+      id,
+      product_title: title,
+      quantity: big(q),
+      unit_price: 0,
+      total: big(0),
+      metadata: { caja_de: cajaDe },
+      ...(stepG ? { variant: { metadata: { paso_g: stepG } } } : {}),
+    });
+    const withBoxes: OrderLike = {
+      ...order,
+      items: [
+        box("caja_toby", "Toby"),
+        box("caja_luna", "Luna"),
+        inside("c1", "caja_toby", "Orejas", 3),
+        inside("c2", "caja_luna", "Premios", 30, 5),
+      ],
+    };
+    const placed = buildOrderPlacedProps(withBoxes, links);
+    expect(placed.items.map((i) => i.title)).toEqual(["Caja de snacks", "Caja de snacks"]);
+    expect(placed.items[0]).toMatchObject({
+      summary: "Para Toby (perro, 3 años, 12,5 kg aprox.)",
+      details: ["Snacks con pelo: me da igual", "Mastica: engulle"],
+    });
+    expect(placed.items[0]!.contents).toBeUndefined();
+    const shipped = buildOrderShippedProps(
+      withBoxes,
+      {
+        id: "ful_2",
+        items: ["caja_toby", "caja_luna", "c1", "c2"].map((id) => ({
+          line_item_id: id,
+          quantity: big(id === "c1" ? 3 : id === "c2" ? 30 : 1),
+        })),
+        labels: [],
+      },
+      links,
+    );
+    expect(shipped.items.map((i) => [i.summary, i.contents])).toEqual([
+      ["Para Toby (perro, 3 años, 12,5 kg aprox.)", ["3 × Orejas"]],
+      ["Para Luna (perro, 3 años, 12,5 kg aprox.)", ["150 g · Premios"]],
+    ]);
   });
 
   it("enlaces: sin barra final y assets por defecto = storefront", () => {

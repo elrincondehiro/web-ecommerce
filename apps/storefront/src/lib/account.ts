@@ -23,6 +23,8 @@ export const ORDERS_PATH = "/cuenta/pedidos/";
 export const DELETE_PATH = "/cuenta/eliminar/";
 /** Aceptar o rechazar que un pedido pase a una cuenta (Fase G-2; enlace del email). */
 export const ORDER_TRANSFER_PATH = "/cuenta/transferir/";
+/** Caja de snacks propuesta (Fase CS-4): ver y responder con el enlace del email, sin sesión. */
+export const CAJA_PATH = "/cuenta/caja/";
 
 export function accountOrderPath(orderId: string): string {
   return `${ORDERS_PATH}${orderId}/`;
@@ -44,6 +46,8 @@ export type AccountActionName =
   | "account.claimOrder"
   | "account.acceptTransfer"
   | "account.declineTransfer"
+  | "account.cajaAccept"
+  | "account.cajaReject"
   | "account.petSave"
   | "account.petDelete";
 
@@ -100,6 +104,11 @@ export const ACCOUNT_NOTICES = {
   transfer_accepted: "Pedido añadido a la cuenta. Ya puedes verlo en «Mis pedidos» de esa cuenta.",
   transfer_declined: "Solicitud rechazada. El pedido no ha cambiado.",
   transfer_failed: "El enlace no es válido o la solicitud ya no está pendiente.",
+  caja_accepted: "¡Gracias! Preparamos la caja y te la enviamos con el resto del pedido.",
+  caja_rejected:
+    "Gracias por contárnoslo. Rehacemos la caja con lo que nos dices y te la volvemos a enseñar.",
+  caja_motivo: "Cuéntanos qué no le gusta (hasta 500 caracteres).",
+  caja_failed: "El enlace no es válido o esta caja ya está respondida.",
   error: "Ha ocurrido un error. Inténtalo de nuevo.",
 } as const;
 export type AccountNoticeCode = keyof typeof ACCOUNT_NOTICES;
@@ -110,6 +119,8 @@ const SUCCESS = new Set<AccountNoticeCode>([
   "claim_sent",
   "transfer_accepted",
   "transfer_declined",
+  "caja_accepted",
+  "caja_rejected",
   "verify_sent",
   "verified",
   "recover_sent",

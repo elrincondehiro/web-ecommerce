@@ -41,8 +41,14 @@ const CART_FIELDS = [
 ];
 
 export type PointsRoom = {
-  /** Productos tras el código (sin puntos). */
+  /**
+   * Productos que admiten pago con puntos (descontables), tras el código (sin puntos). Los no
+   * descontables (`pago_descuento = no`, `discountable` de Medusa) no cuentan: Medusa no les aplica
+   * la promoción de puntos (promotion 2.22.2 `getValidItemsForPromotion`).
+   */
   items: number;
+  /** Total de los productos que NO admiten pago con puntos (para el aviso del checkout). */
+  excluded: number;
   shipping: number;
   code: string | null;
   /** Descuento del código solo (sin puntos). */
@@ -72,7 +78,17 @@ export async function pointsRoom(
       }
     | undefined;
   if (!cart) return null;
-  const original = toNumber(cart.original_item_total as never);
+  // Solo las líneas descontables (los puntos son una promoción: Medusa se salta las demás)
+  const lines = cart.items ?? [];
+  const discountable = (i: Record<string, unknown>) => i.is_discountable !== false;
+  const original = roundCents(
+    lines.filter(discountable).reduce((s, i) => s + toNumber(i.original_total as never), 0),
+  );
+  const excluded = roundCents(
+    lines
+      .filter((i) => !discountable(i))
+      .reduce((s, i) => s + toNumber(i.original_total as never), 0),
+  );
   const [code] = customerCodes(cart.promotions);
   let codeAlone = 0;
   if (code) {
@@ -93,6 +109,7 @@ export async function pointsRoom(
   codeAlone = roundCents(codeAlone);
   return {
     items: itemsAfterCode(original, codeAlone),
+    excluded,
     shipping: toNumber(cart.shipping_total as never),
     code: code ?? null,
     codeAlone,
@@ -103,5 +120,6 @@ export async function pointsRoom(
 
 /** Máximo de puntos usable en el carrito con este saldo (tras el código, ≥ 0,50 € por pagar). */
 export function maxForRoom(balance: number, room: PointsRoom): number {
-  return maxRedeemable(balance, room.items, room.shipping);
+  // Lo que no se puede pagar con puntos (envío y productos excluidos) ya cubre el mínimo a pagar
+  return maxRedeemable(balance, room.items, room.shipping + room.excluded);
 }

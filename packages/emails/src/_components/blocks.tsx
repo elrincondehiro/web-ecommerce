@@ -51,14 +51,59 @@ export function LineItems({
                 ? `${formatGrams(item.bulk.grams)}${showPrices ? ` · ${formatMoney(item.bulk.pricePerKg, currencyCode)}/kg` : ""}`
                 : `${item.quantity} × ${showPrices ? formatMoney(item.unitPrice, currencyCode) : "ud."}`}
             </Text>
+            {item.summary ? (
+              <Text style={{ color: color.foreground, fontSize: 13, margin: "2px 0 0" }}>
+                {item.summary}
+              </Text>
+            ) : null}
             {(item.details ?? []).map((d, k) => (
               <Text
                 key={k}
-                style={{ color: color.mutedForeground, fontSize: 13, margin: "2px 0 0" }}
+                style={{
+                  color: color.mutedForeground,
+                  fontSize: item.summary ? 12 : 13,
+                  margin: "2px 0 0",
+                }}
               >
                 {d}
               </Text>
             ))}
+            {(item.notes ?? []).map((n, k) => (
+              <Text
+                key={`n${k}`}
+                style={{ color: color.mutedForeground, fontSize: 12, margin: "2px 0 0" }}
+              >
+                * {n}
+              </Text>
+            ))}
+            {item.contents?.length ? (
+              <Section
+                style={{
+                  borderLeft: `3px solid ${color.border}`,
+                  margin: "8px 0 0",
+                  paddingLeft: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: color.mutedForeground,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    margin: "0 0 2px",
+                  }}
+                >
+                  En la caja
+                </Text>
+                {item.contents.map((c, k) => (
+                  <Text
+                    key={`c${k}`}
+                    style={{ color: color.foreground, fontSize: 13, margin: "2px 0 0" }}
+                  >
+                    {c}
+                  </Text>
+                ))}
+              </Section>
+            ) : null}
           </Column>
           {showPrices ? (
             <Column style={{ textAlign: "right", verticalAlign: "top", width: 100 }}>

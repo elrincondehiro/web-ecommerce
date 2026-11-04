@@ -8,11 +8,9 @@ import {
   correaCards,
   correaLiveData,
   correaModel,
-  exactRange,
   findCorreaVariant,
   groupCorreas,
   groupSearchIds,
-  lineDetails,
   correaMasks,
   maxLength,
   swatchCss,
@@ -20,6 +18,7 @@ import {
   tableVariantIds,
 } from "./correa";
 import { correaLive } from "./live-sync";
+import { exactRange, lineDetails } from "./line-data";
 
 const CLIPS = [
   { code: "EST", name: "Estándar", s: 0 },

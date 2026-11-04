@@ -91,6 +91,11 @@ x-backend: &backend
     TRANSFER_HOLDER: ${TRANSFER_HOLDER:-}
     TRANSFER_DAYS: ${TRANSFER_DAYS:-3}
     TRANSFER_CANCEL_CRON: ${TRANSFER_CANCEL_CRON:-0 9 * * *}
+    # Caja de snacks (Fase CS-4): aceptación automática, aviso de horas laborables y festivos.
+    CAJA_AUTOACCEPT_HOURS: ${CAJA_AUTOACCEPT_HOURS:-24}
+    CAJA_ALERT_WORK_HOURS: ${CAJA_ALERT_WORK_HOURS:-48}
+    CAJA_FESTIVOS: ${CAJA_FESTIVOS:-}
+    CAJA_JOBS_CRON: ${CAJA_JOBS_CRON:-*/15 * * * *}
 
 services:
   caddy:

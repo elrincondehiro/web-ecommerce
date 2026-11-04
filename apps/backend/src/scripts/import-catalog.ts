@@ -152,6 +152,7 @@ async function loadSnapshot(
         "description",
         "material",
         "status",
+        "discountable",
         "metadata",
         "type.value",
         "collection.handle",
@@ -169,6 +170,7 @@ async function loadSnapshot(
         "variants.width",
         "variants.height",
         "variants.metadata",
+        "variants.manage_inventory",
         "variants.inventory_items.required_quantity",
         "variants.options.value",
         "variants.options.option_id",
@@ -272,6 +274,7 @@ function toDbProduct(p: Row): DbProduct {
     description: (p.description as string | null) ?? null,
     material: (p.material as string | null) ?? null,
     status: p.status as string,
+    discountable: p.discountable !== false,
     type: ((p.type as Row | null)?.value as string | undefined) ?? null,
     collection: ((p.collection as Row | null)?.handle as string | undefined) ?? null,
     categories: ((p.categories as Row[] | null) ?? []).map((c) => c.handle as string),
@@ -301,6 +304,7 @@ function toDbProduct(p: Row): DbProduct {
       })),
       metadata: (v.metadata as Record<string, unknown> | null) ?? {},
       requiredQuantity: num(((v.inventory_items as Row[] | null) ?? [])[0]?.required_quantity),
+      manageInventory: v.manage_inventory !== false,
     })),
   };
 }
@@ -814,7 +818,9 @@ export default async function importCatalog({ container, args }: ExecArgs) {
     await createProductsWorkflow(container).run({
       input: { products: batch.map((p) => productCreateInput(p, refs, itemFor)) },
     });
-    for (const p of batch) for (const v of p.variants) stock.set(v.sku, v.stock ?? 0);
+    for (const p of batch) {
+      if (!p.noStock) for (const v of p.variants) stock.set(v.sku, v.stock ?? 0);
+    }
     done += batch.length;
     logger.info(`Productos nuevos: ${done}/${plan.products.create.length}…`);
   }
@@ -849,11 +855,13 @@ export default async function importCatalog({ container, args }: ExecArgs) {
         if (u.newVariants.length || u.variants.length) {
           await batchProductVariantsWorkflow(container).run({
             input: {
-              create: u.newVariants.map((v) => variantCreateInput(v, product, itemFor)),
-              update: u.variants.map((v) => variantUpdateInput(v, product)),
+              create: u.newVariants.map((v) =>
+                variantCreateInput(v, product, itemFor, u.sheet.noStock),
+              ),
+              update: u.variants.map((v) => variantUpdateInput(v, product, u.sheet.noStock)),
             },
           });
-          for (const v of u.newVariants) stock.set(v.sku, v.stock ?? 0);
+          if (!u.sheet.noStock) for (const v of u.newVariants) stock.set(v.sku, v.stock ?? 0);
         }
       }
     }),

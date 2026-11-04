@@ -8,7 +8,9 @@ import {
 } from "@medusajs/medusa/core-flows";
 import { bulkMinimumError, bulkRule } from "../../lib/granel";
 import { DISCONTINUED_MESSAGE, isDiscontinued } from "../../lib/descatalogado";
-import { lineMetadataError, variantLength } from "../../lib/correas";
+import { variantLength } from "../../lib/correas";
+import { productDesign } from "../../lib/disenos";
+import { CAJA_META, CAJA_QUANTITY_ERROR, lineDataError } from "../../lib/line-data";
 import { KIT_SHORTAGE_MESSAGE, kitShortages, type DemandLine } from "../../lib/kit-demand";
 import { pointsDiscount } from "../../lib/points";
 import { CODE_MESSAGES, customerCodes } from "../../lib/codes";
@@ -49,7 +51,14 @@ interface CartItem {
 interface NewLine {
   variant_id: string;
   metadata?: unknown;
+  /** Cantidad final de la línea (una caja de snacks va siempre sola: 1). */
+  quantity?: unknown;
 }
+
+const cajaRef = (metadata: unknown) =>
+  metadata && typeof metadata === "object"
+    ? ((metadata as Record<string, unknown>)[CAJA_META.ref] ?? null)
+    : null;
 
 const add = (map: Quantities, variantId: string | null | undefined, qty: unknown) => {
   if (!variantId) return;
@@ -102,11 +111,17 @@ async function check(
     const v = byId.get(line.variant_id) as
       | { metadata?: Record<string, unknown> | null; product?: { metadata?: unknown } | null }
       | undefined;
-    // Datos de la línea solo en variantes de correa: las que tienen largo (Fase DS: por la
-    // variante, sin depender de cómo se marca el producto)
-    const length = variantLength(v?.metadata);
-    const message = lineMetadataError(line.metadata, length !== null, length);
+    // Datos de la línea: los que admite el diseño del producto (lib/disenos.ts `datos_linea`;
+    // correa: medida exacta del largo de la variante; caja: para quién es, Fase CS)
+    const kind = productDesign({
+      metadata: v?.product?.metadata as Record<string, unknown> | null | undefined,
+    }).datos_linea;
+    const message = lineDataError(line.metadata, kind, variantLength(v?.metadata));
     if (message) throw new MedusaError(MedusaError.Types.INVALID_DATA, message);
+    // Caja de snacks (Fase CS): cantidad 1 siempre (cada caja se prepara para su mascota)
+    if (kind === "caja" && line.quantity !== undefined && Number(line.quantity) !== 1) {
+      throw new MedusaError(MedusaError.Types.INVALID_DATA, CAJA_QUANTITY_ERROR);
+    }
   }
   if ((await kitShortages(container, lines, salesChannelId)).length) {
     throw new MedusaError(
@@ -130,9 +145,14 @@ addToCartWorkflow.hooks.validate(async ({ input, cart }, { container }) => {
   const query = (container as MedusaContainer).resolve(ContainerRegistrationKeys.QUERY);
   const { data: existing } = await query.graph({
     entity: "line_item",
-    fields: ["variant_id", "quantity"],
+    fields: ["variant_id", "quantity", "metadata"],
     filters: { cart_id: input.cart_id },
   });
+  // Misma caja (mismo caja_ref) otra vez: Medusa la juntaría en la línea que ya está (cantidad 2)
+  const refs = new Set((existing as CartItem[]).map((i) => cajaRef(i.metadata)).filter(Boolean));
+  if (items.some((i) => refs.has(cajaRef(i.metadata)))) {
+    throw new MedusaError(MedusaError.Types.INVALID_DATA, CAJA_QUANTITY_ERROR);
+  }
   for (const item of existing as CartItem[]) {
     if (item.variant_id && adding.has(item.variant_id)) {
       add(quantities, item.variant_id, item.quantity);
@@ -161,7 +181,14 @@ updateLineItemInCartWorkflow.hooks.validate(async ({ input, cart }, { container 
   const metadata = (input.update as { metadata?: unknown }).metadata;
   await check(container as MedusaContainer, quantities, {
     lines: demandLines(items.map((i) => (i.id === item.id ? { ...i, quantity } : i))),
-    newLines: metadata !== undefined ? [{ variant_id: item.variant_id, metadata }] : [],
+    // La línea siempre se revisa (su cantidad: caja de snacks), con sus datos nuevos o los de antes
+    newLines: [
+      {
+        variant_id: item.variant_id,
+        metadata: metadata !== undefined ? metadata : item.metadata,
+        quantity,
+      },
+    ],
     salesChannelId: (cart as { sales_channel_id?: string | null }).sales_channel_id,
   });
 });

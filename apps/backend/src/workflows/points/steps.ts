@@ -137,9 +137,13 @@ export const validateRedeemStep = createStep(
     const max = room ? maxForRoom(balance, room) : 0;
     const amount = roundCents(input.amount);
     if (!(amount > 0) || amount > max) {
+      const note =
+        room && room.excluded > 0
+          ? " Hay productos que no se pueden pagar con puntos (marcados con *)."
+          : "";
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        `Puedes usar como máximo ${max.toFixed(2).replace(".", ",")} € en puntos en este pedido.`,
+        `Puedes usar como máximo ${max.toFixed(2).replace(".", ",")} € en puntos en este pedido.${note}`,
       );
     }
     const previous = (cart.promotions ?? []).find((p) => isPointsPromoCode(p?.code)) ?? null;

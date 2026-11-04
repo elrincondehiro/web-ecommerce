@@ -450,6 +450,11 @@ const infoNotice = flash.code && INFO_NOTICES.has(flash.code) ? CHECKOUT_NOTICES
                     .
                     {(points.max ?? 0) < (points.balance ?? 0) &&
                       ` En este pedido puedes usar hasta ${formatPrice(points.max ?? 0, currency)}.`}
+                    {(points.excluded ?? 0) > 0 && (
+                      <span class="block text-xs text-muted-foreground">
+                        Los productos marcados con * no se pueden pagar con puntos.
+                      </span>
+                    )}
                   </p>
                   <form method="post" action={checkoutActionUrl("checkout.applyPoints")}>
                     <input type="hidden" name="amount" value={amountInputValue(points.max ?? 0)} />

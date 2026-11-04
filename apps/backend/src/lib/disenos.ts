@@ -45,6 +45,11 @@ export interface ProductDesignInfo {
   elegir: string | null;
   /** Datos en vivo propios en LiveSync (además de precio y stock). */
   live: "correa" | null;
+  /**
+   * Datos que el cliente añade a la línea del carrito (lib/line-data.ts; los valida el backend,
+   * hook validar-carrito). null = ninguno.
+   */
+  datos_linea: "correa" | "caja" | null;
 }
 
 export interface CategoryDesignInfo {
@@ -64,6 +69,7 @@ export const PRODUCT_DESIGNS = {
     configurable: false,
     elegir: null,
     live: null,
+    datos_linea: null,
   },
   correa: {
     nombre: "Correa a medida",
@@ -75,6 +81,20 @@ export const PRODUCT_DESIGNS = {
     configurable: true,
     elegir: "Elegir medida",
     live: "correa",
+    datos_linea: "correa",
+  },
+  caja: {
+    nombre: "Caja de snacks",
+    descripcion:
+      "Importe a elegir y formulario «¿Para quién es?» (Fase CS). 100 % estático: sin server islands propias.",
+    reservado: false,
+    heredable: false,
+    selector: false,
+    guias: false,
+    configurable: true,
+    elegir: "Elegir caja",
+    live: null,
+    datos_linea: "caja",
   },
 } as const satisfies Record<string, ProductDesignInfo>;
 

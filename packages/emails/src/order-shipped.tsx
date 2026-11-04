@@ -76,6 +76,16 @@ OrderShipped.PreviewProps = {
       unitPrice: 24.9,
       total: 24.9,
     },
+    {
+      title: "Caja de snacks",
+      variant: "25 €",
+      quantity: 1,
+      unitPrice: 25,
+      total: 25,
+      summary: "Para Toby (perro, Border collie)",
+      details: ["3 años · 12,5 kg aprox.", "Mastica: engulle"],
+      contents: ["3 × Orejas de cerdo", "150 g · Premios de pollo"],
+    },
   ],
   tracking: [{ number: "PK123456789ES", url: "https://www.correos.es/" }],
   shippingAddress: {

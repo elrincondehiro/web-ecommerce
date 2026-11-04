@@ -2,18 +2,36 @@
 // `pnpm infra:stripe` para los webhooks y red hacia Stripe. Ver docs/fases/fase5.md §5.
 // Tarjetas de prueba de Stripe: 4242… (sin 3DS), 4000 0027 6000 3184 (3DS siempre),
 // 4000 0000 0000 0002 (rechazada).
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { expect, test, type FrameLocator, type Page } from "@playwright/test";
 import { REMOTE, testEmail } from "./_remote";
+
+const REPO = fileURLToPath(new URL("../../..", import.meta.url));
 
 const PRODUCT = "/producto/mock-clicker-esencial-018/";
 const BULK = "/producto/mock-premios-plus-010/"; // granel (S-3): paso 5 g, 20 €/kg
 const CORREA = "/producto/correa-azul-nylon/"; // correa a medida (E-2c)
+const CAJA = "/producto/caja-snacks/"; // caja de snacks (Fase CS)
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
 
-/** `bulkGrams`: gramos del granel, o "correa" para una correa de 7 m con medida y observaciones. */
+/**
+ * `bulkGrams`: gramos del granel, "correa" (7 m con medida y observaciones) o "caja" (caja de
+ * snacks de 25 € para Toby).
+ */
 async function addAndGoToCheckout(page: Page, bulkGrams?: string) {
-  await page.goto(bulkGrams === "correa" ? CORREA : bulkGrams ? BULK : PRODUCT);
-  if (bulkGrams === "correa") {
+  await page.goto(
+    bulkGrams === "correa" ? CORREA : bulkGrams === "caja" ? CAJA : bulkGrams ? BULK : PRODUCT,
+  );
+  if (bulkGrams === "caja") {
+    const form = page.locator("form.caja-form");
+    await form.locator("input[name=variant_id]").nth(2).check();
+    await form.getByLabel("Nombre").fill("Toby");
+    await form.getByLabel("Edad").fill("3");
+    await form.getByLabel("Peso").fill("12.5");
+    await form.locator("input[name=mastica][value=engulle]").check();
+    await form.getByRole("button", { name: "Añadir caja al carrito" }).click();
+  } else if (bulkGrams === "correa") {
     const form = page.locator("form[data-correa]");
     await form.locator("select[name=largo]").selectOption("7");
     await form.getByLabel(/Medida exacta/).fill("640");
@@ -257,6 +275,135 @@ test.describe("con JS (Stripe test)", () => {
       } else await page.waitForTimeout(500);
     }
     for (const d of details) expect(text).toContain(d);
+  });
+
+  test("caja de snacks (Fase CS): para quién es en resumen, pedido y email", async ({ page }) => {
+    const email = testEmail("caja");
+    await toPayment(page, "caja", email);
+    // Web: «Para Toby» (<details>); email: una línea resumida y el resto en pequeño
+    const details = ["Para Toby", "Perro", "3 años · 12,5 kg aprox.", "Mastica: engulle"];
+    const mailDetails = ["Para Toby (perro, 3 años, 12,5 kg aprox.)", "Mastica: engulle"];
+    await page.locator("#resumen-titulo + ul summary").click();
+    for (const d of details) await expect(page.locator("#resumen-titulo + ul")).toContainText(d);
+    await fillCard(page, "4242 4242 4242 4242");
+    await page.getByRole("button", { name: /^Pagar y realizar pedido/ }).click();
+    await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 30_000 });
+    await page.locator("#pedido-lineas + ul summary").click();
+    for (const d of details) await expect(page.locator("#pedido-lineas + ul")).toContainText(d);
+    // CS-3: hasta que se le propone, el cliente ve «Preparando tu caja» (no el contenido)
+    await expect(page.locator("#pedido-lineas + ul")).toContainText("Preparando tu caja");
+    if (REMOTE) return; // email: Mailpit solo en local
+    let text = "";
+    for (let i = 0; i < 40 && !text; i++) {
+      const res = await page.request.get(
+        `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+      );
+      const { messages } = (await res.json()) as { messages: { ID: string }[] };
+      if (messages[0]) {
+        const msg = await page.request.get(`${MAILPIT}/api/v1/message/${messages[0].ID}`);
+        text = ((await msg.json()) as { Text: string }).Text;
+      } else await page.waitForTimeout(500);
+    }
+    for (const d of mailDetails) expect(text).toContain(d);
+  });
+
+  test("caja de snacks (CS-4): propuesta por email, «No me convence» y aceptar desde el enlace", async ({
+    page,
+    browser,
+  }) => {
+    test.skip(REMOTE, "necesita Mailpit y el script del backend local");
+    test.setTimeout(240_000);
+    const email = testEmail("caja-cs4");
+    await toPayment(page, "caja", email);
+    await fillCard(page, "4242 4242 4242 4242");
+    await page.getByRole("button", { name: /^Pagar y realizar pedido/ }).click();
+    await expect(page).toHaveURL(/\/pedido\/order_[A-Za-z0-9]+\/$/, { timeout: 30_000 });
+    const orderId = /\/pedido\/(order_[A-Za-z0-9]+)\//.exec(page.url())![1]!;
+    // La tienda la prepara y la propone (lo que haría en el Admin)
+    const out = execFileSync("pnpm", ["--filter", "backend", "caja:e2e", orderId], {
+      cwd: REPO,
+      encoding: "utf8",
+      timeout: 180_000,
+    });
+    expect(out).toContain("1 caja(s) propuesta(s)");
+    // Email con el contenido y el enlace de un solo uso
+    let text = "";
+    for (let i = 0; i < 60 && !text.includes("/cuenta/caja/"); i++) {
+      const res = await page.request.get(
+        `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${email} subject:caja`)}`,
+      );
+      const { messages } = (await res.json()) as { messages: { ID: string }[] };
+      if (messages[0]) {
+        const msg = await page.request.get(`${MAILPIT}/api/v1/message/${messages[0].ID}`);
+        text = ((await msg.json()) as { Text: string }).Text;
+      } else await page.waitForTimeout(500);
+    }
+    expect(text).toContain("Para Toby");
+    const link = /https?:\/\/[^\s\]]+\/cuenta\/caja\/\?[^\s\]]+/
+      .exec(text)![0]
+      .replace(/&amp;/g, "&");
+    const path = new URL(link).pathname + new URL(link).search;
+    // En el pedido ya se ve el contenido
+    await page.reload();
+    // Estado destacado (badge) bajo el nombre de la caja
+    await expect(page.locator("#pedido-lineas + ul [data-caja-state=propuesta]")).toContainText(
+      "dinos si te convence",
+    );
+    // El contenido va DENTRO de la caja (no como líneas sueltas a 0 €)
+    const lines = page.locator("#pedido-lineas + ul > li");
+    await expect(lines).toHaveCount(1);
+    await expect(lines.first()).toContainText("En la caja");
+
+    // Sin JS: abrir el enlace no responde nada; «No me convence» sin motivo no se envía (required)
+    const noJs = await browser.newContext({ javaScriptEnabled: false });
+    const p2 = await noJs.newPage();
+    await p2.goto(path);
+    await expect(p2.getByRole("heading", { name: "La caja de Toby" })).toBeVisible();
+    await expect(p2.locator("#caja-contenido + ul li")).not.toHaveCount(0);
+    await p2.getByText("No me convence").click();
+    await p2.getByLabel(/¿Qué no le gusta\?/).fill("Le sientan mal los de pollo");
+    await p2.getByRole("button", { name: "Enviar y rehacer la caja" }).click();
+    await expect(p2.getByText(/Rehacemos la caja/)).toBeVisible();
+    // De un solo uso: el mismo enlace ya no vale
+    await p2.goto(path);
+    await expect(
+      p2.getByText("El enlace no es válido o esta caja ya está respondida"),
+    ).toBeVisible();
+    await noJs.close();
+    // El cliente vuelve a ver «Preparando tu caja» (sin el contenido rechazado)
+    await page.reload();
+    await expect(page.locator("#pedido-lineas + ul")).toContainText("Preparando tu caja");
+    await expect(page.locator("#pedido-lineas + ul")).not.toContainText("En la caja");
+
+    // La tienda la rehace y la vuelve a proponer; esta vez acepta (con JS: el mismo formulario)
+    execFileSync("pnpm", ["--filter", "backend", "caja:e2e", orderId], {
+      cwd: REPO,
+      encoding: "utf8",
+      timeout: 180_000,
+    });
+    let second = "";
+    for (let i = 0; i < 60 && !second; i++) {
+      const res = await page.request.get(
+        `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${email} subject:caja`)}`,
+      );
+      const { messages } = (await res.json()) as { messages: { ID: string }[] };
+      if (messages.length >= 2) {
+        const msg = await page.request.get(`${MAILPIT}/api/v1/message/${messages[0]!.ID}`);
+        const t = ((await msg.json()) as { Text: string }).Text;
+        if (t !== text) second = t;
+      } else await page.waitForTimeout(500);
+    }
+    const link2 = /https?:\/\/[^\s\]]+\/cuenta\/caja\/\?[^\s\]]+/
+      .exec(second)![0]
+      .replace(/&amp;/g, "&");
+    await page.goto(new URL(link2).pathname + new URL(link2).search);
+    await page.getByRole("button", { name: "Me encanta, ¡adelante!" }).click();
+    await expect(page.getByText(/te la enviamos con el resto/)).toBeVisible();
+    await page.goBack();
+    await page.goto(`/pedido/${orderId}/`);
+    await expect(page.locator("#pedido-lineas + ul [data-caja-state=aceptada]")).toContainText(
+      "Caja aceptada",
+    );
   });
 
   test("tarjeta rechazada: aviso y se puede reintentar", async ({ page }) => {

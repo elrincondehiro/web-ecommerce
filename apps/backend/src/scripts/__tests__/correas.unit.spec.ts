@@ -10,7 +10,7 @@ import {
   type DbCorreaProduct,
   type ProductWanted,
 } from "../lib/correas-plan";
-import { exactRange, lineMetadataError } from "../../lib/correas";
+import { exactRange, lineDataError } from "../../lib/line-data";
 import { sharedDemand, shortages, variantUnits } from "../../lib/kit-demand";
 import { availabilityOf } from "../../api/store/correas/disponibilidad/route";
 
@@ -205,20 +205,20 @@ describe("correas: plan", () => {
 
 describe("correas: metadata de la línea", () => {
   it("solo correas, solo observaciones y medida exacta en su tramo", () => {
-    expect(lineMetadataError(undefined, false, null)).toBeNull();
-    expect(lineMetadataError({}, false, null)).toBeNull();
-    expect(lineMetadataError({ observaciones: "x" }, false, null)).toMatch(/no admite/);
+    expect(lineDataError(undefined, null, null)).toBeNull();
+    expect(lineDataError({}, null, null)).toBeNull();
+    expect(lineDataError({ observaciones: "x" }, null, null)).toMatch(/no admite/);
     expect(
-      lineMetadataError({ observaciones: "Nombre: Hiro", medida_cm: 650 }, true, 7),
+      lineDataError({ observaciones: "Nombre: Hiro", medida_cm: 650 }, "correa", 7),
     ).toBeNull();
-    expect(lineMetadataError({ observaciones: "x".repeat(201) }, true, 7)).toMatch(/200/);
-    expect(lineMetadataError({ observaciones: "a\u0007b" }, true, 7)).toMatch(/no válidos/);
-    expect(lineMetadataError({ observaciones: "línea 1\nlínea 2" }, true, 7)).toBeNull();
-    expect(lineMetadataError({ otra: 1 }, true, 7)).toMatch(/no válidos/);
+    expect(lineDataError({ observaciones: "x".repeat(201) }, "correa", 7)).toMatch(/200/);
+    expect(lineDataError({ observaciones: "a\u0007b" }, "correa", 7)).toMatch(/no válidos/);
+    expect(lineDataError({ observaciones: "línea 1\nlínea 2" }, "correa", 7)).toBeNull();
+    expect(lineDataError({ otra: 1 }, "correa", 7)).toMatch(/no válidos/);
     expect(exactRange(7)).toEqual({ minCm: 601, maxCm: 700 });
-    expect(lineMetadataError({ medida_cm: 601 }, true, 7)).toBeNull();
-    expect(lineMetadataError({ medida_cm: 600 }, true, 7)).toMatch(/de 6,01 a 7 m/);
-    expect(lineMetadataError({ medida_cm: 6.5 }, true, 7)).toMatch(/no es válida/);
+    expect(lineDataError({ medida_cm: 601 }, "correa", 7)).toBeNull();
+    expect(lineDataError({ medida_cm: 600 }, "correa", 7)).toMatch(/de 6,01 a 7 m/);
+    expect(lineDataError({ medida_cm: 6.5 }, "correa", 7)).toMatch(/no es válida/);
   });
 });
 

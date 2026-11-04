@@ -113,14 +113,24 @@ export interface ProductSheet {
   /** Producto a granel (todas sus variantes). */
   bulk?: boolean;
   /**
+   * Sin control de stock (Fase CS, `manage_inventory: false` en todas sus variantes): siempre
+   * disponible, sin reservas ni artículo de inventario (p. ej. la caja de snacks, por encargo).
+   */
+  noStock?: boolean;
+  /**
    * Descatalogado (Fase E): sigue publicado (su URL no da 404) pero sale de listados, búsqueda y
    * sitemap, y no se puede comprar. `undefined` = no tocar.
    */
   discontinued?: boolean;
   /** Handle del producto que lo sustituye (enlace en su ficha): `null` = borrar. */
   replacement?: Text;
-  /** No genera puntos (Fase L-2, K3). `undefined` = no tocar. */
-  noPoints?: boolean;
+  /** Genera puntos (Fase L-2 K3; `genera_puntos`, Fase CS). `undefined` = no tocar. */
+  earnsPoints?: boolean;
+  /**
+   * Admite códigos descuento, promociones y pago con puntos (`pago_descuento`, Fase CS): el campo
+   * `discountable` del producto en Medusa. `undefined` = no tocar.
+   */
+  discountable?: boolean;
   /**
    * Productos relacionados (Fase R): handles en orden, máx. RELATED_MAX. `null` = borrar,
    * `undefined` = no tocar.
@@ -187,9 +197,11 @@ const PRODUCT_COLUMNS = [
   "marca",
   ...ANALYTIC_COLUMNS,
   "granel",
+  "sin_stock",
   "descatalogado",
   "sustituto",
-  "sin_puntos",
+  "genera_puntos",
+  "pago_descuento",
   "relacionados",
   "plantilla",
   "guia_tallas",
@@ -227,9 +239,11 @@ const PRODUCT_LEVEL: ProductColumn[] = [
   "marca",
   ...ANALYTIC_COLUMNS,
   "granel",
+  "sin_stock",
   "descatalogado",
   "sustituto",
-  "sin_puntos",
+  "genera_puntos",
+  "pago_descuento",
   "relacionados",
   "plantilla",
   "guia_tallas",
@@ -673,15 +687,27 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
         if (granel in BOOL) p.bulk = BOOL[granel];
         else err("granel", "Valores válidos: sí / no.");
       }
+      const sinStock = fold(cell("sin_stock"));
+      if (sinStock) {
+        if (!(sinStock in BOOL)) err("sin_stock", "Valores válidos: sí / no.");
+        else if (BOOL[sinStock] && p.bulk) {
+          err("sin_stock", "Un producto a granel lleva stock (en gramos).");
+        } else p.noStock = BOOL[sinStock];
+      }
       const descatalogado = fold(cell("descatalogado"));
       if (descatalogado) {
         if (descatalogado in BOOL) p.discontinued = BOOL[descatalogado];
         else err("descatalogado", "Valores válidos: sí / no.");
       }
-      const sinPuntos = fold(cell("sin_puntos"));
-      if (sinPuntos) {
-        if (sinPuntos in BOOL) p.noPoints = BOOL[sinPuntos];
-        else err("sin_puntos", "Valores válidos: sí / no.");
+      const generaPuntos = fold(cell("genera_puntos"));
+      if (generaPuntos) {
+        if (generaPuntos in BOOL) p.earnsPoints = BOOL[generaPuntos];
+        else err("genera_puntos", "Valores válidos: sí / no.");
+      }
+      const pagoDescuento = fold(cell("pago_descuento"));
+      if (pagoDescuento) {
+        if (pagoDescuento in BOOL) p.discountable = BOOL[pagoDescuento];
+        else err("pago_descuento", "Valores válidos: sí / no.");
       }
       if (has("sustituto")) {
         const sustituto = text(cell("sustituto"));
@@ -886,7 +912,9 @@ export function readProducts(table: CsvTable, file = PRODUCTS_FILE) {
       }
     }
     const stock = cell("stock");
-    if (stock) {
+    if (stock && product.noStock) {
+      err("stock", "Producto sin stock (columna sin_stock = sí): deja el stock vacío.");
+    } else if (stock) {
       if (INT_RE.test(stock)) variant.stock = Number(stock);
       else err("stock", "Debe ser un número entero ≥ 0.");
     }

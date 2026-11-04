@@ -19,6 +19,7 @@ import WishButton from "../../components/WishButton.astro";
 import RelatedProducts from "../../components/RelatedProducts.astro";
 import HeadStyle from "../../components/HeadStyle.astro";
 import RichText from "../../components/RichText.astro";
+import { productRestrictions } from "$lib/product-flags";
 
 type Props = FichaData & {
   /** Diseño: qué guarda el ♡ («variant» = la variante elegida). */
@@ -42,6 +43,7 @@ const {
   wishKey,
   wishProductField,
 } = Astro.props;
+const restrictions = productRestrictions(product);
 ---
 
 <BaseLayout {...seo}>
@@ -86,7 +88,15 @@ const {
           </a>
         </div>
       ) : (
-        <slot />
+        <>
+          <slot />
+          {/* Restricciones del producto (Fase CS): discreto, bajo la compra. Estático. */}
+          {restrictions.length > 0 && (
+            <p class="text-xs text-muted-foreground" data-restriction>
+              * {restrictions.join(" · ")}.
+            </p>
+          )}
+        </>
       )}
 
       <slot name="after" />

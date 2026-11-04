@@ -29,7 +29,11 @@ export default async function shipmentCreatedEmail({
     fields: [
       "id",
       "items.line_item_id",
+      "items.inventory_item_id",
       "items.quantity",
+      // Kits (correa, granel): unidades de la línea = piezas enviadas / required_quantity
+      "order.items.variant.inventory_items.inventory_item_id",
+      "order.items.variant.inventory_items.required_quantity",
       "labels.tracking_number",
       "labels.tracking_url",
       ...ORDER_EMAIL_FIELDS.map((f) => `order.${f}`),

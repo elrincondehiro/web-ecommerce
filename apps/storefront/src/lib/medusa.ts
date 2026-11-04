@@ -30,10 +30,18 @@ export interface StoreRegionRef {
 }
 
 const COUNTRY_CODE = "es";
-const ORDER = "title";
+/**
+ * Orden de la paginación del catálogo: `id` (único). Con `title`, los productos con el mismo
+ * título (muchos mocks) no tienen orden estable entre páginas (`offset` en Postgres): se repetían
+ * unos y faltaban otros (medido el 3-nov-2026: 11 fichas sin generar de 1069). Medusa 2.22 no
+ * admite `order=title,id`: se ordena por título después, en memoria (`byTitle`).
+ */
+const ORDER = "id";
+const byTitle = (a: StoreProduct, b: StoreProduct) =>
+  a.title < b.title ? -1 : a.title > b.title ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 // `updated_at`: `lastmod` del sitemap (Fase E). `created_at`: novedades de la home (Fase H).
 const CATALOG_FIELDS =
-  "id,handle,title,subtitle,description,thumbnail,collection_id,metadata,created_at,updated_at,*images,*categories,*options,*options.values,*tags";
+  "id,handle,title,subtitle,description,thumbnail,collection_id,discountable,metadata,created_at,updated_at,*images,*categories,*options,*options.values,*tags";
 // `*variants.images` (Fase O): fotos de cada variante (las suyas + las generales; Medusa 2.21.2,
 // product-module-service `assignImagesToVariants`). Las usa la galería del selector de opciones.
 const PRICED_FIELDS = `${CATALOG_FIELDS},*variants,*variants.options,*variants.images,*variants.calculated_price,+variants.inventory_quantity`;
@@ -141,7 +149,8 @@ async function loadCatalog(): Promise<StoreProduct[]> {
     out.push(...products);
     if (out.length >= count || products.length === 0) break;
   }
-  return out;
+  // Mismo orden que antes (título, como Postgres: por código, mayúsculas antes), estable con el id
+  return out.sort(byTitle);
 }
 
 let collectionsPromise: Promise<StoreCollection[]> | undefined;
@@ -797,6 +806,64 @@ export async function answerOrderTransfer(
   const order = cartSdk().store.order;
   if (accept) await order.acceptTransfer(orderId, { token }, { fields: "id" });
   else await order.declineTransfer(orderId, { token }, { fields: "id" });
+}
+
+// ── Caja de snacks propuesta (Fase CS-4): con el token del email, sin sesión. ──
+
+export interface CajaPropuesta {
+  display_id: number | null;
+  name: string | null;
+  title: string;
+  details: string[];
+  content: string[];
+  vence_at: string | null;
+}
+
+/**
+ * Estado de las cajas de un pedido para el cliente (línea → preparando | propuesta | aceptada).
+ * Si falla, vacío: la página enseña «Preparando tu caja» y oculta el contenido (lo seguro).
+ */
+export async function orderCajaStates(
+  orderId: string,
+): Promise<Map<string, import("./line-data").CajaClientState>> {
+  try {
+    const { cajas } = await cartSdk().client.fetch<{
+      cajas: { line_item_id: string; estado: import("./line-data").CajaClientState }[];
+    }>("/store/cajas", { query: { pedido: orderId } });
+    return new Map(cajas.map((c) => [c.line_item_id, c.estado]));
+  } catch {
+    return new Map();
+  }
+}
+
+/** La caja propuesta (o null si el enlace no vale o ya se respondió: 404). */
+export async function retrieveCajaPropuesta(
+  orderId: string,
+  lineId: string,
+  token: string,
+): Promise<CajaPropuesta | null> {
+  try {
+    return await cartSdk().client.fetch(`/store/cajas/${encodeURIComponent(lineId)}`, {
+      query: { pedido: orderId, token },
+    });
+  } catch (err) {
+    if ((err as { status?: unknown } | null)?.status === 404) return null;
+    throw err;
+  }
+}
+
+/** Aceptar o rechazar (con «¿Qué no le gusta?»). */
+export async function answerCaja(
+  orderId: string,
+  lineId: string,
+  token: string,
+  answer: "aceptar" | "rechazar",
+  motivo: string | null,
+): Promise<void> {
+  await cartSdk().client.fetch(`/store/cajas/${encodeURIComponent(lineId)}`, {
+    method: "POST",
+    body: { pedido: orderId, token, respuesta: answer, motivo },
+  });
 }
 
 /** Solicitud de baja (ruta propia del backend, fase 9). */

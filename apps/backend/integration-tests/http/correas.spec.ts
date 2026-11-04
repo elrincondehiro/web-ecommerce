@@ -240,6 +240,33 @@ medusaIntegrationTestRunner({
       expect(long.status).toBe(400);
       const extra = await addLine(cart.id, "CORREA-AZUL-PVC-03-EST-EST", { precio: 1 }).catch(fail);
       expect(extra.status).toBe(400);
+      // Cantidad 2 de una correa (Fase CS): vale si hay material, con sus datos (dos iguales)
+      const pair = await addLine(
+        cart.id,
+        "CORREA-AZUL-PVC-03-EST-EST",
+        { observaciones: "Para dos", medida_cm: 250 },
+        2,
+      );
+      expect(pair.status).toBe(200);
+      const pairLine = pair.data.cart.items.find(
+        (i: { metadata?: Record<string, unknown> }) => i.metadata?.observaciones === "Para dos",
+      );
+      expect(pairLine).toMatchObject({ quantity: 2, metadata: { medida_cm: 250 } });
+      // …y otra vez lo mismo: Medusa la junta en esa línea (4), con la demanda de material sumada
+      const more = await addLine(
+        cart.id,
+        "CORREA-AZUL-PVC-03-EST-EST",
+        { observaciones: "Para dos", medida_cm: 250 },
+        2,
+      );
+      expect(more.data.cart.items.find((i: { id: string }) => i.id === pairLine.id).quantity).toBe(
+        4,
+      );
+      await api.post(
+        `/store/carts/${cart.id}/line-items/${pairLine.id}`,
+        { quantity: 0 },
+        { headers },
+      );
 
       // Entre añadir y pagar baja el stock (otra venta, un ajuste): el hook de completar lo detecta
       const rope = await level("CUERDA-VERDE-PVC");

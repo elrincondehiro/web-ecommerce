@@ -5,7 +5,8 @@
 import { lineQuantityLabel } from "$lib/bulk";
 import { formatPrice } from "$lib/format";
 import type { StoreCart } from "$lib/medusa";
-import { lineDetails } from "$lib/correa";
+import LineInfo from "../order/LineInfo.astro";
+import LineFlag from "../order/LineFlag.astro";
 import OrderTotals from "../order/OrderTotals.astro";
 
 interface Props {
@@ -31,12 +32,11 @@ const hasShipping = (cart.shipping_methods?.length ?? 0) > 0;
       <li class="flex justify-between gap-4 py-2">
         <span class="min-w-0">
           <span class="tabular-nums">{lineQuantityLabel(item)}</span> {item.product_title}
+          <LineFlag lineId={`resumen-${item.id}`} product={item.product} />
           {item.variant_title && item.variant_title !== "Única" && (
             <span class="text-muted-foreground"> · {item.variant_title}</span>
           )}
-          {lineDetails(item.metadata).map((d) => (
-            <span class="block text-xs break-words text-muted-foreground">{d}</span>
-          ))}
+          <LineInfo metadata={item.metadata} />
         </span>
         <span class="shrink-0 tabular-nums">
           {formatPrice(item.original_total ?? item.total ?? 0, currency)}

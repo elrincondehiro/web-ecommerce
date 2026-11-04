@@ -8,10 +8,17 @@ import { buttonVariants } from "$lib/components/ui/button";
 import { isValidId } from "$lib/cart";
 import { LAST_ORDER_COOKIE, canViewOrder } from "$lib/checkout";
 import { formatPrice } from "$lib/format";
-import { getOrderTransfer, retrieveOrder, type OrderTransfer, type StoreOrder } from "$lib/medusa";
+import {
+  getOrderTransfer,
+  orderCajaStates,
+  retrieveOrder,
+  type OrderTransfer,
+  type StoreOrder,
+} from "$lib/medusa";
 import { ORDERS_PATH } from "$lib/account";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { lineDetails } from "$lib/correa";
+import { cajaContents, isCajaLine } from "$lib/line-data";
+import LineInfo from "../../components/order/LineInfo.astro";
 import OrderTotals from "../../components/order/OrderTotals.astro";
 
 export const prerender = false;
@@ -31,6 +38,14 @@ if (canViewOrder(Astro.cookies.get(LAST_ORDER_COOKIE)?.value, id)) {
 }
 const currency = order?.currency_code ?? "eur";
 const addr = order?.shipping_address;
+// Caja de snacks (Fase CS-4): el contenido se ve desde que se propone
+const cajaStates = order ? await orderCajaStates(order.id) : new Map();
+const cajasVisible = new Set(
+  [...cajaStates].filter(([, estado]) => estado !== "preparando").map(([id]) => id),
+);
+// El contenido de cada caja va dentro de ella (LineInfo), no como líneas sueltas a 0 €
+const contents = cajaContents(order?.items, cajasVisible);
+const orderLines = (order?.items ?? []).filter((i) => !i.metadata?.caja_de);
 // Fase PG: Bizum se cobra al momento (captured); tarjeta y PayPal se autorizan y se capturan al
 // preparar el envío (authorized).
 const paid = order?.payment_status === "captured";
@@ -102,17 +117,23 @@ if (order && token) {
         <h2 id="pedido-lineas" class="mb-3 text-lg font-semibold">
           Productos
         </h2>
-        <ul class="divide-y-2 divide-line text-sm">
-          {(order.items ?? []).map((item) => (
+        <ul class="divide-y-2 divide-line border-t-2 border-line text-sm">
+          {orderLines.map((item) => (
             <li class="flex justify-between gap-4 py-2">
               <span>
                 <span class="tabular-nums">{lineQuantityLabel(item)}</span> {item.product_title}
                 {item.variant_title && item.variant_title !== "Única" && (
                   <span class="text-muted-foreground"> · {item.variant_title}</span>
                 )}
-                {lineDetails(item.metadata).map((d) => (
-                  <span class="block text-xs break-words text-muted-foreground">{d}</span>
-                ))}
+                <LineInfo
+                  metadata={item.metadata}
+                  state={
+                    isCajaLine(item.metadata)
+                      ? (cajaStates.get(item.id) ?? "preparando")
+                      : undefined
+                  }
+                  contents={contents.get(item.id)}
+                />
               </span>
               <span class="tabular-nums">
                 {formatPrice(item.original_total ?? item.total ?? 0, currency)}

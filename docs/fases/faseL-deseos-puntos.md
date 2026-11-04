@@ -586,7 +586,7 @@ Fuentes: context7 `/medusajs/medusa` (guía _wishlist_, compartir; _protected-ro
 - Sin `@medusajs/ui`, que no es dependencia directa: HTML con las clases del dashboard.
 - Entra en el build del Admin. **Revisarlo a mano** (necesita sesión del Admin).
 
-**Catálogo:** columna **`sin_puntos`** (sí/no) en `productos.csv` → `metadata.sin_puntos`, con tests en `catalog-import.unit.spec.ts` y documentada en la plantilla y su LEEME.
+**Catálogo:** columna **`sin_puntos`** (sí/no) en `productos.csv` → `metadata.sin_puntos` (Fase CS: ahora **`genera_puntos`** → `metadata.genera_puntos = false`), con tests en `catalog-import.unit.spec.ts` y documentada en la plantilla y su LEEME.
 
 **Baja (G6):** `pnpm --filter backend points:close-account <cus_…>` hace un cargo `account_deleted` por todo el saldo y conserva los movimientos. Se ejecuta al tramitar la baja, que sigue siendo manual (fase 9).
 

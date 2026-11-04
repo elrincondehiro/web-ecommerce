@@ -74,6 +74,8 @@ export interface DbVariant {
   metadata: Record<string, unknown>;
   /** Unidades de inventario que gasta una unidad vendida (granel: gramos del paso). */
   requiredQuantity: number | null;
+  /** Fase CS: false = sin control de stock (columna `sin_stock`). */
+  manageInventory: boolean;
 }
 
 export interface DbProduct {
@@ -90,6 +92,8 @@ export interface DbProduct {
   categories: string[];
   tags: string[];
   brand: string | null;
+  /** `discountable` de Medusa (pago_descuento). */
+  discountable: boolean;
   metadata: Record<string, unknown>;
   options: DbOption[];
   variants: DbVariant[];
@@ -123,8 +127,8 @@ export const META = {
   bulk: "granel",
   discontinued: "descatalogado",
   replacement: "sustituto",
-  /** No genera puntos (Fase L-2; lo lee lib/points.ts NO_POINTS_KEY). */
-  noPoints: "sin_puntos",
+  /** No genera puntos (Fase L-2; lo lee lib/points.ts EARNS_POINTS_KEY): `false` = no genera. */
+  earnsPoints: "genera_puntos",
   /** Relacionados (Fase R): handles separados por «|» (lo lee el storefront, lib/related.ts). */
   related: "relacionados",
   /** Ficha (Fase O; lo lee el storefront, lib/plantillas.ts y lib/variant-picker.ts). */
@@ -428,7 +432,7 @@ export function planCatalog(
     const own = [
       META.discontinued,
       META.replacement,
-      META.noPoints,
+      META.earnsPoints,
       META.related,
       META.template,
       META.sizeGuide,
@@ -436,7 +440,10 @@ export function planCatalog(
       META.design,
     ] as string[];
     if (changedKeys.includes(META.discontinued)) changes.push("descatalogado");
-    if (changedKeys.includes(META.noPoints)) changes.push("sin puntos");
+    if (changedKeys.includes(META.earnsPoints)) changes.push("genera puntos");
+    if (p.discountable !== undefined && p.discountable !== existing.discountable) {
+      changes.push("pago con descuento");
+    }
     if (changedKeys.includes(META.replacement)) changes.push("sustituto");
     if (changedKeys.includes(META.related)) changes.push("relacionados");
     if (changedKeys.includes(META.template)) changes.push("plantilla");
@@ -519,6 +526,7 @@ export function planCatalog(
         vc.push("opciones");
       }
       if (textChanged(v.ean, dbv.ean)) vc.push("ean");
+      if (p.noStock !== undefined && dbv.manageInventory === p.noStock) vc.push("sin stock");
       if (basePrice(dbv)?.amount !== v.price) vc.push("precio");
       if (numChanged(v.weight, dbv.weight)) vc.push("peso");
       if (numChanged(v.length, dbv.length)) vc.push("largo");
@@ -566,7 +574,8 @@ export function productMetadata(p: ProductSheet): Record<string, unknown> {
   if (p.bulk !== undefined) meta[META.bulk] = p.bulk ? true : "";
   if (p.discontinued !== undefined) meta[META.discontinued] = p.discontinued ? true : "";
   if (p.replacement !== undefined) meta[META.replacement] = p.replacement ?? "";
-  if (p.noPoints !== undefined) meta[META.noPoints] = p.noPoints ? true : "";
+  // Solo se guarda el «no» (por defecto genera): `genera_puntos: false`; «sí» borra la clave
+  if (p.earnsPoints !== undefined) meta[META.earnsPoints] = p.earnsPoints ? "" : false;
   if (p.related !== undefined) meta[META.related] = p.related ? p.related.join("|") : "";
   if (p.brand !== undefined) meta[BRAND_KEY] = p.brand ?? "";
   if (p.template !== undefined) meta[META.template] = p.template ?? "";
@@ -689,6 +698,7 @@ const productFields = (p: ProductSheet, refs: CatalogRefs) => ({
   ...(p.description !== undefined ? { description: p.description } : {}),
   ...(p.material !== undefined ? { material: p.material } : {}),
   ...(p.status ? { status: p.status } : {}),
+  ...(p.discountable !== undefined ? { discountable: p.discountable } : {}),
   ...(p.iva ? { type_id: refs.typeId(p.iva) } : {}),
   ...(p.collection !== undefined
     ? { collection_id: p.collection ? refs.collectionId(p.collection) : null }
@@ -727,7 +737,7 @@ export function productCreateInput(
           ...createMetadata(variantMetadata(v)),
           ...bulkInventory(v, inventoryItemId),
           options: { [SINGLE_OPTION_TITLE]: SINGLE_VARIANT_TITLE },
-          manage_inventory: true,
+          manage_inventory: !p.noStock,
           prices: [{ currency_code: CURRENCY, amount: v.price }],
         },
       ],
@@ -759,7 +769,7 @@ export function productCreateInput(
         ...createMetadata(variantMetadata(v)),
         ...bulkInventory(v, inventoryItemId),
         options: values,
-        manage_inventory: true,
+        manage_inventory: !p.noStock,
         prices: [{ currency_code: CURRENCY, amount: v.price }],
       };
     }),
@@ -787,6 +797,7 @@ export function variantCreateInput(
   v: VariantSheet,
   product: DbProduct,
   inventoryItemId?: (sku: string) => string,
+  noStock = false,
 ) {
   const values = productValues(v.values, product);
   return {
@@ -801,7 +812,7 @@ export function variantCreateInput(
     ...createMetadata(variantMetadata(v)),
     ...bulkInventory(v, inventoryItemId),
     options: values,
-    manage_inventory: true,
+    manage_inventory: !noStock,
     prices: [{ currency_code: CURRENCY, amount: v.price }],
   };
 }
@@ -810,7 +821,7 @@ export function variantCreateInput(
  * Variante existente (`batchProductVariantsWorkflow.update`). Al pasar `prices`, Medusa borra
  * los que no se mencionan: se mandan todos los actuales con su `id` y solo cambia el EUR base.
  */
-export function variantUpdateInput(u: VariantUpdate, product: DbProduct) {
+export function variantUpdateInput(u: VariantUpdate, product: DbProduct, noStock = false) {
   const values = productValues(
     Object.keys(u.sheet.values).length ? u.sheet.values : implicitValues(product),
     product,
@@ -828,6 +839,9 @@ export function variantUpdateInput(u: VariantUpdate, product: DbProduct) {
         }
       : {}),
     ...(u.changes.includes("ean") ? { ean: u.sheet.ean ?? null } : {}),
+    // Fase CS: Medusa crea o retira el artículo de inventario al cambiarlo (core-flows 2.22.2,
+    // update-product-variants: dismiss/createProductVariantsDefaultInventoryStep)
+    ...(u.changes.includes("sin stock") ? { manage_inventory: !noStock } : {}),
     ...measures(u.sheet),
     ...(u.changes.includes("neto/granel") ? { metadata: variantMetadata(u.sheet) } : {}),
     ...(u.changes.includes("precio")

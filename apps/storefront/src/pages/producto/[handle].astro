@@ -17,9 +17,14 @@ import { resolveSizeGuide, resolveTemplate } from "$lib/plantillas";
 import { buildVariantPicker, pickerHeadCss } from "$lib/variant-picker";
 import Estandar from "../../disenos/producto/Estandar.astro";
 import Correa from "../../disenos/producto/Correa.astro";
+import Caja from "../../disenos/producto/Caja.astro";
 
 // Registro: id → componente (las propiedades, en lib/disenos.ts). El tipo obliga a tenerlos todos.
-const DISENOS: Record<ProductDesignId, typeof Estandar> = { estandar: Estandar, correa: Correa };
+const DISENOS: Record<ProductDesignId, typeof Estandar> = {
+  estandar: Estandar,
+  correa: Correa,
+  caja: Caja,
+};
 
 // Todas las fichas, también las descatalogadas (Fase E, opción i): su URL sigue respondiendo.
 export const getStaticPaths = (async () => {

@@ -257,6 +257,30 @@
   display: none;
 }
 
+/* Caja de snacks (Fase CS, CajaForm.astro), sin JS: «meses» si es cachorro, y el campo de salud
+   siempre visible (sin salto de layout) pero en gris y sin poder escribir hasta marcar el
+   consentimiento. Con teclado se podría llegar a él: da igual, sin la casilla el servidor la
+   descarta (lib/line-data.ts `cajaFromForm`). Sin :has() se ve normal. */
+.caja-form .caja-age-months,
+.caja-form:has(.caja-puppy:checked) .caja-age-years {
+  display: none;
+}
+.caja-form:has(.caja-puppy:checked) .caja-age-months {
+  display: inline;
+}
+/* Solo la caja de texto se apaga (la etiqueta y la ayuda conservan su contraste AA: axe). */
+.caja-form:not(:has(.caja-health-ok:checked)) .caja-health input {
+  pointer-events: none;
+  background-color: var(--muted);
+  border-style: dashed;
+}
+.caja-form:not(:has(.caja-health-ok:checked)) .caja-health input::placeholder {
+  color: transparent;
+}
+.caja-amount:has(:checked) {
+  border-color: var(--primary);
+}
+
 /*
  * Selector de tema (I-Marca): sin JS no sirve → oculto. Por CSS con <html data-js> (lo pone el
  * script del <head>, theme-init.ts, ANTES de pintar) y no con `hidden` + SiteClient: si no, el
@@ -976,6 +1000,50 @@
   text-decoration-thickness: 2px;
   text-underline-offset: 6px;
 }
+/*
+ * «*» de un producto con restricciones (Fase CS, LineFlag.astro): botón pequeño que abre un
+ * cuadro (popover, 0 JS). Anclado bajo el botón con anchor positioning; sin soporte, panel fijo
+ * abajo, a todo el ancho (sigue siendo legible). Área táctil ≥ 24 px (WCAG 2.5.8).
+ */
+.line-flag {
+  display: inline-flex;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.125rem;
+  border-radius: var(--radius-sm);
+  color: var(--accent-text);
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.line-flag:hover {
+  background: var(--muted);
+}
+.line-flag__info {
+  position: fixed;
+  inset: auto 1rem 1rem 1rem;
+  margin: 0;
+  max-width: 20rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+@supports (position-area: bottom) {
+  .line-flag__info {
+    inset: auto;
+    position-area: bottom span-right;
+    position-try-fallbacks: flip-block, flip-inline;
+    margin-top: 0.25rem;
+  }
+}
+
 /*
  * Desplegable "Tienda" (popover). Con anchor positioning (Chrome 125+, Safari 26+, Firefox
  * 147+; el invocador del popover es su ancla implícita, MDN) se coloca bajo el botón. Sin

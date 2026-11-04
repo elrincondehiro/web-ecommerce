@@ -12,6 +12,8 @@
 // Miniaturas: <Image> en runtime (/_image, origen permitido en image.remotePatterns).
 // Granel (S-3, lib/bulk.ts): la línea dice «250 g · 20,00 €/kg» (Medusa: pasos × precio de un
 // paso) y la cantidad se edita en gramos (`grams`, 0 = quitar); cuenta 1 en «Artículos».
+// Caja de snacks (Fase CS): cantidad fija («1 caja», solo «Quitar»): cada caja se prepara para su
+// mascota; otra caja = otro envío del formulario (lib/line-data.ts `isCajaLine`).
 import { Image } from "astro:assets";
 import { buttonVariants } from "$lib/components/ui/button";
 import { BULK_MAX_G, formatGrams, kgPrice, lineGrams, lineRule } from "$lib/bulk";
@@ -23,7 +25,9 @@ import { pointsUsed } from "$lib/points";
 import { codeUsed } from "$lib/codes";
 import Price from "./Price.astro";
 import QuantityField from "./QuantityField.astro";
-import { lineDetails } from "$lib/correa";
+import { isCajaLine } from "$lib/line-data";
+import LineInfo from "./order/LineInfo.astro";
+import LineFlag from "./order/LineFlag.astro";
 
 interface Props {
   cart: StoreCart | null;
@@ -77,6 +81,7 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
           const unit = rule ? kgPrice(step, rule) : step;
           const was = rule && wasStep !== null ? kgPrice(wasStep, rule) : wasStep;
           const ThumbTag = href ? "a" : "span";
+          const caja = isCajaLine(item.metadata);
           return (
             <li class="flex gap-4 py-4">
               <ThumbTag
@@ -110,13 +115,12 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
                   ) : (
                     item.product_title
                   )}
+                  <LineFlag lineId={`${variant}-${item.id}`} product={item.product} />
                 </p>
                 {item.variant_title && item.variant_title !== "Única" && (
                   <p class="text-sm text-muted-foreground">{item.variant_title}</p>
                 )}
-                {lineDetails(item.metadata).map((d) => (
-                  <p class="text-sm break-words text-muted-foreground">{d}</p>
-                ))}
+                <LineInfo metadata={item.metadata} />
                 <p class="flex flex-wrap items-baseline gap-x-1 text-sm text-muted-foreground tabular-nums">
                   {grams !== null ? (
                     <span>{formatGrams(grams)} ·</span>
@@ -148,49 +152,56 @@ const thumbClass = `shrink-0 rounded-md border-2 border-line bg-muted shadow-xs 
                   // flex-wrap: en móvil, dentro de la tarjeta, «Quitar» baja de línea en vez de
                   // quedar bajo el precio (Fase L-1).
                   <div class="mt-2 flex flex-wrap items-end gap-2">
-                    <form
-                      method="post"
-                      action={actionUrl("cart.update")}
-                      class="flex items-end gap-2"
-                      data-cart-update
-                    >
-                      <input type="hidden" name="back" value={CART_PATH} />
-                      <input type="hidden" name="line_id" value={item.id} />
-                      <div class="flex flex-col gap-1">
-                        <label for={qtyId} class="text-xs text-muted-foreground">
-                          {rule ? "Cantidad (g)" : "Cantidad"}
-                        </label>
-                        {rule && grams !== null ? (
-                          <QuantityField
-                            id={qtyId}
-                            value={grams}
-                            min={0}
-                            max={BULK_MAX_G}
-                            step={rule.stepG}
-                            size="sm"
-                            label={name}
-                            name="grams"
-                            unit={formatGrams(rule.stepG)}
-                          />
-                        ) : (
-                          <QuantityField
-                            id={qtyId}
-                            value={item.quantity}
-                            min={0}
-                            max={MAX_QUANTITY}
-                            size="sm"
-                            label={name}
-                          />
-                        )}
-                      </div>
-                      <button
-                        type="submit"
-                        class={buttonVariants({ size: "sm", variant: "secondary" })}
-                        data-cart-update-button
+                    {caja ? (
+                      // Misma altura que «Quitar» (botón sm, h-8): en la misma línea
+                      <p class="inline-flex h-8 items-center text-sm text-muted-foreground">
+                        1 caja
+                      </p>
+                    ) : (
+                      <form
+                        method="post"
+                        action={actionUrl("cart.update")}
+                        class="flex items-end gap-2"
+                        data-cart-update
                       >
-                        Actualizar
-                      </button>
-                    </form>
+                        <input type="hidden" name="back" value={CART_PATH} />
+                        <input type="hidden" name="line_id" value={item.id} />
+                        <div class="flex flex-col gap-1">
+                          <label for={qtyId} class="text-xs text-muted-foreground">
+                            {rule ? "Cantidad (g)" : "Cantidad"}
+                          </label>
+                          {rule && grams !== null ? (
+                            <QuantityField
+                              id={qtyId}
+                              value={grams}
+                              min={0}
+                              max={BULK_MAX_G}
+                              step={rule.stepG}
+                              size="sm"
+                              label={name}
+                              name="grams"
+                              unit={formatGrams(rule.stepG)}
+                            />
+                          ) : (
+                            <QuantityField
+                              id={qtyId}
+                              value={item.quantity}
+                              min={0}
+                              max={MAX_QUANTITY}
+                              size="sm"
+                              label={name}
+                            />
+                          )}
+                        </div>
+                        <button
+                          type="submit"
+                          class={buttonVariants({ size: "sm", variant: "secondary" })}
+                          data-cart-update-button
+                        >
+                          Actualizar
+                        </button>
+                      </form>
+                    )}
                     <form method="post" action={actionUrl("cart.remove")} data-cart-remove>
                       <input type="hidden" name="back" value={CART_PATH} />
                       <input type="hidden" name="line_id" value={item.id} />

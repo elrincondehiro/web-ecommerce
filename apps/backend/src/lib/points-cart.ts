@@ -20,6 +20,8 @@ export type CartPoints = {
   /** Código descuento aplicado (Fase P) y su descuento real en el carrito. */
   code: string | null;
   code_amount: number;
+  /** Total de los productos que no admiten pago con puntos (Fase CS, `pago_descuento = no`). */
+  excluded: number;
 };
 
 const CART_FIELDS = [
@@ -59,7 +61,7 @@ export async function cartPoints(
   const earn = pointsFor(accrualBase(cart.items));
   const code = codeDiscount(cart.items);
   if (!customerId || cart.customer_id !== customerId) {
-    return { earn, applied: 0, balance: null, max: null, code: null, code_amount: 0 };
+    return { earn, applied: 0, balance: null, max: null, code: null, code_amount: 0, excluded: 0 };
   }
   const service = container.resolve<PointsModuleService>(POINTS_MODULE);
   const account = await service.findAccount(customerId);
@@ -73,5 +75,6 @@ export async function cartPoints(
     max: room ? maxForRoom(balance, room) : 0,
     code: code.code,
     code_amount: code.amount,
+    excluded: room?.excluded ?? 0,
   };
 }

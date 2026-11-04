@@ -1,0 +1,15 @@
+---
+// Diseño de ficha «caja» (Fase CS): caja de snacks con importe a elegir y «¿Para quién es?»
+// (CajaForm). 100 % estático: ninguna server island propia (solo la LiveSync común de
+// FichaLayout). Sin plantilla, guía de tallas ni resumen de opciones.
+import type { FichaData } from "$lib/ficha";
+import CajaForm from "../../components/caja/CajaForm.astro";
+import FichaLayout from "./FichaLayout.astro";
+
+type Props = FichaData;
+const data = Astro.props;
+---
+
+<FichaLayout {...data} wishVariant={false} wishProductField={false}>
+  <CajaForm product={data.product} />
+</FichaLayout>

@@ -9,7 +9,8 @@ export const CART_COOKIE = "cart_id";
 /** Ruta on-demand que recibe los POST de los formularios (las páginas estáticas no pueden). */
 export const CART_PATH = "/carrito/";
 
-export type CartActionName = "cart.add" | "cart.addCorrea" | "cart.update" | "cart.remove";
+export type CartActionName =
+  "cart.add" | "cart.addCorrea" | "cart.addCaja" | "cart.update" | "cart.remove";
 
 /** URL de un formulario sin JS: `?_action=<nombre>` (ACTION_QUERY_PARAMS de Astro). */
 export function actionUrl(name: CartActionName): string {
@@ -49,6 +50,8 @@ export const NOTICES = {
   maximum: `El máximo de un producto a granel es ${formatGrams(BULK_MAX_G)} por pedido.`,
   correa:
     "Revisa la correa: la medida exacta tiene que caber en el largo elegido y las observaciones, tener 200 caracteres como mucho.",
+  // Caja de snacks (Fase CS): datos de «¿Para quién es?» que no valen (sin JS: vuelve a la ficha)
+  caja: "Revisa «¿Para quién es?»: nombre, edad y peso son obligatorios y los textos, cortos.",
   // Selector de opciones (Fase O): combinación que no existe (p. ej. HTML de un build anterior)
   variant: "Esa combinación de opciones no está disponible. Elige otra.",
   error: "No se ha podido actualizar el carrito. Inténtalo de nuevo.",
@@ -76,7 +79,7 @@ export interface CartResult {
 
 /** Tipos de error de la Store API relevantes para el carrito (ver fase4.md §3). */
 export type CartErrorKind =
-  "stock" | "minimum" | "discontinued" | "correa" | "cart_invalid" | "error";
+  "stock" | "minimum" | "discontinued" | "correa" | "caja" | "cart_invalid" | "error";
 
 /**
  * Clasifica un error de @medusajs/js-sdk (FetchError: `status` + `message`; el SDK no expone
@@ -90,7 +93,8 @@ export type CartErrorKind =
  *   400 "El mínimo de este producto a granel es …" (hook validar-carrito)   → minimum
  *   400 "Este producto está descatalogado …"         (hook validar-carrito)   → discontinued
  *   400 "… medida exacta …" / "Las observaciones …" (hook validar-carrito, correa a medida,
- *       E-2: lib/correas.ts lineMetadataError)                                → correa
+ *       E-2: lib/line-data.ts lineDataError)                                  → correa
+ *   400 "… caja de snacks." (hook validar-carrito, Fase CS: lib/line-data.ts) → caja
  *   DELETE …/line-items/:id con carrito inexistente → 500 unknown_error (se trata como "error";
  *   la action remove lo comprueba con un GET del carrito).
  */
@@ -102,6 +106,7 @@ export function classifyCartError(err: unknown): CartErrorKind {
   if (/mínimo de este producto a granel/i.test(message)) return "minimum";
   if (/descatalogado/i.test(message)) return "discontinued";
   if (/medida exacta|observaciones/i.test(message)) return "correa";
+  if (/caja de snacks/i.test(message)) return "caja";
   if (status === 404 && /^cart (with id|id not found)/i.test(message)) return "cart_invalid";
   return "error";
 }

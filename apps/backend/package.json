@@ -24,6 +24,7 @@
     "carts:cleanup": "medusa exec ./src/scripts/delete-stale-carts.ts",
     "codes:create": "medusa exec ./src/scripts/codes-create.ts",
     "orders:cancel": "medusa exec ./src/scripts/orders-cancel.ts",
+    "caja:e2e": "medusa exec ./src/scripts/caja-e2e.ts",
     "orders:assign": "medusa exec ./src/scripts/orders-assign.ts",
     "orders:link-guests": "medusa exec ./src/scripts/orders-link-guests.ts",
     "points:accrue": "medusa exec ./src/scripts/points-accrue.ts",
