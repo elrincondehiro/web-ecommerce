@@ -5,6 +5,7 @@
 import {
   ACCOUNT_PATH,
   ADDRESSES_PATH,
+  COMMS_PATH,
   ORDERS_PATH,
   PETS_PATH,
   PROFILE_PATH,
@@ -28,6 +29,7 @@ const links = [
   { href: POINTS_PATH, name: "Mis puntos" },
   { href: ADDRESSES_PATH, name: "Direcciones" },
   { href: PROFILE_PATH, name: "Mis datos" },
+  { href: COMMS_PATH, name: "Comunicaciones" },
 ];
 const isCurrent = (href: string) =>
   href === ACCOUNT_PATH ? current === href : current.startsWith(href);

@@ -216,6 +216,8 @@ module.exports = defineConfig({
     { resolve: "./src/modules/pets" },
     // Cajas de snacks de los pedidos (Fase CS-3, docs/fases/faseCS-caja-snacks.md).
     { resolve: "./src/modules/caja" },
+    // Consentimientos de comunicaciones comerciales (Fase MK-A, docs/fases/faseMK-marketing.md).
+    { resolve: "./src/modules/comms" },
     // Caché de consultas (Fase R-2, docs/fases/faseR-rendimiento.md): solo actúa con el feature flag
     // `MEDUSA_FF_CACHING=true` (experimental, «[WIP]» en 2.21.2). Se invalida con los eventos del
     // servidor; lo que escribe un `medusa exec` no le llega (los scripts de catálogo y stock la

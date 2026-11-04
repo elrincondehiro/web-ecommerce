@@ -21,6 +21,11 @@ export type OutgoingEmail = {
   replyTo?: string | undefined;
   /** Evita duplicados en reintentos (Resend: 24 h). */
   idempotencyKey?: string | undefined;
+  /**
+   * Cabeceras extra (Fase MK-A): `List-Unsubscribe` + `List-Unsubscribe-Post` de los emails
+   * comerciales (RFC 8058; MCP resend-docs, add-unsubscribe-to-transactional-emails).
+   */
+  headers?: Record<string, string> | undefined;
 };
 
 export type EmailTransport = {
@@ -46,6 +51,7 @@ export function createResendTransport(apiKey: string): EmailTransport {
           html: email.html,
           text: email.text,
           ...(email.replyTo ? { replyTo: email.replyTo } : {}),
+          ...(email.headers ? { headers: email.headers } : {}),
         },
         email.idempotencyKey ? { idempotencyKey: email.idempotencyKey } : undefined,
       );
@@ -76,6 +82,7 @@ export function createSmtpTransport(host: string, port: number): EmailTransport 
         html: email.html,
         text: email.text,
         ...(email.replyTo ? { replyTo: email.replyTo } : {}),
+        ...(email.headers ? { headers: email.headers } : {}),
       });
       return { id: info.messageId };
     },

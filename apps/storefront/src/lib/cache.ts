@@ -9,6 +9,8 @@ export const PRIVATE_PREFIXES = [
   "/pedido/",
   "/cuenta/",
   "/deseos/",
+  // `/baja/` (Fase MK-A): la URL lleva el token de baja de un email.
+  "/baja/",
   "/_actions/",
 ];
 

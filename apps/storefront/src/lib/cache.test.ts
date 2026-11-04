@@ -15,6 +15,7 @@ describe("isPrivatePath", () => {
       "/cuenta/entrar/",
       "/cuenta/pedidos/order_1/",
       "/_actions/cart.add/",
+      "/baja/",
     ]) {
       expect(isPrivatePath(p), p).toBe(true);
     }

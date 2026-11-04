@@ -23,6 +23,10 @@ export const ORDERS_PATH = "/cuenta/pedidos/";
 export const DELETE_PATH = "/cuenta/eliminar/";
 /** Aceptar o rechazar que un pedido pase a una cuenta (Fase G-2; enlace del email). */
 export const ORDER_TRANSFER_PATH = "/cuenta/transferir/";
+/** Comunicaciones comerciales (Fase MK-A): casillas por tema. */
+export const COMMS_PATH = "/cuenta/comunicaciones/";
+/** Baja de un tema con el enlace de un email (Fase MK-A): sin sesión, fuera de /cuenta/. */
+export const UNSUBSCRIBE_PATH = "/baja/";
 /** Caja de snacks propuesta (Fase CS-4): ver y responder con el enlace del email, sin sesión. */
 export const CAJA_PATH = "/cuenta/caja/";
 
@@ -48,6 +52,7 @@ export type AccountActionName =
   | "account.declineTransfer"
   | "account.cajaAccept"
   | "account.cajaReject"
+  | "account.comms"
   | "account.petSave"
   | "account.petDelete";
 
@@ -88,6 +93,7 @@ export const ACCOUNT_NOTICES = {
   saved: "Cambios guardados.",
   address_saved: "Dirección guardada.",
   address_deleted: "Dirección eliminada.",
+  comms_saved: "Preferencias guardadas.",
   pet_saved: "Ficha guardada.",
   pet_deleted: "Ficha eliminada.",
   pet_photo_failed:
@@ -129,6 +135,7 @@ const SUCCESS = new Set<AccountNoticeCode>([
   "saved",
   "address_saved",
   "address_deleted",
+  "comms_saved",
   "pet_saved",
   "pet_deleted",
   "delete_sent",

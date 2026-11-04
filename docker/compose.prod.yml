@@ -96,6 +96,8 @@ x-backend: &backend
     CAJA_ALERT_WORK_HOURS: ${CAJA_ALERT_WORK_HOURS:-48}
     CAJA_FESTIVOS: ${CAJA_FESTIVOS:-}
     CAJA_JOBS_CRON: ${CAJA_JOBS_CRON:-*/15 * * * *}
+    # Comunicaciones (Fase MK-A): firma de los enlaces de baja de los emails comerciales.
+    COMMS_UNSUBSCRIBE_SECRET: ${COMMS_UNSUBSCRIBE_SECRET:?}
 
 services:
   caddy:

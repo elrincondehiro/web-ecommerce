@@ -12,7 +12,7 @@ import * as transferReminder from "./transfer-reminder";
 import * as cajaPropuesta from "./caja-propuesta";
 import * as cajaTienda from "./caja-tienda";
 
-export type { EmailLinks } from "./_components/Layout";
+export type { EmailLinks, EmailUnsubscribe } from "./_components/Layout";
 export type { EmailAddress, EmailLineItem } from "./_lib/types";
 export { buildTaxBreakdown, type TaxableLine, type TaxBreakdownRow } from "./_lib/tax";
 export type { OrderPlacedProps } from "./order-placed";

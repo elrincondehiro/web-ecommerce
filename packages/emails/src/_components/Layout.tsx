@@ -10,13 +10,26 @@ export type EmailLinks = {
   assetsUrl: string;
 };
 
+/**
+ * Emails comerciales (Fase MK-A): por qué le llega y el enlace de baja de un clic (página
+ * `/baja/` del storefront). Solo los emails comerciales lo llevan; los de pedido, no.
+ */
+export type EmailUnsubscribe = {
+  /** URL de `/baja/?t=…` (la firma el backend). */
+  url: string;
+  /** Tema activado, p. ej. «Novedades y ofertas». */
+  topic: string;
+};
+
 type LayoutProps = EmailLinks & {
   /** Texto de previsualización en la bandeja de entrada. */
   preview: string;
+  /** Solo emails comerciales: pie con el motivo y la baja. */
+  unsubscribe?: EmailUnsubscribe | undefined;
   children: ReactNode;
 };
 
-export function Layout({ preview, storefrontUrl, assetsUrl, children }: LayoutProps) {
+export function Layout({ preview, storefrontUrl, assetsUrl, unsubscribe, children }: LayoutProps) {
   return (
     <Html lang="es" dir="ltr">
       <Head />
@@ -44,6 +57,7 @@ export function Layout({ preview, storefrontUrl, assetsUrl, children }: LayoutPr
           </Section>
           {children}
           <Hr style={{ borderColor: color.border, margin: "32px 0 16px" }} />
+          {unsubscribe && <Unsubscribe {...unsubscribe} storefrontUrl={storefrontUrl} />}
           <Footer storefrontUrl={storefrontUrl} />
         </Container>
       </Body>
@@ -52,6 +66,25 @@ export function Layout({ preview, storefrontUrl, assetsUrl, children }: LayoutPr
 }
 
 const small = { color: color.mutedForeground, fontSize: 12, lineHeight: "18px", margin: "4px 0" };
+
+/** Motivo del email comercial y baja (Fase MK-A). */
+function Unsubscribe({ url, topic, storefrontUrl }: EmailUnsubscribe & { storefrontUrl: string }) {
+  return (
+    <Section>
+      <Text style={small}>
+        Recibes este email porque activaste «{topic}» en tu cuenta.{" "}
+        <Link href={url} style={{ color: color.primary }}>
+          Darme de baja
+        </Link>{" "}
+        o elegir qué recibir en{" "}
+        <Link href={`${storefrontUrl}/cuenta/comunicaciones/`} style={{ color: color.primary }}>
+          Mi cuenta → Comunicaciones
+        </Link>
+        .
+      </Text>
+    </Section>
+  );
+}
 
 /** Pie legal: textos provisionales hasta que los revise la gestoría (fase 5 §8). */
 function Footer({ storefrontUrl }: { storefrontUrl: string }) {
