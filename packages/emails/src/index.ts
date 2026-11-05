@@ -11,6 +11,7 @@ import * as orderReceivedShop from "./order-received-shop";
 import * as transferReminder from "./transfer-reminder";
 import * as cajaPropuesta from "./caja-propuesta";
 import * as cajaTienda from "./caja-tienda";
+import * as stockBack from "./stock-back";
 
 export type { EmailLinks, EmailUnsubscribe } from "./_components/Layout";
 export type { EmailAddress, EmailLineItem } from "./_lib/types";
@@ -27,6 +28,7 @@ export type { TransferReminderProps } from "./transfer-reminder";
 export type { TransferInfo } from "./_components/transfer";
 export type { CajaPropuestaItem, CajaPropuestaProps } from "./caja-propuesta";
 export type { CajaTiendaProps } from "./caja-tienda";
+export type { StockBackItem, StockBackProps } from "./stock-back";
 
 /** Plantillas disponibles: el id es el `template` de `createNotifications`. */
 const templates = {
@@ -41,6 +43,7 @@ const templates = {
   "transfer-reminder": transferReminder,
   "caja-propuesta": cajaPropuesta,
   "caja-tienda": cajaTienda,
+  "stock-back": stockBack,
 } as const;
 
 export type TemplateId = keyof typeof templates;
@@ -57,6 +60,7 @@ export type TemplateProps = {
   "transfer-reminder": transferReminder.TransferReminderProps;
   "caja-propuesta": cajaPropuesta.CajaPropuestaProps;
   "caja-tienda": cajaTienda.CajaTiendaProps;
+  "stock-back": stockBack.StockBackProps;
 };
 
 export const TEMPLATE_IDS = Object.keys(templates) as TemplateId[];

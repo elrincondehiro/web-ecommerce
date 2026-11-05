@@ -25,6 +25,7 @@ import { StoreOrderClaimBody } from "./store/customers/me/order-claims/route";
 import { StoreOrderTransferQuery } from "./store/order-transfers/[id]/route";
 import { PetBody, PetPhotoBody } from "../lib/pets-schema";
 import { StoreCommsBody } from "./store/customers/me/comms/route";
+import { StoreStockAlertBody } from "./store/customers/me/stock-alerts/route";
 import { StoreUnsubscribeBody, StoreUnsubscribeQuery } from "./store/comms/unsubscribe/route";
 import { withStripeSessionData } from "../lib/stripe-session";
 import { TRANSFER_PROVIDER_ID, transferConfig, transferGuarded } from "../lib/transfer";
@@ -300,6 +301,12 @@ export default defineMiddlewares({
       matcher: "/store/comms/unsubscribe",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(StoreUnsubscribeBody)],
+    },
+    // Avisos de stock (Fase MK-B). La sesión la pone Medusa (`/store/customers/me*`).
+    {
+      matcher: "/store/customers/me/stock-alerts",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreStockAlertBody)],
     },
     // Mascotas (Fase M). La autenticación la pone Medusa (`/store/customers/me*`, `/admin*`).
     // La foto llega ya reducida (WebP ~50–150 KB en base64): límite de 1 MB solo en esa ruta

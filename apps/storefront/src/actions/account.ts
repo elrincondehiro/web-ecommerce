@@ -43,7 +43,9 @@ import {
 } from "$lib/account";
 import { CART_COOKIE, cartCookieOptions, isValidId } from "$lib/cart";
 import { WISH_PENDING_COOKIE, decodeWishPending } from "$lib/wishlist";
+import { ALERT_PENDING_COOKIE, decodeAlertPending } from "$lib/stock-alerts";
 import {
+  addStockAlert,
   addToWishlist,
   answerCaja,
   answerOrderTransfer,
@@ -154,6 +156,22 @@ async function savePendingWish(ctx: ActionAPIContext, token: string): Promise<vo
   }
 }
 
+/** Aviso de stock pedido sin sesión (Fase MK-B, cookie `stock_alert_pending` de 10 min). */
+async function savePendingAlert(ctx: ActionAPIContext, token: string): Promise<void> {
+  const raw = ctx.cookies.get(ALERT_PENDING_COOKIE)?.value;
+  if (raw === undefined) return;
+  ctx.cookies.delete(ALERT_PENDING_COOKIE, { path: "/" });
+  const target = decodeAlertPending(raw);
+  if (!target) return;
+  try {
+    await addStockAlert(token, target.product_id, target.variant_id);
+  } catch (err) {
+    // Ya hay stock o el máximo: no es un error de la tienda.
+    const status = (err as { status?: unknown } | null)?.status;
+    if (status !== 400) logError(ctx, "aviso de stock pendiente al entrar", err);
+  }
+}
+
 export const account = {
   register: defineAction({
     accept: "form",
@@ -209,7 +227,11 @@ export const account = {
         }
         const token = await ensureCustomer(login.token, email, password);
         setSession(ctx, token);
-        await Promise.all([adoptCart(ctx, token), savePendingWish(ctx, token)]);
+        await Promise.all([
+          adoptCart(ctx, token),
+          savePendingWish(ctx, token),
+          savePendingAlert(ctx, token),
+        ]);
         return { to: next };
       } catch (err) {
         if (isUnauthorized(err)) {

@@ -13,7 +13,7 @@
 // responden siempre 303 (PRG) al destino que devuelvan, con el aviso en la cookie flash.
 // Lista de deseos (Fase L-1): `wishlist.*` como el carrito (303 a `back` + `#deseos-<código>` o
 // JSON). Sin sesión: 303 a «Entrar» con el aviso en la cookie flash de la cuenta (o, con JS,
-// `login` en el JSON y CartClient navega).
+// `login` en el JSON y CartClient navega). Avisos de stock (Fase MK-B): `stockAlert.*`, igual.
 import type { APIContext, MiddlewareNext } from "astro";
 import { getActionContext } from "astro:actions";
 import { COOKIE_SECURE } from "astro:env/server";
@@ -37,6 +37,12 @@ import {
 } from "$lib/checkout";
 import { isPrivatePath } from "$lib/cache";
 import { WISH_NOTICES, isWishError, wishRedirectTarget, type WishResult } from "$lib/wishlist";
+import {
+  ALERT_NOTICES,
+  alertRedirectTarget,
+  isAlertError,
+  type AlertResult,
+} from "$lib/stock-alerts";
 import {
   isErrorNotice,
   noticeMessage,
@@ -147,6 +153,39 @@ async function handle(context: APIContext, next: MiddlewareNext): Promise<Respon
     }
     const form = await context.request.formData().catch(() => null);
     const response = context.redirect(wishRedirectTarget(form?.get("back"), data.code), 303);
+    response.headers.set("Cache-Control", NO_STORE);
+    return response;
+  }
+
+  // Avisos de stock (Fase MK-B): igual que la lista de deseos, con `#aviso-<código>`.
+  if (action.name.startsWith("stockAlert.")) {
+    const result = await action.handler();
+    const data: AlertResult = result.error ? { code: "alert_error" } : (result.data as AlertResult);
+    if (data.login) {
+      context.cookies.set(
+        ACCOUNT_FLASH_COOKIE,
+        encodeAccountFlash({ code: "alert_login" }),
+        accountFlashCookieOptions(COOKIE_SECURE),
+      );
+    }
+    if (context.request.headers.get("accept")?.includes("application/json")) {
+      return Response.json(
+        {
+          code: data.code,
+          msg: ALERT_NOTICES[data.code],
+          kind: isAlertError(data.code) ? "error" : "ok",
+          login: data.login ?? null,
+        },
+        { status: isAlertError(data.code) ? 422 : 200, headers: { "Cache-Control": NO_STORE } },
+      );
+    }
+    if (data.login) {
+      const response = context.redirect(data.login, 303);
+      response.headers.set("Cache-Control", NO_STORE);
+      return response;
+    }
+    const form = await context.request.formData().catch(() => null);
+    const response = context.redirect(alertRedirectTarget(form?.get("back"), data.code), 303);
     response.headers.set("Cache-Control", NO_STORE);
     return response;
   }

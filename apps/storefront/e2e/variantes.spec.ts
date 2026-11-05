@@ -13,7 +13,7 @@ const pick = (page: Page, value: string) => page.locator(`label:has(input[value=
 const add = (page: Page) =>
   page.locator("form[data-cart-form]").getByRole("button", { name: /^Añadir .* al carrito$/ });
 const soldOut = (page: Page) =>
-  page.locator("form[data-cart-form]").getByRole("button", { name: "Agotado" });
+  page.locator("form[data-cart-form]").getByRole("button", { name: /^Agotado/ });
 /** Ids de las fotos visibles de la galería. */
 const shots = (page: Page) =>
   page

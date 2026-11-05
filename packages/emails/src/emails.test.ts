@@ -197,3 +197,21 @@ describe("buildTaxBreakdown", () => {
     expect(buildTaxBreakdown([{ rate: 21, total: 0, taxTotal: 0 }])).toEqual([]);
   });
 });
+
+describe("stock-back (Fase MK-B)", () => {
+  it("lista lo que ha vuelto, «puede agotarse pronto» y sin pie de baja", async () => {
+    const { subject, text } = await renderEmail("stock-back", previewProps("stock-back"));
+    expect(subject).toBe("Han vuelto 2 productos que esperabas");
+    expect(text).toContain("Arnés acolchado");
+    expect(text).toContain("Rayas / M");
+    expect(text.match(/puede agotarse pronto/g)).toHaveLength(1);
+    expect(text).toContain("se envía una sola vez");
+    expect(text).not.toContain("Darme de baja");
+    const one = await renderEmail("stock-back", {
+      ...previewProps("stock-back"),
+      items: [previewProps("stock-back").items[1]!],
+    });
+    expect(one.subject).toBe("Ha vuelto: Premios de pollo");
+    expect(one.text).toContain("Ver el producto");
+  });
+});

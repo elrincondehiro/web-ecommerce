@@ -11,9 +11,14 @@
 //   paso, mínimo y máximo con la regla de la variante (servidor). Con `bulkLiveTotal`, el total
 //   en vivo lo calcula CartClient con el €/kg de la página ([data-unit], corregido por LiveSync).
 // - `id` (Fase L-1): el ♡ de la ficha (WishButton `form`) envía este formulario a la lista.
+// - `alertProductId` (Fase MK-B, ficha y lista de deseos): agotado → «Avísame» en vez del
+//   «Agotado» desactivado. Envía ESTE formulario (la variante elegida: oculta, tabla o selector)
+//   a `stockAlert.add` con `formaction`; con JS lo manda CartClient como el ♡ (`data-wish`: fetch
+//   + toast, o a «Entrar»). Las tarjetas no lo llevan (no saben qué variante se quiere).
 import { buttonVariants } from "$lib/components/ui/button";
 import { BULK_MAX_G, formatGrams, quickGrams, type BulkRule } from "$lib/bulk";
 import { MAX_QUANTITY, actionUrl } from "$lib/cart";
+import { stockAlertActionUrl } from "$lib/stock-alerts";
 import { CATALOG_FEATURES } from "$lib/constants";
 import QuantityField from "./QuantityField.astro";
 
@@ -38,6 +43,8 @@ interface Props {
    * tarjetas no: no cambian de variante y sería HTML de más en cada una.
    */
   keepLayout?: boolean;
+  /** Fase MK-B: id del producto para «Avísame» (ficha y lista de deseos; las tarjetas no). */
+  alertProductId?: string | undefined;
 }
 const {
   variantId,
@@ -50,6 +57,7 @@ const {
   unitKey = "",
   id,
   keepLayout = false,
+  alertProductId,
 } = Astro.props;
 const qtyId = `qty-${productId}`;
 const quick = bulk ? quickGrams(bulk) : [];
@@ -113,14 +121,32 @@ const quick = bulk ? quickGrams(bulk) : [];
         />
       </div>
     )}
-    <button
-      type="button"
-      class={buttonVariants({ size, variant: "secondary" })}
-      data-if-stock="out"
-      disabled
-    >
-      Agotado
-    </button>
+    {alertProductId ? (
+      <>
+        <input type="hidden" name="product_id" value={alertProductId} />
+        <button
+          type="submit"
+          formaction={stockAlertActionUrl("stockAlert.add")}
+          formnovalidate
+          data-wish
+          class={buttonVariants({ size, variant: "outline" })}
+          data-if-stock="out"
+          aria-label={`Agotado. Avísame cuando vuelva ${productTitle}`}
+          title="Te avisamos por email cuando vuelva"
+        >
+          Avísame
+        </button>
+      </>
+    ) : (
+      <button
+        type="button"
+        class={buttonVariants({ size, variant: "secondary" })}
+        data-if-stock="out"
+        disabled
+      >
+        Agotado
+      </button>
+    )}
   </div>
   {bulk && (
     <div class="flex flex-col gap-2" data-if-stock="in">

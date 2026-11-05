@@ -98,6 +98,10 @@ x-backend: &backend
     CAJA_JOBS_CRON: ${CAJA_JOBS_CRON:-*/15 * * * *}
     # Comunicaciones (Fase MK-A): firma de los enlaces de baja de los emails comerciales.
     COMMS_UNSUBSCRIBE_SECRET: ${COMMS_UNSUBSCRIBE_SECRET:?}
+    # Avisos de stock (Fase MK-B): caducidad (días, 30–730) y jobs del worker.
+    STOCK_ALERT_TTL_DAYS: ${STOCK_ALERT_TTL_DAYS:-180}
+    STOCK_ALERT_CRON: ${STOCK_ALERT_CRON:-*/5 * * * *}
+    STOCK_ALERT_EXPIRE_CRON: ${STOCK_ALERT_EXPIRE_CRON:-30 4 * * *}
 
 services:
   caddy:

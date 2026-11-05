@@ -1,0 +1,132 @@
+---
+// Mis avisos de stock (Fase MK-B): lo que el cliente espera («Avísame» de la ficha o de la lista
+// de deseos), con «Quitar». On-demand, `private, no-store`, 0 JS propio. Precio y stock frescos
+// de la Store API: si algo ya ha vuelto, se dice (el email llega en unos minutos).
+// Recibe además los POST de `stockAlert.*` desde las páginas estáticas (?_action=…, middleware).
+import { Image } from "astro:assets";
+import { buttonVariants } from "$lib/components/ui/button";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { getProductPricing } from "$lib/catalog";
+import { getWishlistProducts, listStockAlerts } from "$lib/medusa";
+import { STOCK_ALERTS_PATH, stockAlertActionUrl } from "$lib/stock-alerts";
+import AccountLayout from "../../components/account/AccountLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+
+const alerts = await listStockAlerts(session.token);
+const products = new Map(
+  (await getWishlistProducts([...new Set(alerts.map((a) => a.product_id))])).map((p) => [p.id, p]),
+);
+const dateFmt = new Intl.DateTimeFormat("es-ES", {
+  dateStyle: "medium",
+  timeZone: "Europe/Madrid",
+});
+const rows = alerts.flatMap((a) => {
+  const product = products.get(a.product_id);
+  if (!product) return [];
+  const pricing = getProductPricing(product);
+  const variant = pricing.variants.find((v) => v.id === a.variant_id);
+  const variantTitle =
+    variant && pricing.variants.length > 1 && variant.title !== "Única" ? variant.title : null;
+  return [
+    {
+      ...a,
+      product,
+      variantTitle,
+      href: `/producto/${product.handle}/`,
+      back: variant?.inStock ?? false,
+      since: dateFmt.format(new Date(a.created_at)),
+    },
+  ];
+});
+---
+
+<AccountLayout title="Avisos de stock">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Avisos de stock</h1>
+  <AccountNotice code={flash.code} />
+  <p class="mb-6 max-w-xl text-sm text-muted-foreground">
+    Cuando vuelva a haber stock de uno de estos productos te enviaremos un email (una sola vez) y lo
+    quitaremos de aquí. Pide un aviso con «Avísame» en un producto agotado.
+  </p>
+
+  {rows.length === 0 ? (
+    <p class="text-muted-foreground">
+      No tienes avisos de stock.
+      <a href="/productos/" class="ml-1 underline underline-offset-4">
+        Ver productos
+      </a>
+    </p>
+  ) : (
+    <ul
+      aria-label="Mis avisos de stock"
+      class="flex flex-col divide-y-2 divide-line rounded-md border-2 border-line bg-card shadow-sm"
+    >
+      {rows.map((r) => (
+        <li class="flex gap-4 p-4">
+          <a href={r.href} class="shrink-0" tabindex="-1" aria-hidden="true">
+            {r.product.thumbnail ? (
+              <Image
+                src={r.product.thumbnail}
+                alt=""
+                width={80}
+                height={80}
+                fit="cover"
+                format="webp"
+                loading="lazy"
+                decoding="async"
+                class="size-20 rounded-md border-2 border-line bg-muted object-cover shadow-xs"
+              />
+            ) : (
+              <span class="block size-20 rounded-md border-2 border-line bg-muted shadow-xs" />
+            )}
+          </a>
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <p class="font-medium">
+              <a href={r.href} class="hover:underline">
+                {r.product.title}
+              </a>
+            </p>
+            {r.variantTitle && (
+              <p class="text-sm">
+                <span class="text-muted-foreground">Variante:</span>{" "}
+                <span class="font-semibold">{r.variantTitle}</span>
+              </p>
+            )}
+            <p class="text-sm text-muted-foreground">
+              {r.back ? (
+                <strong class="text-foreground">
+                  ¡Ya ha vuelto! Te llegará el email en unos minutos.
+                </strong>
+              ) : (
+                <>Esperando desde el {r.since}.</>
+              )}
+            </p>
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              {r.back && (
+                <a href={r.href} class={buttonVariants({ size: "sm" })}>
+                  Ver el producto
+                </a>
+              )}
+              <form method="post" action={stockAlertActionUrl("stockAlert.remove")} class="ml-auto">
+                <input type="hidden" name="alert_id" value={r.id} />
+                <input type="hidden" name="back" value={STOCK_ALERTS_PATH} />
+                <button
+                  type="submit"
+                  class={buttonVariants({ size: "sm", variant: "ghost" })}
+                  aria-label={`Quitar el aviso de ${r.product.title}${r.variantTitle ? ` (${r.variantTitle})` : ""}`}
+                >
+                  Quitar
+                </button>
+              </form>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  )}
+</AccountLayout>

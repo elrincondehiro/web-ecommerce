@@ -24,6 +24,8 @@ import Price from "./Price.astro";
 import { BUY_FORM_ID } from "$lib/wishlist";
 import type { VariantPicker as Picker } from "$lib/variant-picker";
 import VariantPicker from "./VariantPicker.astro";
+import { productDesign } from "$lib/disenos";
+import { stockAlertActionUrl } from "$lib/stock-alerts";
 
 interface Props {
   product: StoreProduct;
@@ -43,6 +45,10 @@ const bulk = pricing.isBulk
 const single = multi ? undefined : pricing.variants[0];
 const bulkNote = minimumNote(pricing);
 const singleLeft = single ? stockLeftText(single) : null;
+// «Avísame» (Fase MK-B): con una variante o el selector, en el botón de compra (la variante
+// elegida); con la tabla, en cada fila agotada (`alert_variant_id`: las agotadas no se pueden
+// marcar). Los diseños configurables (correa, caja) no esperan stock.
+const alertable = !productDesign(product).configurable;
 ---
 
 {pricing.fromAmount != null && currency ? (
@@ -89,6 +95,7 @@ const singleLeft = single ? stockLeftText(single) : null;
       unitKey={multi ? "" : product.id}
       id={BUY_FORM_ID}
       keepLayout
+      alertProductId={alertable && !(multi && !picker) ? product.id : undefined}
     >
       {multi && picker && currency && (
         <div slot="before" class="flex flex-col gap-4">
@@ -99,6 +106,7 @@ const singleLeft = single ? stockLeftText(single) : null;
       {multi && !picker && (
         <fieldset slot="before">
           <legend class="sr-only">Elige una variante</legend>
+          {alertable && <input type="hidden" name="product_id" value={product.id} />}
           <table class="w-full max-w-sm text-sm tabular-nums">
             <caption class="sr-only">Precio y disponibilidad por variante</caption>
             <thead class="text-left text-muted-foreground">
@@ -163,6 +171,21 @@ const singleLeft = single ? stockLeftText(single) : null;
                     <span class="text-muted-foreground" data-if-vstock="out">
                       Agotado
                     </span>
+                    {alertable && (
+                      <button
+                        type="submit"
+                        name="alert_variant_id"
+                        value={v.id}
+                        formaction={stockAlertActionUrl("stockAlert.add")}
+                        formnovalidate
+                        data-wish
+                        data-if-vstock="out"
+                        class="ml-2 text-sm font-medium underline underline-offset-4"
+                        aria-label={`Avísame cuando vuelva ${product.title} (${v.title})`}
+                      >
+                        Avísame
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

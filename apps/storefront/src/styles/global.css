@@ -239,6 +239,11 @@
 .variant-row[data-vstock="out"] {
   pointer-events: none;
 }
+/* «Avísame» de una fila agotada (Fase MK-B): el único clic de la fila. */
+.variant-row[data-vstock="out"] [formaction] {
+  pointer-events: auto;
+  color: var(--foreground);
+}
 
 /* Muestras de color de la correa a medida (ColorPicker, E-2c): el color de cada correa lo pone
    SwatchStyles (--sw); sin color, gris. */

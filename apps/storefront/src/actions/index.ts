@@ -35,6 +35,7 @@ import {
 } from "$lib/medusa";
 import { account } from "./account";
 import { comms } from "./comms";
+import { stockAlert } from "./stock-alerts";
 import { pets } from "./pets";
 import { resolveVariant } from "./resolve-variant";
 import { checkout } from "./checkout";
@@ -123,6 +124,8 @@ export const server = {
   account: { ...account, ...pets, ...comms },
   checkout,
   wishlist,
+  // Avisos de stock (Fase MK-B): como la lista de deseos (303 + `#aviso-<código>` o JSON).
+  stockAlert,
   cart: {
     add: defineAction({
       accept: "form",

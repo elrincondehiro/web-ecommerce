@@ -1006,6 +1006,45 @@ export async function unsubscribe(token: string): Promise<boolean> {
   }
 }
 
+// ── Avisos de stock (Fase MK-B): rutas propias del backend, siempre con el token del cliente ──
+
+export interface StockAlert {
+  id: string;
+  product_id: string;
+  variant_id: string;
+  created_at: string;
+}
+
+/** Avisos activos del cliente (más recientes primero; solo ids). */
+export async function listStockAlerts(token: string): Promise<StockAlert[]> {
+  const { alerts } = await cartSdk().client.fetch<{ alerts: StockAlert[] }>(
+    "/store/customers/me/stock-alerts",
+    { headers: bearer(token) },
+  );
+  return alerts;
+}
+
+/** «Avísame cuando vuelva» (idempotente: `created: false` si ya estaba). */
+export async function addStockAlert(
+  token: string,
+  productId: string,
+  variantId: string,
+): Promise<{ created: boolean }> {
+  return cartSdk().client.fetch<{ created: boolean }>("/store/customers/me/stock-alerts", {
+    method: "POST",
+    headers: bearer(token),
+    body: { product_id: productId, variant_id: variantId },
+  });
+}
+
+export async function removeStockAlert(token: string, alertId: string): Promise<boolean> {
+  const { deleted } = await cartSdk().client.fetch<{ deleted: boolean }>(
+    `/store/customers/me/stock-alerts/${encodeURIComponent(alertId)}`,
+    { method: "DELETE", headers: bearer(token) },
+  );
+  return deleted;
+}
+
 // ── Mascotas (Fase M): rutas propias del backend (lib/pets.ts tiene los tipos) ────────────────
 
 /** Mascotas del cliente (vivas primero, después las fallecidas). */
