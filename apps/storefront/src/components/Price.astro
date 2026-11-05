@@ -27,6 +27,16 @@ interface Props {
   per?: "kg" | undefined;
   /** Texto fijo tras el €/kg (granel: «mínimo 100 g»). */
   unitNote?: string | null | undefined;
+  /**
+   * `stack` (sitios estrechos de la ficha: tabla de variantes y tarjetas del selector): el precio
+   * anterior en su propia línea (con el €/kg) en vez de todo en una fila que desbordaba.
+   * Con dos `data-was-box`: LiveSync los muestra u oculta todos (querySelectorAll).
+   */
+  layout?: "inline" | "stack";
+  /** Etiqueta «−20 %». Sin ella en las tarjetas del selector (se repetía en cada una). */
+  badge?: boolean;
+  /** Clases extra del contenedor (p. ej. centrar en las tarjetas del selector). */
+  class?: string | undefined;
 }
 const {
   id,
@@ -39,52 +49,110 @@ const {
   unit,
   per,
   unitNote,
+  layout = "inline",
+  badge = true,
+  class: className,
 } = Astro.props;
 const suffix = per ? `/${per}` : "";
 const onSale = wasAmount !== null && discountPercent !== null;
+const showWas = id !== undefined || onSale;
+const wasText = onSale ? `${formatPrice(wasAmount, currency)}${suffix}` : "";
+const offText = onSale ? formatDiscount(discountPercent) : "";
+const offClass =
+  "self-center rounded-full bg-accent px-1.5 text-[0.7em] leading-5 font-bold text-accent-foreground";
+const unitText = unit ? formatUnitPrice(unit.amount, currency, unit.unit) : "";
 ---
 
-<span
-  class:list={[
-    "price inline-flex flex-wrap items-baseline gap-x-1.5 tabular-nums",
-    size === "lg" ? "text-2xl" : "text-sm",
-  ]}
->
-  {from !== undefined && (
-    <span
-      class="text-[0.75em] font-normal text-muted-foreground"
-      data-price-from={id}
-      hidden={!from}
-    >
-      Desde
-    </span>
-  )}
-  <span class="price__now font-semibold" data-price={id}>
-    {formatPrice(amount, currency)}
-    {suffix}
-  </span>
-  {(id !== undefined || onSale) && (
-    <span
-      class="price__was inline-flex items-baseline gap-x-1.5"
-      data-was-box={id}
-      hidden={!onSale}
-    >
-      <span class="sr-only">Precio anterior:</span>
-      <del class="text-[0.8em] font-normal text-muted-foreground" data-was={id}>
-        {onSale ? `${formatPrice(wasAmount, currency)}${suffix}` : ""}
-      </del>
-      <span
-        class="self-center rounded-full bg-accent px-1.5 text-[0.7em] leading-5 font-bold text-accent-foreground"
-        data-off={id}
-      >
-        {onSale ? formatDiscount(discountPercent) : ""}
+{layout === "stack" ? (
+  <span
+    class:list={[
+      "price inline-flex flex-col gap-0.5 tabular-nums",
+      size === "lg" ? "text-2xl" : "text-sm",
+      className,
+    ]}
+  >
+    <span class="inline-flex flex-wrap items-baseline gap-x-1.5">
+      {from !== undefined && (
+        <span
+          class="text-[0.75em] font-normal text-muted-foreground"
+          data-price-from={id}
+          hidden={!from}
+        >
+          Desde
+        </span>
+      )}
+      <span class="price__now font-semibold" data-price={id}>
+        {formatPrice(amount, currency)}
+        {suffix}
       </span>
+      {showWas && badge && (
+        <span class="price__was inline-flex" data-was-box={id} hidden={!onSale}>
+          <span class={offClass} data-off={id}>
+            {offText}
+          </span>
+        </span>
+      )}
     </span>
-  )}
-  {unit && (
-    <span class="basis-full text-xs font-normal text-muted-foreground">
-      <span data-unit={id}>{formatUnitPrice(unit.amount, currency, unit.unit)}</span>
-      {unitNote && ` · ${unitNote}`}
+    {(showWas || unit) && (
+      <span class="inline-flex flex-wrap items-baseline gap-x-1.5 text-xs font-normal text-muted-foreground">
+        {showWas && (
+          <span class="price__was" data-was-box={id} hidden={!onSale}>
+            <span class="sr-only">Precio anterior:</span>
+            <del data-was={id}>{wasText}</del>
+          </span>
+        )}
+        {unit && (
+          <span>
+            <span data-unit={id}>{unitText}</span>
+            {unitNote && ` · ${unitNote}`}
+          </span>
+        )}
+      </span>
+    )}
+  </span>
+) : (
+  <span
+    class:list={[
+      "price inline-flex flex-wrap items-baseline gap-x-1.5 tabular-nums",
+      size === "lg" ? "text-2xl" : "text-sm",
+    ]}
+  >
+    {from !== undefined && (
+      <span
+        class="text-[0.75em] font-normal text-muted-foreground"
+        data-price-from={id}
+        hidden={!from}
+      >
+        Desde
+      </span>
+    )}
+    <span class="price__now font-semibold" data-price={id}>
+      {formatPrice(amount, currency)}
+      {suffix}
     </span>
-  )}
-</span>
+    {(id !== undefined || onSale) && (
+      <span
+        class="price__was inline-flex items-baseline gap-x-1.5"
+        data-was-box={id}
+        hidden={!onSale}
+      >
+        <span class="sr-only">Precio anterior:</span>
+        <del class="text-[0.8em] font-normal text-muted-foreground" data-was={id}>
+          {onSale ? `${formatPrice(wasAmount, currency)}${suffix}` : ""}
+        </del>
+        <span
+          class="self-center rounded-full bg-accent px-1.5 text-[0.7em] leading-5 font-bold text-accent-foreground"
+          data-off={id}
+        >
+          {onSale ? formatDiscount(discountPercent) : ""}
+        </span>
+      </span>
+    )}
+    {unit && (
+      <span class="basis-full text-xs font-normal text-muted-foreground">
+        <span data-unit={id}>{formatUnitPrice(unit.amount, currency, unit.unit)}</span>
+        {unitNote && ` · ${unitNote}`}
+      </span>
+    )}
+  </span>
+)}

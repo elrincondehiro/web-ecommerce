@@ -2,7 +2,9 @@
 // Precio con IVA, disponibilidad y stock por variante (HTML estático del build).
 // <LiveSync productId> los corrige en runtime (data-pid/data-price/data-vstock, lib/live-sync.ts).
 // Añadir al carrito (fase 4): <AddToCart> con la variante (hidden si hay una; radios en la tabla
-// si hay varias) y la cantidad. Los radios de variantes agotadas se ocultan con data-if-vstock.
+// si hay varias) y la cantidad. Tabla: las variantes agotadas también se pueden elegir (para el ♡
+// de la lista de deseos); al elegir una, Añadir ↔ «Agotado» por CSS (global.css, `.variant-row`),
+// como en el selector de opciones. Preselección: la primera con stock.
 // Precio por kilo/litro (S-2, RD 3423/2000): junto al precio con una variante; con varias, en
 // cada fila de la tabla (el «Desde» no lo lleva: sería el de otra variante).
 // Granel (S-3): «Desde» = precio del mínimo, €/kg debajo, campo de gramos (AddToCart `bulk`) y,
@@ -132,7 +134,6 @@ const singleLeft = single ? stockLeftText(single) : null;
                       id={`v-${v.id}`}
                       checked={v.id === preselected}
                       required
-                      data-if-vstock="in"
                       class="size-4 accent-primary"
                     />
                   </td>
@@ -151,6 +152,7 @@ const singleLeft = single ? stockLeftText(single) : null;
                         }
                         unit={v.unitPrice}
                         unitNote={v.bulk ? `mínimo ${formatGrams(v.bulk.minG)}` : null}
+                        layout="stack"
                       />
                     ) : (
                       "—"

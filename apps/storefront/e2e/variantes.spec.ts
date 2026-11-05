@@ -105,6 +105,19 @@ test("guía con esquema: imagen del Markdown, solo se descarga al abrir la guía
   await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
 });
 
+test("ofertas: precio de cada tarjeta apilado, sin «−X %» y sin desbordar", async ({ page }) => {
+  // mock-arnes-plus-130: tallas en oferta (catálogo mock local).
+  await page.goto("/producto/mock-arnes-plus-130/");
+  const cards = page.locator("#comprar .vp-opt:visible");
+  await expect(cards.first()).toBeVisible();
+  const sizes = await cards.evaluateAll((els) =>
+    els.map((e) => ({ over: e.scrollWidth - e.clientWidth, h: e.getBoundingClientRect().height })),
+  );
+  expect(sizes.every((s) => s.over <= 1)).toBe(true);
+  await expect(page.locator("#comprar .vp-opt del").first()).toBeVisible();
+  await expect(page.locator("#comprar .vp-opt [data-off]")).toHaveCount(0);
+});
+
 test("elegir una combinación agotada no mueve la página (misma altura del formulario)", async ({
   page,
 }) => {

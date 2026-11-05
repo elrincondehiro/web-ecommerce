@@ -7,6 +7,8 @@
 //   tacha las agotadas y cambia Añadir ↔ Agotado. LiveSync corrige `data-vstock` y los precios como en la tabla.
 // - Una sola opción: la marca va en la propia muestra (sin `data-pa`).
 // La action `cart.add` recibe `product_id` + `opcion_1` / `opcion_2` y busca la variante.
+// Precio de cada tarjeta apilado y sin «−X %» (Price `stack`): en oferta, actual y anterior
+// tachado debajo; la etiqueta se repetía en cada tarjeta y las desbordaba.
 // Debe ir dentro de un contenedor `.vp` que incluya la galería (ficha, [handle].astro).
 import { discountPercent } from "$lib/catalog";
 import {
@@ -95,6 +97,9 @@ const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tigh
                   discountPercent={
                     cell.wasAmount !== null ? discountPercent(cell.amount, cell.wasAmount) : null
                   }
+                  layout="stack"
+                  badge={false}
+                  class="items-center"
                 />
               )}
               <span class="sr-only" data-if-vstock="out">
@@ -141,6 +146,9 @@ const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tigh
                     discountPercent={
                       cell.wasAmount !== null ? discountPercent(cell.amount, cell.wasAmount) : null
                     }
+                    layout="stack"
+                    badge={false}
+                    class="items-center"
                   />
                 )}
                 <span class="sr-only" data-if-vstock="out">

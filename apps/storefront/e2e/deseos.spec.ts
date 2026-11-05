@@ -121,6 +121,33 @@ test.describe("lista de deseos sin JS", () => {
     await expect(rows).toHaveCount(Math.max(0, before - 1));
   });
 
+  test("tabla con todas las variantes agotadas: se elige una y el ♡ guarda esa", async ({
+    page,
+  }) => {
+    // mock-acondicionador-plus-605: 250 ml y 500 ml agotadas (catálogo mock local).
+    await page.goto("/cuenta/entrar/");
+    await fillLogin(page, email);
+    await expect(page).toHaveURL(/\/cuenta\/$/);
+    await page.goto("/producto/mock-acondicionador-plus-605/");
+    const form = page.locator("#comprar");
+    const radios = form.locator("input[name=variant_id]");
+    await expect(radios).toHaveCount(2);
+    await expect(radios.nth(0)).toBeChecked();
+    await radios.nth(1).check();
+    await expect(form.getByRole("button", { name: /^Agotado/ })).toBeVisible();
+    await expect(form.getByRole("button", { name: /^Añadir/ })).toBeHidden();
+    const title = (await page.getByRole("heading", { level: 1 }).textContent())!.trim();
+    await page
+      .locator("button[name=wish]")
+      .and(page.getByRole("button", { name: `Guardar ${title} en mi lista de deseos` }))
+      .click();
+    await expect(page).toHaveURL(/#deseos-wish_(added|already)$/);
+    await page.goto("/cuenta/deseos/");
+    await expect(
+      page.getByText("Variante:").locator("..").filter({ hasText: "500 ml" }),
+    ).toBeVisible();
+  });
+
   test("ficha con variantes guarda la elegida; la correa, el producto", async ({ page }) => {
     await page.goto("/cuenta/entrar/");
     await fillLogin(page, email);

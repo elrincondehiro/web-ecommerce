@@ -230,14 +230,20 @@
   opacity: 0.6;
 }
 /* Texto agotado atenuado por COLOR, no por opacidad: --muted-foreground mantiene AA (opacity
-   lo bajaba a ~3:1, Lighthouse). Fila de variante (ficha, Fase D 1.8): además sin clic; el radio
-   ya se oculta (data-if-vstock), pero su <label for> lo seguiría marcando. Tarjeta (1.9). */
+   lo bajaba a ~3:1, Lighthouse). Fila de variante agotada (ficha, Fase D 1.8). Tarjeta (1.9). */
 [data-stock="out"] [data-dim-text],
 .variant-row[data-vstock="out"] {
   color: var(--muted-foreground);
 }
-.variant-row[data-vstock="out"] {
-  pointer-events: none;
+/* Tabla de variantes de la ficha: una fila agotada se puede elegir (♡ de la lista de deseos);
+   elegida, cambia Añadir ↔ «Agotado» y la insignia de stock, como el selector (pickerCss).
+   LiveSync cambia data-vstock → se actualiza solo. */
+[data-stock]:has(.variant-row[data-vstock="out"] [name="variant_id"]:checked) [data-if-stock="in"] {
+  display: none !important;
+}
+[data-stock]:has(.variant-row[data-vstock="out"] [name="variant_id"]:checked)
+  [data-if-stock="out"] {
+  display: inline-flex !important;
 }
 
 /* Muestras de color de la correa a medida (ColorPicker, E-2c): el color de cada correa lo pone
