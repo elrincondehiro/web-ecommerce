@@ -99,7 +99,7 @@ x-backend: &backend
 
 services:
   caddy:
-    image: caddy:2.11.7-alpine
+    image: caddy:2.11.9-alpine
     restart: unless-stopped
     # Solo 443/tcp: con Full (strict) Cloudflare siempre llega al origen por https (el paso de
     # http a https lo hace Cloudflare) y sin HTTP/3 (443/udp). El firewall de Hetzner solo abre
@@ -191,7 +191,7 @@ services:
       retries: 20
 
   meilisearch:
-    image: getmeili/meilisearch:v1.56.0
+    image: getmeili/meilisearch:v1.56.2
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?}

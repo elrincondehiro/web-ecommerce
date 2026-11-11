@@ -51,10 +51,10 @@ overrides:
   # zod: agota memoria validando colecciones enormes (@medusajs/deps fija 4.2.0; @astrojs/sitemap).
   "zod@>=4.0.0 <4.6.6": "4.6.7"
   # undici: DoS por error sin capturar (unifont, fuentes de Astro en el build).
-  "undici@>=8.0.0 <8.12.2": "8.12.3"
+  "undici@>=8.0.0 <8.12.2": "8.12.4"
   # GHSA-mrwp-f3q8-3g9p alto (30-oct-2026): cabeceras sensibles y credenciales que siguen a una
   # redirección. Lo trae axios (@medusajs/telemetry, desactivada; y otras de @medusajs/*). Patch.
-  "follow-redirects@>=1.16.0 <1.16.2": "1.16.2"
+  "follow-redirects@>=1.16.0 <1.16.2": "1.16.3"
   # No es de seguridad (Renovate #87, 6-nov-2026): astro 7.4.7 trae rolldown 1.3, que pide la
   # beta de @emnapi/runtime; pnpm la reutiliza para @astrojs/check (language-server) y `astro
   # check` cae al cerrar («this.bridge.deleteEnv is not a function») y pide instalarlo → falla el

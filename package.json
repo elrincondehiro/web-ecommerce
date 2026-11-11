@@ -2,10 +2,10 @@
   "name": "web-ecommerce",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.16.1",
+  "packageManager": "pnpm@12.18.0",
   "engines": {
     "node": "24.22.2",
-    "pnpm": "12.16.1"
+    "pnpm": "12.18.0"
   },
   "scripts": {
     "infra:up": "docker compose --env-file docker/.env -f docker/compose.dev.yml up -d --wait",
