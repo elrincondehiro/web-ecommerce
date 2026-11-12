@@ -25,6 +25,29 @@ const IMAGE_BASE_URL = new URL(
 );
 
 /**
+ * Analítica Umami (Fase MK-E, docs/fases/faseMK-marketing.md §5). Se fija en el BUILD (las páginas
+ * estáticas llevan la etiqueta). Sin UMAMI_URL o sin UMAMI_WEBSITE_ID: sin script (CI, tests).
+ * `??` y no `||`: UMAMI_URL="" en el entorno lo desactiva aunque esté en .env (builds de e2e).
+ * UMAMI_DOMAINS: hosts donde cuenta (`data-domains`); por defecto el de SITE_URL.
+ */
+const UMAMI_URL = (process.env.UMAMI_URL ?? dotenv.UMAMI_URL ?? "").replace(/\/+$/, "");
+const UMAMI_WEBSITE_ID = process.env.UMAMI_WEBSITE_ID ?? dotenv.UMAMI_WEBSITE_ID ?? "";
+if (UMAMI_WEBSITE_ID && !/^[0-9a-f-]{36}$/i.test(UMAMI_WEBSITE_ID))
+  throw new Error("UMAMI_WEBSITE_ID no es un UUID");
+const UMAMI =
+  UMAMI_URL && UMAMI_WEBSITE_ID
+    ? {
+        origin: new URL(UMAMI_URL).origin,
+        src: `${UMAMI_URL}/script.js`,
+        id: UMAMI_WEBSITE_ID,
+        domains:
+          process.env.UMAMI_DOMAINS ||
+          dotenv.UMAMI_DOMAINS ||
+          (SITE_URL ? new URL(SITE_URL).hostname : ""),
+      }
+    : null;
+
+/**
  * CSP por hashes de Astro (`security.csp`, fase 11-3). Una sola constante activa la CSP y, vía
  * `import.meta.env.CSP_ENABLED`, el registro de hashes de los scripts/estilos inline propios
  * (LiveSync, ThemeInit, SwatchStyles). Sin CSP no se toca `Astro.csp`: Astro avisa en cada página
@@ -46,10 +69,15 @@ const CSP_DIRECTIVES = [
   "default-src 'self'",
   `img-src 'self' data: ${IMAGE_BASE_URL.origin} https://*.stripe.com`,
   "font-src 'self'",
-  "connect-src 'self' https://api.stripe.com",
+  `connect-src 'self' https://api.stripe.com${UMAMI ? ` ${UMAMI.origin}` : ""}`,
   "frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com",
 ];
-const CSP_SCRIPT_RESOURCES = ["'self'", "https://js.stripe.com", "https://*.js.stripe.com"];
+const CSP_SCRIPT_RESOURCES = [
+  "'self'",
+  "https://js.stripe.com",
+  "https://*.js.stripe.com",
+  ...(UMAMI ? [UMAMI.origin] : []),
+];
 
 /**
  * Datos de prueba (P4 del análisis del JS, docs/analisis-js.md): con `STOREFRONT_DATA=fixtures`
@@ -203,7 +231,8 @@ export default defineConfig({
       filter: (page) =>
         !LEGAL_PATHS.some((p) => page.endsWith(p)) &&
         !page.includes("/buscar/") &&
-        !page.includes("/listados/"),
+        !page.includes("/listados/") &&
+        !page.includes("/comparar/"),
       serialize: (item) => {
         const path = sitemapPath(item.url);
         if (sitemapInfo.exclude.has(path)) return undefined;
@@ -373,6 +402,7 @@ export default defineConfig({
     define: {
       "import.meta.env.CSP_ENABLED": JSON.stringify(CSP_ENABLED),
       "import.meta.env.USE_FIXTURES": JSON.stringify(USE_FIXTURES),
+      "import.meta.env.UMAMI": JSON.stringify(UMAMI),
     },
     plugins: [tailwindcss()],
     build: {

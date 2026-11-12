@@ -8,10 +8,14 @@
 import { analyticRows, type StoreProduct } from "$lib/catalog";
 import { CATALOG_FEATURES } from "$lib/constants";
 import { formatPercent } from "$lib/format";
+import CompareButton from "./search/CompareButton.astro";
 
 interface Props {
   product: Pick<StoreProduct, "metadata">;
+  /** Fase MK-C: enlace al comparador con este producto marcado, o null. */
+  compare?: { href: string; name: string } | null | undefined;
 }
+const { compare } = Astro.props;
 const rows = analyticRows(Astro.props.product);
 const dry = CATALOG_FEATURES.dryMatterColumn && rows.some((r) => r.dryMatter !== null);
 const show = (v: number | string) => (typeof v === "number" ? formatPercent(v) : v);
@@ -61,5 +65,12 @@ const show = (v: number | string) => (typeof v === "number" ? formatPercent(v) :
         ))}
       </tbody>
     </table>
+    {compare && (
+      <CompareButton
+        href={compare.href}
+        label={`Comparar con otros de ${compare.name}`}
+        class="mt-3"
+      />
+    )}
   </section>
 )}

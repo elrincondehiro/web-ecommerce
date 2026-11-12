@@ -14,24 +14,37 @@ import SearchLive from "../../components/search/SearchLive.astro";
 import HeadStyle from "../../components/HeadStyle.astro";
 import { catalogSwatchCss } from "$lib/family-swatches";
 import { loadSearchPage, optionFamilyCatalog, type SearchPage } from "$lib/search-server";
-import { SEARCH_PATH, parseSearchParams, searchUrl, toSearchString } from "$lib/search";
+import {
+  SEARCH_PATH,
+  canonicalQuery,
+  isPlainSearch,
+  parseResultsParams,
+  searchUrl,
+  splitUtm,
+  withUtm,
+} from "$lib/search";
 import { Timings } from "$lib/server-timing";
 import { SERVER_TIMING } from "astro:env/server";
 
 export const prerender = false;
 
-const params = parseSearchParams(Astro.url.searchParams);
+// Los `utm_*` (campañas, MK-E2) no son de la búsqueda: se apartan y se conservan al redirigir.
+const { rest, utm } = splitUtm(Astro.url.searchParams);
+const params = parseResultsParams(rest, SEARCH_PATH);
 // URL no canónica (orden, duplicados, valores inválidos) → 301 a la canónica: menos variantes
-// en la caché de Cloudflare (fase7.md §7).
-const canonical = toSearchString(params);
-if (canonical !== Astro.url.searchParams.toString()) {
-  return Astro.redirect(searchUrl(params), 301);
+// en la caché de Cloudflare (fase7.md §7). Con `vista=tabla` → /comparar/ (MK-C), su URL.
+const canonical = canonicalQuery(params, SEARCH_PATH);
+if (params.vista === "tabla")
+  return Astro.redirect(withUtm(searchUrl(params, "/comparar/"), utm), 301);
+if (canonical !== rest.toString()) {
+  return Astro.redirect(withUtm(searchUrl(params), utm), 301);
 }
 
 const timings = SERVER_TIMING ? new Timings() : undefined;
 let page: SearchPage | null = null;
 try {
-  page = await loadSearchPage(params, timings);
+  // Estadísticas de búsquedas (Fase MK-E2): solo la búsqueda limpia (texto, sin filtros).
+  page = await loadSearchPage(params, timings, { log: isPlainSearch(params) });
   Astro.response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
 } catch {
   Astro.response.status = 503;

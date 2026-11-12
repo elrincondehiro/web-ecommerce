@@ -29,12 +29,18 @@
 // min/max y se lanzan "input" + "change". Con el dedo, inputmode="none" (sin teclado).
 // Sin JS no hay sugerencias: el formulario GET a /buscar/ funciona igual. Los atributos ARIA
 // del combobox los pone este script (sin JS el campo es un <input type="search"> normal).
+// Filtro de la analítica Umami (Fase MK-E, `window.umamiFiltro`, lib/analytics.ts): ~200 B.
 // Fuente: APG (w3c/wai-aria-practices, combobox-autocomplete-list), astro-docs (scripts).
 ---
 
 <p class="sr-only" aria-live="polite" data-suggest-live></p>
 
 <script>
+  import { umamiClean, type UmamiPayload } from "$lib/analytics";
+
+  // Filtro de la analítica (Fase MK-E): data-before-send de Umami (BaseLayout)
+  (window as unknown as Record<string, unknown>).umamiFiltro = (_type: string, p: UmamiPayload) =>
+    umamiClean(p, location.origin);
   let swallow = false;
   addEventListener(
     "pointerdown",

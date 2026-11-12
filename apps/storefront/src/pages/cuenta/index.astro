@@ -1,5 +1,7 @@
 ---
 // Mi cuenta: resumen (fase 9). On-demand, noindex, 0 JS. Sin sesión → "Entrar".
+// Una tarjeta por apartado del menú, en el mismo orden (Fase MK-D, decisión del usuario). Las
+// peticiones van en paralelo; si una falla, su tarjeta sale sin el dato (el resto sigue).
 import { WISHLIST_PATH } from "$lib/wishlist";
 import { buttonVariants } from "$lib/components/ui/button";
 import {
@@ -13,8 +15,20 @@ import {
 } from "$lib/account";
 import { accountPage, requireCustomer } from "$lib/account-page";
 import { formatPrice } from "$lib/format";
-import { getPointsSummary, listCustomerOrders, listPets } from "$lib/medusa";
-import { isGone } from "$lib/pets";
+import {
+  getComms,
+  getPointsSummary,
+  getWishlist,
+  getWishlistProducts,
+  listCustomerOrders,
+  listPets,
+  listStockAlerts,
+} from "$lib/medusa";
+import { getProductPricing } from "$lib/catalog";
+import { COMMS_TOPICS } from "$lib/comms";
+import { STOCK_ALERTS_PATH } from "$lib/stock-alerts";
+import { COMMS_PATH } from "$lib/account";
+import { birthdayNotice, birthdayText, isGone } from "$lib/pets";
 import { POINTS_PATH } from "$lib/points";
 import AccountLayout from "../../components/account/AccountLayout.astro";
 import AccountNotice from "../../components/account/AccountNotice.astro";
@@ -25,14 +39,39 @@ const flash = accountPage(Astro);
 const session = await requireCustomer(Astro);
 if (!session.ok) return session.redirect;
 const { customer, token } = session;
-const [{ orders }, points, pets] = await Promise.all([
+const [{ orders }, points, pets, wishlist, alerts, comms] = await Promise.all([
   listCustomerOrders(token, { limit: 1, offset: 0 }),
   // Si falla, la tarjeta de puntos no muestra el saldo (el resto de la página sigue).
   getPointsSummary(token, { limit: 1, offset: 0 }).catch(() => null),
   // Mis peques (Fase M): igual, sin los nombres si falla.
   listPets(token).catch(() => null),
+  // Fase MK-D: nº de productos de la lista, avisos de stock y temas activos.
+  getWishlist(token).catch(() => null),
+  listStockAlerts(token).catch(() => null),
+  getComms(token).catch(() => null),
 ]);
+// Avisos: los que ya han vuelto (el email sale en la siguiente pasada del job, ≤ 5 min).
+const back = alerts?.length
+  ? await getWishlistProducts([...new Set(alerts.map((a) => a.product_id))])
+      .then((products) =>
+        alerts.flatMap((a) => {
+          const p = products.find((x) => x.id === a.product_id);
+          const v = p && getProductPricing(p).variants.find((x) => x.id === a.variant_id);
+          return p && v?.inStock ? [p] : [];
+        }),
+      )
+      .catch(() => [])
+  : [];
+const wishCount = wishlist?.items.length ?? null;
+const activeTopics = comms
+  ? COMMS_TOPICS.filter((t) => comms.some((c) => c.id === t.id && c.granted)).map((t) => t.title)
+  : null;
 const petNames = (pets ?? []).filter((p) => !isGone(p)).map((p) => p.name);
+// Fase MK-D: cumpleaños de hoy (o de este mes, si solo se sabe el mes), aunque no tenga emails.
+const birthdays = (pets ?? []).flatMap((p) => {
+  const n = birthdayNotice(p);
+  return n ? [birthdayText(p.name, n)] : [];
+});
 const last = orders[0];
 const address = defaultAddress(customer.addresses);
 const name = customer.first_name?.trim();
@@ -43,6 +82,17 @@ const card = "flex flex-col gap-2 rounded-md border-2 border-line bg-card shadow
 <AccountLayout title="Mi cuenta">
   <h1 class="mb-6 text-3xl font-semibold tracking-tight">{name ? `Hola, ${name}` : "Mi cuenta"}</h1>
   <AccountNotice code={flash.code} />
+  {birthdays.length > 0 && (
+    <p
+      role="status"
+      class="mb-6 rounded-md border-2 border-line bg-muted px-4 py-3 text-sm font-medium"
+    >
+      🎂 {birthdays.join(" ")}{" "}
+      <a href={PETS_PATH} class="font-normal underline underline-offset-4">
+        Ver Mis peques
+      </a>
+    </p>
+  )}
 
   {!name && (
     <p class="mb-6 rounded-md border-2 border-line bg-muted px-4 py-3 text-sm">
@@ -55,12 +105,65 @@ const card = "flex flex-col gap-2 rounded-md border-2 border-line bg-card shadow
   )}
 
   <div class="grid gap-4 sm:grid-cols-2">
+    <section aria-labelledby="resumen-deseos" class={card}>
+      <h2 id="resumen-deseos" class="text-lg font-semibold">
+        Lista de deseos
+      </h2>
+      {wishCount ? (
+        <p class="text-sm">
+          <strong class="tabular-nums">{wishCount}</strong>{" "}
+          {wishCount === 1 ? "producto guardado" : "productos guardados"}
+        </p>
+      ) : (
+        <p class="text-sm text-muted-foreground">
+          Los productos que has guardado con el corazón, con su precio y stock de ahora.
+        </p>
+      )}
+      <a href={WISHLIST_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Ver mi lista
+      </a>
+    </section>
+
+    <section aria-labelledby="resumen-avisos" class={card}>
+      <h2 id="resumen-avisos" class="text-lg font-semibold">
+        Avisos de stock
+      </h2>
+      {back.length > 0 && (
+        <p class="text-sm font-medium">
+          ¡Ha vuelto{" "}
+          {back.map((p, i) => (
+            <>
+              {i > 0 && ", "}
+              <a href={`/producto/${p.handle}/`} class="underline underline-offset-4">
+                {p.title}
+              </a>
+            </>
+          ))}
+          !
+        </p>
+      )}
+      {alerts && alerts.length > 0 ? (
+        <p class="text-sm">
+          Estás esperando <strong class="tabular-nums">{alerts.length}</strong>{" "}
+          {alerts.length === 1 ? "producto" : "productos"}.
+        </p>
+      ) : (
+        <p class="text-sm text-muted-foreground">
+          Pide un aviso con «Avísame» en un producto agotado y te escribimos cuando vuelva.
+        </p>
+      )}
+      <a href={STOCK_ALERTS_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Ver mis avisos
+      </a>
+    </section>
+
     <section aria-labelledby="resumen-pedido" class={card}>
       <h2 id="resumen-pedido" class="text-lg font-semibold">
-        Último pedido
+        Mis pedidos
       </h2>
       {last ? (
         <p class="text-sm">
+          Último:{" "}
           <a href={accountOrderPath(last.id)} class="font-medium underline underline-offset-4">
             Pedido #{last.display_id}
           </a>
@@ -78,51 +181,13 @@ const card = "flex flex-col gap-2 rounded-md border-2 border-line bg-card shadow
       </a>
     </section>
 
-    <section aria-labelledby="resumen-direccion" class={card}>
-      <h2 id="resumen-direccion" class="text-lg font-semibold">
-        Dirección de envío
+    <section aria-labelledby="resumen-datos" class={card}>
+      <h2 id="resumen-datos" class="text-lg font-semibold">
+        Mis datos
       </h2>
-      {address ? (
-        <address class="text-sm not-italic">
-          {address.first_name} {address.last_name}
-          <br />
-          {address.address_1}
-          <br />
-          {address.postal_code} {address.city}
-        </address>
-      ) : (
-        <p class="text-sm text-muted-foreground">No tienes direcciones guardadas.</p>
-      )}
-      <a href={ADDRESSES_PATH} class="mt-auto text-sm underline underline-offset-4">
-        Gestionar direcciones
-      </a>
-    </section>
-
-    <section aria-labelledby="resumen-deseos" class={card}>
-      <h2 id="resumen-deseos" class="text-lg font-semibold">
-        Lista de deseos
-      </h2>
-      <p class="text-sm text-muted-foreground">
-        Los productos que has guardado con el corazón, con su precio y stock de ahora.
-      </p>
-      <a href={WISHLIST_PATH} class="mt-auto text-sm underline underline-offset-4">
-        Ver mi lista
-      </a>
-    </section>
-
-    <section aria-labelledby="resumen-peques" class={card}>
-      <h2 id="resumen-peques" class="text-lg font-semibold">
-        Mis peques
-      </h2>
-      {petNames.length > 0 ? (
-        <p class="text-sm break-words">{petNames.join(", ")}</p>
-      ) : (
-        <p class="text-sm text-muted-foreground">
-          Cuéntanos quién vive contigo para aconsejarte mejor.
-        </p>
-      )}
-      <a href={PETS_PATH} class="mt-auto text-sm underline underline-offset-4">
-        {petNames.length > 0 ? "Ver sus fichas" : "Añadir mis mascotas"}
+      <p class="text-sm break-all">{customer.email}</p>
+      <a href={PROFILE_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Editar mis datos y contraseña
       </a>
     </section>
 
@@ -148,13 +213,57 @@ const card = "flex flex-col gap-2 rounded-md border-2 border-line bg-card shadow
       </a>
     </section>
 
-    <section aria-labelledby="resumen-datos" class={card}>
-      <h2 id="resumen-datos" class="text-lg font-semibold">
-        Mis datos
+    <section aria-labelledby="resumen-peques" class={card}>
+      <h2 id="resumen-peques" class="text-lg font-semibold">
+        Mis peques
       </h2>
-      <p class="text-sm break-all">{customer.email}</p>
-      <a href={PROFILE_PATH} class="mt-auto text-sm underline underline-offset-4">
-        Editar mis datos y contraseña
+      {petNames.length > 0 ? (
+        <p class="text-sm break-words">{petNames.join(", ")}</p>
+      ) : (
+        <p class="text-sm text-muted-foreground">
+          Cuéntanos quién vive contigo para aconsejarte mejor.
+        </p>
+      )}
+      <a href={PETS_PATH} class="mt-auto text-sm underline underline-offset-4">
+        {petNames.length > 0 ? "Ver sus fichas" : "Añadir mis mascotas"}
+      </a>
+    </section>
+
+    <section aria-labelledby="resumen-direccion" class={card}>
+      <h2 id="resumen-direccion" class="text-lg font-semibold">
+        Direcciones
+      </h2>
+      {address ? (
+        <address class="text-sm not-italic">
+          {address.first_name} {address.last_name}
+          <br />
+          {address.address_1}
+          <br />
+          {address.postal_code} {address.city}
+        </address>
+      ) : (
+        <p class="text-sm text-muted-foreground">No tienes direcciones guardadas.</p>
+      )}
+      <a href={ADDRESSES_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Gestionar direcciones
+      </a>
+    </section>
+
+    <section aria-labelledby="resumen-comunicaciones" class={card}>
+      <h2 id="resumen-comunicaciones" class="text-lg font-semibold">
+        Comunicaciones
+      </h2>
+      {activeTopics && activeTopics.length > 0 ? (
+        <p class="text-sm">Recibes: {activeTopics.join(", ")}.</p>
+      ) : (
+        <p class="text-sm text-muted-foreground">
+          {activeTopics
+            ? "Solo te escribimos sobre tus pedidos y tu cuenta. Puedes elegir recibir novedades."
+            : "Elige qué emails quieres recibir, además de los de tus pedidos."}
+        </p>
+      )}
+      <a href={COMMS_PATH} class="mt-auto text-sm underline underline-offset-4">
+        Elegir qué recibir
       </a>
     </section>
   </div>

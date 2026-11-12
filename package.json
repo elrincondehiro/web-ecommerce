@@ -12,6 +12,8 @@
     "infra:down": "docker compose --env-file docker/.env -f docker/compose.dev.yml down",
     "infra:ps": "docker compose --env-file docker/.env -f docker/compose.dev.yml ps",
     "infra:logs": "docker compose --env-file docker/.env -f docker/compose.dev.yml logs -f",
+    "infra:umami:up": "docker compose --env-file docker/.env -f docker/compose.dev.yml --profile umami up -d --wait umami",
+    "infra:umami:down": "docker compose --env-file docker/.env -f docker/compose.dev.yml --profile umami stop umami",
     "infra:stripe": "docker compose --env-file docker/.env -f docker/compose.dev.yml --profile stripe up -d stripe-cli",
     "real:infra:up": "docker compose -p web-ecommerce-real --env-file docker/.env.real -f docker/compose.dev.yml up -d --wait",
     "real:infra:down": "docker compose -p web-ecommerce-real --env-file docker/.env.real -f docker/compose.dev.yml down",

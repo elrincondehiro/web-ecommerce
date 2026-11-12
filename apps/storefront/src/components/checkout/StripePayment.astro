@@ -13,6 +13,7 @@
 //   por eso el aviso #pago-espera mientras dura confirmPayment.
 // Fuentes: tipos de @stripe/stripe-js 9.17.0 (confirmPayment, elements), context7 /medusajs/medusa
 // (storefront-development/checkout/payment/stripe).
+import { umamiEvent } from "$lib/analytics";
 import { buttonVariants } from "$lib/components/ui/button";
 import { COMPLETE_PATH } from "$lib/checkout";
 import { formatPrice } from "$lib/format";
@@ -87,7 +88,13 @@ const fonts = (https ? (fontData["--font-nunito-sans"] ?? []) : [])
   </div>
   <p id="pago-mensaje" role="alert" class="text-sm text-destructive empty:hidden"></p>
   <p id="pago-espera" role="status" class="text-sm text-muted-foreground empty:hidden"></p>
-  <button id="pago-boton" type="submit" class={buttonVariants({ size: "lg" })} disabled>
+  <button
+    id="pago-boton"
+    type="submit"
+    class={buttonVariants({ size: "lg" })}
+    disabled
+    {...umamiEvent("checkout-pagar")}
+  >
     Pagar y realizar pedido · {formatPrice(total, currency)}
   </button>
 </form>

@@ -1,0 +1,79 @@
+---
+// Comunicaciones (Fase MK-A): el cliente elige qué emails comerciales quiere. Una casilla por tema
+// (lib/comms.ts), todas apagadas hasta que las marca (consentimiento expreso, LSSI art. 21).
+// On-demand, noindex, 0 JS: un <form> con la action `account.comms` (PRG). Los emails de pedidos,
+// envíos y cuenta no dependen de esto: llegan siempre.
+import { buttonVariants } from "$lib/components/ui/button";
+import { COMMS_PATH, accountActionUrl } from "$lib/account";
+import { accountPage, requireCustomer } from "$lib/account-page";
+import { COMMS_TOPICS } from "$lib/comms";
+import { getComms } from "$lib/medusa";
+import AccountLayout from "../../components/account/AccountLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+const session = await requireCustomer(Astro);
+if (!session.ok) return session.redirect;
+const states = new Map((await getComms(session.token)).map((s) => [s.id, s]));
+const dateFmt = new Intl.DateTimeFormat("es-ES", {
+  dateStyle: "medium",
+  timeZone: "Europe/Madrid",
+});
+---
+
+<AccountLayout title="Comunicaciones">
+  <h1 class="mb-6 text-3xl font-semibold tracking-tight">Comunicaciones</h1>
+  <AccountNotice code={flash.code} />
+
+  <div class="flex max-w-xl flex-col gap-6">
+    <p class="text-sm text-muted-foreground">
+      Elige qué emails quieres recibir, además de los de tus pedidos y tu cuenta (esos llegan
+      siempre). Puedes cambiarlo cuando quieras aquí o con el enlace «Darme de baja» de cada email.
+    </p>
+    <form
+      method="post"
+      action={accountActionUrl(COMMS_PATH, "account.comms")}
+      class="flex flex-col gap-4 rounded-md border-2 border-line bg-card p-4 shadow-sm sm:p-6"
+    >
+      <fieldset class="flex flex-col gap-4">
+        <legend class="mb-2 text-xl font-semibold">Quiero recibir</legend>
+        {COMMS_TOPICS.map((t) => {
+          const state = states.get(t.id);
+          return (
+            <label class="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                name="topic"
+                value={t.id}
+                checked={state?.granted ?? false}
+                aria-describedby={`comms-${t.id}-desc`}
+                class="mt-0.5 size-4"
+              />
+              <span class="flex flex-col gap-0.5">
+                <span class="font-medium">{t.title}</span>
+                <span id={`comms-${t.id}-desc`} class="text-muted-foreground">
+                  {t.description}
+                  {state?.granted_at && (
+                    <> Activado el {dateFmt.format(new Date(state.granted_at))}.</>
+                  )}
+                </span>
+              </span>
+            </label>
+          );
+        })}
+      </fieldset>
+      <button type="submit" class:list={[buttonVariants(), "self-start"]}>
+        Guardar
+      </button>
+    </form>
+    <p class="text-xs text-muted-foreground">
+      Solo usamos tu email para lo que actives. Más información en la{" "}
+      <a href="/privacidad/#comunicaciones" class="underline underline-offset-4">
+        política de privacidad
+      </a>
+      .
+    </p>
+  </div>
+</AccountLayout>

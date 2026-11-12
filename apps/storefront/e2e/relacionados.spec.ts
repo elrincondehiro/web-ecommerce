@@ -32,7 +32,7 @@ async function addFrom(page: Page, path: string) {
     .first()
     .getByRole("button", { name: /^Añadir .* al carrito$/ })
     .click();
-  await expect(page.locator("#carrito-added:target, .toast").first()).toBeVisible();
+  await expect(page.locator("#carrito-added:target, #toasts .toast").first()).toBeVisible();
 }
 
 test.describe("ficha", () => {

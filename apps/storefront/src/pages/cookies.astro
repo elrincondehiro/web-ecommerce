@@ -13,6 +13,11 @@ const cookies = [
     "El producto que querías guardar en tu lista de deseos mientras entras.",
     "10 minutos",
   ],
+  [
+    "stock_alert_pending",
+    "El producto del que querías un aviso de stock mientras entras.",
+    "10 minutos",
+  ],
   ["last_order", "Mostrarte el resumen de tu último pedido.", "1 hora"],
   ["checkout_flash", "Avisos del proceso de compra (por ejemplo, un campo que falta).", "1 minuto"],
   ["account_flash", "Avisos de tu cuenta.", "1 minuto"],
@@ -23,6 +28,11 @@ const storage = [
     "cabecera",
     "Si tienes la sesión iniciada y algo en tu lista de deseos, para que los iconos de la cabecera no parpadeen al cargar. No guarda tu identidad ni el contenido de la lista.",
     "Hasta que salgas de tu cuenta",
+  ],
+  [
+    "umami.disabled",
+    "Solo se lee, no la guardamos: si la creas tú, la analítica no cuenta tus visitas (lo usamos para no contarnos a nosotros mismos).",
+    "Hasta que la borres",
   ],
 ];
 const th = "border-b-2 border-line px-2 py-2 text-left font-semibold";
@@ -38,6 +48,15 @@ const td = "border-b border-line px-2 py-2 align-top";
     Solo usamos cookies y almacenamiento del navegador <strong>técnicos y necesarios</strong> para
     que la tienda funcione: no usamos cookies de publicidad ni de analítica, y no compartimos estos
     datos con nadie. Por eso no te pedimos consentimiento, pero te contamos cuáles son.
+  </p>
+  <!-- Texto provisional (Fase MK-E): pendiente de revisión por la gestoría. -->
+  <p>
+    Para saber qué páginas se visitan contamos las visitas <strong>sin cookies</strong> con Umami,
+    instalado en nuestro propio servidor: no deja nada en tu navegador. Te lo contamos en la
+    <a href="/privacidad/#analitica" class="underline underline-offset-4">
+      política de privacidad
+    </a>
+    .
   </p>
 
   <h2 class="mt-4 text-xl font-semibold">Cookies propias</h2>

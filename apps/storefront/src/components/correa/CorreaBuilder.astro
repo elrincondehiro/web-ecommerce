@@ -8,6 +8,7 @@
 // Precios y stock: los del build con marcas de LiveSync (data-price, data-pid/data-stock); la
 // island manda además las máscaras de disponibilidad (`_correa`). Con JS, CorreaLive calcula el
 // total, marca lo agotado y ajusta el rango de la medida exacta (excepción de AGENTS §3.4).
+import { umamiEvent } from "$lib/analytics";
 import { Badge } from "$lib/components/ui/badge";
 import { buttonVariants } from "$lib/components/ui/button";
 import { actionUrl, MAX_QUANTITY } from "$lib/cart";
@@ -193,6 +194,7 @@ const sides = [
         class={buttonVariants({ size: "lg" })}
         data-if-stock="in"
         aria-label={`Añadir ${product.title} al carrito`}
+        {...umamiEvent("anadir-carrito", { producto: product.title })}
       >
         Añadir
       </button>

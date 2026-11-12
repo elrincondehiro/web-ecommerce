@@ -34,6 +34,8 @@ import {
   type StoreCart,
 } from "$lib/medusa";
 import { account } from "./account";
+import { comms } from "./comms";
+import { stockAlert } from "./stock-alerts";
 import { pets } from "./pets";
 import { resolveVariant } from "./resolve-variant";
 import { checkout } from "./checkout";
@@ -119,9 +121,11 @@ async function addWithRetry(
 
 export const server = {
   // Mascotas (Fase M) dentro de `account.*`: mismo PRG y cookie flash (src/middleware.ts).
-  account: { ...account, ...pets },
+  account: { ...account, ...pets, ...comms },
   checkout,
   wishlist,
+  // Avisos de stock (Fase MK-B): como la lista de deseos (303 + `#aviso-<código>` o JSON).
+  stockAlert,
   cart: {
     add: defineAction({
       accept: "form",

@@ -372,6 +372,54 @@
           "enumItems": ["casa", "adopcion", "acogida"],
           "mappedType": "enum"
         },
+        "showcase_consent_at": {
+          "name": "showcase_consent_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "showcase_status": {
+          "name": "showcase_status",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": ["pendiente", "aprobada", "rechazada"],
+          "mappedType": "enum"
+        },
+        "showcase_reviewed_at": {
+          "name": "showcase_reviewed_at",
+          "type": "timestamptz",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
         "share_token": {
           "name": "share_token",
           "type": "text",
@@ -473,6 +521,15 @@
           "primary": false,
           "unique": false,
           "expression": "CREATE INDEX IF NOT EXISTS \"IDX_pet_customer_id\" ON \"pet\" (\"customer_id\") WHERE deleted_at IS NULL"
+        },
+        {
+          "keyName": "IDX_pet_showcase_status",
+          "columnNames": [],
+          "composite": false,
+          "constraint": false,
+          "primary": false,
+          "unique": false,
+          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_pet_showcase_status\" ON \"pet\" (\"showcase_status\") WHERE deleted_at IS NULL AND showcase_consent_at IS NOT NULL"
         },
         {
           "keyName": "IDX_pet_share_token_unique",

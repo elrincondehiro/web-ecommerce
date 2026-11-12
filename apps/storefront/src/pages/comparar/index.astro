@@ -1,0 +1,85 @@
+---
+// /comparar/ (Fase MK-C): ALIAS legible de la vista tabla de /buscar/. Mismos filtros, orden,
+// paginación y datos (lib/search-server); la ruta fija la vista (no va `vista=tabla` en la URL).
+// - noindex (como /buscar/) y canonical a sí misma: sin contenido duplicado para buscadores.
+// - Filtros como enlaces (0 JS); con JS, SearchLive los aplica en el sitio con /comparar/parcial/.
+// - `?marcar=prod_…` (enlace desde la ficha): esa fila sale marcada para «Comparar seleccionados».
+// - Solo productos con datos analíticos (filtro fijo `has_analytics`, lib/search.ts): resultados
+//   y facetas (no se ofrecen categorías ni opciones que lleven a productos sin datos).
+// - Sin parámetros: todos los productos con datos; se va filtrando desde ahí (decisión del usuario).
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import SearchResults from "../../components/search/SearchResults.astro";
+import SearchLive from "../../components/search/SearchLive.astro";
+import HeadStyle from "../../components/HeadStyle.astro";
+import { catalogSwatchCss } from "$lib/family-swatches";
+import { COMPARE_PATH } from "$lib/compare";
+import { loadSearchPage, optionFamilyCatalog, type SearchPage } from "$lib/search-server";
+import { getPricedProductsByIds } from "$lib/medusa";
+import { canonicalQuery, parseResultsParams, searchUrl, splitUtm, withUtm } from "$lib/search";
+import { Timings } from "$lib/server-timing";
+import { SERVER_TIMING } from "astro:env/server";
+
+export const prerender = false;
+
+const marcar = Astro.url.searchParams.get("marcar");
+const checked = marcar && /^prod_[0-9A-Za-z]{1,40}$/.test(marcar) ? marcar : undefined;
+// `utm_*` (campañas, MK-E2): se apartan y se conservan al redirigir.
+const { rest: query, utm } = splitUtm(Astro.url.searchParams);
+query.delete("marcar");
+const params = parseResultsParams(query, COMPARE_PATH);
+const canonical = canonicalQuery(params, COMPARE_PATH);
+if (canonical !== query.toString()) {
+  const target = new URL(searchUrl(params, COMPARE_PATH), Astro.url);
+  if (checked) target.searchParams.set("marcar", checked);
+  return Astro.redirect(withUtm(target.pathname + target.search, utm), 301);
+}
+
+const timings = SERVER_TIMING ? new Timings() : undefined;
+let page: SearchPage | null = null;
+try {
+  page = await loadSearchPage(params, timings);
+  // Desde la ficha (`marcar`): si el producto no está en esta página, se pone el primero (fijado
+  // y marcado) para poder compararlo con los de la página.
+  if (checked && !page.products.some((p) => p.id === checked)) {
+    const [pinned] = await getPricedProductsByIds([checked]);
+    if (pinned) page = { ...page, products: [pinned, ...page.products] };
+  }
+  Astro.response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+} catch {
+  Astro.response.status = 503;
+  Astro.response.headers.set("Cache-Control", "no-store");
+  Astro.response.headers.set("Retry-After", "30");
+}
+if (timings) Astro.response.headers.set("Server-Timing", timings.header());
+
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  { name: "Comparar alimentación", href: COMPARE_PATH },
+];
+---
+
+<BaseLayout
+  title="Comparar alimentación"
+  description="Compara piensos, latas y comida para perros y gatos sobre materia seca."
+  path={searchUrl({ ...params, pagina: 1 }, COMPARE_PATH)}
+  noindex
+>
+  <HeadStyle slot="head" css={catalogSwatchCss(optionFamilyCatalog())} />
+  <Breadcrumbs items={crumbs} />
+  {/* Misma estructura que /buscar/ (migas + título): sin salto al cambiar de vista. */}
+  <h1 class="mb-6 text-2xl font-semibold tracking-tight">Comparar alimentación</h1>
+  {page ? (
+    <>
+      <div data-search-root data-path={COMPARE_PATH} data-partial="/comparar/parcial/?">
+        <SearchResults page={page} params={params} path={COMPARE_PATH} checked={checked} />
+      </div>
+      <SearchLive />
+    </>
+  ) : (
+    <div class="rounded-md border-2 border-line px-4 py-10 text-center" role="alert">
+      <p class="font-medium">El comparador no está disponible ahora mismo.</p>
+      <p class="mt-2 text-sm text-muted-foreground">Inténtalo de nuevo en unos segundos.</p>
+    </div>
+  )}
+</BaseLayout>

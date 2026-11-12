@@ -1,0 +1,127 @@
+---
+// Tabla comparativa de alimentación (Fase MK-C): la página de resultados de /buscar/ en forma de
+// tabla (en /comparar/). Compacta (decisión del usuario): proteína y grasa sobre MATERIA SECA
+// (lo que se filtra y ordena), €/kg y €/kg de materia seca. El resto (fibra, cenizas, hidratos
+// estimados, humedad) va en la comparación lado a lado (/comparar/elegidos/). Precio y stock
+// frescos (lib/search-server, como las tarjetas): sin LiveSync. Sin dato, «—».
+// Casillas + «Comparar seleccionados» (GET a /comparar/elegidos/, 2–4; 0 JS). Las casillas solo
+// cuentan dentro de esta página (las demás páginas no recuerdan lo marcado).
+import { umamiEvent } from "$lib/analytics";
+import { buttonVariants } from "$lib/components/ui/button";
+import type { StoreProduct } from "$lib/catalog";
+import {
+  COMPARE_MAX,
+  COMPARE_PICK_PATH,
+  DRY_MATTER_NOTE,
+  TABLE_COMPONENTS,
+  compareRow,
+  hasAnalytics,
+} from "$lib/compare";
+import { formatPercent, formatUnitPrice } from "$lib/format";
+
+interface Props {
+  products: StoreProduct[];
+  /** Producto a marcar de entrada (enlace desde la ficha: `?marcar=prod_…`). */
+  checked?: string | undefined;
+}
+const { products, checked } = Astro.props;
+const rows = products.map(compareRow);
+const pct = (v: number | null) => (v === null ? "—" : formatPercent(v));
+const eur = (v: number | null, currency: string | null) =>
+  v === null || !currency ? "—" : formatUnitPrice(v, currency, "kg");
+const th = "px-2 py-2 text-right font-semibold whitespace-nowrap";
+const td = "px-2 py-2 text-right tabular-nums whitespace-nowrap";
+---
+
+<form method="get" action={COMPARE_PICK_PATH} class="flex flex-col gap-4">
+  <div
+    class="overflow-x-auto rounded-md border-2 border-line"
+    tabindex="0"
+    role="region"
+    aria-label="Tabla comparativa (se desplaza en horizontal)"
+  >
+    <table class="w-full min-w-[34rem] text-sm">
+      <caption class="sr-only">
+        Comparativa de componentes sobre materia seca y precio por kilo
+      </caption>
+      <thead class="bg-muted text-xs">
+        <tr>
+          <th scope="col" class="w-10 px-2 py-2">
+            <span class="sr-only">Comparar</span>
+          </th>
+          <th scope="col" class="px-2 py-2 text-left font-semibold">
+            Producto
+          </th>
+          {TABLE_COMPONENTS.map((c) => (
+            <th scope="col" class={th}>
+              {c.label} <abbr title="sobre materia seca">MS</abbr>
+            </th>
+          ))}
+          <th scope="col" class={th}>
+            €/kg
+          </th>
+          <th scope="col" class={th}>
+            €/kg <abbr title="sobre materia seca">MS</abbr>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => {
+          const href = `/producto/${r.product.handle}/`;
+          const data = hasAnalytics(r.product);
+          return (
+            <tr
+              class="border-t-2 border-line has-checked:bg-muted"
+              data-pid={r.product.id}
+              id={`fila-${r.product.id}`}
+            >
+              <td class="px-2 py-2 text-center">
+                <input
+                  type="checkbox"
+                  name="p"
+                  value={r.product.id}
+                  checked={r.product.id === checked}
+                  class="size-4 accent-primary"
+                  aria-label={`Comparar ${r.product.title}`}
+                />
+              </td>
+              <th scope="row" class="max-w-64 px-2 py-2 text-left font-medium">
+                <a href={href} class="hover:underline">
+                  {r.product.title}
+                </a>
+                {!data && (
+                  <span class="block text-xs font-normal text-muted-foreground">
+                    Sin datos analíticos
+                  </span>
+                )}
+              </th>
+              {TABLE_COMPONENTS.map((c) => (
+                <td class={td}>{pct(r.ms[c.key])}</td>
+              ))}
+              <td class={td}>{eur(r.perKg, r.currency)}</td>
+              <td class={td}>{eur(r.perKgMs, r.currency)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+  <div class="flex flex-wrap items-center gap-3">
+    <button type="submit" class={buttonVariants()} {...umamiEvent("comparar")}>
+      Comparar seleccionados
+    </button>
+    <span class="text-sm text-muted-foreground">
+      Marca de 2 a {COMPARE_MAX} productos de esta página.
+    </span>
+  </div>
+</form>
+<div class="mt-4 flex flex-col gap-1 text-xs text-muted-foreground">
+  <p>{DRY_MATTER_NOTE}</p>
+  <p>
+    Para ver también fibra, cenizas, humedad e hidratos, marca de 2 a {COMPARE_MAX} productos y
+    pulsa «Comparar seleccionados».
+  </p>
+  <p>
+    €/kg: el formato más barato por kilo. €/kg MS: el mismo precio por kilo de alimento sin agua.
+  </p>
+</div>

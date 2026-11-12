@@ -15,6 +15,7 @@
 //   formulario de Añadir pero asociado a él (`form`), así envía su `variant_id`; con una sola
 //   variante, `wish=product`. Clave = variante elegida (CartClient la sigue al cambiar el radio:
 //   `data-wish-follow`) o el producto.
+import { umamiEvent } from "$lib/analytics";
 import { WISHLIST_PATH, wishlistActionUrl } from "$lib/wishlist";
 import Icon from "./Icon.astro";
 import HeartFilled from "./HeartFilled.astro";
@@ -78,6 +79,7 @@ const base = `inline-flex ${size} items-center justify-center rounded-full borde
         class={base}
         aria-label={label}
         title="Guardar en mi lista"
+        {...umamiEvent("deseos-guardar")}
       >
         <Icon name="heart" class={icon} />
       </button>
@@ -94,6 +96,7 @@ const base = `inline-flex ${size} items-center justify-center rounded-full borde
         class={base}
         aria-label={label}
         title="Guardar en mi lista"
+        {...umamiEvent("deseos-guardar")}
       >
         <Icon name="heart" class={icon} />
       </button>

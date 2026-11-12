@@ -204,7 +204,7 @@ test.describe("con JS", () => {
     await addButton(page).click();
 
     await expect(cartCount(page)).toHaveText("2");
-    await expect(page.locator(".toast")).toContainText("Añadido: Clicker Esencial");
+    await expect(page.locator("#toasts .toast")).toContainText("Añadido: Clicker Esencial");
     expect(page.url()).toBe(url);
     expect(navigated).toBe(false);
 
@@ -320,14 +320,14 @@ test.describe("con JS", () => {
     await expect(total).toHaveText("Total: 5,00 €");
     await addBulk(page).click();
     await expect(cartCount(page)).toHaveText("1");
-    await expect(page.locator(".toast")).toContainText("Añadido: Premios Plus");
+    await expect(page.locator("#toasts .toast")).toContainText("Añadido: Premios Plus");
     // Acceso rápido con JS (el botón pulsado viaja en el fetch). En escritorio el panel se ha
     // abierto: un clic fuera solo lo cerraría (3.1), así que se cierra antes.
     const flyout = page.locator("#cart-flyout");
     if (await flyout.isVisible()) await page.keyboard.press("Escape");
     await expect(flyout).toBeHidden();
     await page.getByRole("button", { name: "Añadir 1 kg de Premios Plus al carrito" }).click();
-    await expect(page.locator(".toast").nth(1)).toContainText("Añadido: Premios Plus");
+    await expect(page.locator("#toasts .toast").nth(1)).toContainText("Añadido: Premios Plus");
     await page.goto("/carrito/");
     await expect(page.locator("li").filter({ hasText: "Premios Plus" })).toContainText(
       /1,25\skg\s·\s?20,00\s€\/kg/,

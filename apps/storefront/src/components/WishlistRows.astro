@@ -4,7 +4,8 @@
 // FRESCOS (Store API). Cada entrada es un producto o una variante concreta («Variante: …»). Si
 // hay una variante concreta (la guardada o la única), cantidad − / + y «Añadir» (AddToCart,
 // también granel en gramos); si hay que elegir, «Elegir opciones» / «Elegir medida» (correa).
-// Descatalogado: aviso y enlace al sustituto. 0 JS propio.
+// Descatalogado: aviso y enlace al sustituto. 0 JS propio. Agotado con variante concreta:
+// «Avísame» (Fase MK-B, AddToCart `alertProductId`).
 import { Image } from "astro:assets";
 import { buttonVariants } from "$lib/components/ui/button";
 import { getProductPricing, isDiscontinued, replacementHandle } from "$lib/catalog";
@@ -121,6 +122,7 @@ const thumb = 80;
               }
               size="sm"
               bulk={r.addable.bulk}
+              alertProductId={r.product.id}
             />
           ) : (
             !r.discontinued && (

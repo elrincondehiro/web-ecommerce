@@ -20,6 +20,7 @@ import RelatedProducts from "../../components/RelatedProducts.astro";
 import HeadStyle from "../../components/HeadStyle.astro";
 import RichText from "../../components/RichText.astro";
 import { productRestrictions } from "$lib/product-flags";
+import { compareCategoryUrl, hasAnalytics as hasAnalyticsData } from "$lib/compare";
 
 type Props = FichaData & {
   /** Diseño: qué guarda el ♡ («variant» = la variante elegida). */
@@ -38,12 +39,18 @@ const {
   picker,
   gallery,
   hasAnalytics,
+  category,
   related,
   wishVariant,
   wishKey,
   wishProductField,
 } = Astro.props;
 const restrictions = productRestrictions(product);
+// Fase MK-C: «Comparar con otros de <categoría>» (categoría hoja, con datos analíticos).
+const compare =
+  category && category.children.length === 0 && hasAnalyticsData(product)
+    ? { href: compareCategoryUrl(category.handle, product.id), name: category.name }
+    : null;
 ---
 
 <BaseLayout {...seo}>
@@ -114,7 +121,7 @@ const restrictions = productRestrictions(product);
           <RichText text={product.description} class="leading-relaxed text-muted-foreground" />
         </section>
       )}
-      <AnalyticsTable product={product} />
+      <AnalyticsTable product={product} compare={compare} />
     </div>
   )}
   {/* Una island para la ficha y sus relacionados (Fase R-2, P6): la clave es la del bloque. */}

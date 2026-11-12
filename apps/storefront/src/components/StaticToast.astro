@@ -1,0 +1,29 @@
+---
+// Toast SIN JS (avisos del servidor: cuenta, y carrito / lista / avisos de stock sin JS). Mismo
+// aspecto y sitio que los toasts de CartClient (.toast, global.css): abajo y centrado. Se va solo
+// a los 4,5 s (animación CSS; se pausa con el ratón encima o el teclado en su enlace o ✕) y se cierra con ✕ (una
+// casilla: `:has(:checked)`). Con prefers-reduced-motion no se va solo. role="status".
+// `id` (opcional): los avisos del carrito sin JS se enseñan con `:target` (#carrito-<código>).
+interface Props {
+  id?: string | undefined;
+  class?: string | undefined;
+}
+const { id, class: className } = Astro.props;
+---
+
+<div class="toasts toasts--static">
+  <div
+    id={id}
+    role="status"
+    tabindex={id ? -1 : undefined}
+    class:list={["toast toast--static", className]}
+  >
+    <span>
+      <slot />
+    </span>
+    <label class="toast__close">
+      <input type="checkbox" class="sr-only" aria-label="Cerrar aviso" />
+      <span aria-hidden="true">✕</span>
+    </label>
+  </div>
+</div>

@@ -81,7 +81,7 @@ async function toPayment(page: Page, email?: string) {
     .locator("#comprar")
     .getByRole("button", { name: /^Añadir .* al carrito$/ })
     .click();
-  await expect(page.locator("#carrito-added:target, .toast").first()).toBeVisible();
+  await expect(page.locator("#carrito-added:target, #toasts .toast").first()).toBeVisible();
   await page.goto("/checkout/");
   const step = page.locator("#datos");
   const data: Record<string, string> = {

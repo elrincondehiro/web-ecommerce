@@ -8,6 +8,7 @@
 import { getEntry } from "astro:content";
 import Icon from "../Icon.astro";
 import { OFFERS_PATH, SITE_NAME } from "$lib/constants";
+import { COMPARE_PATH } from "$lib/compare";
 
 const tienda = (await getEntry("tienda", "tienda"))!.data;
 const tel = tienda.telefono.replace(/\D/g, "");
@@ -15,6 +16,9 @@ const telFmt = tel.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
 const info = [
   { href: "/sobre-nosotros/", name: "Sobre nosotros" },
   { href: OFFERS_PATH, name: "Ofertas" },
+  { href: COMPARE_PATH, name: "Comparar alimentación" },
+  // Fase MK-D: escaparate de las mascotas de los clientes (solo en el pie, decisión del usuario)
+  { href: "/peques/", name: "Vuestros peques" },
   { href: "/condiciones/", name: "Condiciones" },
   { href: "/condiciones-puntos/", name: "Programa de puntos" },
   { href: "/privacidad/", name: "Privacidad" },

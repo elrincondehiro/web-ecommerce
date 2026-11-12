@@ -130,6 +130,17 @@ import loadtest_{$LOADTEST:off}
 	reverse_proxy backend-server:9000
 }
 
+# ── Analítica Umami (Fase MK-E) ──────────────────────────────────────────────────────────────────
+# Panel detrás de Cloudflare Access; /script.js y /api/send abiertos (los pide el navegador de los
+# visitantes). Nunca se indexa. faseMK-marketing.md §5.
+{$STATS_DOMAIN:stats.localhost} {
+	import comun
+	header X-Robots-Tag "noindex, nofollow"
+	@script path /script.js
+	header @script >Cache-Control "public, max-age=3600"
+	reverse_proxy umami:3000
+}
+
 # ── Admin de Medusa (detrás de Cloudflare Access) ────────────────────────────────────────────────
 # La imagen se compila sin `admin.backendUrl`: el Admin llama a su mismo origen (/admin, /auth), que
 # se reenvía al backend. Nunca se indexa.

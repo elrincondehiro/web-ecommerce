@@ -1,0 +1,221 @@
+---
+// Comparación lado a lado (Fase MK-C): 2–4 productos elegidos en la tabla (`?p=prod_…&p=…`).
+// On-demand, caché compartida corta (sin datos personales), noindex. 0 JS. Precio y stock frescos
+// (lib/medusa getPricedProductsByIds, como la búsqueda). Con más de 4, los 4 primeros y un aviso;
+// con menos de 2, vuelta al comparador con un mensaje.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import ProductImage from "../../components/ProductImage.astro";
+import Price from "../../components/Price.astro";
+import { buttonVariants } from "$lib/components/ui/button";
+import { analyticRows, getProductPricing } from "$lib/catalog";
+import { getCardImages } from "$lib/card-images";
+import {
+  CARBS_NOTE,
+  CARDS_NOTE_ID,
+  COMPARE_COMPONENTS,
+  COMPARE_MAX,
+  COMPARE_MIN,
+  COMPARE_PATH,
+  COMPARE_PICK_PATH,
+  DRY_MATTER_NOTE,
+  compareRow,
+  comparePickUrl,
+  parsePicked,
+} from "$lib/compare";
+import { formatPercent, formatUnitPrice } from "$lib/format";
+import { getPricedProductsByIds } from "$lib/medusa";
+
+export const prerender = false;
+
+const raw = Astro.url.searchParams.getAll("p");
+const { ids, extra } = parsePicked(raw);
+// URL canónica (ids válidos y sin repetir): 301. Si sobran (más de 4), se queda la URL y se avisa.
+const current = Astro.url.pathname + Astro.url.search;
+if (extra === 0 && ids.length >= COMPARE_MIN && comparePickUrl(ids) !== current) {
+  return Astro.redirect(comparePickUrl(ids), 301);
+}
+let products: Awaited<ReturnType<typeof getPricedProductsByIds>> = [];
+let failed = false;
+if (ids.length >= COMPARE_MIN) {
+  try {
+    products = await getPricedProductsByIds(ids);
+    Astro.response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+  } catch {
+    failed = true;
+    Astro.response.status = 503;
+    Astro.response.headers.set("Cache-Control", "no-store");
+  }
+}
+const rows = products.map(compareRow);
+// Miniaturas del build (como /buscar/). En `astro dev` no hay manifiesto (undefined → <Picture>);
+// en producción, un producto sin miniatura del build sale con el placeholder.
+const images = getCardImages();
+const pct = (v: number | null) => (v === null ? "—" : formatPercent(v));
+const eur = (v: number | null, currency: string | null) =>
+  v === null || !currency ? "—" : formatUnitPrice(v, currency, "kg");
+// «Otros» de la etiqueta (analitico:X), por producto
+const others = products.map((p) =>
+  analyticRows(p)
+    .filter((r) => typeof r.value === "string")
+    .map((r) => `${r.label} ${r.value}`),
+);
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  { name: "Comparar alimentación", href: COMPARE_PATH },
+  { name: "Elegidos", href: COMPARE_PICK_PATH },
+];
+const th = "px-3 py-2 text-left font-semibold text-muted-foreground";
+const td = "px-3 py-2 tabular-nums";
+---
+
+<BaseLayout
+  title="Comparar productos"
+  description="Comparación de alimentación sobre materia seca."
+  noindex
+>
+  <Breadcrumbs items={crumbs} />
+  <h1 class="mb-6 text-2xl font-semibold tracking-tight">Comparar productos</h1>
+  {failed ? (
+    <p
+      role="alert"
+      class="rounded-md border-2 border-destructive px-4 py-3 text-sm text-destructive"
+    >
+      La comparación no está disponible ahora mismo. Inténtalo de nuevo en unos segundos.
+    </p>
+  ) : rows.length < COMPARE_MIN ? (
+    <div class="rounded-md border-2 border-line px-4 py-10 text-center">
+      <p class="font-medium">Marca al menos {COMPARE_MIN} productos para compararlos.</p>
+      <p class="mt-2 text-sm text-muted-foreground">
+        <a href={COMPARE_PATH} class="underline underline-offset-4">
+          Volver al comparador
+        </a>
+      </p>
+    </div>
+  ) : (
+    <>
+      {extra > 0 && (
+        <p role="status" class="mb-4 rounded-md border-2 border-line bg-muted px-4 py-3 text-sm">
+          Se comparan como mucho {COMPARE_MAX} productos: estos son los {COMPARE_MAX} primeros que
+          marcaste.
+        </p>
+      )}
+      <div
+        class="overflow-x-auto rounded-md border-2 border-line"
+        tabindex="0"
+        role="region"
+        aria-label="Comparación (se desplaza en horizontal)"
+      >
+        <table class="w-full min-w-[36rem] text-sm">
+          <caption class="sr-only">Comparación de los productos elegidos</caption>
+          <thead>
+            <tr>
+              <td class="w-40" />
+              {rows.map((r) => {
+                const pricing = getProductPricing(r.product);
+                return (
+                  <th scope="col" class="px-3 py-3 text-left align-top font-semibold">
+                    <a href={`/producto/${r.product.handle}/`} class="flex flex-col gap-2">
+                      <span class="block w-28 overflow-hidden rounded-md border-2 border-line">
+                        <ProductImage
+                          src={r.product.thumbnail}
+                          alt=""
+                          prebuilt={images ? (images.get(r.product.id) ?? null) : undefined}
+                        />
+                      </span>
+                      <span class="hover:underline">{r.product.title}</span>
+                    </a>
+                    {pricing.fromAmount !== null && pricing.currencyCode && (
+                      <span class="mt-1 block font-normal">
+                        <Price
+                          amount={pricing.fromAmount}
+                          currency={pricing.currencyCode}
+                          wasAmount={pricing.wasAmount}
+                          discountPercent={pricing.discountPercent}
+                          from={pricing.hasPriceRange}
+                          layout="stack"
+                        />
+                      </span>
+                    )}
+                    {!pricing.inStock && (
+                      <span class="block text-xs font-normal text-muted-foreground">Agotado</span>
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {COMPARE_COMPONENTS.map((c) => (
+              <tr class="border-t-2 border-line">
+                <th scope="row" class={th}>
+                  {c.label} <abbr title="sobre materia seca">MS</abbr>
+                </th>
+                {rows.map((r) => (
+                  <td class={td}>{pct(r.ms[c.key])}</td>
+                ))}
+              </tr>
+            ))}
+            <tr class="border-t-2 border-line">
+              <th scope="row" class={th}>
+                Hidratos <abbr title="sobre materia seca">MS</abbr>
+                <a
+                  href={`#${CARDS_NOTE_ID}`}
+                  aria-label="Hidratos estimados por nosotros: ver nota"
+                >
+                  *
+                </a>
+              </th>
+              {rows.map((r) => (
+                <td class={td}>{pct(r.carbsMs)}</td>
+              ))}
+            </tr>
+            <tr class="border-t-2 border-line">
+              <th scope="row" class={th}>
+                Humedad (tal cual)
+              </th>
+              {rows.map((r) => (
+                <td class={td}>{pct(r.moisture)}</td>
+              ))}
+            </tr>
+            <tr class="border-t-2 border-line">
+              <th scope="row" class={th}>
+                €/kg
+              </th>
+              {rows.map((r) => (
+                <td class={td}>{eur(r.perKg, r.currency)}</td>
+              ))}
+            </tr>
+            <tr class="border-t-2 border-line">
+              <th scope="row" class={th}>
+                €/kg <abbr title="sobre materia seca">MS</abbr>
+              </th>
+              {rows.map((r) => (
+                <td class={td}>{eur(r.perKgMs, r.currency)}</td>
+              ))}
+            </tr>
+            {others.some((o) => o.length > 0) && (
+              <tr class="border-t-2 border-line">
+                <th scope="row" class={th}>
+                  Otros (etiqueta)
+                </th>
+                {others.map((o) => (
+                  <td class="px-3 py-2 text-xs">{o.length ? o.join(" · ") : "—"}</td>
+                ))}
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex flex-col gap-1 text-xs text-muted-foreground">
+        <p>{DRY_MATTER_NOTE}</p>
+        <p id={CARDS_NOTE_ID}>* {CARBS_NOTE}</p>
+      </div>
+      <p class="mt-6">
+        <a href={COMPARE_PATH} class={buttonVariants({ variant: "outline" })}>
+          Volver al comparador
+        </a>
+      </p>
+    </>
+  )}
+</BaseLayout>

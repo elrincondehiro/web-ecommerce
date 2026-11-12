@@ -9,10 +9,14 @@ import CatalogPage from "../../components/CatalogPage.astro";
 import HeadStyle from "../../components/HeadStyle.astro";
 import CategoryNav from "../../components/CategoryNav.astro";
 import RichText from "../../components/RichText.astro";
+import { compareCategoryUrl } from "$lib/compare";
 
 type Props = CategoriaData;
 const { page, facets, category, crumbs, seo } = Astro.props;
 const showDesc = false;
+// Fase MK-C: categoría hoja con datos analíticos (proteína sobre materia seca) → al comparador.
+const compareHref =
+  !category.hasChildren && facets.ms.proteina ? compareCategoryUrl(category.handle) : null;
 ---
 
 <BaseLayout {...seo}>
@@ -31,5 +35,10 @@ const showDesc = false;
     links={category.row}
     label={category.hasChildren ? `Subcategorías de ${category.name}` : "Categorías"}
   />
-  <CatalogPage page={page} facets={facets} categoryHandle={category.handle} />
+  <CatalogPage
+    page={page}
+    facets={facets}
+    categoryHandle={category.handle}
+    compareHref={compareHref}
+  />
 </BaseLayout>

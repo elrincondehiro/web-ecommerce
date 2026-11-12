@@ -50,7 +50,7 @@ async function addAndGoToCheckout(page: Page, bulkGrams?: string) {
       .click();
   }
   // Con JS: toast + contador; sin JS: 303 a la ficha con #carrito-added.
-  await expect(page.locator("#carrito-added:target, .toast").first()).toBeVisible();
+  await expect(page.locator("#carrito-added:target, #toasts .toast").first()).toBeVisible();
   await page.goto("/carrito/");
   await page.getByRole("link", { name: "Ir a pagar" }).click();
   await expect(page).toHaveURL(/\/checkout\/$/);

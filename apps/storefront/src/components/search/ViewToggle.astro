@@ -1,0 +1,34 @@
+---
+// Vista de los resultados (Fase MK-C): Tarjetas (/buscar/) | Tabla (/comparar/). Dos ENLACES con
+// los mismos filtros, orden y página (0 JS; con JS, SearchLive no los intercepta porque cambian
+// de ruta → navegación normal). Solo sale si algún resultado tiene datos analíticos.
+// Alto 32 px (h-8), el de los botones `sm` de la fila (Ordenar): aparecer no mueve la página.
+import { viewUrl, type SearchParams } from "$lib/search";
+
+interface Props {
+  params: SearchParams;
+}
+const { params } = Astro.props;
+const base =
+  "inline-flex h-6 items-center rounded-sm px-2 text-sm font-medium aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground hover:bg-muted aria-[current=page]:hover:bg-primary";
+---
+
+<nav
+  aria-label="Vista de los resultados"
+  class="flex h-8 items-center gap-0.5 rounded-md border-2 border-line px-0.5"
+>
+  <a
+    href={viewUrl(params, "tarjetas")}
+    class={base}
+    aria-current={params.vista === "tarjetas" ? "page" : undefined}
+  >
+    Tarjetas
+  </a>
+  <a
+    href={viewUrl(params, "tabla")}
+    class={base}
+    aria-current={params.vista === "tabla" ? "page" : undefined}
+  >
+    Tabla comparativa
+  </a>
+</nav>

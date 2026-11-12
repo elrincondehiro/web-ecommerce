@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly CSP_ENABLED: boolean;
   /** STOREFRONT_DATA=fixtures en el build (astro.config.mjs): si no, las fixtures no entran. */
   readonly USE_FIXTURES: boolean;
+  /** Analítica Umami (Fase MK-E): null sin UMAMI_URL/UMAMI_WEBSITE_ID en el build. */
+  readonly UMAMI: { origin: string; src: string; id: string; domains: string } | null;
 }
 
 // Datos por petición que pone src/middleware.ts (astro-docs: guides/middleware#middleware-types).

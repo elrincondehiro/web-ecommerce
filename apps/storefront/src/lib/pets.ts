@@ -68,11 +68,24 @@ export interface Pet {
   health_consent_at: string | null;
   photo_url: string | null;
   photo_consent_at: string | null;
+  /** Fase MK-D: escaparate «Vuestros peques» (casilla y moderación). */
+  showcase_consent_at?: string | null;
+  showcase_status?: "pendiente" | "aprobada" | "rechazada" | null;
 }
 
 /** Cuerpo de crear/editar del backend (`PetBody`). */
-export type PetBody = Omit<Pet, "id" | "health_consent_at" | "photo_url" | "photo_consent_at"> & {
+export type PetBody = Omit<
+  Pet,
+  | "id"
+  | "health_consent_at"
+  | "photo_url"
+  | "photo_consent_at"
+  | "showcase_consent_at"
+  | "showcase_status"
+> & {
   health_consent: boolean;
+  /** Fase MK-D: salir en el escaparate (nombre, foto y edad), con moderación. */
+  showcase_consent: boolean;
 };
 
 export const PET_FORM_FIELDS = [
@@ -176,6 +189,7 @@ export function petFormValues(pet: Pet): Record<string, string> {
     v[k] = raw == null ? "" : k === "weight_kg" ? String(raw).replace(".", ",") : String(raw);
   }
   v.health_consent = pet.health_consent_at ? "on" : "";
+  v.showcase_consent = pet.showcase_consent_at ? "on" : "";
   return v;
 }
 
@@ -198,6 +212,7 @@ export function parsePetForm(
   const values: Record<string, string> = {};
   for (const k of PET_FORM_FIELDS) values[k] = clean(get(form, k)).slice(0, 500);
   values.health_consent = get(form, "health_consent") === "on" ? "on" : "";
+  values.showcase_consent = get(form, "showcase_consent") === "on" ? "on" : "";
   const errors: Record<string, string> = {};
 
   const name = values.name!;
@@ -302,6 +317,7 @@ export function parsePetForm(
       origin,
       health: health || null,
       health_consent: healthConsent && Boolean(health),
+      showcase_consent: values.showcase_consent === "on",
     },
   };
 }
@@ -313,4 +329,41 @@ export function photoFileError(file: { size: number; type: string }): string | n
     return "Formato no válido: usa JPG, PNG, WebP o AVIF.";
   }
   return null;
+}
+
+// ── Cumpleaños (Fase MK-D): aviso en la cuenta, sin guardar nada ─────────────────────────────
+
+/** Fecha de hoy en Madrid. */
+export function madridDate(now = new Date()): { year: number; month: number; day: number } {
+  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" })
+    .format(now)
+    .split("-")
+    .map(Number);
+  return { year: y!, month: m!, day: d! };
+}
+
+const leap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+
+/**
+ * Aviso de cumpleaños en la cuenta (aunque no tenga activados los emails): con día, ese día
+ * (29-feb → 28 en años no bisiestos); con solo mes, la primera semana del mes. Solo vivas y
+ * nacidas antes de este año. Devuelve los años que cumple y si se sabe el día, o null.
+ */
+export function birthdayNotice(
+  pet: Pick<Pet, "birth_year" | "birth_month" | "birth_day" | "death_year">,
+  now = new Date(),
+): { age: number; exact: boolean } | null {
+  const t = madridDate(now);
+  const { birth_year: y, birth_month: m, birth_day: d } = pet;
+  if (pet.death_year != null || y == null || m == null || y >= t.year || m !== t.month) return null;
+  const age = t.year - y;
+  if (d == null) return t.day <= 7 ? { age, exact: false } : null;
+  const day = m === 2 && d === 29 && !leap(t.year) ? 28 : d;
+  return day === t.day ? { age, exact: true } : null;
+}
+
+/** «¡Hoy cumple Hiro 5 años!» / «¡Hiro cumple 5 años este mes!» */
+export function birthdayText(name: string, n: { age: number; exact: boolean }): string {
+  const years = n.age === 1 ? "1 año" : `${n.age} años`;
+  return n.exact ? `¡Hoy cumple ${name} ${years}!` : `¡${name} cumple ${years} este mes!`;
 }

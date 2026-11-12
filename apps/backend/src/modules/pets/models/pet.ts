@@ -1,5 +1,12 @@
 import { model } from "@medusajs/framework/utils";
-import { PET_ORIGINS, PET_SEX, PET_SPECIES, PET_STATUS, PET_YES_NO } from "../../../lib/pets";
+import {
+  PET_ORIGINS,
+  PET_SEX,
+  PET_SHOWCASE_STATUS,
+  PET_SPECIES,
+  PET_STATUS,
+  PET_YES_NO,
+} from "../../../lib/pets";
 
 /**
  * Mascota de un cliente (Fase M, docs/fases/faseM-mascotas.md). Un cliente tiene las que quiera
@@ -9,6 +16,9 @@ import { PET_ORIGINS, PET_SEX, PET_SPECIES, PET_STATUS, PET_YES_NO } from "../..
  * - `health` solo con `health_consent_at` (consentimiento); la foto, pública, con
  *   `photo_consent_at` (bucket público: `photo_url` + `photo_file_id` del módulo File).
  * - `status` y `share_token`: preparados para compartir fichas (protectoras), sin uso aún.
+ * - Escaparate «Vuestros peques» (Fase MK-D): `showcase_consent_at` (casilla propia, distinta de
+ *   la de la foto) y moderación (`showcase_status`: pendiente → aprobada | rechazada). Cambiar la
+ *   foto vuelve a `pendiente`; quitar la casilla o la foto la saca del escaparate.
  */
 export const Pet = model
   .define("pet", {
@@ -35,10 +45,14 @@ export const Pet = model
     photo_file_id: model.text().nullable(),
     photo_consent_at: model.dateTime().nullable(),
     status: model.enum([...PET_STATUS]).default("casa"),
+    showcase_consent_at: model.dateTime().nullable(),
+    showcase_status: model.enum([...PET_SHOWCASE_STATUS]).nullable(),
+    showcase_reviewed_at: model.dateTime().nullable(),
     share_token: model.text().nullable(),
     metadata: model.json().nullable(),
   })
   .indexes([
     { on: ["customer_id"], where: "deleted_at IS NULL" },
+    { on: ["showcase_status"], where: "deleted_at IS NULL AND showcase_consent_at IS NOT NULL" },
     { on: ["share_token"], unique: true, where: "deleted_at IS NULL AND share_token IS NOT NULL" },
   ]);

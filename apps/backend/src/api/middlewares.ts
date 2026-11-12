@@ -24,7 +24,12 @@ import { StoreApplyCodeBody } from "./store/carts/[id]/code/route";
 import { StoreOrderClaimBody } from "./store/customers/me/order-claims/route";
 import { StoreOrderTransferQuery } from "./store/order-transfers/[id]/route";
 import { PetBody, PetPhotoBody } from "../lib/pets-schema";
+import { StoreCommsBody } from "./store/customers/me/comms/route";
+import { StoreStockAlertBody } from "./store/customers/me/stock-alerts/route";
+import { AdminShowcaseReviewBody } from "./admin/showcase/[id]/route";
+import { StoreUnsubscribeBody, StoreUnsubscribeQuery } from "./store/comms/unsubscribe/route";
 import { withStripeSessionData } from "../lib/stripe-session";
+import { logSearch } from "../lib/search-log-middleware";
 import { TRANSFER_PROVIDER_ID, transferConfig, transferGuarded } from "../lib/transfer";
 import {
   folderFromReferer,
@@ -151,7 +156,7 @@ export default defineMiddlewares({
   routes: [
     {
       matcher: "/store/search",
-      middlewares: [configureStoreSearch({ allowed_indexes: { product: true } })],
+      middlewares: [configureStoreSearch({ allowed_indexes: { product: true } }), logSearch],
     },
     // Productos en oferta (fase I-Interficie): `region_id` obligatorio.
     {
@@ -281,6 +286,35 @@ export default defineMiddlewares({
         forceStripeSessionData,
         guardTransferSession,
       ],
+    },
+    // Comunicaciones (Fase MK-A): casillas de la cuenta (sesión: `/store/customers/me*`) y baja
+    // con el token firmado del email (sin sesión).
+    {
+      matcher: "/store/customers/me/comms",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreCommsBody)],
+    },
+    {
+      matcher: "/store/comms/unsubscribe",
+      methods: ["GET"],
+      middlewares: [validateAndTransformQuery(StoreUnsubscribeQuery, {})],
+    },
+    {
+      matcher: "/store/comms/unsubscribe",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreUnsubscribeBody)],
+    },
+    // Avisos de stock (Fase MK-B). La sesión la pone Medusa (`/store/customers/me*`).
+    {
+      matcher: "/store/customers/me/stock-alerts",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreStockAlertBody)],
+    },
+    // Escaparate de mascotas (Fase MK-D): moderación desde el Admin.
+    {
+      matcher: "/admin/showcase/:id",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminShowcaseReviewBody)],
     },
     // Mascotas (Fase M). La autenticación la pone Medusa (`/store/customers/me*`, `/admin*`).
     // La foto llega ya reducida (WebP ~50–150 KB en base64): límite de 1 MB solo en esa ruta

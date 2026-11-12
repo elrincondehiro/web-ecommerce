@@ -1,0 +1,19 @@
+---
+// Botón «Tabla comparativa» (Fase MK-C): enlace al comparador con el estilo de «Filtrar»
+// (contorno, sm, icono). Categorías hoja con datos (junto a «Filtrar») y ficha (bajo los
+// componentes analíticos). 0 JS.
+import { buttonVariants } from "$lib/components/ui/button";
+import Icon from "../Icon.astro";
+
+interface Props {
+  href: string;
+  label: string;
+  class?: string | undefined;
+}
+const { href, label, class: className } = Astro.props;
+---
+
+<a href={href} class:list={[buttonVariants({ variant: "outline", size: "sm" }), className]}>
+  <Icon name="table" class="size-4" />
+  {label}
+</a>

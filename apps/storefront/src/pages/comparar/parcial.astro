@@ -1,0 +1,33 @@
+---
+// Fragmento de /comparar/ (Fase MK-C), como /buscar/parcial/: lo pide SearchLive y lo cambia en el
+// sitio. Mismos datos, caché y URL canónica (301) que la página; no se indexa.
+import SearchResults from "../../components/search/SearchResults.astro";
+import { COMPARE_PATH } from "$lib/compare";
+import { loadSearchPage } from "$lib/search-server";
+import { canonicalQuery, parseResultsParams } from "$lib/search";
+import { Timings } from "$lib/server-timing";
+import { SERVER_TIMING } from "astro:env/server";
+
+export const prerender = false;
+export const partial = true;
+
+const PARTIAL_PATH = "/comparar/parcial/";
+
+const params = parseResultsParams(Astro.url.searchParams, COMPARE_PATH);
+const canonical = canonicalQuery(params, COMPARE_PATH);
+if (canonical !== Astro.url.searchParams.toString()) {
+  return Astro.redirect(`${PARTIAL_PATH}${canonical && `?${canonical}`}`, 301);
+}
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+const timings = SERVER_TIMING ? new Timings() : undefined;
+let page;
+try {
+  page = await loadSearchPage(params, timings);
+} catch {
+  return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
+}
+Astro.response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+if (timings) Astro.response.headers.set("Server-Timing", timings.header());
+---
+
+<SearchResults page={page} params={params} path={COMPARE_PATH} />

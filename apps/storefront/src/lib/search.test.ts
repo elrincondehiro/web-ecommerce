@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  isPlainSearch,
+  splitUtm,
+  withUtm,
   activeFilters,
   buildSearchQueries,
   clearFiltersUrl,
@@ -30,6 +33,7 @@ describe("parseSearchParams", () => {
       ms: { proteina: { min: null, max: null }, grasa: { min: null, max: null } },
       orden: "relevancia",
       pagina: 1,
+      vista: "tarjetas",
     });
   });
 
@@ -437,5 +441,64 @@ describe("parseSearchResults", () => {
     expect(lastPage(0)).toBe(1);
     expect(lastPage(25)).toBe(2);
     expect(lastPage(100000)).toBe(100);
+  });
+});
+
+describe("vista tabla y orden por nutrientes (Fase MK-C)", () => {
+  it("/buscar/?vista=tabla ↔ /comparar/ con los mismos filtros", async () => {
+    const { canonicalQuery, parseResultsParams, searchUrl, viewUrl } = await import("./search");
+    const q = new URLSearchParams("categoria=piensos-perro&proteina_min=30&orden=proteina");
+    const buscar = parseResultsParams(q, "/buscar/");
+    expect(buscar.vista).toBe("tarjetas");
+    const comparar = parseResultsParams(q, "/comparar/");
+    expect(comparar.vista).toBe("tabla");
+    expect(viewUrl(buscar, "tabla")).toBe(
+      "/comparar/?categoria=piensos-perro&proteina_min=30&orden=proteina",
+    );
+    expect(viewUrl(comparar, "tarjetas")).toBe(
+      "/buscar/?categoria=piensos-perro&proteina_min=30&orden=proteina",
+    );
+    // En /comparar/ la vista no va en la URL; en /buscar/ sí (y la página redirige).
+    expect(canonicalQuery(comparar, "/comparar/")).not.toContain("vista");
+    expect(searchUrl({ ...buscar, vista: "tabla" })).toContain("vista=tabla");
+  });
+
+  it("orden por proteína y grasa sobre materia seca, de más a menos", async () => {
+    const { buildSearchQueries, parseSearchParams } = await import("./search");
+    const order = (o: string) =>
+      buildSearchQueries(parseSearchParams(new URLSearchParams(`orden=${o}`)))[0]!.pagination.order;
+    expect(order("proteina")).toEqual({ proteina_ms: "DESC" });
+    expect(order("grasa")).toEqual({ grasa_ms: "ASC" });
+  });
+
+  it("vista tabla (/comparar/): solo productos con datos analíticos, también en las facetas", async () => {
+    const { buildSearchQueries, parseResultsParams } = await import("./search");
+    const q = new URLSearchParams("categoria=perro");
+    const filters = (path: string) =>
+      JSON.stringify(buildSearchQueries(parseResultsParams(q, path))[0]!.filters);
+    expect(filters("/comparar/")).toContain('"has_analytics":true');
+    expect(filters("/buscar/")).not.toContain("has_analytics");
+  });
+});
+
+describe("estadísticas de búsquedas y campañas (Fase MK-E2)", () => {
+  const p = (qs: string) => parseSearchParams(new URLSearchParams(qs));
+  it("solo cuenta la búsqueda limpia", () => {
+    expect(isPlainSearch(p("q=arnes"))).toBe(true);
+    expect(isPlainSearch(p(""))).toBe(false);
+    expect(isPlainSearch(p("q=arnes&pagina=2"))).toBe(false);
+    expect(isPlainSearch(p("q=arnes&categoria=perro"))).toBe(false);
+    expect(isPlainSearch(p("q=arnes&orden=precio-asc"))).toBe(false);
+    expect(isPlainSearch(p("q=arnes&disponible=1"))).toBe(false);
+  });
+  it("aparta los utm_* y los vuelve a poner", () => {
+    const { rest, utm } = splitUtm(
+      new URLSearchParams("q=x&utm_source=news&pagina=1&utm_campaign=otono&utm_foo=1"),
+    );
+    expect(rest.toString()).toBe("q=x&pagina=1&utm_foo=1");
+    expect(utm).toBe("utm_source=news&utm_campaign=otono");
+    expect(withUtm("/buscar/?q=x", utm)).toBe("/buscar/?q=x&utm_source=news&utm_campaign=otono");
+    expect(withUtm("/buscar/", "utm_source=a")).toBe("/buscar/?utm_source=a");
+    expect(withUtm("/buscar/", "")).toBe("/buscar/");
   });
 });

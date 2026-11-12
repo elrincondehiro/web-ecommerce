@@ -28,6 +28,8 @@ export const PET_FIELDS = [
   "health_consent_at",
   "photo_url",
   "photo_consent_at",
+  "showcase_consent_at",
+  "showcase_status",
   "status",
   "created_at",
   "updated_at",

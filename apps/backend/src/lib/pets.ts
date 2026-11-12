@@ -26,6 +26,9 @@ export const PET_ORIGINS = [
 ] as const;
 /** Preparado para compartir fichas (protectoras): de momento siempre `casa`. */
 export const PET_STATUS = ["casa", "adopcion", "acogida"] as const;
+/** Moderación del escaparate «Vuestros peques» (Fase MK-D). */
+export const PET_SHOWCASE_STATUS = ["pendiente", "aprobada", "rechazada"] as const;
+export type PetShowcaseStatus = (typeof PET_SHOWCASE_STATUS)[number];
 
 export type PetSpecies = (typeof PET_SPECIES)[number];
 
@@ -147,6 +150,8 @@ export type PetFields = {
   health: string | null;
   /** Consentimiento para guardar la salud (en el Admin: «el cliente lo ha autorizado»). */
   health_consent: boolean;
+  /** Fase MK-D: salir en el escaparate (undefined = no se toca: el Admin no la envía). */
+  showcase_consent?: boolean | undefined;
 };
 
 /** Errores de negocio de los datos (campo → motivo). Vacío = válido. */
@@ -172,11 +177,12 @@ export function petRecord(
   f: PetFields,
   previousConsentAt: Date | string | null,
   now = new Date(),
-): Omit<PetFields, "health_consent" | "species_other"> & {
+): Omit<PetFields, "health_consent" | "species_other" | "showcase_consent"> & {
   species_other: string | null;
   health_consent_at: Date | null;
 } {
-  const { health_consent, ...rest } = f;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- el escaparate va aparte (showcaseState)
+  const { health_consent, showcase_consent, ...rest } = f;
   const consent = health_consent && Boolean(f.health);
   return {
     ...rest,
@@ -194,3 +200,69 @@ export function isWebp(buf: Buffer): boolean {
     buf.toString("ascii", 8, 12) === "WEBP"
   );
 }
+
+// ── Escaparate y cumpleaños (Fase MK-D) ─────────────────────────────────────────────────────
+
+/**
+ * Escaparate tras un cambio (Fase MK-D). La casilla se guarda aunque aún no haya foto (en el alta
+ * la foto llega después, en otra petición). Estado: sin casilla o sin foto, null (fuera); con las
+ * dos, `pendiente` si la foto cambia o la casilla es nueva (se modera cada vez, decisión del
+ * usuario); si no, el que tuviera. `consent` undefined = no se toca (el Admin no la envía).
+ */
+export function showcaseState(input: {
+  consent: boolean | undefined;
+  hasPhoto: boolean;
+  photoChanged: boolean;
+  previous: { consentAt: Date | string | null; status: PetShowcaseStatus | null };
+  now?: Date;
+}): { showcase_consent_at: Date | null; showcase_status: PetShowcaseStatus | null } {
+  const { hasPhoto, photoChanged, previous, now = new Date() } = input;
+  const consent = input.consent ?? previous.consentAt != null;
+  if (!consent) return { showcase_consent_at: null, showcase_status: null };
+  const consentAt = previous.consentAt ? new Date(previous.consentAt) : now;
+  if (!hasPhoto) return { showcase_consent_at: consentAt, showcase_status: null };
+  const fresh = !previous.consentAt || photoChanged || !previous.status;
+  return { showcase_consent_at: consentAt, showcase_status: fresh ? "pendiente" : previous.status };
+}
+
+/** «Hiro · 2009–2023» de una fallecida (sin año de nacimiento: «Hiro · †2023»). */
+export function goneLabel(name: string, birthYear: number | null, deathYear: number): string {
+  return birthYear != null ? `${name} · ${birthYear}–${deathYear}` : `${name} · †${deathYear}`;
+}
+
+/** Fecha de hoy en Madrid (año, mes, día): el job corre en UTC en el contenedor. */
+export function madridToday(now = new Date()): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  return { year: get("year"), month: get("month"), day: get("day") };
+}
+
+const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+
+/**
+ * ¿Hoy toca felicitar? Con día: ese día (29-feb → 28-feb en años no bisiestos). Con solo mes: el
+ * día 1 de ese mes. Sin mes: nunca. Solo vivas y nacidas antes de este año.
+ */
+export function isBirthdayToday(
+  pet: {
+    birth_year: number | null;
+    birth_month: number | null;
+    birth_day: number | null;
+    death_year: number | null;
+  },
+  today: { year: number; month: number; day: number },
+): boolean {
+  if (pet.death_year != null || pet.birth_year == null || pet.birth_month == null) return false;
+  if (pet.birth_year >= today.year || pet.birth_month !== today.month) return false;
+  if (pet.birth_day == null) return today.day === 1;
+  if (pet.birth_month === 2 && pet.birth_day === 29 && !isLeap(today.year)) return today.day === 28;
+  return pet.birth_day === today.day;
+}
+
+/** Años que cumple este año. */
+export const birthdayAge = (birthYear: number, todayYear: number) => todayYear - birthYear;

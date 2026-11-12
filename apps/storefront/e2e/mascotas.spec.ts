@@ -115,8 +115,14 @@ test.describe("mis peques sin JS", () => {
     await expect(cards.last()).toContainText("En nuestro recuerdo · desde junio de 2023");
     await expect(cards.last()).toHaveClass(/bg-muted/);
 
-    // Editar: retirar el consentimiento de salud la borra; quitar la foto.
+    // Editar: con foto, el consentimiento ya dado se enseña (con fecha) y la casilla es solo para
+    // cambiarla (Fase MK-D).
     await hiro.getByRole("link", { name: "Editar" }).click();
+    await expect(
+      page.getByText(/Aceptaste que la foto sea pública el \d+ de \w+ de \d{4}/),
+    ).toBeVisible();
+    await expect(page.getByLabel(/Acepto que la foto nueva sea/)).not.toBeChecked();
+    // Retirar el consentimiento de salud la borra; quitar la foto.
     await expect(page.getByLabel(/^Salud/)).toHaveValue("Alergia al pollo");
     await page.getByLabel(/Acepto que guardéis la información de salud/).uncheck();
     await page.getByLabel(/^Salud/).fill("");

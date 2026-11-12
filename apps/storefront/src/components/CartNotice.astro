@@ -3,51 +3,71 @@
 // (303) a la página de origen con `#carrito-<código>`; la regla :target de global.css muestra
 // solo el aviso correspondiente. HTML estático e idéntico en todas las páginas (cacheable).
 // Lista de deseos (Fase L-1): igual, con `#deseos-<código>` y enlace a la lista.
+// Avisos de stock (Fase MK-B): `#aviso-<código>` y enlace a «Mis avisos».
+// Éxitos como toast abajo (StaticToast, mismo aspecto que con JS; se van solos); errores arriba.
 import { CART_PATH, NOTICES, NOTICE_CODES, isErrorNotice } from "$lib/cart";
 import { WISH_NOTICES, WISH_NOTICE_CODES, WISHLIST_PATH, isWishError } from "$lib/wishlist";
+import {
+  ALERT_NOTICES,
+  ALERT_NOTICE_CODES,
+  STOCK_ALERTS_PATH,
+  isAlertError,
+} from "$lib/stock-alerts";
+import StaticToast from "./StaticToast.astro";
 
 const wishCodes = WISH_NOTICE_CODES.filter((c) => c !== "wish_login");
+// Avisos de stock (Fase MK-B): igual, `#aviso-<código>` (sin sesión se va a «Entrar»).
+const alertCodes = ALERT_NOTICE_CODES.filter((c) => c !== "alert_login");
+
+type Notice = { id: string; text: string; error: boolean; link?: { href: string; label: string } };
+const notices: Notice[] = [
+  ...NOTICE_CODES.map((code) => ({
+    id: `carrito-${code}`,
+    text: NOTICES[code],
+    error: isErrorNotice(code),
+    ...(code === "added" ? { link: { href: CART_PATH, label: "Ver carrito" } } : {}),
+  })),
+  ...wishCodes.map((code) => ({
+    id: `deseos-${code}`,
+    text: WISH_NOTICES[code],
+    error: isWishError(code),
+    ...(code === "wish_added" || code === "wish_already"
+      ? { link: { href: WISHLIST_PATH, label: "Ver mi lista" } }
+      : {}),
+  })),
+  ...alertCodes.map((code) => ({
+    id: `aviso-${code}`,
+    text: ALERT_NOTICES[code],
+    error: isAlertError(code),
+    ...(code === "alert_added" || code === "alert_already"
+      ? { link: { href: STOCK_ALERTS_PATH, label: "Ver mis avisos" } }
+      : {}),
+  })),
+];
 ---
 
 <div class="cart-notices">
-  {NOTICE_CODES.map((code) => (
-    <p
-      id={`carrito-${code}`}
-      tabindex="-1"
-      class:list={[
-        "cart-notice mb-6 rounded-md border-2 border-line px-4 py-3 text-sm",
-        isErrorNotice(code) ? "border-destructive/40 text-destructive" : "bg-muted",
-      ]}
-    >
-      {NOTICES[code]}
-      {code === "added" && (
-        <>
-          {" · "}
-          <a href={CART_PATH} class="font-medium underline underline-offset-4">
-            Ver carrito
-          </a>
-        </>
-      )}
-    </p>
-  ))}
-  {wishCodes.map((code) => (
-    <p
-      id={`deseos-${code}`}
-      tabindex="-1"
-      class:list={[
-        "cart-notice mb-6 rounded-md border-2 border-line px-4 py-3 text-sm",
-        isWishError(code) ? "border-destructive/40 text-destructive" : "bg-muted",
-      ]}
-    >
-      {WISH_NOTICES[code]}
-      {(code === "wish_added" || code === "wish_already") && (
-        <>
-          {" · "}
-          <a href={WISHLIST_PATH} class="font-medium underline underline-offset-4">
-            Ver mi lista
-          </a>
-        </>
-      )}
-    </p>
-  ))}
+  {notices.map((n) =>
+    n.error ? (
+      <p
+        id={n.id}
+        tabindex="-1"
+        class="cart-notice mb-6 rounded-md border-2 border-destructive/40 px-4 py-3 text-sm text-destructive"
+      >
+        {n.text}
+      </p>
+    ) : (
+      <StaticToast id={n.id} class="cart-notice">
+        {n.text}
+        {n.link && (
+          <>
+            {" · "}
+            <a href={n.link.href} class="font-medium underline underline-offset-4">
+              {n.link.label}
+            </a>
+          </>
+        )}
+      </StaticToast>
+    ),
+  )}
 </div>

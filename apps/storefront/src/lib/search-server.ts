@@ -30,13 +30,20 @@ const hiddenOptions = () => readBuildManifest<number>("hidden-options.json");
 export const optionFamilyCatalog = (): FamilyCatalog =>
   readBuildManifest<OptionFamily[]>("option-families.json");
 
-/** `timings` (opcional): mide cada llamada para la cabecera Server-Timing (lib/server-timing). */
-export async function loadSearchPage(params: SearchParams, timings?: Timings): Promise<SearchPage> {
+/**
+ * `timings` (opcional): mide cada llamada para la cabecera Server-Timing (lib/server-timing).
+ * `log` (Fase MK-E2): contar la búsqueda en las estadísticas del backend.
+ */
+export async function loadSearchPage(
+  params: SearchParams,
+  timings?: Timings,
+  { log = false }: { log?: boolean } = {},
+): Promise<SearchPage> {
   const measure = <T>(name: string, work: Promise<T>) =>
     timings ? timings.measure(name, work) : work;
   const tree = await getShopTree(false); // en memoria (manifiesto del build): sin red
   const query = { ...params, categoria: narrowCategories(tree, params.categoria) };
-  const results = await measure("search", searchProducts(buildSearchQueries(query)));
+  const results = await measure("search", searchProducts(buildSearchQueries(query), { log }));
   const outcome = parseSearchResults(params, results);
   // Correas a medida (E-2c): con ≥ 2 en la página, una tarjeta de grupo; sus datos, del
   // manifiesto del build + variantes del largo más corto (lib/correa-server.ts). El total y las

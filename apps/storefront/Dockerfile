@@ -51,6 +51,9 @@ ARG IMAGE_BASE_URL
 ARG STOREFRONT_DATA=medusa
 ARG STOREFRONT_MAX_PRODUCTS
 ARG MEDUSA_BACKEND_URL=http://localhost:9000
+# Analítica Umami (Fase MK-E): vacías = sin script.
+ARG UMAMI_URL
+ARG UMAMI_WEBSITE_ID
 
 # Publishable key (build secret: no queda en ninguna capa ni en el historial) y ASTRO_KEY
 # opcional (clave fija de las props de server islands). La caché de imágenes optimizadas
@@ -58,7 +61,7 @@ ARG MEDUSA_BACKEND_URL=http://localhost:9000
 RUN --mount=type=secret,id=medusa_publishable_key \
     --mount=type=secret,id=astro_key \
     --mount=type=cache,id=astro-cache,target=/repo/apps/storefront/node_modules/.astro \
-    for v in SITE_URL IMAGE_BASE_URL STOREFRONT_MAX_PRODUCTS; do \
+    for v in SITE_URL IMAGE_BASE_URL STOREFRONT_MAX_PRODUCTS UMAMI_URL UMAMI_WEBSITE_ID; do \
       eval "[ -n \"\${$v:-}\" ]" || unset "$v"; done; \
     if [ -s /run/secrets/medusa_publishable_key ]; then \
       export MEDUSA_PUBLISHABLE_KEY="$(cat /run/secrets/medusa_publishable_key)"; fi; \

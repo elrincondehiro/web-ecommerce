@@ -16,6 +16,7 @@ import {
 import { CardCache } from "./card-cache";
 import { isDiscontinued, type StoreProduct, type StoreVariant } from "./catalog";
 import { isCorrea, isCorreaGrouped, maxLength } from "./correa";
+import type { CommsTopicId, CommsTopicState } from "./comms";
 import type { CartPoints, PointsSummary } from "./points";
 import type { Pet, PetBody } from "./pets";
 import type { RawSearchResult, SearchQueryBody } from "./search";
@@ -564,12 +565,19 @@ export async function retrieveOrder(id: string): Promise<StoreOrder> {
 // Meilisearch). El js-sdk 2.21.2 no tiene método propio → `client.fetch`. Precio y stock NO
 // salen del índice: se piden frescos para los ids de la página (≤ 24), como en las islands.
 
-/** Lanza la búsqueda (varias consultas en una petición, ver lib/search.ts). */
-export async function searchProducts(queries: SearchQueryBody[]): Promise<RawSearchResult[]> {
+/**
+ * Lanza la búsqueda (varias consultas en una petición, ver lib/search.ts). `log` (Fase MK-E2):
+ * el backend cuenta el término y si dio resultados (solo búsquedas limpias de /buscar/).
+ */
+export async function searchProducts(
+  queries: SearchQueryBody[],
+  { log = false }: { log?: boolean } = {},
+): Promise<RawSearchResult[]> {
   if (useFixtures) throw new Error("La búsqueda no está disponible con STOREFRONT_DATA=fixtures.");
   const { results } = await sdk().client.fetch<{ results: RawSearchResult[] }>("/store/search", {
     method: "POST",
     body: { queries },
+    ...(log ? { headers: { "x-search-log": "1" } } : {}),
   });
   return results;
 }
@@ -581,8 +589,10 @@ export async function searchProducts(queries: SearchQueryBody[]): Promise<RawSea
  * Medido en dev con 24 productos: ~65 ms igual que antes (+25 KB de JSON entre servidores);
  * con PRICED_FIELDS eran ~117 ms. Lo caro es `inventory_quantity` (stock fresco: se mantiene).
  */
+// `metadata` (MK-C): la vista tabla de /buscar/ y /comparar/ necesita los datos de la etiqueta
+// (proteína, grasa, humedad…) y el interruptor Tarjetas | Tabla mira si algún resultado los tiene.
 const CARD_FIELDS =
-  "id,handle,title,subtitle,thumbnail,*variants,*variants.calculated_price,+variants.inventory_quantity";
+  "id,handle,title,subtitle,thumbnail,metadata,*variants,*variants.calculated_price,+variants.inventory_quantity";
 
 async function fetchCards(ids: string[]): Promise<StoreProduct[]> {
   const region = await getRegionES();
@@ -954,6 +964,101 @@ export async function removeFromWishlist(token: string, itemId: string): Promise
     { method: "DELETE", headers: bearer(token) },
   );
   return deleted;
+}
+
+// ── Comunicaciones (Fase MK-A): rutas propias del backend (lib/comms.ts tiene los temas) ──────
+
+/** Temas de comunicaciones del cliente, todos, con si están activos. */
+export async function getComms(token: string): Promise<CommsTopicState[]> {
+  const { topics } = await cartSdk().client.fetch<{ topics: CommsTopicState[] }>(
+    "/store/customers/me/comms",
+    { headers: bearer(token) },
+  );
+  return topics;
+}
+
+/** Deja activos solo los temas elegidos. */
+export async function saveComms(token: string, topics: CommsTopicId[]): Promise<void> {
+  await cartSdk().client.fetch("/store/customers/me/comms", {
+    method: "POST",
+    headers: bearer(token),
+    body: { topics },
+  });
+}
+
+/** Tema del enlace de baja (o null si el token no vale: 404). Sin sesión. */
+export async function unsubscribeTopic(
+  token: string,
+): Promise<{ id: CommsTopicId; title: string } | null> {
+  try {
+    const { topic } = await cartSdk().client.fetch<{
+      topic: { id: CommsTopicId; title: string };
+    }>("/store/comms/unsubscribe", { query: { token } });
+    return topic;
+  } catch (err) {
+    if ((err as { status?: unknown } | null)?.status === 404) return null;
+    throw err;
+  }
+}
+
+/** Baja de un tema con el token del email. false si el token no vale (404). */
+export async function unsubscribe(token: string): Promise<boolean> {
+  try {
+    await cartSdk().client.fetch("/store/comms/unsubscribe", {
+      method: "POST",
+      body: { token },
+    });
+    return true;
+  } catch (err) {
+    if ((err as { status?: unknown } | null)?.status === 404) return false;
+    throw err;
+  }
+}
+
+// ── Avisos de stock (Fase MK-B): rutas propias del backend, siempre con el token del cliente ──
+
+export interface StockAlert {
+  id: string;
+  product_id: string;
+  variant_id: string;
+  created_at: string;
+}
+
+/** Avisos activos del cliente (más recientes primero; solo ids). */
+export async function listStockAlerts(token: string): Promise<StockAlert[]> {
+  const { alerts } = await cartSdk().client.fetch<{ alerts: StockAlert[] }>(
+    "/store/customers/me/stock-alerts",
+    { headers: bearer(token) },
+  );
+  return alerts;
+}
+
+/** «Avísame cuando vuelva» (idempotente: `created: false` si ya estaba). */
+export async function addStockAlert(
+  token: string,
+  productId: string,
+  variantId: string,
+): Promise<{ created: boolean }> {
+  return cartSdk().client.fetch<{ created: boolean }>("/store/customers/me/stock-alerts", {
+    method: "POST",
+    headers: bearer(token),
+    body: { product_id: productId, variant_id: variantId },
+  });
+}
+
+export async function removeStockAlert(token: string, alertId: string): Promise<boolean> {
+  const { deleted } = await cartSdk().client.fetch<{ deleted: boolean }>(
+    `/store/customers/me/stock-alerts/${encodeURIComponent(alertId)}`,
+    { method: "DELETE", headers: bearer(token) },
+  );
+  return deleted;
+}
+
+// ── Escaparate «Vuestros peques» (Fase MK-D): público, sin sesión ──────────────────────────
+
+/** Mascotas aprobadas para el escaparate: solo nombre, foto y edad (lib/showcase.ts). */
+export async function getShowcase(): Promise<import("./showcase").Showcase> {
+  return cartSdk().client.fetch<import("./showcase").Showcase>("/store/showcase");
 }
 
 // ── Mascotas (Fase M): rutas propias del backend (lib/pets.ts tiene los tipos) ────────────────

@@ -9,6 +9,7 @@ import CartNotice from "../components/CartNotice.astro";
 import AnnouncementBar from "../components/layout/AnnouncementBar.astro";
 import SiteHeader from "../components/layout/SiteHeader.astro";
 import SiteFooter from "../components/layout/SiteFooter.astro";
+import { UMAMI_FILTER } from "$lib/analytics";
 import "../styles/global.css";
 
 type Props = Parameters<typeof Seo>[0] & {
@@ -24,6 +25,10 @@ const { cartCount, cartClient = true, ...seo } = Astro.props;
 // island ni a la pista de localStorage (p. ej. la primera página tras entrar). Las estáticas no
 // tienen cookies: ahí siguen la pista (theme-init.ts) y HeaderState.
 const auth = !Astro.isPrerendered && Boolean(Astro.locals.customerToken);
+// Analítica Umami (Fase MK-E, excepción de AGENTS §3.4: ≤ 3 KB gzip, `defer`, sin Partytown). Va
+// DESPUÉS de SiteClient: los `defer` y los módulos se ejecutan en orden, así el filtro
+// (window.umamiFiltro, lib/analytics.ts) ya existe cuando Umami envía la primera visita.
+const umami = import.meta.env.UMAMI;
 ---
 
 <!doctype html>
@@ -65,5 +70,17 @@ const auth = !Astro.isPrerendered && Boolean(Astro.locals.customerToken);
     <SiteFooter />
     {cartClient && <CartClient />}
     <SiteClient />
+    {umami && (
+      <script
+        is:inline
+        defer
+        src={umami.src}
+        data-website-id={umami.id}
+        data-domains={umami.domains || undefined}
+        data-do-not-track="true"
+        data-performance="true"
+        data-before-send={UMAMI_FILTER}
+      />
+    )}
   </body>
 </html>

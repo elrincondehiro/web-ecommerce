@@ -1,0 +1,104 @@
+---
+// Baja de un tema de comunicaciones con el enlace de un email comercial (Fase MK-A). Sin sesión:
+// el token firmado (`?t=`, lo genera el backend) dice a quién y de qué. Dos POST posibles a esta
+// misma URL (MCP resend-docs, add-unsubscribe-to-transactional-emails; RFC 8058):
+//   - el del cliente de correo («Cancelar suscripción» de Gmail…): body
+//     `List-Unsubscribe=One-Click`, sin cookies ni Origin (checkOrigin de Astro lo deja pasar, se
+//     comprobó con astro 7.4.4 core/app/origin-check.js) → 200 vacío;
+//   - el del botón de esta página → se da de baja y se enseña el resultado.
+// Al abrir la página (GET) NO se da de baja: los antivirus y las vistas previas abren los enlaces.
+// Respuesta igual para un token no válido (no revela nada). Referrer-Policy same-origin, como
+// /cuenta/verificar/. Por usuario: private, no-store (lib/cache.ts).
+import { buttonVariants } from "$lib/components/ui/button";
+import { COMMS_PATH, UNSUBSCRIBE_PATH } from "$lib/account";
+import { unsubscribe, unsubscribeTopic } from "$lib/medusa";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import AuthCard from "../components/account/AuthCard.astro";
+
+export const prerender = false;
+
+Astro.response.headers.set("Referrer-Policy", "same-origin");
+const token = Astro.url.searchParams.get("t") ?? "";
+const valid = token.length > 0 && token.length <= 200;
+
+let done = false;
+let failed = false;
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData().catch(() => null);
+  const oneClick = form?.get("List-Unsubscribe") === "One-Click";
+  let ok = false;
+  try {
+    ok = valid && (await unsubscribe(token));
+  } catch (err) {
+    Astro.logger.error(`baja: ${err instanceof Error ? err.message : String(err)}`);
+    if (oneClick) return new Response(null, { status: 500 });
+    failed = true;
+  }
+  if (oneClick) return new Response(null, { status: ok ? 200 : 404 });
+  done = ok;
+}
+
+let topic: Awaited<ReturnType<typeof unsubscribeTopic>> = null;
+if (valid && !failed) {
+  try {
+    topic = await unsubscribeTopic(token);
+  } catch (err) {
+    Astro.logger.error(`baja: ${err instanceof Error ? err.message : String(err)}`);
+    failed = true;
+  }
+}
+const action = `${UNSUBSCRIBE_PATH}?t=${encodeURIComponent(token)}`;
+---
+
+<BaseLayout title="Darme de baja" description="Darte de baja de nuestros emails." noindex>
+  <AuthCard title={done ? "Te hemos dado de baja" : "Darme de baja"}>
+    {failed ? (
+      <p
+        role="alert"
+        class="rounded-md border-2 border-destructive px-4 py-3 text-sm text-destructive"
+      >
+        Ha ocurrido un error. Inténtalo de nuevo en unos minutos.
+      </p>
+    ) : !topic ? (
+      <p class="text-sm text-muted-foreground">
+        El enlace no es válido. Puedes elegir qué emails recibir en{" "}
+        <a href={COMMS_PATH} class="underline underline-offset-4">
+          Mi cuenta → Comunicaciones
+        </a>
+        .
+      </p>
+    ) : done ? (
+      <div class="flex flex-col gap-4">
+        <p role="status" class="rounded-md border-2 border-success/50 bg-muted px-4 py-3 text-sm">
+          Ya no te enviaremos emails de «{topic.title}».
+        </p>
+        <p class="text-sm text-muted-foreground">
+          Los emails de tus pedidos y tu cuenta te seguirán llegando. Si cambias de idea, puedes
+          volver a activarlo en{" "}
+          <a href={COMMS_PATH} class="underline underline-offset-4">
+            Mi cuenta → Comunicaciones
+          </a>
+          .
+        </p>
+      </div>
+    ) : (
+      <form method="post" action={action} class="flex flex-col gap-4">
+        <p class="text-sm text-muted-foreground">
+          ¿Quieres dejar de recibir emails de{" "}
+          <strong class="text-foreground">«{topic.title}»</strong>? Los de tus pedidos y tu cuenta
+          te seguirán llegando.
+        </p>
+        <button type="submit" class={buttonVariants()}>
+          Darme de baja
+        </button>
+        <p class="text-xs text-muted-foreground">
+          También puedes elegir qué recibir en{" "}
+          <a href={COMMS_PATH} class="underline underline-offset-4">
+            Mi cuenta → Comunicaciones
+          </a>
+          .
+        </p>
+      </form>
+    )}
+  </AuthCard>
+</BaseLayout>

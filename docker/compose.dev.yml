@@ -1,6 +1,6 @@
 # Infraestructura LOCAL de desarrollo. Las apps (Medusa, Astro) corren en el host con `pnpm dev`.
 # Versiones fijadas en README §4.2 — prohibido `:latest`.
-# Uso: pnpm infra:up | infra:down | infra:ps | infra:logs | infra:stripe
+# Uso: pnpm infra:up | infra:down | infra:ps | infra:logs | infra:stripe | infra:umami:up
 name: web-ecommerce-dev
 
 services:
@@ -109,6 +109,60 @@ services:
       STRIPE_API_KEY: ${STRIPE_API_KEY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  # Analítica Umami (Fase MK-E). Solo con: pnpm infra:umami:up (perfil "umami").
+  # BD `umami` con su propio usuario en el MISMO Postgres (umami-db-init la crea si no existe).
+  # Panel y recogida en http://localhost:${UMAMI_PORT}; UMAMI_BIND=0.0.0.0 para probarlo desde
+  # otros dispositivos de la red local. Primer acceso: admin / umami → cambiar la contraseña.
+  # Variables: docs.umami.is/docs/environment-variables (context7 /websites/umami_is).
+  umami-db-init:
+    image: postgres:17.11-alpine
+    profiles: ["umami"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      UMAMI_DB_PASSWORD: ${UMAMI_DB_PASSWORD}
+    command:
+      - sh
+      - -c
+      - |
+        psql -v ON_ERROR_STOP=1 -v pw="$$UMAMI_DB_PASSWORD" <<'SQL'
+        SELECT 'CREATE ROLE umami LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'umami')\gexec
+        ALTER ROLE umami PASSWORD :'pw';
+        SELECT 'CREATE DATABASE umami OWNER umami' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'umami')\gexec
+        SQL
+
+  umami:
+    image: ghcr.io/umami-software/umami:3.4.1
+    profiles: ["umami"]
+    restart: unless-stopped
+    init: true
+    mem_limit: 512m
+    depends_on:
+      umami-db-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@postgres:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET}
+      DISABLE_TELEMETRY: "1"
+      # SALT_ROTATION: por defecto "month" (sesión anónima sin cookies; ver faseMK §5)
+    ports:
+      - "${UMAMI_BIND:-127.0.0.1}:${UMAMI_PORT:-3100}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:3000/api/heartbeat || curl -fs http://127.0.0.1:3000/api/heartbeat",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
 
 volumes:
   pgdata:

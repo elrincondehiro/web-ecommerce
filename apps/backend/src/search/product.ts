@@ -235,17 +235,24 @@ const fields = search.define({
   // Descatalogado (Fase E): `POST /store/search` lo excluye siempre (filtro del storefront
   // `discontinued != true`; también casa con documentos sin el campo).
   discontinued: search.boolean().filterable().retrievable(false),
-  // % sobre materia seca (S-2): filtros de rango de /buscar/ (stats → mínimo/máximo).
+  // % sobre materia seca (S-2): filtros de rango de /buscar/ (stats → mínimo/máximo) y, desde
+  // MK-C, orden «más proteína / más grasa» (sortable; context7 /medusajs/medusa, modifiers).
   proteina_ms: search
     .float()
     .filterable()
+    .sortable()
     .facetable({ types: ["stats"] })
     .retrievable(false),
   grasa_ms: search
     .float()
     .filterable()
+    .sortable()
     .facetable({ types: ["stats"] })
     .retrievable(false),
+  // Fase MK-C: con datos analíticos (humedad válida y proteína; mismo criterio que la tabla del
+  // storefront, lib/compare.ts `hasAnalytics`). /comparar/ filtra siempre por él, así sus
+  // facetas solo llevan a productos comparables.
+  has_analytics: search.boolean().filterable().retrievable(false),
 });
 
 const source = {
@@ -302,6 +309,7 @@ const source = {
         ...(price ? { min_price_eur: price.min, max_price_eur: price.max } : {}),
         in_stock: stock.get(p.id) ?? false,
         discontinued: isDiscontinued(p.metadata),
+        has_analytics: dryMatter(p.metadata, "proteina_pct") !== undefined,
         ...Object.fromEntries(
           Object.entries(DRY_MATTER_FIELDS)
             .map(([field, key]) => [field, dryMatter(p.metadata, key)] as const)

@@ -14,6 +14,9 @@
 // cifradas de las islands cambian de longitud en cada build).
 // /buscar/ es on-demand (no hay HTML en dist): se comprueba aquí su bundle SearchLive (≤ 1 KB
 // gzip, sin imports; fase 7-1) y en el e2e (e2e/buscar.spec.ts) que la página no carga otros.
+// Analítica Umami (Fase MK-E, AGENTS §3.4): como máximo UN script externo con `data-website-id`,
+// `defer` y de otro origen (lo sirve Umami: no se mide aquí, no está en dist; el tamaño lo mide el
+// e2e de analítica). Cualquier otro script externo sigue prohibido.
 // Páginas legales (fase 5): mismas reglas. Checkout (fase 5, on-demand: no hay HTML en dist): el
 // bundle de pago (StripePayment, incluye el cargador de Stripe.js) ≤ 30 KB gzip propios con sus
 // imports (AGENTS §3.4); Stripe.js se descarga aparte de js.stripe.com.
@@ -92,6 +95,8 @@ async function* htmlFiles(dir) {
 const SCRIPT_SRC = /<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi;
 const MODULEPRELOAD = /<link\b[^>]*\brel=["']modulepreload["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi;
 const INLINE = /<script\b(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/gi;
+const ANALYTICS =
+  /<script\b(?=[^>]*\bdata-website-id=)[^>]*\bsrc=["'](https?:\/\/[^"']+)["'][^>]*>/gi;
 
 let checked = 0;
 const failures = [];
@@ -100,7 +105,14 @@ for await (const file of htmlFiles(ROOT)) {
   if (!ZERO_JS.some((re) => re.test(rel))) continue;
   checked++;
   const html = await readFile(file, "utf8");
-  const bundles = [...html.matchAll(SCRIPT_SRC), ...html.matchAll(MODULEPRELOAD)].map((m) => m[1]);
+  const analytics = [...html.matchAll(ANALYTICS)];
+  if (analytics.length > 1) failures.push(`${rel}: más de un script de analítica`);
+  for (const [tag] of analytics)
+    if (!/\sdefer\b/.test(tag)) failures.push(`${rel}: analítica sin defer`);
+  const external = new Set(analytics.map((m) => m[1]));
+  const bundles = [...html.matchAll(SCRIPT_SRC), ...html.matchAll(MODULEPRELOAD)]
+    .map((m) => m[1])
+    .filter((b) => !external.has(b));
   const inline = [...html.matchAll(INLINE)]
     // JSON, no JS: datos estructurados y Speculation Rules (Fase R-3).
     .filter((m) => !/type=["'](application\/ld\+json|speculationrules)["']/i.test(m[1] ?? ""))

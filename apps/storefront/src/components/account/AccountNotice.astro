@@ -1,7 +1,15 @@
 ---
 // Aviso de la cuenta tras un POST sin JS (fase 9): lo pinta la página con el código de la
 // cookie flash. role="status" (éxito) o "alert" (error) para lectores de pantalla.
-import { ACCOUNT_NOTICES, isSuccessNotice, type AccountNoticeCode } from "$lib/account";
+// Confirmaciones breves (`isToastNotice`): como toast abajo, se van solas (StaticToast, 0 JS).
+// Errores e instrucciones: arriba y fijos (junto a los errores de los campos).
+import {
+  ACCOUNT_NOTICES,
+  isSuccessNotice,
+  isToastNotice,
+  type AccountNoticeCode,
+} from "$lib/account";
+import StaticToast from "../StaticToast.astro";
 
 interface Props {
   code: AccountNoticeCode | undefined;
@@ -10,7 +18,9 @@ const { code } = Astro.props;
 const ok = code ? isSuccessNotice(code) : false;
 ---
 
-{code && (
+{code && isToastNotice(code) ? (
+  <StaticToast>{ACCOUNT_NOTICES[code]}</StaticToast>
+) : code ? (
   <p
     role={ok ? "status" : "alert"}
     class:list={[
@@ -20,4 +30,4 @@ const ok = code ? isSuccessNotice(code) : false;
   >
     {ACCOUNT_NOTICES[code]}
   </p>
-)}
+) : null}

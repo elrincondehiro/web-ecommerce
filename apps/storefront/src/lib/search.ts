@@ -9,14 +9,30 @@ import { CATALOG_FEATURES, PAGE_SIZE } from "./constants";
 
 export const SEARCH_PATH = "/buscar/";
 
-export const SORTS = ["relevancia", "precio-asc", "precio-desc", "novedades"] as const;
+export const SORTS = [
+  "relevancia",
+  "precio-asc",
+  "precio-desc",
+  "novedades",
+  "proteina",
+  "grasa",
+] as const;
 export type Sort = (typeof SORTS)[number];
 export const SORT_LABELS: Record<Sort, string> = {
   relevancia: "Relevancia",
   "precio-asc": "Precio: de menor a mayor",
   "precio-desc": "Precio: de mayor a menor",
   novedades: "Novedades",
+  // MK-C: sobre materia seca (índice: proteina_ms / grasa_ms ordenables). La proteína se busca
+  // alta y la grasa baja (decisión del usuario): proteína de más a menos, grasa de menos a más.
+  proteina: "Más proteína (MS)",
+  grasa: "Menos grasa (MS)",
 };
+/** Órdenes que solo tienen sentido con datos analíticos (se ofrecen con la vista tabla). */
+export const ANALYTIC_SORTS: readonly Sort[] = ["proteina", "grasa"];
+
+/** Vista de los resultados (MK-C): tarjetas (por defecto) o tabla comparativa. */
+export type View = "tarjetas" | "tabla";
 
 /** Límites: la URL no puede crecer sin control (caché, coste de la consulta). */
 const MAX_Q = 100;
@@ -39,6 +55,8 @@ export interface SearchParams {
   ms: Record<DryMatterKey, Range>;
   orden: Sort;
   pagina: number;
+  /** MK-C: vista; en /comparar/ siempre «tabla» (la ruta la fija, no va en la URL). */
+  vista: View;
 }
 
 export type MultiKey = "categoria" | "etiqueta" | "opcion" | "familia";
@@ -133,6 +151,7 @@ export function parseSearchParams(search: URLSearchParams): SearchParams {
     ) as Record<DryMatterKey, Range>,
     orden: (SORTS as readonly string[]).includes(orden ?? "") ? (orden as Sort) : "relevancia",
     pagina: pagina.success ? pagina.data : 1,
+    vista: search.get("vista") === "tabla" ? "tabla" : "tarjetas",
   };
 }
 
@@ -153,8 +172,32 @@ export function toSearchString(p: SearchParams): string {
   }
   if (p.orden !== "relevancia") s.set("orden", p.orden);
   if (p.pagina > 1) s.set("pagina", String(p.pagina));
+  if (p.vista === "tabla") s.set("vista", "tabla");
   return s.toString();
 }
+
+/**
+ * Búsqueda «limpia» (Fase MK-E2): solo texto, página 1, sin filtros ni orden. Es la que se cuenta
+ * en las estadísticas de búsquedas del backend (con filtros, 0 resultados no dice nada del término).
+ */
+export function isPlainSearch(p: SearchParams): boolean {
+  return p.q !== "" && toSearchString(p) === new URLSearchParams({ q: p.q }).toString();
+}
+
+/**
+ * Parámetros de campaña (Fase MK-E2): no forman parte de la búsqueda, pero se conservan al
+ * redirigir a la URL canónica para que la analítica (MK-E) vea la campaña.
+ */
+const UTM = /^utm_(source|medium|campaign|content|term)$/;
+export function splitUtm(search: URLSearchParams): { rest: URLSearchParams; utm: string } {
+  const rest = new URLSearchParams();
+  const utm = new URLSearchParams();
+  for (const [k, v] of search) (UTM.test(k) ? utm : rest).append(k, v.slice(0, 100));
+  return { rest, utm: utm.toString() };
+}
+/** Añade los `utm_*` a una URL relativa (con o sin `?`). */
+export const withUtm = (url: string, utm: string) =>
+  utm ? `${url}${url.includes("?") ? "&" : "?"}${utm}` : url;
 
 /** Pares nombre/valor de la URL canónica (para `<input type="hidden">`). */
 export function paramEntries(p: SearchParams, omit: string[] = []): [string, string][] {
@@ -162,8 +205,33 @@ export function paramEntries(p: SearchParams, omit: string[] = []): [string, str
 }
 
 export function searchUrl(p: SearchParams, path = SEARCH_PATH): string {
-  const qs = toSearchString(p);
+  // MK-C: /comparar/ ES la vista tabla (alias legible): la ruta la dice y no se repite en la URL.
+  const qs = toSearchString(path === COMPARE_ROUTE ? { ...p, vista: "tarjetas" } : p);
   return qs ? `${path}?${qs}` : path;
+}
+
+/** Ruta del comparador (lib/compare.ts COMPARE_PATH; aquí para no importar en ciclo). */
+const COMPARE_ROUTE = "/comparar/";
+
+/** Lee los parámetros de una página de resultados: en /comparar/, siempre vista tabla. */
+export function parseResultsParams(search: URLSearchParams, path: string): SearchParams {
+  const p = parseSearchParams(search);
+  return path === COMPARE_ROUTE ? { ...p, vista: "tabla" } : p;
+}
+
+/** URL canónica de la página (ruta + query): la de /comparar/ no lleva `vista`. */
+export function canonicalQuery(p: SearchParams, path: string): string {
+  return toSearchString(path === COMPARE_ROUTE ? { ...p, vista: "tarjetas" } : p);
+}
+
+/**
+ * Cambiar de vista (MK-C) conservando filtros, orden y página: la tabla vive en /comparar/ y las
+ * tarjetas en /buscar/. Al volver a tarjetas, los órdenes analíticos siguen valiendo.
+ */
+export function viewUrl(p: SearchParams, view: View): string {
+  return view === "tabla"
+    ? searchUrl({ ...p, vista: "tarjetas" }, COMPARE_ROUTE)
+    : searchUrl({ ...p, vista: "tarjetas" }, SEARCH_PATH);
 }
 
 /** Cambiar un filtro siempre vuelve a la página 1. */
@@ -244,6 +312,7 @@ export function clearFiltersUrl(p: SearchParams, path?: string, fixed: FixedFilt
       ...emptyParams(),
       q: p.q,
       orden: p.orden,
+      vista: p.vista,
       categoria: fixed.categoria ? [fixed.categoria] : [],
     },
     path,
@@ -367,8 +436,12 @@ export function optionGroups(opcion: string[]): Map<string, string[]> {
  */
 export const LISTED_FILTER: Filter = { discontinued: { $ne: true } };
 
+/** Fase MK-C: /comparar/ solo enseña (y cuenta en las facetas) productos con datos analíticos. */
+export const ANALYTICS_FILTER: Filter = { has_analytics: true };
+
 function filtersFor(p: SearchParams, skipGroup?: string): Filter {
   const and: Filter[] = [LISTED_FILTER];
+  if (p.vista === "tabla") and.push(ANALYTICS_FILTER);
   if (p.categoria.length) and.push({ [CATEGORY_FIELD]: { $in: p.categoria } });
   if (p.etiqueta.length) and.push({ tags: { $in: p.etiqueta } });
   for (const g of markedGroups(p)) {
@@ -400,6 +473,10 @@ function orderFor(p: SearchParams): Record<string, "ASC" | "DESC"> | undefined {
       return { min_price_eur: "DESC" };
     case "novedades":
       return { created_at: "DESC" };
+    case "proteina":
+      return { proteina_ms: "DESC" };
+    case "grasa":
+      return { grasa_ms: "ASC" };
     default:
       // Sin texto no hay relevancia: mismo orden que el catálogo.
       return p.q ? undefined : { title: "ASC" };

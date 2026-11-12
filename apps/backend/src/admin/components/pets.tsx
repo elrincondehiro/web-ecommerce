@@ -37,6 +37,15 @@ export type Pet = {
   health_consent_at: string | null;
   photo_url: string | null;
   photo_consent_at: string | null;
+  /** Fase MK-D: escaparate «Vuestros peques». */
+  showcase_consent_at?: string | null;
+  showcase_status?: "pendiente" | "aprobada" | "rechazada" | null;
+};
+
+const SHOWCASE: Record<string, string> = {
+  pendiente: "Escaparate: pendiente de revisar",
+  aprobada: "Escaparate: publicada",
+  rechazada: "Escaparate: rechazada",
 };
 
 const SEX: Record<string, string> = { macho: "Macho", hembra: "Hembra", desconocido: "No se sabe" };
@@ -410,6 +419,20 @@ function PetCard({ pet }: { pet: Pet }) {
         <span className="text-ui-fg-subtle">{facts.join(" · ")}</span>
         {pet.diet && <span className="text-ui-fg-subtle">Come: {pet.diet}</span>}
         {pet.health && <span className="text-ui-fg-error">Salud: {pet.health}</span>}
+        {pet.photo_url && pet.photo_consent_at && (
+          <span className="text-ui-fg-subtle">
+            Foto pública aceptada el{" "}
+            {new Date(pet.photo_consent_at).toLocaleDateString("es-ES", { dateStyle: "long" })}
+          </span>
+        )}
+        {pet.showcase_consent_at && (
+          <span className="text-ui-fg-subtle">
+            {pet.showcase_status ? SHOWCASE[pet.showcase_status] : "Escaparate: sin foto"} ·{" "}
+            <a href="/app/escaparate" className="text-ui-fg-interactive">
+              moderar
+            </a>
+          </span>
+        )}
       </div>
     </div>
   );

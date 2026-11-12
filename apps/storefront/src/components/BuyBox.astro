@@ -26,6 +26,7 @@ import Price from "./Price.astro";
 import { BUY_FORM_ID } from "$lib/wishlist";
 import type { VariantPicker as Picker } from "$lib/variant-picker";
 import VariantPicker from "./VariantPicker.astro";
+import { productDesign } from "$lib/disenos";
 
 interface Props {
   product: StoreProduct;
@@ -45,6 +46,10 @@ const bulk = pricing.isBulk
 const single = multi ? undefined : pricing.variants[0];
 const bulkNote = minimumNote(pricing);
 const singleLeft = single ? stockLeftText(single) : null;
+// «Avísame» (Fase MK-B): en el botón de compra, para la variante elegida (una variante, selector
+// o la fila marcada de la tabla, también si está agotada). Los diseños configurables (correa,
+// caja) no esperan stock.
+const alertable = !productDesign(product).configurable;
 ---
 
 {pricing.fromAmount != null && currency ? (
@@ -91,6 +96,7 @@ const singleLeft = single ? stockLeftText(single) : null;
       unitKey={multi ? "" : product.id}
       id={BUY_FORM_ID}
       keepLayout
+      alertProductId={alertable ? product.id : undefined}
     >
       {multi && picker && currency && (
         <div slot="before" class="flex flex-col gap-4">

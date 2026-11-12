@@ -1,6 +1,12 @@
 import { MedusaError } from "@medusajs/framework/utils";
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
-import { PET_MAX_PER_CUSTOMER, petFieldsErrors, petRecord, type PetFields } from "../../lib/pets";
+import {
+  PET_MAX_PER_CUSTOMER,
+  petFieldsErrors,
+  petRecord,
+  showcaseState,
+  type PetFields,
+} from "../../lib/pets";
 import { PETS_MODULE } from "../../modules/pets";
 import type PetsModuleService from "../../modules/pets/service";
 
@@ -36,6 +42,9 @@ const EDITABLE = [
   "photo_url",
   "photo_file_id",
   "photo_consent_at",
+  "showcase_consent_at",
+  "showcase_status",
+  "showcase_reviewed_at",
 ] as const;
 const snapshot = (pet: PetRow) =>
   Object.fromEntries(EDITABLE.map((k) => [k, pet[k as keyof PetRow]])) as Record<string, unknown>;
@@ -77,6 +86,12 @@ export const createPetStep = createStep(
     const pet = await svc.createPets({
       customer_id: input.customer_id,
       ...petRecord(input.fields, null),
+      ...showcaseState({
+        consent: input.fields.showcase_consent,
+        hasPhoto: false,
+        photoChanged: false,
+        previous: { consentAt: null, status: null },
+      }),
     });
     return new StepResponse(pet, pet.id);
   },
@@ -93,6 +108,12 @@ export const updatePetStep = createStep(
     const updated = await service(container).updatePets({
       id: input.pet.id,
       ...petRecord(input.fields, input.pet.health_consent_at ?? null),
+      ...showcaseState({
+        consent: input.fields.showcase_consent,
+        hasPhoto: Boolean(input.pet.photo_url),
+        photoChanged: false,
+        previous: { consentAt: input.pet.showcase_consent_at, status: input.pet.showcase_status },
+      }),
     });
     return new StepResponse(updated, { id: input.pet.id, prev: snapshot(input.pet) });
   },
@@ -111,6 +132,13 @@ export const setPetPhotoStep = createStep(
       photo_url: photo?.url ?? null,
       photo_file_id: photo?.file_id ?? null,
       photo_consent_at: photo ? new Date() : null,
+      // Fase MK-D: foto nueva → a moderar otra vez; sin foto → fuera del escaparate
+      ...showcaseState({
+        consent: undefined,
+        hasPhoto: Boolean(photo),
+        photoChanged: true,
+        previous: { consentAt: pet.showcase_consent_at, status: pet.showcase_status },
+      }),
     });
     return new StepResponse(updated, {
       id: pet.id,
@@ -118,6 +146,8 @@ export const setPetPhotoStep = createStep(
         photo_url: pet.photo_url,
         photo_file_id: pet.photo_file_id,
         photo_consent_at: pet.photo_consent_at,
+        showcase_consent_at: pet.showcase_consent_at,
+        showcase_status: pet.showcase_status,
       },
     });
   },
@@ -145,5 +175,33 @@ export const softDeletePetsStep = createStep(
   },
   async (ids, { container }) => {
     if (ids?.length) await service(container).restorePets(ids);
+  },
+);
+
+/**
+ * Moderación del escaparate (Fase MK-D): aprobar o rechazar una mascota pendiente (o cambiar de
+ * opinión). Solo con casilla y foto. Compensación: el estado anterior.
+ */
+export const reviewShowcaseStep = createStep(
+  "review-pet-showcase",
+  async (input: { pet_id: string; decision: "aprobada" | "rechazada" }, { container }) => {
+    const svc = service(container);
+    const [pet] = await svc.listPets({ id: input.pet_id });
+    if (!pet || !pet.showcase_consent_at || !pet.photo_url) {
+      throw new MedusaError(MedusaError.Types.NOT_FOUND, "Mascota no encontrada en el escaparate");
+    }
+    const updated = await svc.updatePets({
+      id: pet.id,
+      showcase_status: input.decision,
+      showcase_reviewed_at: new Date(),
+    });
+    return new StepResponse(updated, {
+      id: pet.id,
+      showcase_status: pet.showcase_status,
+      showcase_reviewed_at: pet.showcase_reviewed_at,
+    });
+  },
+  async (prev, { container }) => {
+    if (prev) await service(container).updatePets(prev);
   },
 );

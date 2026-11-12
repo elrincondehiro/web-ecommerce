@@ -9,14 +9,17 @@ import ProductGrid from "./ProductGrid.astro";
 import Pagination from "./Pagination.astro";
 import LiveSync from "./LiveSync.astro";
 import ListingFilters from "./search/ListingFilters.astro";
+import CompareButton from "./search/CompareButton.astro";
 
 interface Props {
   page: Page<StoreProduct>;
   /** Facetas del build para el botón "Filtrar" (fase 7-1). */
   facets?: ListingFacets | undefined;
   categoryHandle?: string | undefined;
+  /** Fase MK-C: comparador de esta categoría (hoja con datos analíticos), junto a «Filtrar». */
+  compareHref?: string | null | undefined;
 }
-const { page, facets, categoryHandle } = Astro.props;
+const { page, facets, categoryHandle, compareHref } = Astro.props;
 ---
 
 {page.total === 0 ? (
@@ -27,7 +30,10 @@ const { page, facets, categoryHandle } = Astro.props;
       <p class="text-sm text-muted-foreground">
         {page.total} productos · página {page.currentPage} de {page.lastPage}
       </p>
-      {facets && <ListingFilters facets={facets} categoria={categoryHandle} />}
+      <div class="flex flex-wrap items-center gap-2">
+        {compareHref && <CompareButton href={compareHref} label="Tabla comparativa" />}
+        {facets && <ListingFilters facets={facets} categoria={categoryHandle} />}
+      </div>
     </div>
     <ProductGrid products={page.data} priorityCount={2} />
     <Pagination page={page} />

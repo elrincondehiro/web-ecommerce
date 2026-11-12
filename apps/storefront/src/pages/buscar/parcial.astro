@@ -5,7 +5,7 @@
 // Fuente: astro-docs (basics/astro-pages#page-partials).
 import SearchResults from "../../components/search/SearchResults.astro";
 import { loadSearchPage } from "$lib/search-server";
-import { parseSearchParams, toSearchString } from "$lib/search";
+import { SEARCH_PATH, canonicalQuery, parseResultsParams } from "$lib/search";
 import { Timings } from "$lib/server-timing";
 import { SERVER_TIMING } from "astro:env/server";
 
@@ -14,8 +14,8 @@ export const partial = true;
 
 const PARTIAL_PATH = "/buscar/parcial/";
 
-const params = parseSearchParams(Astro.url.searchParams);
-const canonical = toSearchString(params);
+const params = parseResultsParams(Astro.url.searchParams, SEARCH_PATH);
+const canonical = canonicalQuery(params, SEARCH_PATH);
 if (canonical !== Astro.url.searchParams.toString()) {
   return Astro.redirect(`${PARTIAL_PATH}${canonical && `?${canonical}`}`, 301);
 }

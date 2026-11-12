@@ -23,6 +23,10 @@ export const ORDERS_PATH = "/cuenta/pedidos/";
 export const DELETE_PATH = "/cuenta/eliminar/";
 /** Aceptar o rechazar que un pedido pase a una cuenta (Fase G-2; enlace del email). */
 export const ORDER_TRANSFER_PATH = "/cuenta/transferir/";
+/** Comunicaciones comerciales (Fase MK-A): casillas por tema. */
+export const COMMS_PATH = "/cuenta/comunicaciones/";
+/** Baja de un tema con el enlace de un email (Fase MK-A): sin sesión, fuera de /cuenta/. */
+export const UNSUBSCRIBE_PATH = "/baja/";
 /** Caja de snacks propuesta (Fase CS-4): ver y responder con el enlace del email, sin sesión. */
 export const CAJA_PATH = "/cuenta/caja/";
 
@@ -48,6 +52,7 @@ export type AccountActionName =
   | "account.declineTransfer"
   | "account.cajaAccept"
   | "account.cajaReject"
+  | "account.comms"
   | "account.petSave"
   | "account.petDelete";
 
@@ -88,6 +93,7 @@ export const ACCOUNT_NOTICES = {
   saved: "Cambios guardados.",
   address_saved: "Dirección guardada.",
   address_deleted: "Dirección eliminada.",
+  comms_saved: "Preferencias guardadas.",
   pet_saved: "Ficha guardada.",
   pet_deleted: "Ficha eliminada.",
   pet_photo_failed:
@@ -97,6 +103,7 @@ export const ACCOUNT_NOTICES = {
     "Hemos recibido tu solicitud. Eliminaremos tu cuenta y te escribiremos en un plazo máximo de un mes.",
   logged_out: "Has cerrado la sesión.",
   session_expired: "Tu sesión ha caducado. Vuelve a entrar.",
+  alert_login: "Entra en tu cuenta para que te avisemos cuando vuelva. Lo guardaremos al entrar.",
   wish_login:
     "Entra en tu cuenta para guardar productos en tu lista de deseos. Lo guardaremos al entrar.",
   claim_sent:
@@ -116,6 +123,7 @@ export type AccountNoticeCode = keyof typeof ACCOUNT_NOTICES;
 /** Avisos de éxito (verde); el resto se pintan como error. */
 const SUCCESS = new Set<AccountNoticeCode>([
   "wish_login",
+  "alert_login",
   "claim_sent",
   "transfer_accepted",
   "transfer_declined",
@@ -129,11 +137,32 @@ const SUCCESS = new Set<AccountNoticeCode>([
   "saved",
   "address_saved",
   "address_deleted",
+  "comms_saved",
   "pet_saved",
   "pet_deleted",
   "delete_sent",
   "logged_out",
 ]);
+/**
+ * Avisos que se enseñan como TOAST (abajo, se van solos; sin JS, con CSS): confirmaciones
+ * breves de una acción. El resto (errores, instrucciones como «te hemos enviado un email…» o
+ * el contenido principal de una página) se quedan arriba y fijos.
+ */
+const TOAST = new Set<AccountNoticeCode>([
+  "saved",
+  "address_saved",
+  "address_deleted",
+  "comms_saved",
+  "pet_saved",
+  "pet_deleted",
+  "logged_out",
+  "reset_done",
+  "verified",
+]);
+export function isToastNotice(code: AccountNoticeCode): boolean {
+  return TOAST.has(code);
+}
+
 export function isSuccessNotice(code: AccountNoticeCode): boolean {
   return SUCCESS.has(code);
 }

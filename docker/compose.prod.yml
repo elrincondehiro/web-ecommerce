@@ -96,6 +96,16 @@ x-backend: &backend
     CAJA_ALERT_WORK_HOURS: ${CAJA_ALERT_WORK_HOURS:-48}
     CAJA_FESTIVOS: ${CAJA_FESTIVOS:-}
     CAJA_JOBS_CRON: ${CAJA_JOBS_CRON:-*/15 * * * *}
+    # Comunicaciones (Fase MK-A): firma de los enlaces de baja de los emails comerciales.
+    COMMS_UNSUBSCRIBE_SECRET: ${COMMS_UNSUBSCRIBE_SECRET:?}
+    # Avisos de stock (Fase MK-B): caducidad (días, 30–730) y jobs del worker.
+    STOCK_ALERT_TTL_DAYS: ${STOCK_ALERT_TTL_DAYS:-180}
+    STOCK_ALERT_CRON: ${STOCK_ALERT_CRON:-*/5 * * * *}
+    STOCK_ALERT_EXPIRE_CRON: ${STOCK_ALERT_EXPIRE_CRON:-30 4 * * *}
+    # Cumpleaños de «Mis peques» (Fase MK-D): job del worker (hora UTC).
+    PETS_BIRTHDAY_CRON: ${PETS_BIRTHDAY_CRON:-0 9 * * *}
+    # Búsquedas (Fase MK-E2): borrado de los contadores de más de 52 semanas (worker).
+    SEARCH_LOG_PURGE_CRON: ${SEARCH_LOG_PURGE_CRON:-45 4 * * *}
 
 services:
   caddy:
@@ -110,6 +120,7 @@ services:
       STORE_DOMAIN: ${STORE_DOMAIN:?}
       API_DOMAIN: ${API_DOMAIN:?}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN:?}
+      STATS_DOMAIN: ${STATS_DOMAIN:-stats.localhost}
       # cloudflare: Origin CA + mTLS de Cloudflare (AOP de zona) · internal: prueba local (fase 10)
       CADDY_TLS_MODE: ${CADDY_TLS_MODE:-cloudflare}
       # noindex: X-Robots-Tag en la tienda (entorno de prueba) · index: tienda abierta
@@ -153,6 +164,8 @@ services:
         IMAGE_BASE_URL: ${IMAGE_BASE_URL:?}
         MEDUSA_BACKEND_URL: ${STOREFRONT_BUILD_BACKEND_URL:-}
         STOREFRONT_MAX_PRODUCTS: ${STOREFRONT_MAX_PRODUCTS:-}
+        UMAMI_URL: ${UMAMI_URL:-}
+        UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
       secrets:
         - medusa_publishable_key
         - astro_key
@@ -206,6 +219,52 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  # Analítica Umami (Fase MK-E): BD `umami` y usuario propios en el mismo Postgres (los crea
+  # umami-db-init si no existen), memoria limitada, solo red interna (Caddy: STATS_DOMAIN).
+  umami-db-init:
+    image: postgres:17.11-alpine
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:?}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?}
+      PGDATABASE: ${POSTGRES_DB:?}
+      UMAMI_DB_PASSWORD: ${UMAMI_DB_PASSWORD:?}
+    command:
+      - sh
+      - -c
+      - |
+        psql -v ON_ERROR_STOP=1 -v pw="$$UMAMI_DB_PASSWORD" <<'SQL'
+        SELECT 'CREATE ROLE umami LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'umami')\gexec
+        ALTER ROLE umami PASSWORD :'pw';
+        SELECT 'CREATE DATABASE umami OWNER umami' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'umami')\gexec
+        SQL
+
+  umami:
+    image: ghcr.io/umami-software/umami:3.4.1
+    restart: unless-stopped
+    init: true
+    mem_limit: 512m
+    depends_on:
+      umami-db-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:?}@postgres:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:?}
+      DISABLE_TELEMETRY: "1"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:3000/api/heartbeat || curl -fs http://127.0.0.1:3000/api/heartbeat",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
 
 secrets:
   medusa_publishable_key:

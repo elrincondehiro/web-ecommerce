@@ -56,7 +56,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.locator('label:has(input[value="Estampado:Rayas"])').click();
       await page.locator('label:has(input[value="Talla:M"])').click();
       await expect(
-        page.locator("form[data-cart-form]").getByRole("button", { name: "Agotado" }),
+        page.locator("form[data-cart-form]").getByRole("button", { name: /^Agotado/ }),
       ).toBeVisible();
       expect(await violations(page)).toEqual([]);
     });

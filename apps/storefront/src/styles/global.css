@@ -235,8 +235,9 @@
 .variant-row[data-vstock="out"] {
   color: var(--muted-foreground);
 }
-/* Tabla de variantes de la ficha: una fila agotada se puede elegir (♡ de la lista de deseos);
-   elegida, cambia Añadir ↔ «Agotado» y la insignia de stock, como el selector (pickerCss).
+/* Tabla de variantes de la ficha: una fila agotada se puede elegir (♡ de la lista de deseos y
+   «Avísame», Fase MK-B); elegida, cambia Añadir ↔ «Avísame» y la insignia de stock, como el
+   selector (pickerCss).
    LiveSync cambia data-vstock → se actualiza solo. */
 [data-stock]:has(.variant-row[data-vstock="out"] [name="variant_id"]:checked) [data-if-stock="in"] {
   display: none !important;
@@ -389,7 +390,8 @@
 [data-cart-live-on] [data-cart-update-button] {
   display: none;
 }
-.cart-notice:not(:target) {
+.cart-notice:not(:target),
+.toasts--static:has(.cart-notice:not(:target)) {
   display: none;
 }
 
@@ -475,6 +477,61 @@
 .toast.out {
   opacity: 0;
   translate: 0 0.5rem;
+}
+/*
+ * Toast SIN JS (StaticToast.astro): avisos del servidor (cuenta) y de los POST sin JS (carrito,
+ * lista, avisos de stock con :target). Mismo aspecto que .toast; se va solo a los 4,5 s (animación
+ * con `forwards`, pausada con el ratón encima o el foco dentro) y ✕ = casilla (:has(:checked)).
+ * Con prefers-reduced-motion no se va solo (bloque reduced-motion, más abajo).
+ */
+.toasts--static {
+  pointer-events: none;
+}
+/* Una sola animación (entra 200 ms, visible 4 s, sale 300 ms) y SIN la transición de .toast:
+   Firefox, con @starting-style + transición + animación con retraso, lo dejaba a opacidad 0
+   hasta el fundido final (solo se veía ~0,3 s). */
+.toast--static {
+  transition: none;
+  animation: toast-static 4.5s ease forwards;
+}
+/* Pausa con el ratón encima o con el teclado en su enlace o ✕ (no con el foco que el navegador
+   pone en el propio aviso al llegar con #carrito-…: así se iría nunca). */
+.toast--static:is(:hover, :has(:focus-visible)) {
+  animation-play-state: paused;
+}
+.toast--static:has(.toast__close :checked) {
+  display: none;
+}
+@keyframes toast-static {
+  0% {
+    opacity: 0;
+    translate: 0 0.5rem;
+  }
+  4.5%,
+  93.5% {
+    opacity: 1;
+    translate: 0 0;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 0.5rem;
+    visibility: hidden;
+  }
+}
+.toast__close {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 0 0.375rem;
+  opacity: 0.8;
+}
+.toast__close:hover,
+.toast__close:has(:focus-visible) {
+  opacity: 1;
+}
+.toast__close:has(:focus-visible) {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
 }
 .toast button {
   border-radius: var(--radius-sm);
@@ -811,6 +868,10 @@
   .filter-panel,
   .filter-panel::backdrop {
     transition: none;
+  }
+  /* Toast sin JS: no se va solo (se cierra con ✕) */
+  .toast--static {
+    animation: none;
   }
 }
 
@@ -1429,4 +1490,139 @@
 }
 .prose-page tbody tr + tr td {
   border-top: 1px solid var(--border);
+}
+
+/*
+ * Escaparate «Vuestros peques» (Fase MK-D, pages/peques.astro). 0 JS: cada tarjeta flota con su
+ * propia animación (CSS en el <head> con HeadStyle, lib/showcase.ts); aquí lo común.
+ * - «Parar el movimiento»: casilla [data-peques-pausa] + :has() → animation-play-state: paused.
+ * - prefers-reduced-motion: sin animaciones desde el principio (MDN).
+ * - Fallecidas: arco iris en semicírculo (conic-gradient recortado) y desfile horizontal.
+ */
+.peque__tarjeta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+.peque__tarjeta img {
+  aspect-ratio: 1;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  background: var(--muted);
+}
+.peque__tarjeta figcaption {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
+/* Una línea cada una (con «…» si no cabe): todas las tarjetas miden lo mismo (MK-D). El nombre
+   completo está en el `alt`/la lista accesible. */
+.peque__nombre,
+.peque__edad {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.peque__nombre {
+  font-weight: 700;
+}
+.peque__edad {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.peques-pausa {
+  cursor: pointer;
+}
+.peques-pausa:has(:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.peques-pausa__seguir,
+.peques:has([data-peques-pausa]:checked) .peques-pausa__parar {
+  display: none;
+}
+.peques:has([data-peques-pausa]:checked) .peques-pausa__seguir {
+  display: inline;
+}
+.peques:has([data-peques-pausa]:checked) :is(.peque, .peques-desfile__pista) {
+  animation-play-state: paused;
+}
+.peques-arcoiris {
+  overflow: hidden;
+}
+.peques-arcoiris__arco {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: min(40rem, 100%);
+  aspect-ratio: 2;
+  margin: 0 auto 1rem;
+  padding: 0 18% 0.5rem;
+}
+.peques-arcoiris__arco::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px 999px 0 0;
+  background: conic-gradient(
+    from -90deg at 50% 100%,
+    #e57373,
+    #ffb74d,
+    #fff176,
+    #81c784,
+    #64b5f6,
+    #9575cd,
+    #e57373 180deg,
+    transparent 180deg
+  );
+  mask: radial-gradient(circle at 50% 100%, transparent 62%, #000 63%, #000 99%, transparent 100%);
+  opacity: 0.75;
+}
+.peques-arcoiris__titulo {
+  position: relative;
+  text-align: center;
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  font-weight: 700;
+}
+/* Margen abajo para que no se corte la sombra de las tarjetas (overflow: hidden). */
+.peques-desfile {
+  overflow: hidden;
+  padding-bottom: 0.5rem;
+}
+.peques-desfile__pista {
+  display: flex;
+  gap: 1.5rem;
+  width: max-content;
+  animation: peques-desfile 60s linear infinite;
+}
+.peque--arcoiris {
+  width: 10rem;
+  flex: none;
+}
+.peque--arcoiris img {
+  filter: grayscale(0.4);
+}
+@keyframes peques-desfile {
+  to {
+    transform: translateX(calc(-50% - 0.75rem));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .peque,
+  .peques-desfile__pista {
+    animation: none !important;
+  }
+  .peques-desfile {
+    overflow-x: auto;
+  }
+  .peque--copia {
+    display: none;
+  }
 }

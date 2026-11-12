@@ -85,6 +85,7 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
       text,
       replyTo: this.options_.replyTo,
       idempotencyKey: idempotencyKey ?? undefined,
+      headers: emailHeaders(notification.provider_data),
     });
     // Sin el destinatario en el log (datos personales, AGENTS §7.1).
     this.logger_.info(
@@ -92,6 +93,22 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
     );
     return result.id ? { id: result.id } : {};
   }
+}
+
+/**
+ * Cabeceras de `provider_data.headers` (Fase MK-A): solo las de baja, para que nadie meta otras
+ * por error (`From`, `Bcc`…).
+ */
+const ALLOWED_HEADERS = new Set(["List-Unsubscribe", "List-Unsubscribe-Post"]);
+export function emailHeaders(
+  providerData: Record<string, unknown> | null | undefined,
+): Record<string, string> | undefined {
+  const raw = providerData?.headers;
+  if (!raw || typeof raw !== "object") return undefined;
+  const entries = Object.entries(raw as Record<string, unknown>).filter(
+    (e): e is [string, string] => ALLOWED_HEADERS.has(e[0]) && typeof e[1] === "string",
+  );
+  return entries.length ? Object.fromEntries(entries) : undefined;
 }
 
 export default ResendNotificationProviderService;

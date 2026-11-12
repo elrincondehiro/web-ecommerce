@@ -18,6 +18,7 @@
 // estáticas lo trae la island HeaderState (con el contador del carrito) y lo aplica CartClient
 // (`<html data-auth / data-wish-any>`, CSS en global.css); en carrito/checkout/pedido (on-demand,
 // sin CartClient) sale del servidor. En móvil el selector de tema va en el menú (no cabía).
+import { COMPARE_PATH } from "$lib/compare";
 import Icon from "../Icon.astro";
 import HeartFilled from "../HeartFilled.astro";
 import CartCountBadge from "../CartCountBadge.astro";
@@ -51,6 +52,8 @@ const shopGroups = tree.roots.map((r) => ({
 }));
 const mainLinks = [
   { href: OFFERS_PATH, name: "Ofertas" },
+  // Fase MK-C: comparador de alimentación (vista tabla de la búsqueda)
+  { href: COMPARE_PATH, name: "Comparar" },
   { href: "/sobre-nosotros/", name: "Sobre nosotros" },
 ];
 const aria = (href: string) => (current.startsWith(href) ? "page" : undefined);

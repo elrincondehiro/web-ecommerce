@@ -33,6 +33,8 @@ export const PetBody = z.object({
   origin: z.enum(PET_ORIGINS).nullish(),
   health: text(500),
   health_consent: z.boolean().default(false),
+  // Fase MK-D: escaparate «Vuestros peques». Sin el campo (Admin), no se toca.
+  showcase_consent: z.boolean().optional(),
 });
 export type PetBodyInput = z.infer<typeof PetBody>;
 
@@ -56,6 +58,7 @@ export function toPetFields(b: PetBodyInput): PetFields {
     origin: b.origin ?? null,
     health: b.health ?? null,
     health_consent: b.health_consent,
+    showcase_consent: b.showcase_consent,
   };
 }
 

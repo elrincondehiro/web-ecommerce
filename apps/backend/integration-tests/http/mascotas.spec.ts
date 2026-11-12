@@ -8,6 +8,7 @@ import {
   linkSalesChannelsToApiKeyWorkflow,
 } from "@medusajs/medusa/core-flows";
 import { PETS_MODULE } from "../../src/modules/pets";
+import { sendPetBirthdays } from "../../src/lib/pets-birthday";
 import type PetsModuleService from "../../src/modules/pets/service";
 import petsCustomerDeleted, {
   config as petsCustomerDeletedConfig,
@@ -310,6 +311,104 @@ medusaIntegrationTestRunner({
         .post("/admin/customers/cus_noexiste/pets", base, admin)
         .catch(asRes);
       expect(missing.status).toBe(404);
+    });
+
+    it("escaparate (MK-D): casilla, moderación cada foto, solo nombre/foto/edad y retirada", async () => {
+      const ana = await customerAuth("ana-escaparate@example.com");
+      const created = await api.post(
+        "/store/customers/me/pets",
+        { ...base, birth_year: 2020, birth_month: 3, showcase_consent: true },
+        ana.auth,
+      );
+      const pet = created.data.pet as Pet;
+      // Casilla sin foto: guardada, fuera del escaparate
+      expect(pet.showcase_consent_at).not.toBeNull();
+      expect(pet.showcase_status).toBeNull();
+      const photo = `/store/customers/me/pets/${pet.id}/photo`;
+      const withPhoto = await api.post(photo, { content: WEBP, consent: true }, ana.auth);
+      expect((withPhoto.data.pet as Pet).showcase_status).toBe("pendiente");
+      const empty = await api.get("/store/showcase", { headers });
+      expect(empty.data).toEqual({ alive: [], gone: [] });
+
+      const admin = await adminAuth();
+      const pending = await api.get("/admin/showcase?status=pendiente", admin);
+      expect((pending.data.pets as { id: string }[]).map((p) => p.id)).toEqual([pet.id]);
+      await api.post(`/admin/showcase/${pet.id}`, { decision: "aprobada" }, admin);
+      const pub = await api.get("/store/showcase", { headers });
+      expect(pub.data.alive).toHaveLength(1);
+      // Solo nombre, foto y edad
+      expect(Object.keys(pub.data.alive[0]).sort()).toEqual(["label", "name", "photo"]);
+      expect(pub.data.alive[0].name).toBe("Hiro");
+
+      // Editar datos mantiene la aprobación; foto nueva → pendiente (fuera hasta revisar)
+      await api.post(
+        `/store/customers/me/pets/${pet.id}`,
+        { ...base, birth_year: 2020, birth_month: 3, showcase_consent: true },
+        ana.auth,
+      );
+      expect((await api.get("/store/showcase", { headers })).data.alive).toHaveLength(1);
+      await api.post(photo, { content: WEBP, consent: true }, ana.auth);
+      expect((await api.get("/store/showcase", { headers })).data.alive).toHaveLength(0);
+      await api.post(`/admin/showcase/${pet.id}`, { decision: "aprobada" }, admin);
+
+      // Quitar la casilla la saca al momento
+      await api.post(
+        `/store/customers/me/pets/${pet.id}`,
+        { ...base, birth_year: 2020, birth_month: 3, showcase_consent: false },
+        ana.auth,
+      );
+      expect((await api.get("/store/showcase", { headers })).data.alive).toHaveLength(0);
+      const noAdmin = await api
+        .post(`/admin/showcase/${pet.id}`, { decision: "aprobada" }, admin)
+        .catch(asRes);
+      expect(noAdmin.status).toBe(404);
+    });
+
+    it("cumpleaños (MK-D): solo con el tema activado, una vez al año", async () => {
+      const ana = await customerAuth("ana-cumple@example.com");
+      const now = new Date("2026-11-11T10:00:00Z");
+      await api.post(
+        "/store/customers/me/pets",
+        { ...base, birth_year: 2021, birth_month: 11, birth_day: 11 },
+        ana.auth,
+      );
+      await api.post(
+        "/store/customers/me/pets",
+        {
+          name: "Nube",
+          species: "gato",
+          birth_year: 2010,
+          birth_month: 11,
+          birth_day: 11,
+          death_year: 2024,
+        },
+        ana.auth,
+      );
+      process.env.EMAIL_TRANSPORT = "smtp";
+      const notifications = container.resolve(Modules.NOTIFICATION);
+      const sent: { template: string; data: Record<string, unknown>; idempotency_key: string }[] =
+        [];
+      jest.spyOn(notifications, "createNotifications").mockImplementation((async (n: never) => {
+        sent.push(n);
+        return [];
+      }) as never);
+      try {
+        // Sin el tema «cumpleanos»: nada
+        expect((await sendPetBirthdays(container, now)).sent).toBe(0);
+        await api.post("/store/customers/me/comms", { topics: ["cumpleanos"] }, ana.auth);
+        expect((await sendPetBirthdays(container, now)).sent).toBe(1);
+        expect(sent[0]!.template).toBe("pet-birthday");
+        // La fallecida no
+        expect(sent[0]!.data.pets).toEqual([expect.objectContaining({ name: "Hiro", age: 5 })]);
+        expect(sent[0]!.data.unsubscribe).toBeTruthy();
+        // Misma clave el mismo año (Medusa no lo reenvía)
+        await sendPetBirthdays(container, now);
+        expect(sent[1]!.idempotency_key).toBe(sent[0]!.idempotency_key);
+        // Otro día: nadie
+        expect((await sendPetBirthdays(container, new Date("2026-11-12T10:00:00Z"))).pets).toBe(0);
+      } finally {
+        delete process.env.EMAIL_TRANSPORT;
+      }
     });
 
     it("baja de la cuenta: se borran sus mascotas", async () => {

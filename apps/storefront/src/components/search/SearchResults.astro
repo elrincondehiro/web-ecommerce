@@ -3,12 +3,17 @@
 // chips, rejilla y paginación. Mismo ProductCard que el catálogo; precio y stock frescos
 // (lib/search-server.ts), así que no hace falta <LiveSync>. Filtros como enlaces-casilla
 // (modelo híbrido, fase7.md §2.3.3). Lo pintan /buscar/ y su fragmento /buscar/parcial/.
+// Fase MK-C: también /comparar/ (alias de la vista tabla, mismos filtros): `path` es la ruta de
+// la página; con datos analíticos, interruptor Tarjetas | Tabla y, en tabla, CompareTable.
 import ProductGrid from "../ProductGrid.astro";
 import ActiveFilters from "./ActiveFilters.astro";
 import FilterButton from "./FilterButton.astro";
 import FilterPanel from "./FilterPanel.astro";
 import SearchPagination from "./SearchPagination.astro";
 import SortForm from "./SortForm.astro";
+import ViewToggle from "./ViewToggle.astro";
+import CompareTable from "./CompareTable.astro";
+import { showCompareToggle } from "$lib/compare";
 import type { SearchPage } from "$lib/search-server";
 import {
   activeFilters,
@@ -16,15 +21,23 @@ import {
   hasFilters,
   searchUrl,
   selectedCount,
-  SEARCH_PATH as path,
+  SEARCH_PATH,
   type SearchParams,
 } from "$lib/search";
 
 interface Props {
   page: SearchPage;
   params: SearchParams;
+  /** Ruta de la página: /buscar/ (por defecto) o /comparar/ (MK-C). */
+  path?: string | undefined;
+  /** /comparar/: producto marcado de entrada (enlace desde la ficha). */
+  checked?: string | undefined;
 }
-const { page, params } = Astro.props;
+const { page, params, path = SEARCH_PATH, checked } = Astro.props;
+const table = params.vista === "tabla";
+// Con datos analíticos en TODOS los resultados (no solo en esta página): el rango de proteína
+// sobre materia seca de las facetas existe; o en la página (por si el filtro está apagado).
+const toggle = table || Boolean(page.facets.ms.proteina) || showCompareToggle(page.products);
 // Fase FO: el chip de una familia lleva su nombre («Color: Azul»), del panel o del manifiesto
 const familyNames = new Map(
   page.facets.groups
@@ -53,7 +66,8 @@ const filtersEmpty = !page.facets.groups.length && !page.facets.price && !page.f
     id="filtros"
   />
   <div class="min-w-0 scroll-mt-4" data-results id="resultados">
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    {/* min-h-8 (MK-C): la fila mide lo mismo con o sin el interruptor de vista (sin salto). */}
+    <div class="mb-4 flex min-h-8 flex-wrap items-center justify-between gap-3">
       <p class="text-sm text-muted-foreground" role="status">
         {page.total === 1 ? "1 producto" : `${page.total} productos`}
         {params.q && <> para «{params.q}»</>}
@@ -62,7 +76,8 @@ const filtersEmpty = !page.facets.groups.length && !page.facets.price && !page.f
         {!filtersEmpty && (
           <FilterButton target="filtros" selected={selectedCount(params)} class="lg:hidden" />
         )}
-        <SortForm params={params} path={path} />
+        {toggle && <ViewToggle params={params} />}
+        <SortForm params={params} path={path} analytic={toggle} />
       </div>
     </div>
     <ActiveFilters filters={chips} clearHref={clearHref} />
@@ -86,13 +101,17 @@ const filtersEmpty = !page.facets.groups.length && !page.facets.price && !page.f
       </div>
     ) : (
       <>
-        <ProductGrid
-          products={page.products}
-          priorityCount={2}
-          images={page.images}
-          back={back}
-          families={params.familia}
-        />
+        {table ? (
+          <CompareTable products={page.products} checked={checked} />
+        ) : (
+          <ProductGrid
+            products={page.products}
+            priorityCount={2}
+            images={page.images}
+            back={back}
+            families={params.familia}
+          />
+        )}
         <SearchPagination params={params} total={page.total} path={path} />
       </>
     )}

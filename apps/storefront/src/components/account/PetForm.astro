@@ -15,6 +15,12 @@ interface Props {
   errors: Record<string, string>;
 }
 const { pet, values, errors } = Astro.props;
+const photoConsentAt =
+  pet?.photo_url && pet.photo_consent_at
+    ? new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" }).format(
+        new Date(pet.photo_consent_at),
+      )
+    : null;
 const action = accountActionUrl(
   pet ? `${PETS_PATH}${pet.id}/` : `${PETS_PATH}nueva/`,
   "account.petSave",
@@ -295,6 +301,14 @@ const dates = [
       </p>
       {err("photo") && <p class="text-sm text-destructive">{err("photo")}</p>}
     </div>
+    {/* Fase MK-D: con foto, el consentimiento ya dado se ENSEÑA (fecha); la casilla solo hace
+        falta para subir una foto (nueva o la primera). Retirarlo = «Quitar la foto». */}
+    {photoConsentAt && (
+      <p class="text-sm">
+        <span aria-hidden="true">✔</span> Aceptaste que la foto sea <strong>pública</strong> el{" "}
+        {photoConsentAt}. Para retirarlo, quita la foto.
+      </p>
+    )}
     <div class="flex flex-col gap-1">
       <label class="flex items-start gap-2 text-sm">
         <input
@@ -305,8 +319,9 @@ const dates = [
           class="mt-0.5 size-4"
         />
         <span>
-          Acepto que la foto sea <strong>pública</strong>: cualquiera con su enlace podrá verla, y
-          podréis usarla en las fichas que yo decida compartir. Necesario para subirla.
+          Acepto que {pet?.photo_url ? "la foto nueva" : "la foto"} sea <strong>pública</strong>:
+          cualquiera con su enlace podrá verla, y podréis usarla en las fichas que yo decida
+          compartir. Necesario para {pet?.photo_url ? "cambiarla" : "subirla"}.
         </span>
       </label>
       {err("photo_consent") && (
@@ -314,6 +329,33 @@ const dates = [
           {err("photo_consent")}
         </p>
       )}
+    </div>
+    {/* Fase MK-D: escaparate «Vuestros peques» (consentimiento propio, distinto del de la foto) */}
+    <div class="flex flex-col gap-1">
+      <label class="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="showcase_consent"
+          checked={values.showcase_consent === "on"}
+          aria-describedby="f-showcase-hint"
+          class="mt-0.5 size-4"
+        />
+        <span>
+          Quiero que salga en el escaparate
+          <a href="/peques/" class="underline underline-offset-4">
+            Vuestros peques
+          </a>
+          .
+        </span>
+      </label>
+      <p id="f-showcase-hint" class="text-xs text-muted-foreground">
+        Solo se muestra cómo se llama, su foto y su edad. Hace falta una foto. Revisamos cada foto
+        antes de publicarla; puedes quitarla del escaparate cuando quieras desmarcando esta casilla.
+        {pet?.showcase_status === "pendiente" && " Ahora mismo está pendiente de revisar."}
+        {pet?.showcase_status === "aprobada" && " Ahora mismo está publicada."}
+        {pet?.showcase_status === "rechazada" &&
+          " Esta foto no la hemos publicado; prueba con otra."}
+      </p>
     </div>
   </section>
 

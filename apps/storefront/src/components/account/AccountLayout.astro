@@ -5,6 +5,7 @@
 import {
   ACCOUNT_PATH,
   ADDRESSES_PATH,
+  COMMS_PATH,
   ORDERS_PATH,
   PETS_PATH,
   PROFILE_PATH,
@@ -12,6 +13,7 @@ import {
 } from "$lib/account";
 import { WISHLIST_PATH } from "$lib/wishlist";
 import { POINTS_PATH } from "$lib/points";
+import { STOCK_ALERTS_PATH } from "$lib/stock-alerts";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 interface Props {
@@ -20,14 +22,17 @@ interface Props {
 }
 const { title, description = "Tu cuenta en El Rincón de Hiro." } = Astro.props;
 const current = Astro.url.pathname;
+// Orden del usuario (Fase MK-D), el mismo que las tarjetas del resumen (/cuenta/).
 const links = [
   { href: ACCOUNT_PATH, name: "Resumen" },
-  { href: ORDERS_PATH, name: "Mis pedidos" },
-  { href: PETS_PATH, name: "Mis peques" },
   { href: WISHLIST_PATH, name: "Lista de deseos" },
-  { href: POINTS_PATH, name: "Mis puntos" },
-  { href: ADDRESSES_PATH, name: "Direcciones" },
+  { href: STOCK_ALERTS_PATH, name: "Avisos de stock" },
+  { href: ORDERS_PATH, name: "Mis pedidos" },
   { href: PROFILE_PATH, name: "Mis datos" },
+  { href: POINTS_PATH, name: "Mis puntos" },
+  { href: PETS_PATH, name: "Mis peques" },
+  { href: ADDRESSES_PATH, name: "Direcciones" },
+  { href: COMMS_PATH, name: "Comunicaciones" },
 ];
 const isCurrent = (href: string) =>
   href === ACCOUNT_PATH ? current === href : current.startsWith(href);

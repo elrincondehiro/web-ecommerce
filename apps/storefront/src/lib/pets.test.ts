@@ -167,3 +167,23 @@ describe("mascotas (Fase M)", () => {
     });
   });
 });
+
+describe("cumpleaños en la cuenta (Fase MK-D)", () => {
+  it("hoy con día, la primera semana del mes sin día; nunca fallecidas", async () => {
+    const { birthdayNotice, birthdayText } = await import("./pets");
+    const now = new Date("2026-11-03T10:00:00Z");
+    const pet = (d: number | null, death: number | null = null) => ({
+      birth_year: 2021,
+      birth_month: 11,
+      birth_day: d,
+      death_year: death,
+    });
+    expect(birthdayNotice(pet(3), now)).toEqual({ age: 5, exact: true });
+    expect(birthdayNotice(pet(4), now)).toBeNull();
+    expect(birthdayNotice(pet(null), now)).toEqual({ age: 5, exact: false });
+    expect(birthdayNotice(pet(null), new Date("2026-11-08T10:00:00Z"))).toBeNull();
+    expect(birthdayNotice(pet(3, 2025), now)).toBeNull();
+    expect(birthdayText("Hiro", { age: 5, exact: true })).toBe("¡Hoy cumple Hiro 5 años!");
+    expect(birthdayText("Luna", { age: 1, exact: false })).toBe("¡Luna cumple 1 año este mes!");
+  });
+});

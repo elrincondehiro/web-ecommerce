@@ -7,6 +7,8 @@ import {
   PET_NEUTERED,
   PET_ORIGINS,
   PET_SEX,
+  birthdayNotice,
+  birthdayText,
   isGone,
   partialDateLabel,
   petAgeLabel,
@@ -33,6 +35,13 @@ const facts = [
   pet.origin ? PET_ORIGINS[pet.origin] : null,
 ].filter((x): x is string => Boolean(x));
 const confirmId = `quitar-${pet.id}`;
+// Fase MK-D: cumpleaños (hoy, o este mes si solo se sabe el mes) y estado del escaparate
+const birthday = birthdayNotice(pet);
+const SHOWCASE = {
+  pendiente: "Escaparate: pendiente de revisar",
+  aprobada: "En el escaparate",
+  rechazada: "Escaparate: foto no publicada",
+} as const;
 ---
 
 <li
@@ -64,6 +73,10 @@ const confirmId = `quitar-${pet.id}`;
     )}
     <div class="flex min-w-0 flex-col gap-1">
       <h2 class="text-lg font-semibold break-words">{pet.name}</h2>
+      {birthday && <p class="text-sm font-medium">🎂 {birthdayText(pet.name, birthday)}</p>}
+      {!gone && pet.showcase_status && (
+        <p class="text-xs text-muted-foreground">{SHOWCASE[pet.showcase_status]}</p>
+      )}
       <p class="text-sm">
         {speciesLabel(pet)}
         {!gone && age && (

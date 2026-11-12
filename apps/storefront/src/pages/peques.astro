@@ -1,0 +1,156 @@
+---
+// Escaparate «Vuestros peques» (Fase MK-D): las mascotas de los clientes que han aceptado salir
+// (casilla propia, foto y aprobadas en el Admin): SOLO nombre, foto y edad. On-demand con caché
+// compartida corta (las altas y bajas se notan en unos minutos), noindex (decisión del usuario:
+// las fotos no van a buscadores y quitar una es inmediato). 0 JS:
+// - Tarjetas flotantes con movimiento aleatorio: CSS por tarjeta en el <head> (HeadStyle, hash
+//   en la CSP; lib/showcase.ts), orden barajado cada día (igual para todos: cacheable).
+// - Fallecidas: franja aparte con un arcoíris en semicírculo y sus tarjetas desfilando.
+// - «Parar el movimiento»: casilla + :has() (WCAG 2.2.2); con prefers-reduced-motion, quietas.
+// Fuentes: astro-docs (Astro.csp.insertStyleHash), MDN vía context7 (prefers-reduced-motion,
+// animation-play-state).
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+import HeadStyle from "../components/HeadStyle.astro";
+import { buttonVariants } from "$lib/components/ui/button";
+import { PETS_PATH } from "$lib/account";
+import { getShowcase } from "$lib/medusa";
+import {
+  daySeed,
+  floatingCss,
+  rainbowDuration,
+  shuffle,
+  splitGoneLabel,
+  type Showcase,
+} from "$lib/showcase";
+
+export const prerender = false;
+
+let showcase: Showcase | null = null;
+try {
+  showcase = await getShowcase();
+  Astro.response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+} catch (err) {
+  Astro.logger.error(`peques: ${err instanceof Error ? err.message : String(err)}`);
+  Astro.response.headers.set("Cache-Control", "no-store");
+}
+const seed = daySeed();
+const alive = showcase ? shuffle(showcase.alive, seed) : [];
+const gone = showcase ? shuffle(showcase.gone, seed + 1) : [];
+// Tarjetas del desfile repetidas dos veces: el bucle (translateX −50 %) no deja huecos.
+const parade = gone.length ? [...gone, ...gone] : [];
+const css =
+  floatingCss(alive.length, seed) +
+  (gone.length
+    ? `\n.peques-desfile .peques-desfile__pista{animation-duration:${rainbowDuration(gone.length)}s}`
+    : "");
+const crumbs = [
+  { name: "Inicio", href: "/" },
+  { name: "Vuestros peques", href: "/peques/" },
+];
+---
+
+<BaseLayout title="Vuestros peques" description="Las mascotas de nuestra comunidad." noindex>
+  <HeadStyle slot="head" css={css} />
+  <Breadcrumbs items={crumbs} />
+  <div class="peques flex flex-col gap-8">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-semibold tracking-tight">Vuestros peques</h1>
+        <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Los peques de nuestra comunidad, con el permiso de sus familias. ¿Quieres que salga el
+          tuyo? Márcalo en{" "}
+          <a href={PETS_PATH} class="underline underline-offset-4">
+            Mis peques
+          </a>
+          .
+        </p>
+      </div>
+      {(alive.length > 0 || gone.length > 0) && (
+        <label class:list={[buttonVariants({ variant: "outline", size: "sm" }), "peques-pausa"]}>
+          <input type="checkbox" class="sr-only" data-peques-pausa />
+          <span class="peques-pausa__parar">Parar el movimiento</span>
+          <span class="peques-pausa__seguir">Reanudar el movimiento</span>
+        </label>
+      )}
+    </div>
+
+    {!showcase ? (
+      <p role="alert" class="rounded-md border-2 border-line px-4 py-10 text-center">
+        El escaparate no está disponible ahora mismo. Inténtalo de nuevo en unos minutos.
+      </p>
+    ) : alive.length === 0 && gone.length === 0 ? (
+      <p class="rounded-md border-2 border-line px-4 py-10 text-center text-muted-foreground">
+        Aún no hay peques en el escaparate. ¡El tuyo puede ser el primero!
+      </p>
+    ) : null}
+
+    {alive.length > 0 && (
+      <ul
+        class="peques-flotan grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+        aria-label="Peques"
+      >
+        {alive.map((p, i) => (
+          <li class={`peque peque-${i}`}>
+            <figure class="peque__tarjeta">
+              <img
+                src={p.photo}
+                alt={p.name}
+                width="400"
+                height="400"
+                loading={i < 4 ? "eager" : "lazy"}
+                decoding="async"
+              />
+              <figcaption>
+                <span class="peque__nombre">{p.name}</span>
+                {p.label && <span class="peque__edad">{p.label}</span>}
+              </figcaption>
+            </figure>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {gone.length > 0 && (
+      <section class="peques-arcoiris" aria-labelledby="arcoiris-titulo">
+        {/* El arco (::before, decorativo) con el título en su hueco; el desfile, debajo. */}
+        <div class="peques-arcoiris__arco">
+          <h2 id="arcoiris-titulo" class="peques-arcoiris__titulo">
+            Al otro lado del arcoíris
+          </h2>
+        </div>
+        {/* Lista accesible (una vez); el desfile visual va duplicado y oculto a lectores. */}
+        <ul class="sr-only">
+          {gone.map((p) => (
+            <li>{p.label}</li>
+          ))}
+        </ul>
+        <div class="peques-desfile" aria-hidden="true">
+          <ul class="peques-desfile__pista">
+            {parade.map((p, i) => {
+              const g = splitGoneLabel(p.label, p.name);
+              return (
+                <li class:list={["peque peque--arcoiris", i >= gone.length && "peque--copia"]}>
+                  <figure class="peque__tarjeta">
+                    <img
+                      src={p.photo}
+                      alt=""
+                      width="400"
+                      height="400"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <figcaption>
+                      <span class="peque__nombre">{g.name}</span>
+                      <span class="peque__edad">{g.years ?? "\u00a0"}</span>
+                    </figcaption>
+                  </figure>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+    )}
+  </div>
+</BaseLayout>

@@ -12,6 +12,7 @@ import {
   createPetStep,
   findCustomerPetStep,
   setPetPhotoStep,
+  reviewShowcaseStep,
   softDeletePetsStep,
   updatePetStep,
 } from "./steps";
@@ -84,4 +85,11 @@ export const deletePetsWorkflow = createWorkflow(
     });
     return new WorkflowResponse(transform({ deleted }, ({ deleted }) => ({ ids: deleted.ids })));
   },
+);
+
+/** Escaparate (Fase MK-D): aprobar o rechazar desde el Admin. */
+export const reviewShowcaseWorkflow = createWorkflow(
+  "review-pet-showcase",
+  (input: { pet_id: string; decision: "aprobada" | "rechazada" }) =>
+    new WorkflowResponse(reviewShowcaseStep(input)),
 );

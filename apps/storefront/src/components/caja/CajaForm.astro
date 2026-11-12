@@ -10,6 +10,7 @@
 //   (lib/line-data.ts `cajaFromForm`).
 // - Sin `required` en lo que depende de otro campo (un campo oculto con required bloquea el
 //   envío): lo valida el servidor y, si falla, vuelve con el aviso #carrito-caja.
+import { umamiEvent } from "$lib/analytics";
 import { buttonVariants } from "$lib/components/ui/button";
 import { actionUrl } from "$lib/cart";
 import { getProductPricing, type StoreProduct } from "$lib/catalog";
@@ -291,7 +292,11 @@ const optional = '<span class="font-normal text-muted-foreground">(opcional)</sp
   </fieldset>
 
   <div class="flex flex-wrap items-center gap-3">
-    <button type="submit" class={buttonVariants({ size: "lg" })}>
+    <button
+      type="submit"
+      class={buttonVariants({ size: "lg" })}
+      {...umamiEvent("anadir-carrito", { producto: "Caja de snacks" })}
+    >
       Añadir caja al carrito
     </button>
     <p class={hint}>¿Otra caja para otra mascota? Añádela después con sus datos.</p>
