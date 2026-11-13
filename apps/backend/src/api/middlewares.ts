@@ -27,6 +27,7 @@ import { PetBody, PetPhotoBody } from "../lib/pets-schema";
 import { StoreCommsBody } from "./store/customers/me/comms/route";
 import { StoreStockAlertBody } from "./store/customers/me/stock-alerts/route";
 import { AdminShowcaseReviewBody } from "./admin/showcase/[id]/route";
+import { HookRebuildBody } from "./hooks/storefront-rebuild/route";
 import { StoreUnsubscribeBody, StoreUnsubscribeQuery } from "./store/comms/unsubscribe/route";
 import { withStripeSessionData } from "../lib/stripe-session";
 import { logSearch } from "../lib/search-log-middleware";
@@ -309,6 +310,12 @@ export default defineMiddlewares({
       matcher: "/store/customers/me/stock-alerts",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(StoreStockAlertBody)],
+    },
+    // Publicación del catálogo (fase 13): avisos del workflow del homelab (secreto en la ruta).
+    {
+      matcher: "/hooks/storefront-rebuild",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(HookRebuildBody)],
     },
     // Escaparate de mascotas (Fase MK-D): moderación desde el Admin.
     {

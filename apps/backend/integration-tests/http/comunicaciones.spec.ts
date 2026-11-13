@@ -212,11 +212,20 @@ medusaIntegrationTestRunner({
         });
 
       expect(await send()).toBe(false);
-      expect(spy).not.toHaveBeenCalled();
+      const mine = () =>
+        spy.mock.calls.filter(
+          (c) => (c[0] as { idempotency_key?: string }).idempotency_key === "mk-test/1",
+        );
+      expect(mine()).toHaveLength(0);
 
       await api.post("/store/customers/me/comms", { topics: ["novedades"] }, eva.auth);
       expect(await send()).toBe(true);
-      const arg = spy.mock.calls[0]![0] as unknown as {
+      // Su llamada por la clave: en la pasada completa puede colarse otro email (eventos de otros
+      // ficheros que comparten Redis)
+      const call = spy.mock.calls.find(
+        (c) => (c[0] as { idempotency_key?: string }).idempotency_key === "mk-test/1",
+      );
+      const arg = call![0] as unknown as {
         data: { unsubscribe: { url: string; topic: string } };
         provider_data: { headers: Record<string, string> };
       };

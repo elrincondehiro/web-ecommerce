@@ -1,0 +1,131 @@
+# Publicar el catálogo en la tienda (fase 13, docs/fases/fase13-rebuild.md). SOLO en Gitea, en el
+# runner del homelab: lo lanza el temporizador del LXC (docker/rebuild/storefront-poll.sh) por la
+# API (`workflow_dispatch`) cuando el backend del VPS dice que hay cambios de catálogo.
+#   1. Avisa al backend «empezado» (estado en Admin → «Publicar en la tienda»).
+#   2. Build de la imagen del storefront del CÓDIGO DESPLEGADO (variable DEPLOYED_REF, p. ej.
+#      v0.3.0) contra la Store API del VPS por WireGuard (10.77.0.1:19000), con el Docker del LXC
+#      (caché de BuildKit del host: builds de minutos).
+#   3. Push a GHCR: ecommerce-storefront:<ref>-cat<AAAAMMDD-HHMM> y :live.
+#   4. SSH al VPS con la clave de `deploy-storefront`, que solo puede ejecutar
+#      deploy-storefront.sh (pull + recrear el storefront).
+#   5. Purga de Cloudflare (token de solo «Cache Purge») y aviso «terminado» (ok o el paso que falló).
+# Variables del repo: DEPLOYED_REF, VPS_WG_IP (10.77.0.1), STORE_URL, IMAGE_BASE_URL.
+# Secrets: GHCR_USER, GHCR_TOKEN (PAT write:packages), MEDUSA_PUBLISHABLE_KEY (del VPS),
+#   STOREFRONT_REBUILD_SECRET, DEPLOY_SSH_KEY, DEPLOY_SSH_KNOWN_HOSTS, CF_ZONE_ID, CF_API_TOKEN.
+# Fuentes: context7 /websites/gitea (workflow_dispatch por la API, Docker en los jobs:
+# `container.docker_host`), /openssh/openssh-portable (authorized_keys `command=`, `restrict`),
+# cloudflare-docs (purge_cache, permiso Cache Purge); fase11 §4.7 (build contra el VPS).
+name: Storefront rebuild
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Motivo (lo pone el temporizador)
+        required: false
+        default: manual
+
+# Uno detrás de otro, nunca a la vez ni cancelando uno a medias
+concurrency:
+  group: storefront-rebuild
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    if: ${{ github.server_url != 'https://github.com' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      HOOK: http://${{ vars.VPS_WG_IP }}:19000/hooks/storefront-rebuild
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      IMAGE: ghcr.io/elrincondehiro/ecommerce-storefront
+    steps:
+      - name: Aviso «empezado»
+        env:
+          SECRET: ${{ secrets.STOREFRONT_REBUILD_SECRET }}
+        run: |
+          curl -fsS -m 20 -X POST "$HOOK" -H "x-rebuild-secret: $SECRET" \
+            -H 'content-type: application/json' \
+            -d "{\"event\":\"started\",\"run_url\":\"$RUN_URL\"}"
+
+      - name: Checkout del código desplegado
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ vars.DEPLOYED_REF }}
+
+      # La imagen del runner (node:24-trixie) no trae Docker: CLI + el daemon del LXC (socket
+      # montado por el runner, `container.docker_host` vacío).
+      - name: CLI de Docker
+        run: |
+          if ! command -v docker >/dev/null; then
+            apt-get update -qq && apt-get install -y -qq --no-install-recommends docker-cli docker-buildx
+          fi
+          docker version --format '{{.Server.Version}}'
+
+      - name: Build
+        id: build
+        env:
+          PK: ${{ secrets.MEDUSA_PUBLISHABLE_KEY }}
+          REF: ${{ vars.DEPLOYED_REF }}
+        run: |
+          tag="$(printf '%s' "$REF" | sed 's/^v//; s#[^A-Za-z0-9_.-]#-#g')-cat$(date -u +%Y%m%d-%H%M)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          pk="$(mktemp)"; printf '%s' "$PK" > "$pk"
+          trap 'shred -u "$pk" 2>/dev/null || rm -f "$pk"' EXIT
+          docker build --network host -f apps/storefront/Dockerfile \
+            --build-arg SITE_URL="${{ vars.STORE_URL }}" \
+            --build-arg IMAGE_BASE_URL="${{ vars.IMAGE_BASE_URL }}" \
+            --build-arg MEDUSA_BACKEND_URL="http://${{ vars.VPS_WG_IP }}:19000" \
+            --build-arg UMAMI_URL="${{ vars.UMAMI_URL }}" \
+            --build-arg UMAMI_WEBSITE_ID="${{ vars.UMAMI_WEBSITE_ID }}" \
+            --secret id=medusa_publishable_key,src="$pk" \
+            -t "$IMAGE:$tag" -t "$IMAGE:live" .
+
+      - name: Push a GHCR
+        env:
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          TAG: ${{ steps.build.outputs.tag }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+          docker push "$IMAGE:$TAG"
+          docker push "$IMAGE:live"
+          docker logout ghcr.io
+          # El LXC tiene poco disco: la imagen ya está en GHCR (las capas siguen en la caché de
+          # BuildKit para el próximo build)
+          docker image rm "$IMAGE:$TAG" "$IMAGE:live" >/dev/null
+
+      - name: Desplegar en el VPS
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          command -v ssh >/dev/null || (apt-get update -qq && apt-get install -y -qq --no-install-recommends openssh-client)
+          d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
+          printf '%s\n' "$KEY" > "$d/key"; chmod 600 "$d/key"
+          printf '%s\n' "$KNOWN" > "$d/known"
+          ssh -i "$d/key" -o UserKnownHostsFile="$d/known" -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes deploy-storefront@${{ vars.VPS_WG_IP }}
+
+      - name: Purga de Cloudflare
+        env:
+          ZONE: ${{ secrets.CF_ZONE_ID }}
+          TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          curl -fsS -m 30 -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE/purge_cache" \
+            -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+            -d '{"purge_everything":true}' | grep -q '"success":true'
+
+      - name: Aviso «terminado»
+        if: ${{ always() }}
+        env:
+          SECRET: ${{ secrets.STOREFRONT_REBUILD_SECRET }}
+          STATUS: ${{ job.status }}
+        run: |
+          if [ "$STATUS" = success ]; then body='{"event":"finished","ok":true}'
+          else body="{\"event\":\"finished\",\"ok\":false,\"error\":\"El workflow terminó con estado $STATUS: mira el registro.\"}"; fi
+          curl -fsS -m 20 -X POST "$HOOK" -H "x-rebuild-secret: $SECRET" \
+            -H 'content-type: application/json' -d "$body" || true

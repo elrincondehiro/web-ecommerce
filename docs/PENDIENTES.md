@@ -87,7 +87,7 @@ Hoy el VPS corre `v0.2.0` (G–M). `main` (2-nov-2026, `edf1743`) lleva además 
 
 ## 4. Fase 13 — rendimiento y operación (candidatas)
 
-- [ ] 🟠 **Rebuild del storefront por webhook** de catálogo: hoy un producto, foto, oferta o categoría nuevos no aparecen hasta el siguiente build (fase3, fase6, faseI-interficie). Con ello: `offers.price` en el JSON-LD (fase3 §7).
+- [ ] 🟠 **Rebuild del storefront** de catálogo: 🚧 [fase13-rebuild.md](./fases/fase13-rebuild.md) (backend, workflow y scripts hechos; falta la puesta en marcha en el homelab y el VPS, §5, y probarlo de punta a punta). Después: `offers.price` en el JSON-LD (fase3 §7).
 - [x] ~~**Capacidad sin Cloudflare ~20 páginas/s**~~: [Fase R-2](./fases/faseR-rendimiento.md) (caché de Medusa + caché de `LiveSyncData`): ~100 páginas/s en local con Medusa en 2 núcleos. **Queda**: repetir la tanda B de la fase 11 en el VPS tras desplegar.
 - [x] ~~LCP de las fichas (P1–P5 de la auditoría de rendimiento)~~: [Fase R](./fases/faseR-rendimiento.md).
 - [x] ~~Caché de `LiveSyncData` (P8) y una island por ficha (P6)~~: Fase R-2.

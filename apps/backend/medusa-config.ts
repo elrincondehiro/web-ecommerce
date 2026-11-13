@@ -222,6 +222,8 @@ module.exports = defineConfig({
     { resolve: "./src/modules/stock-alert" },
     // Búsquedas de la tienda: contadores anónimos por término y semana (Fase MK-E2).
     { resolve: "./src/modules/search-log" },
+    // Publicar el catálogo en la tienda: estado del rebuild del storefront (fase 13).
+    { resolve: "./src/modules/storefront-publish" },
     // Caché de consultas (Fase R-2, docs/fases/faseR-rendimiento.md): solo actúa con el feature flag
     // `MEDUSA_FF_CACHING=true` (experimental, «[WIP]» en 2.21.2). Se invalida con los eventos del
     // servidor; lo que escribe un `medusa exec` no le llega (los scripts de catálogo y stock la

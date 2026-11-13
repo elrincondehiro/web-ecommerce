@@ -1,0 +1,10 @@
+# Cada 2 minutos (la espera de verdad la decide el backend: STOREFRONT_REBUILD_QUIET_MIN).
+[Unit]
+Description=Publicar la tienda si hay cambios de catálogo (cada 2 min)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+
+[Install]
+WantedBy=timers.target

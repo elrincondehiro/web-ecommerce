@@ -1,0 +1,9 @@
+#!/bin/sh
+# Lo que ejecuta deploy-storefront.sh como `deploy` (sudoers: solo este fichero). Pull de la imagen
+# y recrear SOLO el storefront, con el entorno vacío como `dc` (fase11 §4.6).
+set -eu
+cd /opt/ecommerce
+env -i PATH=/usr/bin:/bin docker compose --env-file .env.prod -f compose.prod.yml pull storefront
+env -i PATH=/usr/bin:/bin docker compose --env-file .env.prod -f compose.prod.yml up -d --wait storefront
+docker image prune -f --filter "label=org.opencontainers.image.title=ecommerce-storefront" >/dev/null 2>&1 || true
+echo "storefront actualizado"

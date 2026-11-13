@@ -16,7 +16,8 @@ name: web-ecommerce-prodlocal
 
 services:
   backend-server:
-    ports:
+    # !override: en prod publica en la IP de WireGuard (10.77.0.1), que aquí no existe
+    ports: !override
       - "127.0.0.1:19000:9000"
     depends_on:
       seaweedfs:

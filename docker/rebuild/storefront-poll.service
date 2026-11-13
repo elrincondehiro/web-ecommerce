@@ -1,0 +1,12 @@
+# LXC del runner de Gitea (homelab): pregunta al VPS si hay que publicar la tienda (fase 13).
+[Unit]
+Description=Publicar la tienda si hay cambios de catálogo
+After=network-online.target wg-quick@wg0.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=gitea-runner
+ExecStart=/usr/local/bin/storefront-poll.sh
+NoNewPrivileges=yes
+ProtectSystem=full

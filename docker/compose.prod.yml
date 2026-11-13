@@ -104,6 +104,9 @@ x-backend: &backend
     STOCK_ALERT_EXPIRE_CRON: ${STOCK_ALERT_EXPIRE_CRON:-30 4 * * *}
     # Cumpleaños de «Mis peques» (Fase MK-D): job del worker (hora UTC).
     PETS_BIRTHDAY_CRON: ${PETS_BIRTHDAY_CRON:-0 9 * * *}
+    # Publicar el catálogo (fase 13): secreto compartido con el homelab y minutos sin cambios.
+    STOREFRONT_REBUILD_SECRET: ${STOREFRONT_REBUILD_SECRET:-}
+    STOREFRONT_REBUILD_QUIET_MIN: ${STOREFRONT_REBUILD_QUIET_MIN:-10}
     # Búsquedas (Fase MK-E2): borrado de los contadores de más de 52 semanas (worker).
     SEARCH_LOG_PURGE_CRON: ${SEARCH_LOG_PURGE_CRON:-45 4 * * *}
 
@@ -137,6 +140,12 @@ services:
 
   backend-server:
     <<: *backend
+    # Store API SOLO por WireGuard (fase 13): la leen el build del storefront del runner de Gitea
+    # del homelab y el del portátil, y el temporizador pregunta /hooks/storefront-rebuild. El
+    # firewall de Hetzner no abre el 19000 y 10.77.0.1 no existe fuera del túnel (Docker arranca
+    # después de wg-quick@wg0, fase11 §4.9). Sustituye a compose.prod.build.yml.
+    ports:
+      - "${WG_BIND:-10.77.0.1}:19000:9000"
     environment:
       <<: *backend-env
       MEDUSA_WORKER_MODE: server
@@ -153,7 +162,8 @@ services:
       DISABLE_MEDUSA_ADMIN: "true"
 
   storefront:
-    image: ${REGISTRY:?}/${IMAGE_NAMESPACE:?}/ecommerce-storefront:${IMAGE_TAG:?}
+    # STOREFRONT_IMAGE_TAG=live: la que publica el rebuild automático (fase 13). Sin ella, IMAGE_TAG.
+    image: ${REGISTRY:?}/${IMAGE_NAMESPACE:?}/ecommerce-storefront:${STOREFRONT_IMAGE_TAG:-${IMAGE_TAG:?}}
     build:
       context: ..
       dockerfile: apps/storefront/Dockerfile

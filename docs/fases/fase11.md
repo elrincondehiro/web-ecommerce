@@ -216,6 +216,8 @@ Fuentes: context7 `/medusajs/medusa` (medusa-cli `user --invite`, deployment/gen
 
 ### 4.7 Storefront real (11-6)
 
+> **Desde la fase 13** ([fase13-rebuild.md](./fase13-rebuild.md)) el storefront se reconstruye solo en el runner del homelab, y el backend publica la Store API en `10.77.0.1:19000` (WireGuard) de forma fija: el portátil la lee directamente por el túnel (sin `compose.prod.build.yml`, borrado, ni `ssh -L`). El procedimiento de abajo queda como referencia para un build manual.
+
 - **Build en el portátil** contra el backend del VPS por un túnel SSH (por WireGuard) al loopback: `docker/compose.prod.build.yml` publica la Store API solo en `127.0.0.1:19000` del VPS.
   1. VPS: `./dc -f compose.prod.build.yml up -d --wait backend-server`.
   2. Portátil: `ssh -N -L 19000:127.0.0.1:19000 deploy@10.77.0.1` (terminal aparte).
