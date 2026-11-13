@@ -1,0 +1,6 @@
+# DESCATALOGAR UN PRODUCTO · catalog:import catalog/plantilla/descatalogado (instrucciones: LEEME.md de esta carpeta).
+"# Un producto que ya no se vende NO se borra: descatalogado = sí. La ficha sigue (sin compra, noindex, enlace al sustituto) y sale de listados y búsqueda."
+# sustituto = handle de otro producto (de esta hoja o de la tienda). descatalogado = no lo vuelve a vender; sustituto = - lo quita.
+"# Hoja MÍNIMA: solo las columnas que cambian (lo vacío o lo que no está no se toca). Requiere que existan collar-nylon (producto-variantes) y collar-cuero."
+handle,titulo,categorias,iva,descatalogado,sustituto,sku,precio,stock
+collar-cuero,Collar de cuero,collares-perro,general,sí,collar-nylon,COL-CUE,"29,95",0

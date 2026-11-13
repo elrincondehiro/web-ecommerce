@@ -6,7 +6,8 @@
  *
  * Escribe en `datos/medusa/`:
  *   - `productos.csv`: hoja para `catalog:import` (stock 0, publicado).
- *   - `categorias.csv`: copia del árbol nuevo (`apps/backend/catalog/mi-carga/categorias.csv`).
+ *   - `categorias.csv`: copia del árbol nuevo (`apps/backend/catalog/real/categorias.csv`, u otro con
+ *     `--arbol=<fichero>`).
  *   - `avisos.csv`: lo que conviene revisar antes de cargar.
  * Y mantiene (se crean la primera vez con una propuesta; NUNCA se sobrescribe lo que pongas):
  *   - `mapa-categorias.csv`: categoría de Loyverse → handle(s) del árbol nuevo (`a|b`).
@@ -37,7 +38,12 @@ import type { Item } from "./types.ts";
 const log = (msg: string) => console.log(msg);
 
 const MEDUSA = join(DATA, "medusa");
-const TREE = join(ROOT, "..", "..", "apps", "backend", "catalog", "mi-carga", "categorias.csv");
+// Árbol de categorías de la tienda: `--arbol=<fichero>` (relativo a donde se ejecuta) o, por
+// defecto, el del catálogo real que se está preparando (`apps/backend/catalog/real/`).
+const TREE_ARG = process.argv.find((a) => a.startsWith("--arbol="))?.slice("--arbol=".length);
+const TREE = TREE_ARG
+  ? resolve(process.env.INIT_CWD ?? process.cwd(), TREE_ARG)
+  : join(ROOT, "..", "..", "apps", "backend", "catalog", "real", "categorias.csv");
 
 async function readTable(path: string) {
   return exists(path) ? parseCsv(await readFile(path, "utf8"), { comments: true }).rows : [];
@@ -124,7 +130,7 @@ async function main() {
     ...new Set(result.rows.flatMap((r) => (r.categorias ?? "").split("|")).filter(Boolean)),
   ].filter((h) => !treeHandles.has(h));
   if (badCats.length) {
-    log(`Categorías que no están en mi-carga/categorias.csv: ${badCats.join(", ")}`);
+    log(`Categorías que no están en ${TREE}: ${badCats.join(", ")}`);
     stop = true;
   }
   if (stop) {

@@ -3,7 +3,7 @@
  * Solo mira las hojas (sin BD): formato de cada celda, columnas, herencia de precios y
  * medidas dentro de un producto, combinaciones de opciones… Lo que depende de la BD
  * (categorías existentes, SKU de otro producto…) se valida en `catalog-plan.ts`.
- * Formato de las hojas: `apps/backend/catalog/plantilla/LEEME.md`.
+ * Formato de las hojas: `apps/backend/catalog/plantilla/LEEME.md` (una carpeta por caso).
  *
  * Convención de celdas: vacía = «no tocar» (o heredar, en las columnas heredables);
  * `-` = borrar el valor.

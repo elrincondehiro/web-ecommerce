@@ -1,0 +1,11 @@
+# Familias de prueba (Fase FO) de «Color», la opción global de los mocks (catalog:mock: Rojo, Azul, Negro, Verde) y de los arneses.
+# Va en esta carpeta porque «Deep Teal» y «Huckleberry» los crea productos.csv de aquí (las familias se cargan después de los productos).
+"# Estampado y Talla se quedan SIN familias: se siguen filtrando por sus valores. Lo usan los e2e familias, buscar y accesibilidad."
+opcion,familia,nombre,color,valor,familias,color_muestra
+Color,plantilla,,,,,
+Color,,,,Rojo,rojo,
+Color,,,,Azul,azul,
+Color,,,,Negro,negro,
+Color,,,,Verde,verde,
+Color,,,,Deep Teal,azul|verde,#2f6f73
+Color,,,,Huckleberry,morado,#5b3a6b

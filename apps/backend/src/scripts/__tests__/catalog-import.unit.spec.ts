@@ -14,7 +14,7 @@ import {
   type DbProduct,
 } from "../lib/catalog-plan";
 
-const TEMPLATE = path.join(__dirname, "../../../catalog/plantilla");
+import { TEMPLATE_DIR as TEMPLATE, templateProductsCsv } from "../lib/catalog-template";
 const csv = (rows: string[]) => parseCsv(rows.join("\n"));
 
 const emptyDb = (over: Partial<CatalogSnapshot> = {}): CatalogSnapshot => ({
@@ -65,7 +65,7 @@ describe("hojas", () => {
 
   it("la plantilla es válida (categorías y productos)", () => {
     const cats = readCategories(
-      parseCsv(readFileSync(path.join(TEMPLATE, "categorias.csv"), "utf8")),
+      parseCsv(readFileSync(path.join(TEMPLATE, "categorias", "categorias.csv"), "utf8")),
     );
     expect(cats.errors).toEqual([]);
     expect(cats.warnings).toEqual([]);
@@ -73,9 +73,8 @@ describe("hojas", () => {
       "alimentacion-perro",
     );
 
-    const prods = readProducts(
-      parseCsv(readFileSync(path.join(TEMPLATE, "productos.csv"), "utf8")),
-    );
+    // Todas las hojas de productos de la plantilla juntas: un solo productos.csv las admite
+    const prods = readProducts(parseCsv(templateProductsCsv()));
     expect(prods.errors).toEqual([]);
     expect(prods.warnings).toEqual([]);
     const col = prods.products.find((p) => p.handle === "collar-nylon");
@@ -90,6 +89,7 @@ describe("hojas", () => {
     expect(col?.variants[1]?.weight).toBe(60);
     expect(col?.variants[2]?.weight).toBe(90);
     expect(col?.description).toContain("\n");
+    expect(col?.related).toEqual(["taza-logo", "guia-cachorro"]);
     expect(col?.tags).toEqual(["novedad", "reflectante"]);
 
     const pienso = prods.products.find((p) => p.handle === "pienso-pollo-adulto");
@@ -100,7 +100,7 @@ describe("hojas", () => {
       cenizas_pct: 7.5,
       humedad_pct: 9,
     });
-    expect(pienso?.extraAnalytics).toEqual({ Calcio: "1,2 %" });
+    expect(pienso?.extraAnalytics).toEqual({ Calcio: "1,2 %", "Omega 3": "0,8 %" });
     expect(pienso?.variants.map((v) => v.netG)).toEqual([3000, 12000]);
 
     // Granel: 20 €/kg en pasos de 5 g = 0,10 € el paso; oferta 18 €/kg = 0,09 €
@@ -114,11 +114,36 @@ describe("hojas", () => {
       bulk: { stepG: 5, minG: 100, priceKg: 20, salePriceKg: 18 },
     });
 
+    // Granel con sabores: cada uno con su paso, mínimo y €/kg
+    const mix = prods.products.find((p) => p.handle === "premios-mixtos");
+    expect(mix?.variants.map((v) => [v.sku, v.bulk?.minG, v.bulk?.priceKg])).toEqual([
+      ["PRE-MIX-POL", 100, 24],
+      ["PRE-MIX-TER", 100, 28],
+      ["PRE-MIX-SAL", 200, 32],
+    ]);
+
     const taza = prods.products.find((p) => p.handle === "taza-logo");
     expect(taza?.options).toEqual([]);
-    expect(taza?.status).toBe("draft");
-    expect(taza?.variants[0]?.netMl).toBe(350);
+    expect(taza?.status).toBe("published");
+    expect(taza?.collection).toBe("destacados");
+    expect(taza?.variants[0]).toMatchObject({ netMl: 350, price: 9.95, salePrice: 8.95 });
+    expect(prods.products.find((p) => p.handle === "taza-borrador")?.status).toBe("draft");
     expect(prods.products.find((p) => p.handle === "guia-cachorro")?.iva).toBe("superreducido");
+
+    // Selector: opción de fotos y guía; puntos y descuentos; diseño; caja sin stock
+    expect(prods.products.find((p) => p.handle === "arnes-colores")).toMatchObject({
+      photoOption: "Color",
+      sizeGuide: "marca-m-arnes-a",
+    });
+    expect(prods.products.find((p) => p.handle === "tarjeta-regalo-papel")).toMatchObject({
+      earnsPoints: false,
+      discountable: false,
+    });
+    expect(prods.products.find((p) => p.handle === "collar-estandar")?.design).toBe("estandar");
+    expect(prods.products.find((p) => p.handle === "caja-snacks")).toMatchObject({
+      design: "caja",
+      noStock: true,
+    });
   });
 
   it("errores por fila: precio inicial, SKU, combinación, opción incompleta, oferta, columnas", () => {

@@ -1,0 +1,10 @@
+# CORREAS · una fila por color y material (un producto con una variante por largo y mosquetones)
+# handle: URL /producto/<handle>/ (no cambiarlo) · color_hex: color de la muestra en la tienda (#1E5AA8, opcional) · precio_3m: euros con IVA de la correa de 3 m con mosquetones estándar · gramos_m: peso por metro de cuerda
+# sku_cuerda: la pieza de inventario de la cuerda (en metros) · stock_inicial: metros del rollo, SOLO al crear la pieza (después, en el Admin) · estado: publicado / borrador
+handle,titulo,color,color_hex,material,precio_3m,gramos_m,sku_cuerda,stock_inicial,estado,descripcion
+correa-azul-nylon,Correa a medida azul de nailon,Azul,#1E5AA8,Nailon,24,60,CUERDA-AZUL-NYLON,50,publicado,"Correa larga de nailon trenzado, ligera y resistente. Elige el largo y los mosquetones."
+correa-azul-pvc,Correa a medida azul de PVC,Azul,#1E5AA8,PVC,25,80,CUERDA-AZUL-PVC,50,publicado,"Correa larga de PVC: no absorbe agua ni barro, se limpia con un paño. Elige el largo y los mosquetones."
+correa-verde-nylon,Correa a medida verde de nailon,Verde,#2E8B57,Nailon,24,60,CUERDA-VERDE-NYLON,50,publicado,"Correa larga de nailon trenzado, ligera y resistente. Elige el largo y los mosquetones."
+correa-verde-pvc,Correa a medida verde de PVC,Verde,#2E8B57,PVC,25,80,CUERDA-VERDE-PVC,9,publicado,"Correa larga de PVC: no absorbe agua ni barro, se limpia con un paño. Elige el largo y los mosquetones."
+correa-rojo-nylon,Correa a medida roja de nailon,Rojo,#C62828,Nailon,24,60,CUERDA-ROJO-NYLON,0,publicado,"Correa larga de nailon trenzado, ligera y resistente. Elige el largo y los mosquetones."
+correa-rojo-pvc,Correa a medida roja de PVC,Rojo,#C62828,PVC,25,80,CUERDA-ROJO-PVC,50,publicado,"Correa larga de PVC: no absorbe agua ni barro, se limpia con un paño. Elige el largo y los mosquetones."

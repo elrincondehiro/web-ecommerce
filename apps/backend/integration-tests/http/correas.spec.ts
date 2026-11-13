@@ -21,6 +21,8 @@ import correasSync from "../../src/scripts/correas-sync";
 jest.setTimeout(300 * 1000);
 
 const PLANTILLA = path.join(__dirname, "../../catalog/plantilla");
+/** Las correas de desarrollo (las mismas que cargan mock:load y los e2e). */
+const MOCK = path.join(__dirname, "../../catalog/mock");
 type ApiError = { response: { status: number; data: { message?: string; code?: string } } };
 const fail = (e: ApiError) => e.response;
 
@@ -84,7 +86,7 @@ medusaIntegrationTestRunner({
 
     beforeAll(async () => {
       dir = await mkdtemp(path.join(os.tmpdir(), "correas-"));
-      await cp(path.join(PLANTILLA, "correas"), dir, { recursive: true });
+      await cp(path.join(MOCK, "correas"), dir, { recursive: true });
     });
     afterAll(async () => {
       await rm(dir, { recursive: true, force: true });
@@ -95,7 +97,10 @@ medusaIntegrationTestRunner({
       await seedStore({ container } as Parameters<typeof seedStore>[0]);
       // Solo el árbol de categorías de la plantilla (correas-perro dentro de paseo-perro)
       const cats = await mkdtemp(path.join(os.tmpdir(), "cats-"));
-      await cp(path.join(PLANTILLA, "categorias.csv"), path.join(cats, "categorias.csv"));
+      await cp(
+        path.join(PLANTILLA, "categorias", "categorias.csv"),
+        path.join(cats, "categorias.csv"),
+      );
       await importCatalog({ container, args: [cats] } as Parameters<typeof importCatalog>[0]);
       await rm(cats, { recursive: true, force: true });
       const [key] = await container.resolve(Modules.API_KEY).listApiKeys({ type: "publishable" });

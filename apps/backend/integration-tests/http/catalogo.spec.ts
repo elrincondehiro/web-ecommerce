@@ -6,15 +6,21 @@ import type { MedusaContainer } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import { updateInventoryLevelsWorkflow } from "@medusajs/medusa/core-flows";
 import seedStore from "../../src/scripts/seed";
+import { parseCsv } from "../../src/scripts/lib/csv";
 import importCatalog, { SALE_LIST_TITLE } from "../../src/scripts/import-catalog";
+import {
+  TEMPLATE_DIR as TEMPLATE,
+  templateProductsCsv,
+} from "../../src/scripts/lib/catalog-template";
 
 /**
- * Importador de catálogo (`catalog:import`) sobre la plantilla: carga, segunda carga sin
- * cambios, stock que no se pisa, variantes que no están en la hoja ignoradas y cambios de hoja.
+ * Importador de catálogo (`catalog:import`) sobre la plantilla (`catalog/plantilla/`: el árbol de
+ * `categorias/`, todas las hojas de productos juntas en un `productos.csv` y `familias/`): carga,
+ * segunda carga sin cambios, stock que no se pisa, variantes que no están en la hoja ignoradas,
+ * cambios de hoja y la hoja de cambios `descatalogado/`.
  */
 jest.setTimeout(240 * 1000);
 
-const TEMPLATE = path.join(__dirname, "../../catalog/plantilla");
 /** Precio base (`variants.prices` sí se resuelve en query.graph, pero no está en los tipos). */
 const amount = (v: unknown) =>
   Number((v as { prices?: { amount: unknown }[] } | null | undefined)?.prices?.[0]?.amount);
@@ -61,11 +67,28 @@ medusaIntegrationTestRunner({
     const level = async (handle: string, sku: string) =>
       (await variant(handle, sku))?.inventory_items?.[0]?.inventory?.location_levels?.[0];
 
+    /** Cambia celdas de productos.csv por SKU (sin depender del orden de las columnas). */
+    const editSheet = async (changes: Record<string, Record<string, string>>) => {
+      const file = path.join(dir, "productos.csv");
+      const [head, ...rows] = parseCsv(await readFile(file, "utf8")).rows.map((r) => r.cells);
+      const col = (name: string) => head!.indexOf(name);
+      for (const row of rows) {
+        for (const [k, v] of Object.entries(changes[row[col("sku")]!] ?? {})) row[col(k)] = v;
+      }
+      const q = (v: string) => (/[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+      await writeFile(file, [head!, ...rows].map((r) => r.map(q).join(",")).join("\n"));
+    };
+
     beforeEach(async () => {
       container = getContainer();
       await seedStore({ container } as Parameters<typeof seedStore>[0]);
       dir = await mkdtemp(path.join(os.tmpdir(), "catalogo-"));
-      await cp(TEMPLATE, dir, { recursive: true });
+      await cp(
+        path.join(TEMPLATE, "categorias", "categorias.csv"),
+        path.join(dir, "categorias.csv"),
+      );
+      await writeFile(path.join(dir, "productos.csv"), templateProductsCsv());
+      await cp(path.join(TEMPLATE, "familias", "familias.csv"), path.join(dir, "familias.csv"));
     });
     afterEach(async () => {
       await rm(dir, { recursive: true, force: true });
@@ -113,14 +136,15 @@ medusaIntegrationTestRunner({
         Object.fromEntries((pienso?.variants ?? []).map((v) => [v?.sku, v?.metadata?.neto_g])),
       ).toEqual({ "PIE-POL-AD-3KG": 3000, "PIE-POL-AD-12KG": 12000 });
       const taza = await product("taza-logo");
-      expect(taza?.status).toBe("draft");
+      expect(taza?.status).toBe("published");
+      expect((await product("taza-borrador"))?.status).toBe("draft");
       expect(taza?.options?.map((o) => o?.title)).toEqual(["Formato"]);
       expect(taza?.variants?.map((v) => v?.sku)).toEqual(["TAZA-LOGO"]);
 
       const pricing = container.resolve(Modules.PRICING);
       const [list] = await pricing.listPriceLists({ q: SALE_LIST_TITLE });
       const sale = await pricing.listPrices({ price_list_id: [list!.id] });
-      expect(sale.map((p) => Number(p.amount)).sort()).toEqual([0.09, 13.95, 13.95, 54.9]);
+      expect(sale.map((p) => Number(p.amount)).sort()).toEqual([0.09, 13.95, 13.95, 54.9, 8.95]);
 
       // Se vende stock (simulado) y se vuelve a cargar: ni stock ni nada cambia
       const l = (await level("collar-nylon", "COL-NYL-S-ROJ"))!;
@@ -142,15 +166,11 @@ medusaIntegrationTestRunner({
       expect((await level("collar-nylon", "COL-NYL-S-ROJ"))?.stocked_quantity).toBe(7);
 
       // Cambios en la hoja: precio, oferta quitada, variante nueva con valor nuevo, una fila fuera
-      const file = path.join(dir, "productos.csv");
-      const csv = (await readFile(file, "utf8"))
-        .replace(
-          'COL-NYL-S-ROJ,8400000000024,"12,95",,10',
-          'COL-NYL-S-ROJ,8400000000024,"11,95",,10',
-        )
-        .replace('PIE-POL-AD-12KG,,"59,90","54,90"', 'PIE-POL-AD-12KG,,"59,90",-')
-        .replace("L,Azul,,COL-NYL-L-AZU,,,,0,", "L,Verde,,COL-NYL-L-VER,,,,3,");
-      await writeFile(file, csv);
+      await editSheet({
+        "COL-NYL-S-ROJ": { precio: "11,95" },
+        "PIE-POL-AD-12KG": { precio_oferta: "-" },
+        "COL-NYL-L-AZU": { "opcion:Color": "Verde", sku: "COL-NYL-L-VER", stock: "3" },
+      });
       await run();
       const after = await product("collar-nylon");
       const skus = (after?.variants ?? []).map((v) => v?.sku).sort();
@@ -168,7 +188,7 @@ medusaIntegrationTestRunner({
       expect((await level("collar-nylon", "COL-NYL-L-VER"))?.stocked_quantity).toBe(3);
       const sale2 = await pricing.listPrices({ price_list_id: [list!.id] });
       // L Verde hereda la oferta de L Rojo; la de L Azul (fuera de la hoja) se queda
-      expect(sale2.map((p) => Number(p.amount)).sort()).toEqual([0.09, 13.95, 13.95, 13.95]);
+      expect(sale2.map((p) => Number(p.amount)).sort()).toEqual([0.09, 13.95, 13.95, 13.95, 8.95]);
     });
 
     it("granel: artículo en gramos, disponibilidad por pasos y mínimo en el carrito", async () => {
@@ -266,6 +286,16 @@ medusaIntegrationTestRunner({
       await sheet("sí", "no-existe");
       await expect(run()).rejects.toThrow(/errores en las hojas/);
 
+      // La hoja de ejemplo `descatalogado/`: crea collar-cuero ya descatalogado
+      await importCatalog({
+        container,
+        args: [path.join(TEMPLATE, "descatalogado")],
+      } as Parameters<typeof importCatalog>[0]);
+      expect((await product("collar-cuero"))?.metadata).toMatchObject({
+        descatalogado: true,
+        sustituto: "collar-nylon",
+      });
+
       // Volver a catalogarlo («no») y borrar el sustituto («-»)
       await sheet("no", "-");
       await run();
@@ -341,8 +371,7 @@ medusaIntegrationTestRunner({
     });
 
     it("una hoja con errores no escribe nada", async () => {
-      const file = path.join(dir, "productos.csv");
-      await writeFile(file, (await readFile(file, "utf8")).replace("pienso-perro,", "no-existe,"));
+      await editSheet({ "PIE-POL-AD-3KG": { categorias: "no-existe" } });
       await expect(run()).rejects.toThrow(/errores en las hojas/);
       expect(await product("collar-nylon")).toBeUndefined();
     });

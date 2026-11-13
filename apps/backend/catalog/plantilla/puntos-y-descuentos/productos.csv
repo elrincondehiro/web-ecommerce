@@ -1,0 +1,7 @@
+# PUNTOS Y DESCUENTOS · catalog:import catalog/plantilla/puntos-y-descuentos (instrucciones: LEEME.md de esta carpeta).
+"# genera_puntos = no: el producto NO genera puntos del programa de fidelización (por defecto sí)."
+"# pago_descuento = no: NO admite códigos descuento, promociones ni pago con puntos (campo discountable de Medusa). Sale con * en carrito, checkout y ficha."
+# Vacío = no tocar. Se pueden combinar.
+handle,titulo,categorias,iva,genera_puntos,pago_descuento,sku,precio,stock,peso_g
+tarjeta-regalo-papel,Tarjeta regalo de papel,para-ti,general,no,no,TARJ-PAPEL,"2,00",50,20
+pienso-oferta-fija,Pienso a precio fijo,pienso-perro,general,no,,PIE-FIJO,"39,90",10,12000

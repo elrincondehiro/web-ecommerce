@@ -486,13 +486,11 @@ cp apps/backend/.env.example apps/backend/.env            # y genera secretos: o
 cp apps/backend/.env.test.example apps/backend/.env.test  # tests de integración
 pnpm --filter backend exec medusa db:migrate
 pnpm backend:seed                                         # región ES, IVA, envíos, publishable key, Collection destacados
-pnpm --filter backend catalog:mock [300]                  # genera catalog/mock/productos.csv (árbol de categorías real)
-pnpm --filter backend catalog:import catalog/mock         # … y lo carga (idempotente)
-pnpm --filter backend correas:sync catalog/plantilla/correas  # correas a medida de prueba (Fase E-2, kits por piezas)
+pnpm backend:mock:load [1000] [fotos]                     # catálogo de desarrollo completo (apps/backend/catalog/mock/LEEME.md), idempotente
 pnpm backend:stock:mock                                   # repone stock libre de los mock (los e2e de checkout lo gastan)
 pnpm backend:orders:cancel [dry-run]                      # cancela los pedidos de prueba (@example.com): libera su stock reservado
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup  # limpieza de carritos a mano (borrado suave, fase 10-4)
-pnpm --filter backend catalog:import <carpeta> [dry-run]  # categorías + productos desde CSV (apps/backend/catalog/plantilla)
+pnpm --filter backend catalog:import <carpeta> [dry-run]  # categorías + productos desde CSV (plantillas por caso: apps/backend/catalog/plantilla)
 pnpm --filter backend images:import <carpeta>             # fotos handle_XX.jpg → bucket + producto (fase 6)
 pnpm --filter backend exec medusa user -e <email> -p <contraseña>   # admin (lo creas tú)
 pnpm dev:backend                                          # API :9000 · Admin :9000/app

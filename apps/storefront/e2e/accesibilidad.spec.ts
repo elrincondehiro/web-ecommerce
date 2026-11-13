@@ -32,7 +32,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     test("/buscar/ filtrado por familia (Fase FO) sin fallos de accesibilidad", async ({
       page,
     }) => {
-      skipIfRemote("familias del catálogo local (prueba-arnes/familias.csv)");
+      skipIfRemote("familias del catálogo local (catalog/mock/arneses/familias.csv)");
       await page.goto("/buscar/?categoria=ropa-perro&familia=Color%3Aazul");
       expect(await violations(page)).toEqual([]);
     });
@@ -40,7 +40,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     test("categoría con el panel de familias abierto sin fallos de accesibilidad", async ({
       page,
     }) => {
-      skipIfRemote("familias del catálogo local (prueba-arnes/familias.csv)");
+      skipIfRemote("familias del catálogo local (catalog/mock/arneses/familias.csv)");
       await page.goto("/categoria/ropa-perro/");
       await page.getByRole("button", { name: "Filtrar" }).click();
       await page.locator("#filtros details#f-color summary").click();
@@ -51,7 +51,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     test("ficha con selector y combinación agotada sin fallos de accesibilidad", async ({
       page,
     }) => {
-      skipIfRemote("producto de prueba del catálogo local (prueba-arnes)");
+      skipIfRemote("producto de prueba del catálogo local (catalog/mock/arneses)");
       await page.goto("/producto/prueba-arnes-estampado/");
       await page.locator('label:has(input[value="Estampado:Rayas"])').click();
       await page.locator('label:has(input[value="Talla:M"])').click();

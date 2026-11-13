@@ -40,8 +40,8 @@ pnpm real:infra:up            # infraestructura real (Docker)
 pnpm real:backend             # Medusa en :9002 (medusa develop)
 pnpm real:storefront          # Astro en :4322 (otra terminal)
 
-# Catálogo (rutas relativas a apps/backend, igual que catalog:import / images:import)
-cp -r apps/backend/catalog/plantilla apps/backend/catalog/real   # una vez; luego rellenar
+# Catálogo (rutas relativas a apps/backend, igual que catalog:import / images:import). Las hojas
+# siguen las plantillas por caso de apps/backend/catalog/plantilla/ (LEEME.md: orden de carga)
 pnpm real:catalog catalog/real dry-run
 pnpm real:catalog catalog/real
 pnpm real:images catalog/real/fotos dry-run
@@ -60,6 +60,18 @@ categorías de `home.yaml`; ojo, es el mismo fichero para las dos tiendas.
 ```bash
 pnpm real:medusa user -e tu@correo -p '<contraseña>'
 ```
+
+## Reiniciado desde cero (12-nov-2026)
+
+Desde `main` tras la fase MK: `real:infra:down`, borrados sus 4 volúmenes (BD, Redis, Meilisearch y bucket: sin
+usuarios, pedidos, productos ni fotos), `real:infra:up`, bucket público, `db:migrate`, `seed` y `stripe:region`, y la
+publishable key nueva en `apps/storefront/.env.real`. **Falta** el usuario del Admin (lo crea el usuario, ver abajo) y
+volver a cargar `catalog/real/` (sus hojas y fotos no se tocaron).
+
+Revisión de scripts y variables (12-nov-2026): `real-env.sh` y los `real:*` correctos (puertos, CORS, bucket y Mailpit
+propios; `NTFY_URL` vacío). Arreglado: `apps/storefront/.env.real` no definía `UMAMI_URL` y heredaba el de `.env`
+(mandaba las visitas al Umami de dev): ahora `UMAMI_URL=` vacío. Las variables nuevas del backend (crons de MK, caja,
+puntos…) tienen valor por defecto: no hace falta añadirlas.
 
 ## Ya hecho al crearlo (28-oct-2026)
 

@@ -5,9 +5,9 @@ Cada **color y material** es un producto (p. ej. `/producto/correa-rojo-pvc/`). 
 Cada producto lleva `metadata.diseno = correa` (ficha con el configurador, Fase DS) y `metadata.grupo = correa` (una sola tarjeta y la landing `/producto/correa-a-medida/` en listados y búsqueda).
 
 ```bash
-# 1. Copia esta carpeta a una tuya (apps/backend/catalog/* está fuera de git, salvo plantilla/)
+# 1. Copia esta carpeta a una tuya (apps/backend/catalog/* está fuera de git, salvo plantilla/ y mock/)
 cp -r apps/backend/catalog/plantilla/correas apps/backend/catalog/mis-correas
-# 2. La categoría (correas-perro, dentro de paseo-perro) se crea con catalog:import (categorias.csv)
+# 2. La categoría (correas-perro, dentro de paseo-perro) se crea con catalog:import (../categorias/)
 # 3. Comprueba (no escribe nada) y carga
 pnpm --filter backend correas:sync catalog/mis-correas dry-run
 pnpm --filter backend correas:sync catalog/mis-correas

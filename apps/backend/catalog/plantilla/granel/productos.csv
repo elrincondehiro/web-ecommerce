@@ -1,0 +1,9 @@
+# A GRANEL · catalog:import catalog/plantilla/granel (instrucciones: LEEME.md de esta carpeta).
+# granel = sí en la primera fila. En vez de precio / precio_oferta / stock / neto: paso_g, min_g, precio_kg, precio_oferta_kg y stock_g.
+"# El precio de un paso (precio_kg × paso_g / 1000) tiene que salir en céntimos exactos: con paso 5 g, €/kg múltiplo de 2 € (el dry-run propone si no)."
+# Puede tener variantes (sabores), cada una con su SKU, paso y stock en gramos. stock_g: solo al crear la variante.
+handle,titulo,descripcion,categorias,etiquetas,iva,estado,proteina_pct,grasa_pct,humedad_pct,granel,opcion:Sabor,sku,paso_g,min_g,precio_kg,precio_oferta_kg,stock_g
+alas-pollo-deshidratadas,Alas de pollo deshidratadas,Snack natural a granel: elige los gramos.,snacks-perro,natural,reducido,publicado,60,20,10,sí,,ALA-POL-DES,5,100,20,18,2400
+premios-mixtos,Premios mixtos a granel,"Tres sabores, cada uno con su stock en gramos.",snacks-perro,natural,reducido,publicado,,,,sí,Pollo,PRE-MIX-POL,10,100,24,,5000
+premios-mixtos,,,,,,,,,,,Ternera,PRE-MIX-TER,10,100,28,,3000
+premios-mixtos,,,,,,,,,,,Salmón,PRE-MIX-SAL,10,200,32,,0

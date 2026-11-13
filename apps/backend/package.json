@@ -31,7 +31,8 @@
     "points:adjust": "medusa exec ./src/scripts/points-adjust.ts",
     "points:close-account": "medusa exec ./src/scripts/points-close-account.ts",
     "stock-alerts:list": "medusa exec ./src/scripts/stock-alerts-list.ts",
-    "pets:mock": "medusa exec ./src/scripts/pets-mock.ts"
+    "pets:mock": "medusa exec ./src/scripts/pets-mock.ts",
+    "mock:load": "medusa exec ./src/scripts/mock-load.ts"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "2.22.6",

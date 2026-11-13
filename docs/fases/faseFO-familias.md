@@ -1,5 +1,6 @@
 # Fase FO — Familias de opciones (filtros agrupados)
 
+> **Nota (limpieza del catálogo, nov-2026)**: los datos de prueba están ahora en `apps/backend/catalog/mock/` (`arneses/`, `correas/`, `caja/`; se cargan con `pnpm backend:mock:load`) y las plantillas en `apps/backend/catalog/plantilla/<caso>/`. Las rutas de abajo son las de entonces.
 > **Estado:** ✅ — plan aprobado el 1-nov-2026; FO-1 a FO-7 hechas (cerrada el 2-nov-2026)
 > **Rama/PR:** `feat/familias-opciones` · PR #…
 > **Anterior:** [Fase H — home](./faseH-home.md) · **Siguiente:** …

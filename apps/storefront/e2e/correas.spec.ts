@@ -1,7 +1,7 @@
 // e2e de la correa a medida (Fase E-2c). Criterio de salida: la landing y añadir funcionan CON y
 // SIN JS y la línea del carrito muestra la medida exacta y las observaciones.
 // Datos: `catalog:import catalog/mock` (categoría correas-perro) + `correas:sync
-// catalog/plantilla/correas` (6 correas; verde PVC con 9 m de cuerda → hasta 8 m; roja de nailon
+// catalog/mock/correas` (6 correas; verde PVC con 9 m de cuerda → hasta 8 m; roja de nailon
 // sin cuerda). `pnpm backend:stock:mock` no toca las piezas de las correas.
 import { gzipSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";

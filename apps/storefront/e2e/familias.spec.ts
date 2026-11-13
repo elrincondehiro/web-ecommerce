@@ -1,12 +1,14 @@
 // e2e de las familias de opciones (Fase FO-4). Criterio: en categorías y /buscar/ una opción con
 // familias se filtra por FAMILIAS (con su punto de color), con y sin JS; los nombres de marca no
 // son filtros pero se siguen encontrando con el texto.
-// Datos: catálogo mock + `catalog:import catalog/prueba-arnes` (familias.csv: «Color» agrupado
+// Datos: `pnpm backend:mock:load` (catalog/mock/arneses/familias.csv: «Color» agrupado
 // en las 12 familias; Estampado y Talla sin familias).
 import { expect, test, type Page } from "@playwright/test";
 import { skipIfRemote } from "./_remote";
 
-test.beforeEach(() => skipIfRemote("familias del catálogo local (prueba-arnes/familias.csv)"));
+test.beforeEach(() =>
+  skipIfRemote("familias del catálogo local (catalog/mock/arneses/familias.csv)"),
+);
 
 const status = (page: Page) => page.locator("[data-results] [role=status]");
 const count = async (page: Page) => Number((await status(page).textContent())!.match(/\d+/)![0]);

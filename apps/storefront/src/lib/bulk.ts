@@ -1,5 +1,5 @@
 // Venta a granel (Fase S, S-3). Funciones PURAS (sin I/O). Modelo del backend
-// (`catalog/plantilla/LEEME.md`, `apps/backend/src/lib/granel.ts`): la unidad de venta de una
+// (`catalog/plantilla/granel/LEEME.md`, `apps/backend/src/lib/granel.ts`): la unidad de venta de una
 // variante a granel es un PASO de `metadata.paso_g` gramos; `metadata.min_g` es el mínimo por
 // pedido (múltiplo del paso). En Medusa, cantidad = nº de pasos y precio = precio de un paso.
 // El storefront habla en GRAMOS: gramos = cantidad × paso.

@@ -96,7 +96,7 @@ describe("familias.csv (Fase FO-2) — lectura", () => {
   });
 
   it("la plantilla del repositorio se lee sin errores", () => {
-    const file = path.join(__dirname, "../../../catalog/plantilla/familias.csv");
+    const file = path.join(__dirname, "../../../catalog/plantilla/familias/familias.csv");
     const s = readFamilies(parseCsv(decodeUtf8(readFileSync(file))));
     expect(s.errors).toEqual([]);
     expect(s.definitions.length).toBeGreaterThan(0);

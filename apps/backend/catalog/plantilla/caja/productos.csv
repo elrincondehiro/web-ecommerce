@@ -1,4 +1,4 @@
-# CAJA DE SNACKS (Fase CS) · catalog:import catalog/plantilla/caja — ejemplo listo para cargar (instrucciones en ../LEEME.md, «Caja de snacks»).
+# CAJA DE SNACKS (Fase CS) · catalog:import catalog/plantilla/caja — ejemplo listo para cargar (instrucciones: LEEME.md de esta carpeta).
 # Una variante por importe (opción «Importe»). sin_stock = sí: siempre disponible, sin stock ni reservas. diseno = caja: la ficha con el formulario «¿Para quién es?».
 # Las columnas de producto van solo en la primera fila; las siguientes, solo la variante.
 handle,titulo,subtitulo,descripcion,categorias,iva,estado,diseno,sin_stock,opcion:Importe,sku,precio,peso_g

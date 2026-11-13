@@ -1,0 +1,11 @@
+# PRODUCTO SIMPLE (sin opciones) · catalog:import catalog/plantilla/producto-simple (instrucciones: LEEME.md de esta carpeta).
+# UNA FILA = un producto con una sola variante. Sin columnas opcion:*: se crea con la variante «Única», que la tienda no muestra.
+"# iva: general (21 %, por defecto) · reducido (10 %) · superreducido (4 %) · estado: publicado (por defecto) / borrador · etiquetas y relacionados: separados por |."
+# coleccion: handle de una colección creada en el Admin (destacados = carrusel de la home) · descripcion: admite formato (**negrita**, listas, enlaces).
+handle,titulo,subtitulo,descripcion,categorias,etiquetas,iva,coleccion,estado,material,marca,relacionados,sku,ean,precio,precio_oferta,stock,peso_g,largo_mm,ancho_mm,alto_mm,neto_ml
+taza-logo,Taza con logo,Cerámica de 350 ml,"Taza de cerámica con el logo de la tienda.
+
+- Apta para lavavajillas
+- **Edición limitada**",tazas-para-ti,ideal para regalo|novedad,general,destacados,publicado,Cerámica,Hiro,guia-cachorro,TAZA-LOGO,8400000000017,"9,95","8,95",25,350,120,90,100,350
+guia-cachorro,Guía del cachorro,,Todo lo que necesitas saber el primer año.,libros-para-ti,,superreducido,,publicado,,,,LIB-GUIA-CACH,,"14,90",,4,400,,,,
+taza-borrador,Taza en preparación,,Se crea como borrador: no sale en la tienda hasta publicarla (aquí o en el Admin).,tazas-para-ti,,general,,borrador,Cerámica,,,TAZA-BORR,,"11,95",,0,350,,,,

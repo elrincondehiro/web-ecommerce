@@ -1,5 +1,6 @@
 # Fase E — Estructura de URL, descatalogados y productos especiales (correas)
 
+> **Nota (limpieza del catálogo, nov-2026)**: los datos de prueba están ahora en `apps/backend/catalog/mock/` (`arneses/`, `correas/`, `caja/`; se cargan con `pnpm backend:mock:load`) y las plantillas en `apps/backend/catalog/plantilla/<caso>/`. Las rutas de abajo son las de entonces.
 > **Estado:** ✅ cerrada (14-oct-2026): E-0 revertida (#49), E-1 (#48), L-1 (#50), E-2 correa a medida (E-2a medida; E-2b, E-2c y E-2d en `feat/correas`)
 > **Rama/PR:** E-1 `feat/fase-e` (#48) · L-1 `perf/livesync-tarjetas` (#50) · E-2 `feat/correas` · PR #…
 > **Anterior:** [Fase S](./faseS-catalogo-storefront.md) · **Siguiente:** fase 11 (producción en Hetzner)

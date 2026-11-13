@@ -37,10 +37,10 @@ const { product_categories } = await get("/store/product-categories", {
 // reparte los primeros 39 por todas las hojas del árbol) y sin imágenes: el build de CI no tiene
 // bucket. Las ofertas y la Collection se recortan a ese subconjunto.
 const FIXTURE_MAX = 48;
-// Correa a medida (E-2c): dos colores de la plantilla (`correas:sync catalog/plantilla/correas`),
+// Correa a medida (E-2c): dos colores de la plantilla (`correas:sync catalog/mock/correas`),
 // uno de cada material y uno con poca cuerda (verde PVC: hasta 8 m), para el build de CI.
 const FIXTURE_CORREAS = new Set(["correa-azul-nylon", "correa-verde-pvc"]);
-// Caja de snacks (Fase CS): `catalog:import catalog/plantilla/caja` (diseño `caja`, sin stock).
+// Caja de snacks (Fase CS): `catalog:import catalog/mock/caja` (diseño `caja`, sin stock).
 const FIXTURE_SPECIAL = new Set(["caja-snacks"]);
 const inFixture = (/** @type {string} */ handle) => {
   if (FIXTURE_CORREAS.has(handle) || FIXTURE_SPECIAL.has(handle)) return true;

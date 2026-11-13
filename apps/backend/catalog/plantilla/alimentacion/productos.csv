@@ -1,0 +1,7 @@
+# ALIMENTACIÓN · catalog:import catalog/plantilla/alimentacion (instrucciones: LEEME.md de esta carpeta).
+"# Componentes analíticos (primera fila, % tal cual como en la etiqueta): proteina_pct, grasa_pct, fibra_pct, cenizas_pct, humedad_pct. Sin humedad no se filtra sobre materia seca."
+# Otros componentes solo para la ficha: una columna analitico:Nombre con texto libre (analitico:Calcio → 1,2 %).
+"# neto_g / neto_ml: contenido neto de cada variante → precio por kilo / por litro en la ficha y la tarjeta (uno de los dos)."
+handle,titulo,descripcion,categorias,iva,estado,marca,proteina_pct,grasa_pct,fibra_pct,cenizas_pct,humedad_pct,analitico:Calcio,analitico:Omega 3,opcion:Tamaño,sku,precio,precio_oferta,stock,peso_g,largo_mm,ancho_mm,alto_mm,neto_g
+pienso-pollo-adulto,Pienso de pollo para perros adultos,Pienso completo con pollo fresco como primer ingrediente.,pienso-perro,general,publicado,Hiro,26,15,"2,5","7,5",9,"1,2 %","0,8 %",3 kg,PIE-POL-AD-3KG,"19,90",,12,3100,400,250,100,3000
+pienso-pollo-adulto,,,,,,,,,,,,,,12 kg,PIE-POL-AD-12KG,"59,90","54,90",6,12200,,,,12000

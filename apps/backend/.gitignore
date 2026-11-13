@@ -4,12 +4,9 @@
 /build
 medusa-db.sql
 /.cache
-# Cargas reales del importador de catálogo (datos del negocio): solo se versionan la plantilla y
-# el árbol de categorías del catálogo de prueba (catalog:mock genera productos.csv, ignorado)
+# Catálogo: solo se versionan las plantillas y el catálogo de desarrollo (mock/), salvo su
+# productos.csv (lo genera catalog:mock). Las cargas reales (otras carpetas) quedan fuera de git.
 /catalog/*
 !/catalog/plantilla/
 !/catalog/mock/
-/catalog/mock/*
-!/catalog/mock/categorias.csv
-# Productos de prueba del selector de opciones (Fase O; e2e variantes.spec.ts)
-!/catalog/prueba-arnes/
+/catalog/mock/productos.csv

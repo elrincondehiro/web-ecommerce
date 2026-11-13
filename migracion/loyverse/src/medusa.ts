@@ -337,7 +337,7 @@ export function convert(
 
 /**
  * Propuesta para las categorías de Loyverse de la tienda física frente al árbol nuevo
- * (`apps/backend/catalog/mi-carga/categorias.csv`). Es solo una propuesta: se revisa en
+ * (`apps/backend/catalog/real/categorias.csv`). Es solo una propuesta: se revisa en
  * `mapa-categorias.csv`. Las que mezclan perro y gato (Higiene, Juguetes…) van a la de perro y se
  * corrigen por artículo con `categoria_nueva`.
  */

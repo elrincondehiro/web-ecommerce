@@ -1,5 +1,5 @@
 /**
- * Venta a granel (ver `catalog/plantilla/LEEME.md`): la unidad de venta es un paso de
+ * Venta a granel (ver `catalog/plantilla/granel/LEEME.md`): la unidad de venta es un paso de
  * `paso_g` gramos y la variante guarda en metadata el paso y el mínimo por pedido.
  */
 export interface BulkRule {

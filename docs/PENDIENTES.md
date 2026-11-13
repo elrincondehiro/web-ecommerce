@@ -49,6 +49,7 @@ Hoy el VPS corre `v0.2.0` (G–M). `main` (2-nov-2026, `edf1743`) lleva además 
 - [ ] Quitar Access de la tienda, `ROBOTS=index`, decidir el **robots.txt gestionado de Cloudflare** (`Content-Signal`, SEO 61 en Lighthouse).
 - [ ] `CART_CLEANUP_DAYS=30` (hoy 5).
 - [ ] **Fase H**: al cargar el catálogo real, poner `novedades.desde: <fecha de la carga>` en `apps/storefront/src/content/home.yaml` (si no, todo el catálogo sale como novedad 30 días) y cambiar `etiquetas.valores` y `colecciones.handles` por los reales.
+- [ ] Entorno «real» reiniciado de cero (12-nov-2026, [entorno-real.md](./entorno-real.md)): crear el usuario del Admin (`pnpm real:medusa user -e … -p …`) y volver a cargar `catalog/real/` siguiendo las plantillas por caso.
 - [ ] **Entorno «real» local** ([entorno-real.md](./entorno-real.md), temporal): el catálogo real se prepara en local en `:4322`/`:9002` con infra propia, sin tocar los mocks. Al pasarlo a producción, **limpiarlo** (entorno-real.md §Limpieza): volúmenes, `.env.real`, `scripts/real-env.sh` y los scripts `real:*` del `package.json` raíz.
 - [ ] Borrar los productos mock y cargar el catálogo real: herramientas en `migracion/loyverse/` (Fase V/W), revisión por categorías en curso; inventario → stock real; fotos reales (`images:import`); script de limpieza de objetos huérfanos del bucket (fase6 §7).
 - [ ] Normalizar los **valores de opciones** del catálogo real («L 69-81cm», «S/M» frente a «S-M», «400gr» frente a «400g»…) antes de producción (faseV §7).

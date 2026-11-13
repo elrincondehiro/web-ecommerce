@@ -1,0 +1,11 @@
+# SELECTOR CON FOTOS POR VALOR · catalog:import catalog/plantilla/selector-fotos + images:import catalog/plantilla/selector-fotos/fotos
+# (instrucciones: LEEME.md de esta carpeta). Con 2 opciones o más (o una con fotos o color) la ficha enseña un selector de muestras.
+"# opcion_fotos = la opción cuyas fotos cambian la galería: fotos handle--valor_01.jpg (valor en minúsculas, sin tildes, con guiones). handle_01.jpg = generales."
+# guia_tallas = id de apps/storefront/src/content/guias/<id>.md · plantilla = id de apps/storefront/src/content/plantillas/<id>.md (la de arneses-perro se aplica sola).
+handle,titulo,subtitulo,descripcion,categorias,iva,estado,marca,opcion_fotos,guia_tallas,plantilla,opcion:Color,opcion:Talla,sku,precio,stock,peso_g
+arnes-colores,Arnés de colores,Marca M · Modelo A,Arnés acolchado en dos colores de la marca.,arneses-perro,general,publicado,Marca M,Color,marca-m-arnes-a,,Sea Foam,S,ARN-COL-SF-S,"24,95",5,180
+arnes-colores,,,,,,,,,,,Sea Foam,M,ARN-COL-SF-M,"27,95",5,200
+arnes-colores,,,,,,,,,,,Sea Foam,L,ARN-COL-SF-L,"29,95",0,220
+arnes-colores,,,,,,,,,,,Huckleberry,S,ARN-COL-HB-S,"24,95",5,180
+arnes-colores,,,,,,,,,,,Huckleberry,M,ARN-COL-HB-M,"27,95",5,200
+arnes-colores,,,,,,,,,,,Huckleberry,L,ARN-COL-HB-L,"29,95",5,220

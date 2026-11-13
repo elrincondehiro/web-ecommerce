@@ -1,0 +1,6 @@
+# MOSQUETONES · el orden de las filas es el de la ficha · codigo: 2-4 letras (va en el SKU de la variante: no cambiarlo)
+# recargo: euros por mosquetón (se cobra en cada lado) · stock_inicial: unidades, SOLO al crear la pieza
+codigo,nombre,recargo,sku,stock_inicial
+EST,Estándar,0,PIEZA-MOSQ-EST,40
+MON,Montaña,3,PIEZA-MOSQ-MON,20
+SEG,Seguridad,5,PIEZA-MOSQ-SEG,10

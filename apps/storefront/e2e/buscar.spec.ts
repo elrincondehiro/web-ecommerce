@@ -60,7 +60,7 @@ test("filtrar (OR dentro, AND entre grupos), chips y quitar todo", async ({ page
   await expect(page).toHaveURL(/opcion=Talla%3AL&opcion=Talla%3AM#f-talla$/);
   await filters(page, isMobile);
   await toggle(page, "color", "Rojo");
-  // Color tiene familias (Fase FO, catalog/prueba-arnes/familias.csv): se filtra por familia
+  // Color tiene familias (Fase FO, catalog/mock/arneses/familias.csv): se filtra por familia
   await expect(page).toHaveURL(
     /categoria=ropa-perro&opcion=Talla%3AL&opcion=Talla%3AM&familia=Color%3Arojo#f-color$/,
   );

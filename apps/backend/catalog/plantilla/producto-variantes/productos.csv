@@ -1,0 +1,11 @@
+# PRODUCTO CON VARIANTES · catalog:import catalog/plantilla/producto-variantes (instrucciones: LEEME.md de esta carpeta).
+# UNA FILA POR VARIANTE, seguidas y con el mismo handle. Los datos del producto (titulo … relacionados) solo en la PRIMERA fila.
+# OPCIONES: una columna por opción con el prefijo opcion: (opcion:Talla, opcion:Color…). Cada variante rellena todas las del producto; sin combinaciones repetidas.
+"# HERENCIA: precio, precio_oferta, peso_g y medidas vacíos = los de la fila de arriba del MISMO producto. Si una fila pone su propio precio, NO hereda la oferta."
+# stock: unidades, SOLO al crear la variante (volver a cargar no lo cambia) · sku: único en la tienda (identifica la variante al volver a cargar).
+handle,titulo,subtitulo,descripcion,categorias,etiquetas,iva,estado,material,marca,relacionados,opcion:Talla,opcion:Color,sku,ean,precio,precio_oferta,stock,peso_g,largo_mm,ancho_mm,alto_mm
+collar-nylon,Collar de nailon,Hebilla de liberación rápida,"Collar ajustable de nailon resistente.
+Lavable a mano.",collares-perro,novedad|reflectante,general,publicado,Nailon,Hiro,taza-logo|guia-cachorro,S,Rojo,COL-NYL-S-ROJ,8400000000024,"12,95",,10,60,200,120,30
+collar-nylon,,,,,,,,,,,S,Azul,COL-NYL-S-AZU,,,,8,,,,
+collar-nylon,,,,,,,,,,,L,Rojo,COL-NYL-L-ROJ,,"15,95","13,95",5,90,,,
+collar-nylon,,,,,,,,,,,L,Azul,COL-NYL-L-AZU,,,,0,,,,

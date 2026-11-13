@@ -1,4 +1,4 @@
-// e2e de la caja de snacks (Fase CS, diseño `caja`). Datos: `catalog:import catalog/plantilla/caja`
+// e2e de la caja de snacks (Fase CS, diseño `caja`). Datos: `catalog:import catalog/mock/caja` (pnpm backend:mock:load)
 // (6 importes sin stock, diseno = caja). Criterio: añadir con y sin JS, la salud solo con
 // consentimiento, cachorro en meses, varias cajas = varias líneas (también con los mismos datos:
 // `caja_ref`), cantidad fija en el carrito («1 caja») y la ficha sin bundles propios.

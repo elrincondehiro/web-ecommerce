@@ -1,5 +1,6 @@
 # Fase O — Opciones, variantes y plantillas de ficha
 
+> **Nota (limpieza del catálogo, nov-2026)**: los datos de prueba están ahora en `apps/backend/catalog/mock/` (`arneses/`, `correas/`, `caja/`; se cargan con `pnpm backend:mock:load`) y las plantillas en `apps/backend/catalog/plantilla/<caso>/`. Las rutas de abajo son las de entonces.
 > **Estado:** ✅ completada (23-oct-2026)
 > **Rama/PR:** `feat/fase-o-variantes` · PR #…
 > **Anterior:** [Fase V/W](./faseV-loyverse.md) · **Siguiente:** [Fase F — mejoras en filtros](./faseF-filtros.md)

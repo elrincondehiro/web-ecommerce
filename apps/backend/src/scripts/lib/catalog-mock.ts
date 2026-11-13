@@ -1,7 +1,7 @@
 /**
  * Catálogo de PRUEBA para `catalog:import` (Fase S, S-1) — solo desarrollo. Funciones puras.
  *
- * Genera `productos.csv` (formato de `catalog/plantilla/LEEME.md`) con N productos `mock-*`
+ * Genera `productos.csv` (formato de `catalog/plantilla/LEEME.md`; datos de desarrollo en `catalog/mock/LEEME.md`) con N productos `mock-*`
  * repartidos por las HOJAS del árbol de `categorias.csv` (los productos van solo en la
  * subcategoría más concreta). Determinista: los mismos N dan la misma hoja (handles fijos
  * para e2e y fixtures). Sustituye a `seed:mock`, `seed:mock:v2` y `seed:mock:ofertas`
@@ -195,11 +195,11 @@ const money = (n: number) => n.toFixed(2).replace(".", ",");
 const roundPrice = (n: number, i: number) => Math.max(0.95, Math.floor(n) + (i % 2 ? 0.95 : 0.9));
 
 /**
- * Categorías que llena otro script (la correa a medida, `correas:sync`, Fase E-2): el mock no
- * pone productos en ellas y su padre sigue contando como hoja (así los handles `mock-*` no
- * cambian al añadirlas).
+ * Categorías que llenan otras hojas de `catalog/mock/` (la correa a medida, `correas:sync`, Fase
+ * E-2; los arneses de prueba, `mock/arneses`, Fase O): el mock no pone productos en ellas y su
+ * padre sigue contando como hoja (así los handles `mock-*` no cambian al añadirlas).
  */
-export const NOT_MOCKED = new Set(["correas-perro"]);
+export const NOT_MOCKED = new Set(["correas-perro", "arneses-perro"]);
 
 /** Hojas del árbol (categorías sin hijas), en el orden de la hoja. */
 export function leafCategories(categories: CategorySheet[]): CategorySheet[] {

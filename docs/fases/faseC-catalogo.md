@@ -76,17 +76,17 @@
 Guía completa para quien rellena la hoja: [`apps/backend/catalog/plantilla/LEEME.md`](../../apps/backend/catalog/plantilla/LEEME.md).
 
 ```bash
-cp -r apps/backend/catalog/plantilla apps/backend/catalog/mi-carga   # y rellenar los CSV
-pnpm --filter backend catalog:import catalog/mi-carga dry-run          # informe, no escribe
-pnpm --filter backend catalog:import catalog/mi-carga
-pnpm --filter backend images:import catalog/mi-carga/fotos [dry-run]   # handle_01.jpg…
+# Plantillas por caso en apps/backend/catalog/plantilla/ (LEEME.md); la carga, en una carpeta tuya
+pnpm --filter backend catalog:import catalog/tienda dry-run          # informe, no escribe
+pnpm --filter backend catalog:import catalog/tienda
+pnpm --filter backend images:import catalog/tienda/fotos [dry-run]   # handle_01.jpg…
 ```
 
 Producción (dentro del contenedor; scripts compilados en `./src/scripts/*.js`):
 
 ```bash
 C="docker compose --env-file docker/.env.prod -f docker/compose.prod.yml"
-$C cp apps/backend/catalog/mi-carga backend-server:/tmp/catalogo
+$C cp apps/backend/catalog/tienda backend-server:/tmp/catalogo
 $C exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-catalog.js /tmp/catalogo dry-run
 $C exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-catalog.js /tmp/catalogo
 $C exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/import-images.js /tmp/catalogo/fotos
@@ -101,11 +101,10 @@ pnpm --filter backend exec jest --runInBand --forceExit integration-tests/http/c
 pnpm --filter backend test:integration:http                       # todo el backend
 
 # Prueba real en dev (la plantilla cambiaría «libros» a inactiva: copia solo las subcategorías)
-cd apps/backend && cp -r catalog/plantilla catalog/prueba-dev
-grep -E '^"#|^handle|^camisetas|^sudaderas|^suplementos' catalog/plantilla/categorias.csv > catalog/prueba-dev/categorias.csv
-pnpm catalog:import catalog/prueba-dev dry-run   # → 3 categorías nuevas; opciones Proteína y Tamaño; 3 productos (8 variantes); 3 ofertas
-pnpm catalog:import catalog/prueba-dev           # → ~4 s
-pnpm catalog:import catalog/prueba-dev           # → 0 nuevos, 3 sin cambios (idempotente)
+cd apps/backend
+pnpm catalog:import catalog/plantilla/categorias            # el árbol de los ejemplos
+pnpm catalog:import catalog/plantilla/producto-variantes dry-run
+pnpm catalog:import catalog/plantilla/producto-variantes    # 2.ª vez: 0 nuevos, 1 sin cambios (idempotente)
 ```
 
 Resultado en dev, el 11-oct-2026:

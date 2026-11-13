@@ -1,8 +1,8 @@
 // e2e del selector de opciones (Fase O). Criterio de salida: con y SIN JS se elige estampado y
 // talla, la galería enseña las fotos del estampado, las tallas agotadas salen tachadas, una
 // combinación agotada no se puede añadir y «Añadir» mete la variante correcta en el carrito.
-// Datos: `catalog:import catalog/prueba-arnes` + `images:import catalog/prueba-arnes/fotos`
-// (apps/backend/catalog/prueba-arnes/LEEME.md). Agotadas: Rayas M y L, Huellas XS.
+// Datos: `pnpm backend:mock:load` (catalog/mock/arneses: hoja y fotos; apps/backend/catalog/mock/
+// LEEME.md). Agotadas: Rayas M y L, Huellas XS.
 import { expect, test, type Page } from "@playwright/test";
 import { skipIfRemote } from "./_remote";
 
@@ -106,8 +106,8 @@ test("guía con esquema: imagen del Markdown, solo se descarga al abrir la guía
 });
 
 test("ofertas: precio de cada tarjeta apilado, sin «−X %» y sin desbordar", async ({ page }) => {
-  // mock-arnes-plus-130: tallas en oferta (catálogo mock local).
-  await page.goto("/producto/mock-arnes-plus-130/");
+  // mock-abrigo-esencial-017: talla × color, todas en oferta en la hoja del mock (catalog:mock).
+  await page.goto("/producto/mock-abrigo-esencial-017/");
   const cards = page.locator("#comprar .vp-opt:visible");
   await expect(cards.first()).toBeVisible();
   const sizes = await cards.evaluateAll((els) =>

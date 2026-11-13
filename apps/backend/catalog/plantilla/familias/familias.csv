@@ -1,0 +1,16 @@
+# PLANTILLA DE FAMILIAS · catalog:import catalog/plantilla/familias (instrucciones: LEEME.md de esta carpeta). Las filas que empiezan por # se ignoran.
+# Opcional. Agrupa los valores de una opción (Color, Talla…) para los FILTROS de la tienda; la ficha y la búsqueda siguen con los nombres originales.
+# Se carga DESPUÉS de los productos (los valores tienen que existir): este ejemplo usa los de producto-variantes y selector-fotos.
+"# Filas que DEFINEN (columna familia): las familias de la opción, en este orden. «plantilla» = las 12 de color. Sustituyen a las que tenga la opción."
+"# Filas que ASIGNAN (columna valor): a qué familias pertenece el valor (varias con |, máx. 4; - = ninguna) y el color de su muestra (#rrggbb; - = quitarlo; vacío = no tocar)."
+opcion,familia,nombre,color,valor,familias,color_muestra
+Color,plantilla,,,,,
+Talla,pequena,Pequeña,,,,
+Talla,grande,Grande,,,,
+Color,,,,Rojo,rojo,#c0392b
+Color,,,,Azul,azul,
+Color,,,,Sea Foam,verde|azul,#8fd3c1
+Color,,,,Huckleberry,morado,#5b3a6b
+Talla,,,,S,pequena,
+Talla,,,,M,pequena|grande,
+Talla,,,,L,grande,

@@ -1,5 +1,5 @@
 // e2e de los avisos de stock (Fase MK-B). Requisitos: los de cuenta.spec.ts (Mailpit) y el
-// producto de prueba `prueba-arnes-estampado` (catalog/prueba-arnes: Rayas / M siempre agotada).
+// producto de prueba `prueba-arnes-estampado` (catalog/mock/arneses: Rayas / M siempre agotada).
 // - Sin JS: ficha agotada → «Avísame» sin sesión → Entrar → el aviso queda creado (cookie de
 //   10 min, como el ♡) → «Avisos de stock» → Quitar. Otra vez desde la ficha con sesión.
 // - Con JS: «Avísame» → toast (CartClient), sin recargar; axe y CSP en la página de avisos.

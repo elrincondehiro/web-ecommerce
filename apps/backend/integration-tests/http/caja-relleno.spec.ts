@@ -27,6 +27,8 @@ import { processCajas } from "../../src/lib/caja-jobs";
 jest.setTimeout(300 * 1000);
 
 const PLANTILLA = path.join(__dirname, "../../catalog/plantilla");
+/** La caja de desarrollo (la misma que cargan mock:load y los e2e). */
+const MOCK = path.join(__dirname, "../../catalog/mock");
 type ApiError = { response: { status: number; data: { message?: string } } };
 const fail = (e: ApiError) => e.response;
 // Snacks: OREJAS (6 €, stock 10), TIRAS (8 €, stock 0) y un collar (no snack)
@@ -212,14 +214,17 @@ medusaIntegrationTestRunner({
       });
       await seedStore({ container } as Parameters<typeof seedStore>[0]);
       const dir = await mkdtemp(path.join(os.tmpdir(), "caja-relleno-"));
-      await cp(path.join(PLANTILLA, "categorias.csv"), path.join(dir, "categorias.csv"));
+      await cp(
+        path.join(PLANTILLA, "categorias", "categorias.csv"),
+        path.join(dir, "categorias.csv"),
+      );
       await importCatalog({ container, args: [dir] } as Parameters<typeof importCatalog>[0]);
       await writeFile(path.join(dir, "productos.csv"), SNACKS);
       await importCatalog({ container, args: [dir] } as Parameters<typeof importCatalog>[0]);
       await rm(dir, { recursive: true, force: true });
       await importCatalog({
         container,
-        args: [path.join(PLANTILLA, "caja")],
+        args: [path.join(MOCK, "caja")],
       } as Parameters<typeof importCatalog>[0]);
       const [key] = await container.resolve(Modules.API_KEY).listApiKeys({ type: "publishable" });
       headers = { "x-publishable-api-key": key!.token };
@@ -417,7 +422,8 @@ medusaIntegrationTestRunner({
           return [];
         }) as never);
       const waitSent = async (template: string, n = 1) => {
-        for (let i = 0; i < 50 && sent.filter((m) => m.template === template).length < n; i++) {
+        // 15 s: en la pasada completa de HTTP (más carga) 5 s no siempre bastaban
+        for (let i = 0; i < 150 && sent.filter((m) => m.template === template).length < n; i++) {
           await new Promise((r) => setTimeout(r, 100));
         }
         return sent.filter((m) => m.template === template);

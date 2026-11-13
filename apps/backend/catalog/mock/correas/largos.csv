@@ -1,0 +1,16 @@
+# LARGOS · una fila por largo (metros enteros) · suplemento: euros que se suman al precio_3m de correas.csv
+# Para medidas intermedias el cliente elige el metro siguiente y escribe la medida exacta.
+largo_m,suplemento
+3,0
+4,"1,50"
+5,3
+6,4
+7,5
+8,6
+9,7
+10,8
+11,9
+12,10
+13,11
+14,12
+15,13

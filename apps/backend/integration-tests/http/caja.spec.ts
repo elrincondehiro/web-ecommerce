@@ -8,7 +8,7 @@ import seedStore from "../../src/scripts/seed";
 import importCatalog from "../../src/scripts/import-catalog";
 
 /**
- * Caja de snacks (Fase CS): `catalog:import catalog/plantilla/caja` (diseno = caja, sin stock,
+ * Caja de snacks (Fase CS): `catalog:import catalog/mock/caja` (diseno = caja, sin stock,
  * IVA reducido) y el hook validar-carrito: la línea de una caja exige «¿Para quién es?» válido
  * (lib/line-data.ts) y esos datos no valen en otros productos. Sin reservas (manage_inventory
  * false). Sin Stripe: el seed usa `pp_system_default`.
@@ -16,6 +16,8 @@ import importCatalog from "../../src/scripts/import-catalog";
 jest.setTimeout(300 * 1000);
 
 const PLANTILLA = path.join(__dirname, "../../catalog/plantilla");
+/** La caja de desarrollo (la misma que cargan mock:load y los e2e). */
+const MOCK = path.join(__dirname, "../../catalog/mock");
 type ApiError = { response: { status: number; data: { message?: string } } };
 const fail = (e: ApiError) => e.response;
 
@@ -66,14 +68,22 @@ medusaIntegrationTestRunner({
       await seedStore({ container } as Parameters<typeof seedStore>[0]);
       // Árbol de categorías + la caja + un producto normal del catálogo de ejemplo
       const dir = await mkdtemp(path.join(os.tmpdir(), "caja-"));
-      await cp(path.join(PLANTILLA, "categorias.csv"), path.join(dir, "categorias.csv"));
+      await cp(
+        path.join(PLANTILLA, "categorias", "categorias.csv"),
+        path.join(dir, "categorias.csv"),
+      );
       await importCatalog({ container, args: [dir] } as Parameters<typeof importCatalog>[0]);
       await rm(dir, { recursive: true, force: true });
       await importCatalog({
         container,
-        args: [path.join(PLANTILLA, "caja")],
+        args: [path.join(MOCK, "caja")],
       } as Parameters<typeof importCatalog>[0]);
-      await importCatalog({ container, args: [PLANTILLA] } as Parameters<typeof importCatalog>[0]);
+      for (const folder of ["producto-simple", "producto-variantes"]) {
+        await importCatalog({
+          container,
+          args: [path.join(PLANTILLA, folder)],
+        } as Parameters<typeof importCatalog>[0]);
+      }
       const [key] = await container.resolve(Modules.API_KEY).listApiKeys({ type: "publishable" });
       headers = { "x-publishable-api-key": key!.token };
       const [region] = await container.resolve(Modules.REGION).listRegions({});

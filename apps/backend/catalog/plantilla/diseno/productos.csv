@@ -1,0 +1,5 @@
+# DISEÑO DE LA FICHA · catalog:import catalog/plantilla/diseno (instrucciones: LEEME.md de esta carpeta).
+"# diseno: maquetación de la ficha (ids en apps/storefront/src/lib/disenos.ts: estandar, caja; correa es reservado de correas:sync)."
+# Vacío = el diseno_productos de su categoría o de sus padres → estandar. - = quitarlo. Se ve tras el rebuild del storefront.
+handle,titulo,categorias,iva,diseno,sku,precio,stock
+collar-estandar,Collar con diseño estándar explícito,collares-perro,general,estandar,COL-EST,"12,95",3
