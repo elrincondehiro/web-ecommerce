@@ -209,6 +209,23 @@ export interface CorreaPlan {
 const sameJson = (a: Record<string, unknown>, b: Record<string, unknown>) =>
   Object.entries(b).every(([k, v]) => JSON.stringify(a[k]) === JSON.stringify(v));
 
+/**
+ * Claves de metadata que ya no se usan y la hoja manda borrar: `plantilla = correa` (antes de la
+ * Fase DS; ahora `diseno = correa`). Con ella, el build del storefront falla («usa la plantilla
+ * correa, que no existe»). Medusa FUSIONA la metadata: una clave solo se borra enviándola como
+ * `""` (como `DELETE_KEY` en families-plan.ts).
+ */
+export const LEGACY_PRODUCT_KEYS = ["plantilla"] as const;
+
+/** Metadata a escribir: la deseada + `""` en las claves antiguas que el producto aún tiene. */
+export function metadataToWrite(
+  current: Record<string, unknown>,
+  want: Record<string, unknown>,
+): Record<string, unknown> {
+  const stale = LEGACY_PRODUCT_KEYS.filter((k) => k in current && current[k] !== "");
+  return { ...want, ...Object.fromEntries(stale.map((k) => [k, ""])) };
+}
+
 const sameKit = (db: Map<string, number>, want: Map<string, number>) =>
   db.size === want.size && [...want].every(([id, q]) => Math.abs((db.get(id) ?? NaN) - q) < 1e-9);
 
@@ -271,7 +288,12 @@ export function planCorreas(
     if ((cur.description ?? null) !== want.description) changes.push("descripción");
     if ((cur.material ?? null) !== want.material) changes.push("material");
     if (cur.status !== want.status) changes.push("estado");
-    if (!sameJson(cur.metadata, want.metadata)) changes.push("metadata");
+    if (
+      !sameJson(cur.metadata, want.metadata) ||
+      LEGACY_PRODUCT_KEYS.some((k) => k in cur.metadata && cur.metadata[k] !== "")
+    ) {
+      changes.push("metadata");
+    }
     if (db.categoryId && !cur.categoryIds.includes(db.categoryId)) changes.push("categoría");
 
     const missingOptions = want.options

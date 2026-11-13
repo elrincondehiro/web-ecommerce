@@ -40,6 +40,7 @@ import { CORREA_FILES, readCorreaSheets } from "./lib/correas-sheet";
 import {
   OPTION_TITLES,
   buildWanted,
+  metadataToWrite,
   planCorreas,
   type CorreaPlan,
   type DbCorreaProduct,
@@ -346,6 +347,7 @@ export default async function correasSync({ container, args }: ExecArgs) {
             {
               id: u.db.id,
               ...productFields(u.want),
+              metadata: metadataToWrite(u.db.metadata, u.want.metadata),
               ...(u.changes.includes("categoría")
                 ? { category_ids: [...new Set([...u.db.categoryIds, categoryId])] }
                 : {}),

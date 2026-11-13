@@ -1,8 +1,7 @@
 # Fase 13 — Publicar el catálogo en la tienda (rebuild del storefront)
 
-> **Estado:** 🚧 en curso (R-1 backend y R-2 ficheros hechos; R-3 homelab/VPS y la prueba de punta a punta, con el
-> próximo despliegue).
-> **Rama/PR:** `feat/rebuild-storefront`
+> **Estado:** ✅ en marcha en el VPS de prueba (13-nov-2026, `v0.3.0`): un cambio de catálogo se publica solo; probado con «Publicar ahora» (build, GHCR, despliegue por SSH, purga y «Publicado»).
+> **Rama/PR:** `feat/rebuild-storefront` (#91) · `fix/rebuild-cierre`
 > **Anterior:** [Fase MK](./faseMK-marketing.md)
 
 ## 1. Objetivos
@@ -10,8 +9,8 @@
 - [x] Un cambio de catálogo en el Admin del VPS (producto, foto, categoría, colección, etiqueta, opción u oferta) se
       publica solo en la tienda, sin el portátil, tras unos minutos sin cambios.
 - [x] Botón «Publicar ahora» en el Admin y estado de la última publicación.
-- [ ] Runner del homelab en el túnel WireGuard (`10.77.0.4`) y la API del VPS solo por WireGuard.
-- [ ] Prueba de punta a punta en el VPS.
+- [x] Runner del homelab en el túnel WireGuard (`10.77.0.4`) y la API del VPS solo por WireGuard.
+- [x] Prueba de punta a punta en el VPS.
 
 Precio y stock **no** necesitan rebuild: LiveSync los corrige en vivo (fase 6).
 
@@ -130,8 +129,16 @@ echo 'restrict,command="/usr/local/bin/deploy-storefront.sh",from="10.77.0.4" ss
 sudo chmod 600 ~deploy-storefront/.ssh/authorized_keys
 ```
 
-En `.env.prod`: `STOREFRONT_IMAGE_TAG=live`, `STOREFRONT_REBUILD_SECRET=<openssl rand -hex 32>` y, tras el primer
-build, `./dc up -d --wait backend-server backend-worker storefront`.
+En `.env.prod`: `STOREFRONT_REBUILD_SECRET=<openssl rand -hex 32>` y `./dc up -d --wait backend-server backend-worker`.
+
+**Orden en el primer despliegue** (aprendido el 13-nov-2026): el workflow despliega en cuanto termina el build, y el VPS
+pide la imagen de `STOREFRONT_IMAGE_TAG` (si está vacía, la de `IMAGE_TAG`, que el CI **no** publica para el storefront:
+`ecommerce-storefront:0.3.0` → «not found»). Por eso:
+
+1. Primer build (Admin → «Publicar ahora» + `systemctl start storefront-poll.service`). Si su despliegue falla con
+   «not found», es lo esperado: la imagen `:live` ya está en GHCR.
+2. `STOREFRONT_IMAGE_TAG=live` en `.env.prod` y `./dc up -d --wait storefront`; **Purge Everything** en Cloudflare.
+3. Segunda publicación: ya completa (despliegue y purga). Después, el temporizador (§5.5).
 
 ### 5.4 Gitea (repo → Configuración → Actions)
 
@@ -154,6 +161,20 @@ journalctl -u storefront-poll -f        # «workflow lanzado (…)» cuando toca
 
 `GITEA_TOKEN`: token de un usuario con escritura en el repo, scope `write:repository`.
 
+### 5.6 Notas de la puesta en marcha (13-nov-2026)
+
+- **LXC no privilegiado** (`nesting=1`): el módulo `wireguard` se carga en el **host de Proxmox**
+  (`modprobe wireguard` + `/etc/modules-load.d/wireguard.conf`); dentro del LXC, `wireguard-tools` y `wg-quick@wg0`.
+- **Disco**: el LXC tenía 20 GB (4,5 libres); ampliado a 60 GB (`pct resize 133 rootfs +40G`). Caché de BuildKit con
+  `reservedSpace` 8 GB, `maxUsedSpace` 15 GB y `minFreeSpace` 5 GB (`/etc/docker/daemon.json`). El workflow borra la
+  imagen local tras subirla.
+- **Tiempos**: el primer build (caché vacía, todas las fotos) pasó de 50 min con 1 vCPU; se subió el LXC a 2 vCPU y el
+  límite del workflow a 150 min. Con la caché llena, minutos.
+- **Datos antiguos**: las correas del VPS tenían `metadata.plantilla = correa` (antes de la Fase DS) y el build fallaba
+  («usa la plantilla correa, que no existe»). `correas:sync` ya la borra (`LEGACY_PRODUCT_KEYS`, enviada como `""`).
+- `usermod` no se encontraba: `su` sin guion no carga `/usr/sbin`. Usar `su -` o la ruta completa.
+- La salida «PTY allocation request failed» al probar la clave de `deploy-storefront` es normal (`restrict`).
+
 ## 6. Cómo testear
 
 ```bash
@@ -168,6 +189,8 @@ la tienda. Con «Publicar ahora», en 1–2 min.
 
 ## 7. Criterio de salida
 
-- [ ] Un cambio en el Admin del VPS sale en la tienda sin el portátil, y «Publicar ahora» funciona.
-- [ ] Un build roto deja «La última publicación falló» con el enlace al registro y no toca la tienda.
-- [ ] El 19000 solo responde por WireGuard (desde fuera, ni conecta).
+- [x] «Publicar ahora» publica la tienda sin el portátil (13-nov-2026). El automático (temporizador) queda por activar
+      (PENDIENTES §1).
+- [x] Un build roto deja «La última publicación falló» con el enlace al registro y no toca la tienda (el de la
+      plantilla de las correas).
+- [x] El 19000 solo responde por WireGuard (desde fuera, ni conecta).

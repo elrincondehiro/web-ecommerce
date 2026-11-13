@@ -705,6 +705,7 @@ Versiones publicadas (tags; las crea el usuario): **`v0.1.0`** (fase 11, primer 
 | DS Diseños de ficha y categoría        | [faseDS-disenos.md](./docs/fases/faseDS-disenos.md)                                              | ✅     |
 | CS Caja de snacks                      | [faseCS-caja-snacks.md](./docs/fases/faseCS-caja-snacks.md)                                      | ✅     |
 | MK Marketing respetuoso (A–E2)         | [faseMK-marketing.md](./docs/fases/faseMK-marketing.md)                                          | ✅     |
+| 13 Rebuild automático del storefront   | [fase13-rebuild.md](./docs/fases/fase13-rebuild.md)                                              | ✅     |
 | 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general

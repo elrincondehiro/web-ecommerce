@@ -37,7 +37,9 @@ jobs:
   rebuild:
     if: ${{ github.server_url != 'https://github.com' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    # El primer build de una caché vacía optimiza TODAS las fotos (más de 50 min en el LXC del
+    # runner, 2 vCPU, 13-nov-2026); con la caché llena, minutos.
+    timeout-minutes: 150
     env:
       HOOK: http://${{ vars.VPS_WG_IP }}:19000/hooks/storefront-rebuild
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

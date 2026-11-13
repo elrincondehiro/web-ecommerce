@@ -6,6 +6,7 @@ import {
   OPTION_HAND,
   OPTION_LENGTH,
   buildWanted,
+  metadataToWrite,
   planCorreas,
   type DbCorreaProduct,
   type ProductWanted,
@@ -162,6 +163,30 @@ describe("correas: plan", () => {
     expect(again.pieces).toEqual({ create: [], rename: [] });
     expect(again.products.update).toEqual([]);
     expect(again.products.unchanged).toBe(6);
+  });
+
+  it('borra la metadata antigua (`plantilla = correa`, antes de la Fase DS) con ""', () => {
+    const w = wanted();
+    const db = w.products.map((p) => asDb(p, "cat"));
+    db[0]!.metadata = { ...db[0]!.metadata, plantilla: "correa" };
+    const plan = planCorreas(w, {
+      pieces: pieces(w),
+      products: db,
+      categoryId: "cat",
+      skuOwners: new Map(),
+    });
+    expect(plan.products.update.map((u) => [u.want.handle, u.changes])).toEqual([
+      [w.products[0]!.handle, ["metadata"]],
+    ]);
+    const u = plan.products.update[0]!;
+    expect(metadataToWrite(u.db.metadata, u.want.metadata)).toEqual({
+      ...u.want.metadata,
+      plantilla: "",
+    });
+    // Ya borrada (o sin ella): nada que escribir
+    expect(metadataToWrite({ ...u.want.metadata, plantilla: "" }, u.want.metadata)).toEqual(
+      u.want.metadata,
+    );
   });
 
   it("precio, largo nuevo y kit cambiados", () => {

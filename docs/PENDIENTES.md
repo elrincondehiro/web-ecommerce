@@ -12,29 +12,18 @@ Leyenda: **🔴 bloquea abrir la tienda** · 🟠 importante · 🟢 mejora / cu
 - [ ] 🟠 Runner de Gitea sin memoria: el `quality` del PR de Renovate #79 falló en el build en Gitea y pasó en GitHub con el mismo commit (y en local). Causa probable: LXC de 4 GB + 1 GB swap con `capacity: 2` (build del backend ~2,3 GB de pico + otro job a la vez). Si vuelve a pasar: «Re-run» con el runner libre; arreglo de fondo en el homelab: `capacity: 1` o más RAM/swap (ESTADO §5). Confirmar con el log (`Killed` / 137 / heap).
 - [ ] Gitea: si el siguiente PR de Renovate entra en conflicto con otro merge, **Actions → Renovate → Run workflow** (lo regenera; nunca resolver el lockfile a mano).
 
-## 1. Siguiente despliegue en el VPS de pruebas (cuando haya algo que desplegar)
+## 1. VPS de pruebas: `v0.3.0` desplegada (13-nov-2026)
 
-Hoy el VPS corre `v0.2.0` (G–M). `main` (2-nov-2026, `edf1743`) lleva además PG, H, descripciones con formato, ficha móvil, **FO (familias)**, perf CSS y Renovate #79 (Node 24.22.2, Medusa 2.22.2, Astro 7.4.4, **Meilisearch 1.56**). Candidato a tag `v0.3.0`.
+Hecho: backup, `compose.prod.yml` y `Caddyfile` nuevos, `.env.prod` (`IMAGE_TAG=0.3.0`, `COMMS_UNSUBSCRIBE_SECRET`, Umami, IBAN **de prueba**, `CAJA_FESTIVOS`, `STOREFRONT_REBUILD_SECRET`, `STOREFRONT_IMAGE_TAG=live`), **Meilisearch 1.55 → 1.56.2** (snapshot + `MEILI_UPGRADE_DB` una vez: sin incidencias), backend 0.3.0 (migraciones e índice `product_v2`), Store API solo en `10.77.0.1:19000` (comprobado cerrado desde fuera), `stripe-region.js` (transferencia), caja de snacks cargada y **storefront publicado por el rebuild del homelab** (`:live`). Incidencias: `metadata.plantilla` antigua en las correas (borrada a mano; `correas:sync` ya la borra sola) y el primer build pasó de 50 min (límite subido a 150).
 
-- [ ] e2e completos en local contra el backend real (el CI usa fixtures) con Astro 7.4.1.
-- [ ] Build del storefront en el portátil (fase11 §4.7) y backend `:0.1.x`/`sha-…` de GHCR.
-- [ ] 🟠 **Meilisearch → 1.56.0** (el VPS sigue en la versión de `v0.2.0`): no arranca sin migrar la BD (probado con 1.55). Una vez con `MEILI_UPGRADE_DB=true` (override temporal de compose) y después sin él; si se corrompe, borrar el volumen y reindexar (`db:migrate`). Preparar los comandos exactos.
-- [ ] Copiar al VPS `compose.prod.yml`, `Caddyfile` y `monitoring/compose.agents.yml` nuevos (Dozzle v11.3.4 también en la VM).
-- [ ] Purge Everything en Cloudflare y comprobar HIT.
-- [ ] Automatizar la purga con un token de solo «Cache Purge» (fase11 §7) y, quizá, un script `deploy` con estos pasos.
-- [ ] **Fase H** (home): nada que configurar en el VPS (las carpetas del bucket y los widgets van en la imagen). Tras desplegar, poner fotos a las categorías destacadas y a las colecciones desde el Admin y reconstruir el storefront.
-- [ ] **Fase PG** (pagos): `TRANSFER_IBAN` y `TRANSFER_HOLDER` reales en `.env.prod` (y `TRANSFER_DAYS`/`TRANSFER_CANCEL_CRON` si no valen los de por defecto) y, tras desplegar, `./dc exec -T backend-server ./node_modules/.bin/medusa exec ./src/scripts/stripe-region.js`. En el panel de Stripe, dejar solo tarjeta, PayPal y Bizum. Probar a mano un pago con cada método (también Google Pay en el móvil: solo sale en https) y revisar los e2e de tarjeta intermitentes (fasePG §5).
-- [ ] **Fase FO** (familias) y Medusa 2.22.2: el `server` hace `db:migrate` al arrancar (índice `product` con `option_families`, se llena solo; script `create-super-admin-role`). Nunca `--execute-all-search`. Después, familias con `familias.csv` o el widget (Admin → Options → Color) y reconstruir el storefront (filtros de categorías).
-- [ ] **Fase M** (mascotas y avisos): crear en ntfy el tema solo para pedidos y poner `NTFY_URL`, `NTFY_ORDERS_TOPIC` y `ADMIN_URL=https://admin.<dominio>` en `.env.prod` (server y worker los leen del bloque común). La tabla `pet` la crea el `server` al arrancar (`db:migrate`).
+Queda:
 
-- [ ] **Fase MK-E2** (búsquedas): el `server` aplica la migración del módulo `searchLog`; `SEARCH_LOG_PURGE_CRON` (worker, 4:45). Ver en Admin → «Búsquedas».
-- [ ] **Fase MK-E** (Umami): en `.env.prod`, `STATS_DOMAIN`, `UMAMI_DB_PASSWORD` y `UMAMI_APP_SECRET` (`openssl rand -hex 32`); DNS `stats.` con proxy en Cloudflare; `docker compose up -d umami` (crea la BD); en `https://stats.<dominio>` cambiar la contraseña de `admin`, crear el sitio y poner `UMAMI_URL` + `UMAMI_WEBSITE_ID` en `.env.prod`; **reconstruir el storefront**. Cloudflare Access en `stats.` con Bypass para `/script.js` y `/api/send`. Para no contarse: `localStorage.setItem("umami.disabled", 1)` en los navegadores de la tienda.
-- [ ] **Fase MK-D** (escaparate y cumpleaños): el `server` aplica la migración de `pets`; `PETS_BIRTHDAY_CRON` (worker, por defecto 9:00 UTC). Moderar en Admin → «Escaparate».
-- [ ] **Fase MK-C** (comparador): el `server` migra el índice de búsqueda al arrancar (`proteina_ms`/`grasa_ms` ordenables: versión nueva del índice, sin `--execute-all-search`).
-- [ ] **Fase MK-B** (avisos de stock): `STOCK_ALERT_TTL_DAYS` si no vale 180 (365 con productos de temporada); la tabla `stock_alert` la crea el `server` al arrancar; los jobs corren en el worker.
-- [ ] **Fase MK-A** (comunicaciones): `COMMS_UNSUBSCRIBE_SECRET` en `.env.prod` (obligatoria; `openssl rand -base64 48`); la tabla `comms_consent` la crea el `server` al arrancar. Rate limiting de `/baja/` en Cloudflare al abrir la tienda.
-
-- [ ] **Fase CS** (caja de snacks): el `server` aplica la migración del módulo `caja` al arrancar. En `.env.prod`: `CAJA_FESTIVOS` (festivos reales de la tienda: nacionales, autonómicos y locales; el ejemplo es orientativo) y, si no valen los de por defecto, `CAJA_AUTOACCEPT_HOURS` (24), `CAJA_ALERT_WORK_HOURS` (48) y `CAJA_JOBS_CRON`. Cargar la caja con `catalog:import catalog/plantilla/caja` (o la hoja real) y revisar `pago_descuento` / `genera_puntos` de los productos. `SHOP_NOTIFY_EMAIL` + ntfy reciben los avisos de las cajas. Tras desplegar, una prueba completa: pedido → capturar → preparar → proponer → responder desde el email.
+- [ ] **Umami**: `./dc up -d --wait umami caddy`; DNS `stats` con proxy; Cloudflare Access en `stats.` (panel) con Bypass para `/script.js` y `/api/send`; cambiar la contraseña de `admin`, crear el sitio y poner `UMAMI_URL` + `UMAMI_WEBSITE_ID` en las **variables de Gitea** (el siguiente rebuild ya lleva el script).
+- [ ] **Temporizador del rebuild**: `systemctl enable --now storefront-poll.timer` en el LXC del runner (hasta ahora se lanzó a mano).
+- [ ] Agentes de monitorización: copiar `docker/monitoring/compose.agents.yml` (Beszel 0.21.1, Dozzle v11.4.2) y `./dcm up -d` en `/opt/monitor-agents`.
+- [ ] Comprobaciones: compra de prueba (tarjeta, Bizum, PayPal, transferencia), la caja (pedido → capturar → preparar → proponer → responder), Admin → «Búsquedas», «Escaparate» y «Publicar en la tienda»; cabeceras y HIT de Cloudflare.
+- [ ] Borrar del VPS las copias `*.v0.2.0` cuando todo esté bien, y del LXC las claves de la puesta en marcha si quedan (`/root/deploy-storefront*`, `/root/vps-known`).
+- [ ] Repetir la tanda B de la prueba de carga (fase 11) en el VPS.
 
 ## 2. 🔴 Antes de abrir la tienda de verdad (fase «producción definitiva»)
 
@@ -87,7 +76,7 @@ Hoy el VPS corre `v0.2.0` (G–M). `main` (2-nov-2026, `edf1743`) lleva además 
 
 ## 4. Fase 13 — rendimiento y operación (candidatas)
 
-- [ ] 🟠 **Rebuild del storefront** de catálogo: 🚧 [fase13-rebuild.md](./fases/fase13-rebuild.md) (backend, workflow y scripts hechos; falta la puesta en marcha en el homelab y el VPS, §5, y probarlo de punta a punta). Después: `offers.price` en el JSON-LD (fase3 §7).
+- [x] ~~**Rebuild del storefront** de catálogo~~: ✅ [fase13-rebuild.md](./fases/fase13-rebuild.md) (en marcha en el VPS de prueba desde `v0.3.0`). **Queda**: `offers.price` en el JSON-LD (fase3 §7) ahora que el HTML se regenera solo.
 - [x] ~~**Capacidad sin Cloudflare ~20 páginas/s**~~: [Fase R-2](./fases/faseR-rendimiento.md) (caché de Medusa + caché de `LiveSyncData`): ~100 páginas/s en local con Medusa en 2 núcleos. **Queda**: repetir la tanda B de la fase 11 en el VPS tras desplegar.
 - [x] ~~LCP de las fichas (P1–P5 de la auditoría de rendimiento)~~: [Fase R](./fases/faseR-rendimiento.md).
 - [x] ~~Caché de `LiveSyncData` (P8) y una island por ficha (P6)~~: Fase R-2.
