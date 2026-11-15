@@ -161,7 +161,15 @@ journalctl -u storefront-poll -f        # «workflow lanzado (…)» cuando toca
 
 `GITEA_TOKEN`: token de un usuario con escritura en el repo, scope `write:repository`.
 
-### 5.6 Notas de la puesta en marcha (13-nov-2026)
+### 5.6 Monitores en Uptime Kuma
+
+| Monitor                  | Tipo     | Dónde                                                                                                    | Intervalo                                     |
+| ------------------------ | -------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Publicación de la tienda | **Push** | secret `KUMA_PUSH_URL` del repo en Gitea: el workflow manda `up` (publicado) o `down` (falló)            | 7 días (puede pasar una semana sin cambios)   |
+| Temporizador del rebuild | **Push** | `KUMA_POLL_URL` en `/etc/storefront-rebuild.env` del LXC: un latido cada vez que el VPS responde (2 min) | 10 min (sin latidos = homelab o túnel caídos) |
+| Umami                    | HTTP(s)  | `https://stats.<dominio>/script.js` (no pide Access)                                                     | 5 min                                         |
+
+### 5.7 Notas de la puesta en marcha (13-nov-2026)
 
 - **LXC no privilegiado** (`nesting=1`): el módulo `wireguard` se carga en el **host de Proxmox**
   (`modprobe wireguard` + `/etc/modules-load.d/wireguard.conf`); dentro del LXC, `wireguard-tools` y `wg-quick@wg0`.

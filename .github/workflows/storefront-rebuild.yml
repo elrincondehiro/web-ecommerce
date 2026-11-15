@@ -11,7 +11,8 @@
 #   5. Purga de Cloudflare (token de solo «Cache Purge») y aviso «terminado» (ok o el paso que falló).
 # Variables del repo: DEPLOYED_REF, VPS_WG_IP (10.77.0.1), STORE_URL, IMAGE_BASE_URL.
 # Secrets: GHCR_USER, GHCR_TOKEN (PAT write:packages), MEDUSA_PUBLISHABLE_KEY (del VPS),
-#   STOREFRONT_REBUILD_SECRET, DEPLOY_SSH_KEY, DEPLOY_SSH_KNOWN_HOSTS, CF_ZONE_ID, CF_API_TOKEN.
+#   STOREFRONT_REBUILD_SECRET, DEPLOY_SSH_KEY, DEPLOY_SSH_KNOWN_HOSTS, CF_ZONE_ID, CF_API_TOKEN y,
+#   opcional, KUMA_PUSH_URL (monitor Push de Uptime Kuma: up si publica, down si falla).
 # Fuentes: context7 /websites/gitea (workflow_dispatch por la API, Docker en los jobs:
 # `container.docker_host`), /openssh/openssh-portable (authorized_keys `command=`, `restrict`),
 # cloudflare-docs (purge_cache, permiso Cache Purge); fase11 §4.7 (build contra el VPS).
@@ -131,3 +132,15 @@ jobs:
           else body="{\"event\":\"finished\",\"ok\":false,\"error\":\"El workflow terminó con estado $STATUS: mira el registro.\"}"; fi
           curl -fsS -m 20 -X POST "$HOOK" -H "x-rebuild-secret: $SECRET" \
             -H 'content-type: application/json' -d "$body" || true
+
+      # Uptime Kuma (Push): sin noticias en su intervalo = aviso. Kuma escucha en 10.77.0.3 (VM del
+      # homelab); el runner está en la misma LAN.
+      - name: Aviso a Uptime Kuma
+        if: ${{ always() }}
+        env:
+          KUMA: ${{ secrets.KUMA_PUSH_URL }}
+          STATUS: ${{ job.status }}
+        run: |
+          [ -n "$KUMA" ] || exit 0
+          if [ "$STATUS" = success ]; then s=up; m="publicado"; else s=down; m="rebuild $STATUS"; fi
+          curl -fsS -m 15 -G "$KUMA" --data-urlencode "status=$s" --data-urlencode "msg=$m" -o /dev/null || true

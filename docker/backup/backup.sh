@@ -3,8 +3,10 @@
 #
 # Qué copia, CIFRADO con age (clave pública: el VPS solo puede cifrar, nunca descifrar):
 #   - PostgreSQL: `pg_dump -Fc` dentro del contenedor → age → fichero. Nunca hay un dump en claro
-#     en el disco.
-#   - Configuración: .env.prod, certs/, compose*.yml, Caddyfile y dc → tar.gz → age.
+#     en el disco. La BD de la tienda y, si existe, la de Umami (`umami`, Fase MK-E: mismo
+#     Postgres, otra BD).
+#   - Configuración: .env.prod, certs/, compose*.yml, Caddyfile, dc y dc-storefront (rebuild,
+#     fase 13) → tar.gz → age.
 # Dónde: R2 `hiro-backups` (jurisdicción EU, ciclo de vida 30 días) con curl --aws-sigv4 y una copia
 # local de las últimas KEEP_LOCAL en BACKUP_DIR. Al terminar, heartbeat a Uptime Kuma (push) si
 # KUMA_PUSH_URL está definida: status=up con el tamaño, o status=down con el paso que falló.
@@ -52,6 +54,7 @@ fail() {
   # completas y cifradas) se conservan.
   case "$STEP" in
     postgres) rm -f "${DB:-}" "${DB:-}.err" ;;
+    umami) rm -f "${UDB:-}" "${UDB:-}.err" ;;
     configuracion) rm -f "${CFG:-}" ;;
   esac
   kuma down "backup falló en: $STEP"
@@ -86,23 +89,39 @@ rm -f "$BACKUP_DIR"/*.err
 [ ! -e "$DB.err" ] || { rm -f "$DB" "$DB.err"; exit 1; }
 [ "$(wc -c <"$DB")" -gt 1024 ] || { log "dump demasiado pequeño"; exit 1; }
 
+# Umami (analítica, Fase MK-E): solo si su BD existe (se crea al arrancar umami-db-init).
+STEP=umami
+UDB=""
+if "$COMPOSE" exec -T postgres sh -c \
+  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_database WHERE datname = '"'"'umami'"'"'"' |
+  grep -q 1; then
+  UDB="$BACKUP_DIR/umami-$STAMP.dump.age"
+  ( "$COMPOSE" exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d umami -Fc' ||
+    echo fallo >"$UDB.err" ) | age -r "$AGE_RECIPIENT" -o "$UDB"
+  [ ! -e "$UDB.err" ] || { rm -f "$UDB" "$UDB.err"; exit 1; }
+fi
+
 STEP=configuracion
 CFG="$BACKUP_DIR/config-$STAMP.tar.gz.age"
-tar -C "$APP_DIR" -czf - --ignore-failed-read .env.prod certs dc Caddyfile \
-  compose.prod.yml compose.prod.build.yml backup/backup.env 2>/dev/null |
+tar -C "$APP_DIR" -czf - --ignore-failed-read .env.prod certs dc dc-storefront Caddyfile \
+  compose.prod.yml backup/backup.env 2>/dev/null |
   age -r "$AGE_RECIPIENT" -o "$CFG"
 
 STEP=subida-postgres
 put "$DB" "postgres/$YM/$(basename "$DB")"
+if [ -n "$UDB" ]; then
+  STEP=subida-umami
+  put "$UDB" "umami/$YM/$(basename "$UDB")"
+fi
 STEP=subida-configuracion
 put "$CFG" "config/$YM/$(basename "$CFG")"
 
 STEP=limpieza-local
-for kind in medusa config; do
+for kind in medusa umami config; do
   # shellcheck disable=SC2012
   ls -1t "$BACKUP_DIR"/"$kind"-*.age 2>/dev/null | tail -n +"$((KEEP_LOCAL + 1))" | xargs -r rm -f
 done
 
 SIZE=$(du -h "$DB" | cut -f1)
-log "OK: $(basename "$DB") ($SIZE) y $(basename "$CFG") en R2 y en $BACKUP_DIR"
+log "OK: $(basename "$DB") ($SIZE)${UDB:+, $(basename "$UDB")} y $(basename "$CFG") en R2 y en $BACKUP_DIR"
 kuma up "OK postgres $SIZE"

@@ -3,11 +3,14 @@
 # WireGuard) si hay que publicar y, si toca, lanza el workflow `storefront-rebuild.yml` por la API
 # de Gitea y avisa «en cola» (para no lanzarlo dos veces mientras espera runner).
 # Config en /etc/storefront-rebuild.env (600): VPS_HOOK, STOREFRONT_REBUILD_SECRET, GITEA_API,
-# GITEA_REPO, GITEA_TOKEN (scope write:repository). Nunca escribe secretos en el log.
+# GITEA_REPO, GITEA_TOKEN (scope write:repository) y, opcional, KUMA_POLL_URL (monitor Push de
+# Uptime Kuma: un latido cada vez que el VPS responde; sin latidos = homelab o túnel caídos).
+# Nunca escribe secretos en el log.
 set -eu
 . /etc/storefront-rebuild.env
 h="x-rebuild-secret: $STOREFRONT_REBUILD_SECRET"
 answer="$(curl -fsS -m 15 -H "$h" "$VPS_HOOK")" || { echo "VPS no responde"; exit 0; }
+[ -z "${KUMA_POLL_URL:-}" ] || curl -fsS -m 10 "$KUMA_POLL_URL" -o /dev/null || true
 case "$answer" in
   *'"publish":true'*) ;;
   *) exit 0 ;;

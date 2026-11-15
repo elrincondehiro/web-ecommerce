@@ -243,11 +243,17 @@ Ficheros en `docker/backup/` → en el VPS, `/opt/ecommerce/backup/`:
 - **Cifrado con age** (clave pública en el VPS): quien tenga el VPS o el token de R2 no puede leer los backups. La clave privada, solo en el gestor de contraseñas del usuario. El dump **nunca** está en claro en un disco (ni en el VPS ni en el portátil).
 - En R2: `postgres/AAAA/MM/medusa-AAAAMMDD-HHMMSS.dump.age` y `config/AAAA/MM/config-….tar.gz.age`; el ciclo de vida del bucket borra a los 30 días.
 - No se copian Meilisearch (se reindexa desde la BD), Redis (colas y caché) ni las fotos (ya en R2).
+- **Desde `v0.3.0`** (15-nov-2026): también la BD de **Umami** (`umami/AAAA/MM/umami-….dump.age`, solo si existe) y,
+  en la configuración, `dc-storefront` del rebuild (fase 13). `compose.prod.build.yml` ya no existe.
 - Probado en local (19-oct-2026, contra SeaweedFS y un Postgres 17.11 con `sh` de Debian 13 y `age` 1.2.1 del paquete de trixie): backup OK, retención local, `down` en Kuma con Postgres parado, sin `age` y con una credencial de R2 mala (y sin borrar las copias locales buenas), restauración con los mismos recuentos, nada de secretos en el log.
 
 **En el VPS (19-oct-2026)**: primer backup a mano `OK` (`medusa-20261019-191938.dump.age` + `config-…` en `hiro-backups`); timer activo (`next: 20-oct 03:33:46 CEST`). **Restauración probada desde R2** con `restore-test.sh` en el portátil: `restaurada 306 · 1430 · 1 · 2` = `real 306 · 1430 · 1 · 2` (productos · variantes · pedidos · clientes). El `NOTICE … does not exist, skipping` es del `dropdb --if-exists` previo.
 
-**Desastre (VPS perdido)**: VPS nuevo (§4.1) → descargar el último `config-….tar.gz.age` y descifrar en el portátil (`age -d -i <clave> … | tar -xzf - -C /opt/ecommerce`) → `./dc up -d --wait postgres redis meilisearch` → `pg_restore -d "$POSTGRES_DB" --no-owner --single-transaction` con el backend parado → `./dc up -d --wait backend-server backend-worker storefront caddy` → reindexar Meilisearch (`POST /admin/search-indexes/:id/reindex` o `db:migrate`).
+**Desastre (VPS perdido)**: VPS nuevo (§4.1) → descargar el último `config-….tar.gz.age` y descifrar en el portátil (`age -d -i <clave> … | tar -xzf - -C /opt/ecommerce`) → `./dc up -d --wait postgres redis meilisearch` → `pg_restore -d "$POSTGRES_DB" --no-owner --single-transaction` con el backend parado → `./dc up -d --wait backend-server backend-worker storefront caddy` → reindexar Meilisearch (`POST /admin/search-indexes/:id/reindex` o `db:migrate`). Umami: `./dc up -d --wait umami`
+(crea su BD vacía) → `./dc stop umami` → `pg_restore -d umami --no-owner --clean --if-exists` del último
+`umami-….dump.age` → `./dc up -d --wait umami`. Rebuild (fase 13): `deploy-storefront.sh` en `/usr/local/bin`, el
+usuario `deploy-storefront` con su `authorized_keys` y su sudoers, y `AllowUsers` (fase13-rebuild.md §5.3; la clave del
+workflow sigue valiendo: está en los secrets de Gitea, solo hay que poner su parte pública).
 
 Fuentes: context7 `/websites/postgresql_17` (backup-dump, app-pgrestore: `--no-owner`, `--single-transaction`), `/filosottile/age` (README: `-r`, `-d -i`), `/louislam/uptime-kuma-wiki` (Internal-API: push), `/systemd/systemd` (timers: `OnCalendar` con zona horaria, `Persistent`, `RandomizedDelaySec`); `systemd-analyze calendar` y `verify`; cloudflare-docs (R2, 11-4).
 

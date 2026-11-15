@@ -22,7 +22,9 @@ Queda:
 - [ ] **Temporizador del rebuild**: `systemctl enable --now storefront-poll.timer` en el LXC del runner (hasta ahora se lanzó a mano).
 - [ ] Agentes de monitorización: copiar `docker/monitoring/compose.agents.yml` (Beszel 0.21.1, Dozzle v11.4.2) y `./dcm up -d` en `/opt/monitor-agents`.
 - [ ] Comprobaciones: compra de prueba (tarjeta, Bizum, PayPal, transferencia), la caja (pedido → capturar → preparar → proponer → responder), Admin → «Búsquedas», «Escaparate» y «Publicar en la tienda»; cabeceras y HIT de Cloudflare.
-- [ ] Borrar del VPS las copias `*.v0.2.0` cuando todo esté bien, y del LXC las claves de la puesta en marcha si quedan (`/root/deploy-storefront*`, `/root/vps-known`).
+- [x] ~~Umami, temporizador, agentes de monitorización y limpieza~~ (13–15-nov-2026).
+- [ ] Copiar el `docker/backup/backup.sh` nuevo al VPS (`/opt/ecommerce/backup/`): copia también la BD de Umami y `dc-storefront`. Comprobar el siguiente backup (`umami-….dump.age` en R2).
+- [ ] Monitores de Kuma: publicación de la tienda y temporizador del rebuild (Push) y Umami (HTTP); fase13-rebuild.md §5.6.
 - [ ] Repetir la tanda B de la prueba de carga (fase 11) en el VPS.
 
 ## 2. 🔴 Antes de abrir la tienda de verdad (fase «producción definitiva»)
