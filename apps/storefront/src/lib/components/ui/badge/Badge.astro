@@ -1,0 +1,14 @@
+---
+// Insignia (antes badge.svelte de shadcn-svelte): <a> con href, si no <span>. Mismas clases.
+import type { HTMLAttributes } from "astro/types";
+import { cn } from "$lib/utils";
+import { badgeVariants, type BadgeVariant } from "./index";
+
+type Props = HTMLAttributes<"span"> & { href?: string; variant?: BadgeVariant };
+const { href, variant = "default", class: className, ...rest } = Astro.props;
+const Tag = href ? "a" : "span";
+---
+
+<Tag data-slot="badge" href={href} class={cn(badgeVariants({ variant }), className)} {...rest}>
+  <slot />
+</Tag>

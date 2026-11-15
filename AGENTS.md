@@ -15,8 +15,8 @@ Esta regla está **por encima de todas las demás**.
 **Antes de empezar cualquier parte nueva** (una fase del roadmap, crear el storefront, crear el backend, añadir un módulo, un servicio, un compose, un Dockerfile, un workflow de CI, una integración):
 
 1. **Consulta la documentación**, en este orden:
-   1. **MCP específico** de la tecnología (`astro-docs`, `svelte`, `cloudflare-docs`, `meilisearch-docs`, `resend-docs`, `stripe`).
-   2. Si no hay MCP específico o no cubre el tema → **`context7`** (p. ej. Medusa `/medusajs/medusa`, Tailwind, shadcn-svelte, SeaweedFS, Caddy…).
+   1. **MCP específico** de la tecnología (`astro-docs`, `cloudflare-docs`, `meilisearch-docs`, `resend-docs`, `stripe`).
+   2. Si no hay MCP específico o no cubre el tema → **`context7`** (p. ej. Medusa `/medusajs/medusa`, Tailwind, SeaweedFS, Caddy…).
    3. Solo si ninguno responde → documentación oficial por HTTP (p. ej. `docs.medusajs.com/llms-full.txt`), indicándolo.
 2. **Verifica** que lo consultado corresponde a las **versiones fijadas** (las de los ficheros: `package.json`, `docker/*.yml`, workflows; README §4 como referencia).
 3. **Presenta un plan** al usuario: qué vas a crear/ejecutar, comandos exactos, ficheros afectados y fuentes consultadas.
@@ -30,7 +30,7 @@ Esta regla está **por encima de todas las demás**.
 
 1. **pnpm siempre.** Nunca `npm`, `npx`, `yarn`. Usa `pnpm`, `pnpm dlx`, `pnpm exec`, `pnpm --filter <pkg>`.
 2. **fnm, no nvm.** La versión de Node está en `.node-version`. No añadas `.nvmrc`.
-3. **Estático primero.** Orden: HTML estático → server island → ruta on-demand → isla Svelte en cliente. Justifica por escrito cada `client:*`.
+3. **Estático primero.** Orden: HTML estático → server island → ruta on-demand → `<script>` de Astro en cliente. Justifica por escrito cada script de cliente. **No hay framework de UI** (sin Svelte desde la fase 13): todo es `.astro`.
 4. **Mínimo JS en cliente.** Cada KB de JS enviado al navegador necesita un motivo. Respeta el presupuesto (§3.4).
 5. **Mejora progresiva.** Todo flujo crítico (añadir al carrito, buscar, login) funciona sin JS con `<form>` + Astro Actions.
 6. **Servicios en Docker.** Postgres, Redis, Meilisearch, SeaweedFS, Mailpit y Stripe CLI corren con `docker/compose.dev.yml`. No instales nada de eso en el host.
@@ -47,22 +47,21 @@ Esta regla está **por encima de todas las demás**.
 
 Resumen orientativo (fuente de verdad: los ficheros del repo; tabla de referencia en **README §4**, revisada al cerrar cada fase):
 
-| Pieza       | Versión                                         | Notas                                                                                                                  |
-| ----------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Node        | **24.22.2** (`.node-version`)                   | gestionado con fnm                                                                                                     |
-| pnpm        | **12.18.0** (`packageManager`)                  | workspaces, `node-linker` isolated (por defecto), `save-exact=true`                                                    |
-| Medusa      | **2.22.6**                                      | `@medusajs/*` todos en la **misma** versión                                                                            |
-| Astro       | **7.4.8**                                       | `@astrojs/node` 11.1.11 standalone, `@astrojs/svelte` 9.1.2                                                            |
-| Svelte      | **5.57.3** (runes)                              | `$state`, `$derived`, `$props`, `$effect`; **no** API de Svelte 4 (`export let`, stores para estado local, `on:click`) |
-| Tailwind    | **4.3.5**                                       | plugin `@tailwindcss/vite`, config CSS-first (`@theme` en `global.css`); **no** `tailwind.config.js`                   |
-| UI          | shadcn-svelte 1.7.0 + bits-ui 2.20.6            | componentes copiados en `src/lib/components/ui`                                                                        |
-| TypeScript  | **6.0.3**                                       | TS 7 no soportado aún por Astro/Medusa                                                                                 |
-| PostgreSQL  | `postgres:17.11-alpine`                         |                                                                                                                        |
-| Redis       | `redis:8.10.3-alpine`                           |                                                                                                                        |
-| Meilisearch | `getmeili/meilisearch:v1.56.2`                  | subir de versión en prod: una vez con `MEILI_UPGRADE_DB=true` (si no, no arranca)                                      |
-| S3 local    | `chrislusf/seaweedfs:4.53`                      | solo dev; prod = Cloudflare R2. MinIO descartado                                                                       |
-| Caddy       | `caddy:2.11.9-alpine`                           |                                                                                                                        |
-| React Email | react-email 6.11.10 · ui 6.11.10 · render 2.3.0 | solo en `packages/emails`                                                                                              |
+| Pieza       | Versión                                         | Notas                                                                                                |
+| ----------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Node        | **24.22.2** (`.node-version`)                   | gestionado con fnm                                                                                   |
+| pnpm        | **12.18.0** (`packageManager`)                  | workspaces, `node-linker` isolated (por defecto), `save-exact=true`                                  |
+| Medusa      | **2.22.6**                                      | `@medusajs/*` todos en la **misma** versión                                                          |
+| Astro       | **7.4.8**                                       | `@astrojs/node` 11.1.11 standalone, sin integración de framework de UI                               |
+| Tailwind    | **4.3.5**                                       | plugin `@tailwindcss/vite`, config CSS-first (`@theme` en `global.css`); **no** `tailwind.config.js` |
+| UI          | clases de shadcn «vega»                         | `buttonVariants`/`badgeVariants` (tailwind-variants) en `src/lib/components/ui`                      |
+| TypeScript  | **6.0.3**                                       | TS 7 no soportado aún por Astro/Medusa                                                               |
+| PostgreSQL  | `postgres:17.11-alpine`                         |                                                                                                      |
+| Redis       | `redis:8.10.3-alpine`                           |                                                                                                      |
+| Meilisearch | `getmeili/meilisearch:v1.56.2`                  | subir de versión en prod: una vez con `MEILI_UPGRADE_DB=true` (si no, no arranca)                    |
+| S3 local    | `chrislusf/seaweedfs:4.53`                      | solo dev; prod = Cloudflare R2. MinIO descartado                                                     |
+| Caddy       | `caddy:2.11.9-alpine`                           |                                                                                                      |
+| React Email | react-email 6.11.10 · ui 6.11.10 · render 2.3.0 | solo en `packages/emails`                                                                            |
 
 Reglas de dependencias:
 
@@ -72,23 +71,21 @@ Reglas de dependencias:
 - Renovate (`renovate.json`): minor/patch agrupados en un PR semanal; **majors solo con aprobación** en el Dependency Dashboard; PostgreSQL fijado a `<18`; nada de npm con menos de 24 h (igual que `minimumReleaseAge` de pnpm).
 - Antes de añadir una dependencia al **storefront cliente**, comprueba su peso (bundlephobia / `pnpm build` + análisis). Prefiere APIs nativas del navegador.
 - No introduzcas React en el storefront. React solo existe en `packages/emails`.
-- No asumas APIs de Medusa v1, Astro ≤ 6, Svelte 4 ni Tailwind v3: **consulta la documentación** (§1.1).
+- No asumas APIs de Medusa v1, Astro ≤ 6 ni Tailwind v3: **consulta la documentación** (§1.1).
 
 ### 1.1 Fuentes de documentación (MCP)
 
 Configurados en `.pi/mcp.json` (proyecto) y `~/.pi/agent/mcp.json` (usuario). Ver README §5.
 
-| Tema                                                                                                | Fuente                                        | Cómo                                                                                                             |
-| --------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Astro 7                                                                                             | MCP `astro-docs`                              | buscar en docs                                                                                                   |
-| Svelte 5                                                                                            | MCP `svelte`                                  | docs + autofixer: **pasa cada componente `.svelte` nuevo por el autofixer**                                      |
-| Medusa v2                                                                                           | MCP `context7` → library `/medusajs/medusa`   | `resolve-library-id` + `query-docs`. Complemento: `curl -s https://docs.medusajs.com/llms-full.txt \| grep -i …` |
-| shadcn-svelte (CLI, componentes)                                                                    | skill `.pi/skills/shadcn-svelte` + `context7` | la skill se carga sola; comandos con `pnpm dlx shadcn-svelte@1.7.0` (nunca `@latest`)                            |
-| Tailwind v4, shadcn-svelte, bits-ui, React Email, Caddy, PostgreSQL, Redis, SeaweedFS, pnpm, Docker | MCP `context7`                                | `resolve-library-id` + `query-docs`                                                                              |
-| Cloudflare (R2, DNS, WAF, Origin CA, caché)                                                         | MCP `cloudflare-docs`                         | buscar en docs                                                                                                   |
-| Meilisearch                                                                                         | MCP `meilisearch-docs`                        | buscar en docs                                                                                                   |
-| Resend                                                                                              | MCP `resend-docs`                             | buscar en docs                                                                                                   |
-| Stripe                                                                                              | MCP `stripe` (cuenta **test**) o `context7`   | docs; herramientas de cuenta solo lectura salvo petición explícita                                               |
+| Tema                                                                                           | Fuente                                      | Cómo                                                                                                             |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Astro 7                                                                                        | MCP `astro-docs`                            | buscar en docs                                                                                                   |
+| Medusa v2                                                                                      | MCP `context7` → library `/medusajs/medusa` | `resolve-library-id` + `query-docs`. Complemento: `curl -s https://docs.medusajs.com/llms-full.txt \| grep -i …` |
+| Tailwind v4, tailwind-variants, React Email, Caddy, PostgreSQL, Redis, SeaweedFS, pnpm, Docker | MCP `context7`                              | `resolve-library-id` + `query-docs`                                                                              |
+| Cloudflare (R2, DNS, WAF, Origin CA, caché)                                                    | MCP `cloudflare-docs`                       | buscar en docs                                                                                                   |
+| Meilisearch                                                                                    | MCP `meilisearch-docs`                      | buscar en docs                                                                                                   |
+| Resend                                                                                         | MCP `resend-docs`                           | buscar en docs                                                                                                   |
+| Stripe                                                                                         | MCP `stripe` (cuenta **test**) o `context7` | docs; herramientas de cuenta solo lectura salvo petición explícita                                               |
 
 Reglas:
 
@@ -103,7 +100,7 @@ Reglas:
 
 ```
 apps/backend       Medusa v2: módulos, workflows, subscribers, jobs, rutas API, extensiones admin
-apps/storefront    Astro 7: páginas, layouts, componentes estáticos, islas Svelte, actions
+apps/storefront    Astro 7: páginas, layouts, componentes .astro, scripts de cliente, actions
 packages/emails    Plantillas React Email (exporta componentes + helper de render)
 packages/config    tsconfig/eslint/prettier compartidos
 docker/            compose.dev.yml, compose.prod.yml, Caddyfile
@@ -121,24 +118,23 @@ docker/            compose.dev.yml, compose.prod.yml, Caddyfile
 
 ```
 ¿El contenido es igual para todos los usuarios y cambia poco?
-  └─ Sí → .astro estático (o Svelte SIN client:*), prerender = true.  ✅ FIN
+  └─ Sí → .astro estático, prerender = true.  ✅ FIN
 ¿Solo una parte es personalizada/volátil (precio, stock, carrito, usuario)?
   └─ Sí → página estática + <Componente server:defer> con fallback (skeleton).  ✅ FIN
 ¿La página entera depende del usuario/sesión (carrito, checkout, cuenta)?
   └─ Sí → export const prerender = false (on-demand), HTML desde servidor.  ✅ FIN
 ¿Hace falta interactividad en el navegador que un <form>/<details>/<dialog>/CSS no resuelven?
-  └─ Sí → isla Svelte con la directiva más perezosa posible:
-          client:visible > client:idle > client:media > client:load
-          client:only="svelte" solo si no puede renderizarse en servidor (Stripe Elements).
+  └─ Sí → <script> de Astro (se empaqueta en /_astro/, sin imports si puede ser), con su
+          excepción de presupuesto (§3.4). Así son CartClient, SiteClient, SearchLive y el pago.
 ```
 
-Antes de crear una isla de cliente, intenta primero con: HTML nativo (`<details>`, `<dialog>`, `popover`, `<form>`), CSS (`:has()`, `:target`, `@starting-style`, scroll-snap, view transitions de CSS), o un `<script>` pequeño de Astro (se empaqueta y deduplica).
+Antes de añadir JS de cliente, intenta primero con: HTML nativo (`<details>`, `<dialog>`, `popover`, `<form>`), CSS (`:has()`, `:target`, `@starting-style`, scroll-snap, view transitions de CSS), o un `<script>` pequeño de Astro (se empaqueta y deduplica).
 
 ### 3.2 Convenciones
 
-- `src/components/*.astro` → estáticos. `src/islands/*.svelte` → componentes que **se hidratan**. `src/lib/components/ui/*` → shadcn-svelte (se pueden usar en estático también).
-- Componentes shadcn-svelte que no necesiten interacción se renderizan **sin** directiva `client:*` (salen como HTML puro).
-- Estado compartido entre islas: `nanostores` o eventos DOM; nada de frameworks de estado pesados.
+- `src/components/*.astro` → componentes (HTML). `src/lib/components/ui/*` → clases de shadcn («vega») con `tailwind-variants` (`buttonVariants`, `badgeVariants`) y `Badge.astro`: el botón es un `<button>`/`<a>` con `class={buttonVariants(…)}`.
+- Sin framework de UI (Svelte se quitó en la fase 13; el HTML era el mismo). Añadir uno (React, Svelte, Vue…) requiere aprobación del usuario.
+- Estado compartido entre scripts de cliente: eventos DOM; nada de frameworks de estado.
 - Datos en build: `src/lib/medusa.ts` expone funciones tipadas (`getProducts`, `getProductByHandle`, …). Úsalas en `getStaticPaths`.
 - **Ficha de producto** (Fase O): con 2 opciones (o 1 con fotos o colores) usa el selector de opciones (`lib/variant-picker.ts`, `VariantPicker.astro`): radios `opcion_1`/`opcion_2` y la variante la busca la action en el servidor. Su CSS por posición lo genera `pickerHeadCss()` y va en el `<head>` **solo de las fichas con selector** (`HeadStyle`), con las reglas de sus valores. Familias de opciones (Fase FO, `lib/option-families.ts`, igual en backend y storefront): filtros por familia (`?familia=Título:id`) y, en la ficha, `data-fam` + `PickerLive`. Contenido común de ficha en `src/content/plantillas/` (por categoría) y guías de tallas en `src/content/guias/` (por modelo, `metadata.guia_tallas`).
 - **Diseños** (Fase DS, `src/disenos/LEEME.md`): la ficha y la página de categoría las pinta el diseño elegido (`metadata.diseno` del producto → `diseno_productos` de su categoría y padres → `estandar`; la categoría, su `diseno`). Ids y propiedades en `lib/disenos.ts` (copia **idéntica** en el backend). Un producto especial (correa, caja…) es un **diseño**, no un `if` en la ficha estándar; para saber en el servidor si se configura en su ficha, `productDesign(p).configurable`. Sin `<style>` en los diseños (va a todas las páginas): `global.css` o `HeadStyle`.
@@ -298,7 +294,7 @@ git push -u origin feat/carrito-server-island    # origin empuja a Gitea y GitHu
 ## 9. Calidad
 
 - TypeScript `strict` en todo el monorepo. Prohibido `any` sin comentario justificando.
-- ESLint + Prettier (config compartida en `packages/config`), `eslint-plugin-astro`, `eslint-plugin-svelte`.
+- ESLint + Prettier (config compartida en `packages/config`), `eslint-plugin-astro`.
 - Tests:
   - Backend: tests de integración de Medusa (`medusa-test-utils`) para workflows y rutas propias.
   - Storefront: Vitest para `lib/`, Playwright para flujos críticos (incluido **con JS desactivado** para carrito/búsqueda).

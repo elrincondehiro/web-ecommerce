@@ -126,7 +126,11 @@ const data: FichaData = {
     noindex: discontinued,
     jsonLd: discontinued
       ? [breadcrumbJsonLd(crumbs, Astro.site!)]
-      : [breadcrumbJsonLd(crumbs, Astro.site!), productJsonLd(product, Astro.site!, image)],
+      : [
+          breadcrumbJsonLd(crumbs, Astro.site!),
+          // Sin precio en los configurables (correa, caja): depende de lo que se elige
+          productJsonLd(product, Astro.site!, image, { offers: !info.configurable }),
+        ],
   },
   discontinued,
   onward,

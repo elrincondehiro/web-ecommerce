@@ -20,10 +20,6 @@
       "matchPackageNames": ["astro", "@astrojs/**"]
     },
     {
-      "groupName": "svelte",
-      "matchPackageNames": ["svelte", "bits-ui", "shadcn-svelte"]
-    },
-    {
       "groupName": "tailwind",
       "matchPackageNames": ["tailwindcss", "@tailwindcss/**"]
     },

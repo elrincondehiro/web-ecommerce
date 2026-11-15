@@ -1,9 +1,9 @@
 // @ts-check
 // Config validada contra astro-docs (Astro 7): on-demand rendering, @astrojs/node, server islands,
+// sin integraciones de framework de UI (Svelte se quitó en la fase 13: todo es .astro + <script>),
 // Fonts API, astro:env, prefetch, sitemap e imágenes. Ver docs/fases/fase3.md y fase6.md.
 import node from "@astrojs/node";
 import sitemap from "@astrojs/sitemap";
-import svelte from "@astrojs/svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, envField, fontProviders } from "astro/config";
 import { existsSync, readFileSync } from "node:fs";
@@ -225,7 +225,6 @@ export default defineConfig({
   // Sitemap sin páginas legales provisionales (noindex hasta tener el texto definitivo, fase 5),
   // sin fichas descatalogadas y con `lastmod` en las fichas (Fase E, `sitemapData`).
   integrations: [
-    svelte(),
     sitemapData(),
     sitemap({
       filter: (page) =>

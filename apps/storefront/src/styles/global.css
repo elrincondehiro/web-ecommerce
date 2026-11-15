@@ -1,6 +1,25 @@
 @import "tailwindcss";
 
 /*
+ * View transitions entre páginas (fase 13; decisión de la fase 3 §7.1): nativas del navegador,
+ * 0 JS. Un fundido corto al navegar por la tienda (mismo origen). Chromium y Safari 18.2+;
+ * Firefox navega como siempre. Sin animación con prefers-reduced-motion.
+ * Fuente: MDN (@view-transition, navigation: auto), astro-docs (view transitions nativas).
+ */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 150ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}
+
+/*
  * Tema (I-Marca). Colores de marca: azul #19799D y rosa #F883A1 (accent). En claro el azul
  *   de los textos y botones (--primary) es #16708F, algo más oscuro, para mantener el AA sobre el
  *   fondo crema; #19799D queda para el logo y los iconos.

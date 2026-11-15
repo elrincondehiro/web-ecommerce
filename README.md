@@ -5,7 +5,7 @@ E-commerce **autoalojado**, pensado para ir a **máxima velocidad**: todo lo pos
 | Capa                         | Tecnología                                                                                                                    |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Backend / commerce engine    | **Medusa v2** (Node, TypeScript) + Admin                                                                                      |
-| Tienda (storefront)          | **Astro 7** + islas **Svelte 5** + **Tailwind CSS v4** + **shadcn-svelte** (port de shadcn/ui para Svelte)                    |
+| Tienda (storefront)          | **Astro 7** + **Tailwind CSS v4** (clases de shadcn «vega» con `tailwind-variants`); JS de cliente con `<script>` de Astro    |
 | Base de datos                | **PostgreSQL**                                                                                                                |
 | Colas, eventos, caché, locks | **Redis**                                                                                                                     |
 | Búsqueda                     | **Meilisearch**                                                                                                               |
@@ -89,10 +89,10 @@ Puntos clave:
 
 Orden de preferencia **obligatorio** para cualquier pieza de UI:
 
-1. **HTML estático prerenderizado** (`.astro`, o componente Svelte **sin** directiva `client:*`, que se renderiza a HTML sin enviar JS).
+1. **HTML estático prerenderizado** (`.astro`).
 2. **Server island** (`server:defer`) para lo personalizado o volátil: precio por región, stock, contador del carrito, "hola, Juan". La página sigue siendo estática y cacheable; la isla se pide aparte con su propia caché corta.
 3. **Ruta on-demand** (`export const prerender = false`) solo cuando la página entera es por usuario: carrito, checkout, cuenta.
-4. **Isla Svelte en cliente**, en este orden de directivas: `client:visible` → `client:idle` → `client:media` → `client:load` (casi nunca). `client:only="svelte"` solo para lo que no puede renderizarse en servidor (p. ej. Stripe Payment Element).
+4. **`<script>` de Astro en cliente** (un bundle pequeño en `/_astro/`, con su presupuesto). No hay framework de UI: Svelte se quitó en la fase 13 (solo pintaba dos componentes estáticos).
 
 Técnicas aplicadas:
 
@@ -127,8 +127,7 @@ web-ecommerce/
 │       ├── src/
 │       │   ├── pages/
 │       │   ├── layouts/
-│       │   ├── components/      # .astro (estático) y ui/ (shadcn-svelte)
-│       │   ├── islands/         # componentes Svelte que se hidratan (client:*)
+│       │   ├── components/      # .astro
 │       │   ├── actions/         # Astro Actions (carrito, auth…)
 │       │   ├── lib/             # cliente Medusa (@medusajs/js-sdk), utils
 │       │   └── styles/global.css
@@ -216,17 +215,13 @@ Política:
 | `create-medusa-app`                                                                                                       | 2.21.2                    | scaffolding                                                                                                                       |
 | `@medusajs/js-sdk`, `@medusajs/types`                                                                                     | 2.22.6                    | storefront                                                                                                                        |
 | `astro`                                                                                                                   | **7.4.8**                 | storefront                                                                                                                        |
-| `@astrojs/svelte`                                                                                                         | 9.1.2                     | storefront                                                                                                                        |
 | `@astrojs/node`                                                                                                           | 11.1.11                   | storefront                                                                                                                        |
 | `@astrojs/partytown` _(no instalado; fase 13)_                                                                            | 2.1.8                     | storefront                                                                                                                        |
 | `@astrojs/sitemap`                                                                                                        | 3.7.4                     | storefront                                                                                                                        |
-| `svelte`                                                                                                                  | **5.57.3**                | storefront                                                                                                                        |
 | `tailwindcss`, `@tailwindcss/vite`                                                                                        | **4.3.5**                 | storefront                                                                                                                        |
-| `shadcn-svelte` (CLI)                                                                                                     | 1.7.0                     | storefront (dev)                                                                                                                  |
-| `bits-ui`                                                                                                                 | 2.20.6                    | storefront                                                                                                                        |
-| `tailwind-variants` · `tailwind-merge` · `clsx`                                                                           | 3.3.1 · 3.7.0 · 2.1.1     | storefront (utilidades de shadcn-svelte)                                                                                          |
+| `tailwind-variants` · `tailwind-merge` · `clsx`                                                                           | 3.3.1 · 3.7.0 · 2.1.1     | storefront (clases de los botones e insignias, `src/lib/components/ui`)                                                           |
 | `sharp`                                                                                                                   | 0.35.5                    | storefront (`astro:assets`; Fase M: fotos de mascotas en runtime)                                                                 |
-| `@astrojs/check` · `svelte-check`                                                                                         | 0.9.12 · 4.7.8            | storefront (dev, typecheck)                                                                                                       |
+| `@astrojs/check`                                                                                                          | 0.9.12                    | storefront (dev, typecheck)                                                                                                       |
 | `@stripe/stripe-js`                                                                                                       | 9.17.0                    | storefront                                                                                                                        |
 | Fuentes Baloo 2 · Nunito Sans _(Fonts API, Fontsource; no es un paquete npm)_                                             | —                         | storefront: titulares / texto (I-Marca), pesos 600–700 / 400–700                                                                  |
 | Iconos Phosphor _(SVG copiados en `src/lib/icons.ts`; no es un paquete npm)_                                              | core 2.1.1                | storefront: iconos de trazo (MIT, I-Marca; más en I-Interficie)                                                                   |
@@ -245,8 +240,8 @@ Política:
 | `@lhci/cli`                                                                                                               | 0.16.0                    | storefront (dev): Lighthouse CI en `ci.yml` (incluye Lighthouse 12.6.1, fase 10)                                                  |
 | `eslint` 10.14.0 · `@eslint/js` 10.0.1 · `typescript-eslint` 8.72.2 · `eslint-config-prettier` 10.1.8 · `globals` 17.14.0 | —                         | `packages/config` (lint)                                                                                                          |
 | `prettier`                                                                                                                | 3.9.10                    | `packages/config` (formato)                                                                                                       |
-| `eslint-plugin-astro` 3.2.1 · `eslint-plugin-svelte` 3.24.1                                                               | —                         | `packages/config` (lint, fase 3)                                                                                                  |
-| `prettier-plugin-astro` 1.1.2 · `prettier-plugin-svelte` 4.1.1 · `prettier-plugin-tailwindcss` 0.8.1                      | —                         | `packages/config` (formato, fase 3)                                                                                               |
+| `eslint-plugin-astro` 3.2.1                                                                                               | —                         | `packages/config` (lint, fase 3)                                                                                                  |
+| `prettier-plugin-astro` 1.1.2 · `prettier-plugin-tailwindcss` 0.8.1                                                       | —                         | `packages/config` (formato, fase 3)                                                                                               |
 | `@types/node`                                                                                                             | 24.19.2                   | raíz (alineado con Node 24)                                                                                                       |
 | `@types/react` / `@types/react-dom`                                                                                       | 18.3.31 / 18.3.7          | backend                                                                                                                           |
 | `@swc/core` / `@swc/jest`                                                                                                 | 1.16.22 / 0.2.39          | backend                                                                                                                           |
@@ -256,7 +251,7 @@ Política:
 | `@sentry/astro` _(propuesto, fase 12)_                                                                                    | 11.1.0                    | storefront, **solo servidor** (sin JS de cliente)                                                                                 |
 
 > **TypeScript 7 no se usa todavía**: Astro declara `typescript ^5 \|\| ^6`. **Medusa** documenta `^5.6.2`; en la fase 2 se probó **6.0.3** y `typecheck`/`build`/tests pasan (si diera problemas: 5.9.3 solo en `apps/backend`).
-> **Astro 7** requiere `@astrojs/node` ≥ 11 y `@astrojs/svelte` ≥ 9 (`@astrojs/node` 9.x y `@astrojs/svelte` 8.x son para Astro 6).
+> **Astro 7** requiere `@astrojs/node` ≥ 11 (9.x es para Astro 6).
 > **Overrides de seguridad** (`pnpm-workspace.yaml`, solo para las versiones vulnerables): `http-cache-semantics` → 4.3.0 (lo trae `astro`) y `ajv` 8 → 8.20.0 (lo traen `@medusajs/cli` y `react-email`); desde la Fase R (avisos altos del 22-oct-2026), `body-parser` → 1.20.9 (express 4 de Medusa), `multer` → 2.5.0 (`@medusajs/medusa`), `zod` 4 → 4.6.7 (`@medusajs/deps` fija 4.2.0, también en 2.22.1; y `@astrojs/sitemap`) y `undici` 8 → 8.12.3 (`unifont`, fuentes de Astro); desde el 30-oct-2026, `follow-redirects` → 1.16.2 (axios de `@medusajs/*`). Se quitan cuando las dependencias que los traen los incluyan ([auditoría](./docs/fases/auditoria-pre-fase10.md) §4.6).
 
 ## 5. MCPs de documentación para agentes
@@ -265,30 +260,21 @@ Los agentes (pi) consultan documentación **actualizada** a través de servidore
 
 **`.pi/mcp.json`** (en el repo, sin secretos, solo documentación pública):
 
-| Servidor           | URL                                    | Cubre                                      |
-| ------------------ | -------------------------------------- | ------------------------------------------ |
-| `astro-docs`       | `https://mcp.docs.astro.build/mcp`     | Astro 7                                    |
-| `svelte`           | `https://mcp.svelte.dev/mcp`           | Svelte 5 (docs + autofixer de componentes) |
-| `cloudflare-docs`  | `https://docs.mcp.cloudflare.com/mcp`  | R2, DNS, WAF, Origin CA, Cache             |
-| `meilisearch-docs` | `https://www.meilisearch.com/docs/mcp` | Meilisearch                                |
-| `resend-docs`      | `https://resend.com/docs/mcp`          | Resend                                     |
+| Servidor           | URL                                    | Cubre                          |
+| ------------------ | -------------------------------------- | ------------------------------ |
+| `astro-docs`       | `https://mcp.docs.astro.build/mcp`     | Astro 7                        |
+| `cloudflare-docs`  | `https://docs.mcp.cloudflare.com/mcp`  | R2, DNS, WAF, Origin CA, Cache |
+| `meilisearch-docs` | `https://www.meilisearch.com/docs/mcp` | Meilisearch                    |
+| `resend-docs`      | `https://resend.com/docs/mcp`          | Resend                         |
 
 **`~/.pi/agent/mcp.json`** (personal, fuera del repo):
 
-| Servidor   | URL                            | Cubre                                                                                                                                |
-| ---------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `context7` | `https://mcp.context7.com/mcp` | **Medusa v2** (`/medusajs/medusa`), Tailwind v4, shadcn-svelte, React Email, Caddy, PostgreSQL, Redis, SeaweedFS, pnpm, Stripe docs… |
-| `stripe`   | `https://mcp.stripe.com`       | Búsqueda en docs de Stripe + herramientas sobre la cuenta (requiere login)                                                           |
+| Servidor   | URL                            | Cubre                                                                                                                                    |
+| ---------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `context7` | `https://mcp.context7.com/mcp` | **Medusa v2** (`/medusajs/medusa`), Tailwind v4, tailwind-variants, React Email, Caddy, PostgreSQL, Redis, SeaweedFS, pnpm, Stripe docs… |
+| `stripe`   | `https://mcp.stripe.com`       | Búsqueda en docs de Stripe + herramientas sobre la cuenta (requiere login)                                                               |
 
 **Medusa**: su MCP oficial (`docs.medusajs.com/mcp`) exige login con cuenta Medusa Cloud, así que **no se usa**. Alternativas: Context7 (`/medusajs/medusa`) y `https://docs.medusajs.com/llms-full.txt` (consultable con `curl`).
-
-**Skills del proyecto** (`.pi/skills/`, versionadas):
-
-| Skill           | Origen                                                     | Cubre                                                                                         |
-| --------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `shadcn-svelte` | `huntabyte/shadcn-svelte`, tag `shadcn-svelte@1.7.0` (MIT) | CLI, composición, estilos e iconos de shadcn-svelte. Comandos fijados a `shadcn-svelte@1.7.0` |
-
-No hay MCP de shadcn-svelte: el de shadcn (`shadcn mcp`) es para React. Procedencia y cómo actualizar la skill: `.pi/skills/shadcn-svelte/PROVENANCE.md`.
 
 ### 5.1 Activar los MCPs
 
@@ -498,7 +484,7 @@ pnpm dev:backend                                          # API :9000 · Admin :
 
 La **publishable key** sale en el log del seed (para `PUBLIC_MEDUSA_PUBLISHABLE_KEY` del storefront en la fase 3).
 
-### 8.4 Storefront (Astro 7 + Svelte 5 + Tailwind v4 + shadcn-svelte)
+### 8.4 Storefront (Astro 7 + Tailwind v4)
 
 Creado en la fase 3 (scaffold manual, sin `create astro@latest`). Detalle y decisiones: [`docs/fases/fase3.md`](./docs/fases/fase3.md).
 
@@ -518,8 +504,7 @@ pnpm --filter storefront fixtures:update               # regenera src/lib/__fixt
 - Imágenes de producto optimizadas en build con `<Picture>` (AVIF/WebP, 1:1) desde el bucket (`IMAGE_BASE_URL`). El primer build tarda unos 30 min con 1000 productos × 4 fotos; después son unos 20 s ([fase6.md](./docs/fases/fase6.md)).
 - **Carrito** (fase 4): cookie `cart_id` httpOnly, Astro Actions que funcionan sin JS (POST → 303 a la página de origen), contador en server island, `/carrito/` on-demand con 0 JS y un único script de mejora progresiva (fetch, toasts, flyout en escritorio) de ~1 KB gzip ([fase4.md](./docs/fases/fase4.md)).
 - **Checkout** (fase 5): `/checkout/` on-demand en una página (datos → envío → pago). Datos y envío funcionan sin JS. El pago usa el Payment Element de Stripe (script de ~2 KB gzip + Stripe.js): tarjeta y PayPal se autorizan y se capturan desde el Admin; Bizum se cobra al momento; los clientes con cuenta pueden pagar por transferencia ([fasePG-pagos.md](./docs/fases/fasePG-pagos.md)). Confirmación en `/pedido/<id>/` ([fase5.md](./docs/fases/fase5.md)).
-- shadcn-svelte con el preset `vega`; alias `$lib` definido en `tsconfig.json` y en `vite.resolve.alias`.
-- Componentes en `src/lib/components/ui`, renderizados **sin** `client:*`.
+- Clases de shadcn (preset `vega`) en `src/lib/components/ui` (`buttonVariants`, `badgeVariants`, `Badge.astro`); alias `$lib` en `tsconfig.json` y en `vite.resolve.alias`.
 - Baloo 2 (titulares, 600/700) y Nunito Sans (texto, 400/600/700) auto-alojadas con la Fonts API (`fontProviders.fontsource()`): pesos estáticos; solo se precarga el 400 de Nunito Sans (I-Marca).
 
 ### 8.5 Emails (React Email)
@@ -666,47 +651,48 @@ Cada fase tiene su propio documento en [`docs/fases/`](./docs/fases/) con objeti
 
 Versiones publicadas (tags; las crea el usuario): **`v0.1.0`** (fase 11, primer despliegue de prueba) y **`v0.2.0`** (Fases G a M, desplegada en el VPS de pruebas el 25-oct-2026).
 
-| Fase                                   | Documento                                                                                        | Estado |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
-| Prefase (SSH, repos, MCPs, decisiones) | [prefase.md](./docs/fases/prefase.md)                                                            | ✅     |
-| 0 Fundaciones                          | [fase0.md](./docs/fases/fase0.md)                                                                | ✅     |
-| 1 CI básico (PR) + Renovate            | [fase1.md](./docs/fases/fase1.md)                                                                | ✅     |
-| 2 Backend base (Medusa)                | [fase2.md](./docs/fases/fase2.md)                                                                | ✅     |
-| 3 Storefront base (Astro)              | [fase3.md](./docs/fases/fase3.md)                                                                | ✅     |
-| 6 Ficheros R2 + imágenes               | [fase6.md](./docs/fases/fase6.md)                                                                | ✅     |
-| 4 Carrito                              | [fase4.md](./docs/fases/fase4.md)                                                                | ✅     |
-| 5 Checkout + Stripe                    | [fase5.md](./docs/fases/fase5.md)                                                                | ✅     |
-| 7 Búsqueda y filtros                   | [fase7.md](./docs/fases/fase7.md)                                                                | ✅     |
-| I-Marca Identidad visual y tema        | [faseI-marca.md](./docs/fases/faseI-marca.md)                                                    | ✅     |
-| I-Interficie UX/UI (cabecera, home…)   | [faseI-interficie.md](./docs/fases/faseI-interficie.md)                                          | ✅     |
-| D Diseño (afinar colores, interfaz…)   | [faseD-diseno.md](./docs/fases/faseD-diseno.md)                                                  | ✅     |
-| 8 Emails                               | [fase8.md](./docs/fases/fase8.md)                                                                | ✅     |
-| 9 Cuenta de cliente                    | [fase9.md](./docs/fases/fase9.md)                                                                | ✅     |
-| Auditoría previa a la fase 10          | [auditoria-pre-fase10.md](./docs/fases/auditoria-pre-fase10.md)                                  | ✅     |
-| 10 CD: imágenes + Docker               | [fase10.md](./docs/fases/fase10.md)                                                              | ✅     |
-| C Importador de catálogo (CSV)         | [faseC-catalogo.md](./docs/fases/faseC-catalogo.md)                                              | ✅     |
-| S Catálogo en el storefront            | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | ✅     |
-| E URL, descatalogados y especiales     | [faseE-urls-correas.md](./docs/fases/faseE-urls-correas.md)                                      | ✅     |
-| L Lista de deseos y puntos             | [faseL-deseos-puntos.md](./docs/fases/faseL-deseos-puntos.md)                                    | ✅     |
-| P Códigos descuento                    | [faseP-codigos.md](./docs/fases/faseP-codigos.md)                                                | ✅     |
-| R Relacionados y venta cruzada         | [faseR-relacionados.md](./docs/fases/faseR-relacionados.md)                                      | ✅     |
-| 11 Despliegue de prueba (Hetzner)      | [fase11.md](./docs/fases/fase11.md)                                                              | ✅     |
-| G Pedidos de invitado → cuenta         | [faseG-invitados.md](./docs/fases/faseG-invitados.md)                                            | ✅     |
-| V/W Migración desde Loyverse           | [faseV-loyverse.md](./docs/fases/faseV-loyverse.md)                                              | ✅     |
-| O Opciones, variantes y plantillas     | [faseO-variantes.md](./docs/fases/faseO-variantes.md)                                            | ✅     |
-| F Mejoras en filtros                   | [faseF-filtros.md](./docs/fases/faseF-filtros.md)                                                | ✅     |
-| Auditoría de rendimiento               | [auditoria-rendimiento.md](./docs/fases/auditoria-rendimiento.md)                                | ✅     |
-| R Rendimiento (imágenes, cachés, CSS)  | [faseR-rendimiento.md](./docs/fases/faseR-rendimiento.md)                                        | ✅     |
-| M Mascotas y aviso de pedidos          | [faseM-mascotas.md](./docs/fases/faseM-mascotas.md)                                              | ✅     |
-| PG Pagos: PayPal, Bizum, transferencia | [fasePG-pagos.md](./docs/fases/fasePG-pagos.md)                                                  | ✅     |
-| H Home configurable y colecciones      | [faseH-home.md](./docs/fases/faseH-home.md)                                                      | ✅     |
-| FO Familias de opciones (filtros)      | [faseFO-familias.md](./docs/fases/faseFO-familias.md)                                            | ✅     |
-| CSS más ligero (por página)            | [faseCSS-por-pagina.md](./docs/fases/faseCSS-por-pagina.md)                                      | ✅     |
-| DS Diseños de ficha y categoría        | [faseDS-disenos.md](./docs/fases/faseDS-disenos.md)                                              | ✅     |
-| CS Caja de snacks                      | [faseCS-caja-snacks.md](./docs/fases/faseCS-caja-snacks.md)                                      | ✅     |
-| MK Marketing respetuoso (A–E2)         | [faseMK-marketing.md](./docs/fases/faseMK-marketing.md)                                          | ✅     |
-| 13 Rebuild automático del storefront   | [fase13-rebuild.md](./docs/fases/fase13-rebuild.md)                                              | ✅     |
-| 12 … 13                                | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
+| Fase                                                            | Documento                                                                                        | Estado |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
+| Prefase (SSH, repos, MCPs, decisiones)                          | [prefase.md](./docs/fases/prefase.md)                                                            | ✅     |
+| 0 Fundaciones                                                   | [fase0.md](./docs/fases/fase0.md)                                                                | ✅     |
+| 1 CI básico (PR) + Renovate                                     | [fase1.md](./docs/fases/fase1.md)                                                                | ✅     |
+| 2 Backend base (Medusa)                                         | [fase2.md](./docs/fases/fase2.md)                                                                | ✅     |
+| 3 Storefront base (Astro)                                       | [fase3.md](./docs/fases/fase3.md)                                                                | ✅     |
+| 6 Ficheros R2 + imágenes                                        | [fase6.md](./docs/fases/fase6.md)                                                                | ✅     |
+| 4 Carrito                                                       | [fase4.md](./docs/fases/fase4.md)                                                                | ✅     |
+| 5 Checkout + Stripe                                             | [fase5.md](./docs/fases/fase5.md)                                                                | ✅     |
+| 7 Búsqueda y filtros                                            | [fase7.md](./docs/fases/fase7.md)                                                                | ✅     |
+| I-Marca Identidad visual y tema                                 | [faseI-marca.md](./docs/fases/faseI-marca.md)                                                    | ✅     |
+| I-Interficie UX/UI (cabecera, home…)                            | [faseI-interficie.md](./docs/fases/faseI-interficie.md)                                          | ✅     |
+| D Diseño (afinar colores, interfaz…)                            | [faseD-diseno.md](./docs/fases/faseD-diseno.md)                                                  | ✅     |
+| 8 Emails                                                        | [fase8.md](./docs/fases/fase8.md)                                                                | ✅     |
+| 9 Cuenta de cliente                                             | [fase9.md](./docs/fases/fase9.md)                                                                | ✅     |
+| Auditoría previa a la fase 10                                   | [auditoria-pre-fase10.md](./docs/fases/auditoria-pre-fase10.md)                                  | ✅     |
+| 10 CD: imágenes + Docker                                        | [fase10.md](./docs/fases/fase10.md)                                                              | ✅     |
+| C Importador de catálogo (CSV)                                  | [faseC-catalogo.md](./docs/fases/faseC-catalogo.md)                                              | ✅     |
+| S Catálogo en el storefront                                     | [faseS-catalogo-storefront.md](./docs/fases/faseS-catalogo-storefront.md)                        | ✅     |
+| E URL, descatalogados y especiales                              | [faseE-urls-correas.md](./docs/fases/faseE-urls-correas.md)                                      | ✅     |
+| L Lista de deseos y puntos                                      | [faseL-deseos-puntos.md](./docs/fases/faseL-deseos-puntos.md)                                    | ✅     |
+| P Códigos descuento                                             | [faseP-codigos.md](./docs/fases/faseP-codigos.md)                                                | ✅     |
+| R Relacionados y venta cruzada                                  | [faseR-relacionados.md](./docs/fases/faseR-relacionados.md)                                      | ✅     |
+| 11 Despliegue de prueba (Hetzner)                               | [fase11.md](./docs/fases/fase11.md)                                                              | ✅     |
+| G Pedidos de invitado → cuenta                                  | [faseG-invitados.md](./docs/fases/faseG-invitados.md)                                            | ✅     |
+| V/W Migración desde Loyverse                                    | [faseV-loyverse.md](./docs/fases/faseV-loyverse.md)                                              | ✅     |
+| O Opciones, variantes y plantillas                              | [faseO-variantes.md](./docs/fases/faseO-variantes.md)                                            | ✅     |
+| F Mejoras en filtros                                            | [faseF-filtros.md](./docs/fases/faseF-filtros.md)                                                | ✅     |
+| Auditoría de rendimiento                                        | [auditoria-rendimiento.md](./docs/fases/auditoria-rendimiento.md)                                | ✅     |
+| R Rendimiento (imágenes, cachés, CSS)                           | [faseR-rendimiento.md](./docs/fases/faseR-rendimiento.md)                                        | ✅     |
+| M Mascotas y aviso de pedidos                                   | [faseM-mascotas.md](./docs/fases/faseM-mascotas.md)                                              | ✅     |
+| PG Pagos: PayPal, Bizum, transferencia                          | [fasePG-pagos.md](./docs/fases/fasePG-pagos.md)                                                  | ✅     |
+| H Home configurable y colecciones                               | [faseH-home.md](./docs/fases/faseH-home.md)                                                      | ✅     |
+| FO Familias de opciones (filtros)                               | [faseFO-familias.md](./docs/fases/faseFO-familias.md)                                            | ✅     |
+| CSS más ligero (por página)                                     | [faseCSS-por-pagina.md](./docs/fases/faseCSS-por-pagina.md)                                      | ✅     |
+| DS Diseños de ficha y categoría                                 | [faseDS-disenos.md](./docs/fases/faseDS-disenos.md)                                              | ✅     |
+| CS Caja de snacks                                               | [faseCS-caja-snacks.md](./docs/fases/faseCS-caja-snacks.md)                                      | ✅     |
+| MK Marketing respetuoso (A–E2)                                  | [faseMK-marketing.md](./docs/fases/faseMK-marketing.md)                                          | ✅     |
+| 13 Rebuild automático del storefront                            | [fase13-rebuild.md](./docs/fases/fase13-rebuild.md)                                              | ✅     |
+| 13 Optimización (JSON-LD, imagen, sin Svelte, view transitions) | [fase13-optimizacion.md](./docs/fases/fase13-optimizacion.md)                                    | ✅     |
+| 12 … 13                                                         | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
 
@@ -761,7 +747,7 @@ gantt
 | 0   | **Fundaciones**              | Monorepo pnpm, `.node-version`, `.npmrc`, `compose.dev.yml` (Postgres, Redis, Meilisearch, SeaweedFS, Mailpit, Stripe CLI), bucket local, ESLint/Prettier/TS compartidos, Renovate, `.gitignore`, remotos Gitea+GitHub, primer push                                        | 1–2 d     | `pnpm infra:up` + `pnpm install` limpios; push en ambos remotos                                     | 0 €                                                  |
 | 1   | **CI básico (PR)**           | `ci.yml`: install `--frozen-lockfile` → lint → typecheck → test → build. Runner de Gitea (`gitea-runner`) en el homelab + GitHub Actions + Renovate autoalojado. Añadir los checks como obligatorios en Gitea y en el ruleset de GitHub                                    | 1 d       | Un PR de prueba bloqueado si falla un check y mergeable si pasa, en **ambas** plataformas           | 0 €                                                  |
 | 2   | **Backend base**             | Medusa 2.21.2, módulos Redis (event bus, workflow engine, locking, caché), admin, región EUR, canal, publishable key, seed                                                                                                                                                 | 1–2 d     | Admin operativo; Store API responde; CI verde                                                       | 0 €                                                  |
-| 3   | **Storefront base**          | Astro 7 + Svelte 5 + Tailwind 4 + shadcn-svelte, layout, home, listado y ficha **estáticos**, precio/stock en server island, SEO (meta, JSON-LD, sitemap), fuentes e imágenes                                                                                              | 4–6 d     | Lighthouse móvil ≥ 95; **0 KB JS** propio en ficha                                                  | 0 €                                                  |
+| 3   | **Storefront base**          | Astro 7 + Svelte 5 + Tailwind 4 + shadcn-svelte (Svelte quitado en la fase 13), layout, home, listado y ficha **estáticos**, precio/stock en server island, SEO (meta, JSON-LD, sitemap), fuentes e imágenes                                                               | 4–6 d     | Lighthouse móvil ≥ 95; **0 KB JS** propio en ficha                                                  | 0 €                                                  |
 | 4   | **Carrito**                  | Cookie `cart_id` httpOnly, Astro Actions sin JS (añadir/actualizar/quitar), contador en server island, mejora progresiva                                                                                                                                                   | 3–4 d     | Playwright **con JS desactivado**                                                                   | 0 €                                                  |
 | 5   | **Checkout + Stripe**        | Checkout on-demand, direcciones, envío, Payment Element (`<script>` de Astro, sin isla), webhooks idempotentes, creación de pedido                                                                                                                                         | 4–6 d     | Pago test extremo a extremo; reenvío de webhook sin duplicados                                      | 0 € (test)                                           |
 | 6   | **Ficheros R2**              | `file-s3` con SeaweedFS (local) / R2 (prod), dominio público de imágenes, `astro:assets` AVIF/WebP                                                                                                                                                                         | 1–2 d     | Subida desde Admin visible en tienda optimizada                                                     | R2: 10 GB gratis, luego $0.015/GB-mes, egress gratis |

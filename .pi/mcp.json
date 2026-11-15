@@ -1,9 +1,16 @@
 {
   "mcpServers": {
-    "astro-docs": { "url": "https://mcp.docs.astro.build/mcp" },
-    "svelte": { "url": "https://mcp.svelte.dev/mcp" },
-    "cloudflare-docs": { "url": "https://docs.mcp.cloudflare.com/mcp" },
-    "meilisearch-docs": { "url": "https://www.meilisearch.com/docs/mcp" },
-    "resend-docs": { "url": "https://resend.com/docs/mcp" }
+    "astro-docs": {
+      "url": "https://mcp.docs.astro.build/mcp"
+    },
+    "cloudflare-docs": {
+      "url": "https://docs.mcp.cloudflare.com/mcp"
+    },
+    "meilisearch-docs": {
+      "url": "https://www.meilisearch.com/docs/mcp"
+    },
+    "resend-docs": {
+      "url": "https://resend.com/docs/mcp"
+    }
   }
 }

@@ -1,10 +1,9 @@
 // @ts-check
 // Config ESLint compartida (flat config). Fuente: typescript-eslint Quickstart (context7).
-// Astro y Svelte: eslint-plugin-astro y eslint-plugin-svelte (flat config, context7).
+// Astro: eslint-plugin-astro (flat config, context7).
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
 import astro from "eslint-plugin-astro";
-import svelte from "eslint-plugin-svelte";
 import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
@@ -47,20 +46,6 @@ export default defineConfig([
     files: ["**/*.astro"],
     languageOptions: { parserOptions: { parser: tseslint.parser } },
   },
-  // Svelte 5 (runes) con TypeScript en <script lang="ts"> y módulos .svelte.ts
-  svelte.configs.recommended,
-  {
-    files: ["**/*.svelte", "**/*.svelte.ts", "**/*.svelte.js"],
-    languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
-      parserOptions: {
-        projectService: true,
-        extraFileExtensions: [".svelte"],
-        parser: tseslint.parser,
-      },
-    },
-  },
   // Desactiva reglas de estilo que chocan con Prettier (debe ir al final)
   prettier,
-  svelte.configs.prettier,
 ]);

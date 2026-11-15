@@ -18,13 +18,9 @@ Hecho: backup, `compose.prod.yml` y `Caddyfile` nuevos, `.env.prod` (`IMAGE_TAG=
 
 Queda:
 
-- [ ] **Umami**: `./dc up -d --wait umami caddy`; DNS `stats` con proxy; Cloudflare Access en `stats.` (panel) con Bypass para `/script.js` y `/api/send`; cambiar la contraseña de `admin`, crear el sitio y poner `UMAMI_URL` + `UMAMI_WEBSITE_ID` en las **variables de Gitea** (el siguiente rebuild ya lleva el script).
-- [ ] **Temporizador del rebuild**: `systemctl enable --now storefront-poll.timer` en el LXC del runner (hasta ahora se lanzó a mano).
-- [ ] Agentes de monitorización: copiar `docker/monitoring/compose.agents.yml` (Beszel 0.21.1, Dozzle v11.4.2) y `./dcm up -d` en `/opt/monitor-agents`.
-- [ ] Comprobaciones: compra de prueba (tarjeta, Bizum, PayPal, transferencia), la caja (pedido → capturar → preparar → proponer → responder), Admin → «Búsquedas», «Escaparate» y «Publicar en la tienda»; cabeceras y HIT de Cloudflare.
-- [x] ~~Umami, temporizador, agentes de monitorización y limpieza~~ (13–15-nov-2026).
-- [ ] Copiar el `docker/backup/backup.sh` nuevo al VPS (`/opt/ecommerce/backup/`): copia también la BD de Umami y `dc-storefront`. Comprobar el siguiente backup (`umami-….dump.age` en R2).
-- [ ] Monitores de Kuma: publicación de la tienda y temporizador del rebuild (Push) y Umami (HTTP); fase13-rebuild.md §5.6.
+- [x] ~~Comprobaciones: compra de prueba~~ (15-nov-2026, el usuario: bien). Detalle: compra de prueba (tarjeta, Bizum, PayPal, transferencia), la caja (pedido → capturar → preparar → proponer → responder), Admin → «Búsquedas», «Escaparate» y «Publicar en la tienda»; cabeceras y HIT de Cloudflare.
+- [x] ~~Umami (`stats.`, Access y Website ID en Gitea), temporizador del rebuild, agentes de monitorización, monitores de Kuma (publicación, temporizador y Umami) y limpieza~~ (13–15-nov-2026).
+- [x] ~~Copiar el `docker/backup/backup.sh` nuevo al VPS~~ (15-nov-2026) (`/opt/ecommerce/backup/`): copia también la BD de Umami y `dc-storefront`. Comprobar el siguiente backup (`umami-….dump.age` en R2).
 - [ ] Repetir la tanda B de la prueba de carga (fase 11) en el VPS.
 
 ## 2. 🔴 Antes de abrir la tienda de verdad (fase «producción definitiva»)
@@ -78,19 +74,19 @@ Queda:
 
 ## 4. Fase 13 — rendimiento y operación (candidatas)
 
-- [x] ~~**Rebuild del storefront** de catálogo~~: ✅ [fase13-rebuild.md](./fases/fase13-rebuild.md) (en marcha en el VPS de prueba desde `v0.3.0`). **Queda**: `offers.price` en el JSON-LD (fase3 §7) ahora que el HTML se regenera solo.
+- [x] ~~**Rebuild del storefront** de catálogo~~: ✅ [fase13-rebuild.md](./fases/fase13-rebuild.md). ~~`offers` en el JSON-LD~~: ✅ [fase13-optimizacion.md](./fases/fase13-optimizacion.md) (falta `shippingDetails`/devoluciones con las condiciones definitivas).
 - [x] ~~**Capacidad sin Cloudflare ~20 páginas/s**~~: [Fase R-2](./fases/faseR-rendimiento.md) (caché de Medusa + caché de `LiveSyncData`): ~100 páginas/s en local con Medusa en 2 núcleos. **Queda**: repetir la tanda B de la fase 11 en el VPS tras desplegar.
 - [x] ~~LCP de las fichas (P1–P5 de la auditoría de rendimiento)~~: [Fase R](./fases/faseR-rendimiento.md).
 - [x] ~~Caché de `LiveSyncData` (P8) y una island por ficha (P6)~~: Fase R-2.
 - [ ] Caché de Medusa (`MEDUSA_FF_CACHING`, experimental en 2.21.2): en cada subida de Medusa, repetir la prueba de invalidación (Admin, pedido, script; faseR-rendimiento.md §3). Una escritura por SQL a mano no la invalida (vaciarla, §7).
 - [x] ~~Speculation Rules inline (P7)~~: Fase R-3.
-- [ ] View transitions CSS (sin JS; fase3 §7.1).
-- [ ] `stock:mock` solo repone los 100 primeros productos mock (`query.graph` sin paginación): el clicker de los e2e se agota (Fase PG).
+- [x] ~~View transitions CSS~~ (fundido nativo, fase13-optimizacion.md).
+- [x] ~~`stock:mock` solo repone los 100 primeros~~: con Medusa 2.22 repone los 1000 (comprobado).
 - [x] ~~`stock:mock` no repone las piezas de la correa~~: `pnpm backend:orders:cancel` cancela los pedidos de prueba (`@example.com`) y libera sus reservas (ejecutarlo tras los e2e).
 - [ ] Partytown si se añaden terceros.
 - [ ] `ASTRO_KEY` fija (si se deja de purgar la CDN en cada despliegue; fase3).
-- [ ] Imagen del backend de ~1 GB: adelgazar (fase10 §7).
-- [ ] P2 del análisis del JS: quitar `@astrojs/svelte` (aparcada; analisis-js §5).
+- [x] ~~Imagen del backend de ~1 GB~~: 732 MB (fase13-optimizacion.md).
+- [x] ~~Quitar `@astrojs/svelte`~~ (fase13-optimizacion.md: HTML idéntico).
 
 ## 5. Pendientes técnicos menores 🟢
 
@@ -112,11 +108,12 @@ Queda:
 
 ## 6. Caducidades 📅
 
-| Qué                                                                                                                       | Caduca                   | Acción                                |
-| ------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------- |
-| PAT del push mirror Gitea → GitHub y token de GitHub de Renovate                                                          | ~1 año desde su creación | renovar                               |
-| Tokens R2 (`vps-pruebas-imagenes`, `vps-pruebas-backups`), API key Resend `vps-pruebas`, service token `pruebas-portatil` | oct-2027                 | renovar o sustituir en producción     |
-| Certificado de cliente de AOP                                                                                             | **17-oct-2031**          | renovar o la tienda da 525            |
-| CA propia de AOP                                                                                                          | 15-oct-2036              | —                                     |
-| Origin CA de Cloudflare                                                                                                   | 2041                     | —                                     |
-| Autorización de un pago de Stripe                                                                                         | ~7 días                  | capturar antes desde el Admin (fase5) |
+| Qué                                                                                                                       | Caduca                                | Acción                                  |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------- |
+| PAT de GitHub «storefront» (`write:packages`): secret `GHCR_TOKEN` de Gitea (rebuild) y login de GHCR del portátil        | renovado el 15-nov-2026 (poner fecha) | renovar y sustituirlo en los dos sitios |
+| PAT del push mirror Gitea → GitHub y token de GitHub de Renovate                                                          | ~1 año desde su creación              | renovar                                 |
+| Tokens R2 (`vps-pruebas-imagenes`, `vps-pruebas-backups`), API key Resend `vps-pruebas`, service token `pruebas-portatil` | oct-2027                              | renovar o sustituir en producción       |
+| Certificado de cliente de AOP                                                                                             | **17-oct-2031**                       | renovar o la tienda da 525              |
+| CA propia de AOP                                                                                                          | 15-oct-2036                           | —                                       |
+| Origin CA de Cloudflare                                                                                                   | 2041                                  | —                                       |
+| Autorización de un pago de Stripe                                                                                         | ~7 días                               | capturar antes desde el Admin (fase5)   |

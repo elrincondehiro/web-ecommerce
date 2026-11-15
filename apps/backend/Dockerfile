@@ -41,6 +41,13 @@ RUN pnpm --filter emails build && pnpm --filter backend build
 # registro (los paquetes salen del store).
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm --filter backend deploy --prod --prefer-offline --store-dir=/pnpm/store /prod/backend
+# Fase 13 (adelgazar la imagen): fuera lo que no se ejecuta en producción. Medido sobre el
+# node_modules de la imagen: source maps (~82 MB), tipos de TypeScript (~52 MB) y documentación
+# (~10 MB). Ningún paquete los lee en ejecución (Node no carga .map sin --enable-source-maps; los
+# .d.ts solo los usa el compilador). Los LICENSE se conservan.
+RUN find /prod/backend/node_modules -type f \
+      \( -name '*.map' -o -name '*.d.ts' -o -name '*.d.mts' -o -name '*.d.cts' \
+         -o -iname 'CHANGELOG*' -o -iname 'README*' -o -iname 'HISTORY*' \) -delete
 
 # ── runtime: .medusa/server (JS compilado + Admin) + node_modules de producción ──────────────────
 FROM ${NODE_IMAGE} AS runtime
