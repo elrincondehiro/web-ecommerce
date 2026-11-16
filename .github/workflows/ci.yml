@@ -108,8 +108,8 @@ jobs:
     needs: quality
     if: ${{ github.server_url == 'https://github.com' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    # 40 min: con ~100 tests HTTP, el runner del homelab (capacity 1, compartido con el rebuild
-    # del storefront) llegó a pasar de 20 («context deadline exceeded»).
+    # Margen para el runner del homelab (capacity 1, compartido con el rebuild del storefront).
+    # Memoria: ver workerIdleMemoryLimit en apps/backend/jest.config.js.
     timeout-minutes: 40
     container: node:24.22.2-trixie
     services:

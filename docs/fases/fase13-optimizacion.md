@@ -55,3 +55,7 @@ docker build -f apps/backend/Dockerfile -t ecommerce-backend:local . && docker i
   `mock/arneses` (`prueba-arnes-marca`). Tests: `image-files.unit.spec.ts`, `variant-picker.test.ts`, e2e `variantes`.
 - **JSON-LD** (tras la prueba de Google en el VPS): cada variante lleva `image` (crítico en «Fichas de comerciante») y
   `description`. `review`/`aggregateRating` (avisos del producto) no aplican: la tienda no tiene reseñas.
+- **CI `integration` en Gitea (exit 137)**: no fallaba ningún test, el kernel mataba Jest por memoria. Con
+  `--runInBand`, cada fichero arranca un Medusa y el heap crecía hasta ~3 GB (el LXC del runner tiene 4 GB). Ahora va
+  `--maxWorkers=1` + `workerIdleMemoryLimit: "1GB"` (`jest.config.js`; context7 `/jestjs/jest`): el worker se recicla
+  y el pico queda en ~1,3 GB, con el mismo tiempo (~10 min). Límite del job: 40 min.

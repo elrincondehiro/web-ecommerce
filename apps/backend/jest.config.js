@@ -20,6 +20,12 @@ module.exports = {
 
 if (process.env.TEST_TYPE === "integration:http") {
   module.exports.testMatch = ["**/integration-tests/http/*.spec.[jt]s"];
+  // Cada fichero arranca un Medusa entero y Jest no libera toda su memoria: en un solo proceso
+  // (`--runInBand`) el heap llegaba a ~3 GB y el kernel lo mataba en el runner del homelab (4 GB,
+  // «Killed», código 137). Con un worker (`--maxWorkers=1`, en package.json) que se recicla al
+  // pasar de 1 GB tras un fichero, la memoria no se acumula. Fuente: context7 /jestjs/jest
+  // (Configuration.md, workerIdleMemoryLimit).
+  module.exports.workerIdleMemoryLimit = "1GB";
 } else if (process.env.TEST_TYPE === "integration:modules") {
   module.exports.testMatch = ["**/src/modules/*/__tests__/**/*.[jt]s"];
 } else if (process.env.TEST_TYPE === "unit") {
