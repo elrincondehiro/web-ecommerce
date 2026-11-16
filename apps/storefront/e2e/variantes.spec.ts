@@ -205,3 +205,17 @@ test("móvil: muchas miniaturas no ensanchan la página; tarjetas del selector i
     expect(sizes).toEqual({ w: 1, h: 1 });
   }
 });
+
+test("muestra de color propia del valor (fase 13): imagen transparente, sin marco", async ({
+  page,
+}) => {
+  // prueba-arnes-marca: fotos/prueba-arnes-marca--<valor>_muestra.png (images:import → metadata
+  // `muestra` del valor «Deep Teal» / «Huckleberry»).
+  await page.goto("/producto/prueba-arnes-marca/");
+  const card = page.locator('#comprar label[title="Deep Teal"]');
+  const img = card.locator("img");
+  await expect(img).toHaveAttribute("src", /_muestra.*\.webp$/);
+  await expect(img).toHaveClass(/object-contain/);
+  await expect(img).not.toHaveClass(/bg-white|border/);
+  await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+});

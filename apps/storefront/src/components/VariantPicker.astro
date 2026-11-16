@@ -20,6 +20,7 @@ import {
 import PickerLive from "./PickerLive.astro";
 import Price from "./Price.astro";
 import ProductImage from "./ProductImage.astro";
+import { Image } from "astro:assets";
 
 interface Props {
   picker: VariantPicker;
@@ -51,12 +52,14 @@ const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tigh
 
 <fieldset class="flex flex-col gap-2">
   <legend class="mb-2 text-sm font-semibold">{label(a)}</legend>
-  <div class={a.values.some((v) => v.images[0] || v.color) ? gridA : gridText}>
+  <div class={a.values.some((v) => v.swatch || v.images[0] || v.color) ? gridA : gridText}>
     {a.values.map((v, i) => {
       const image = v.images[0];
+      // Muestra propia del valor (fase 13): PNG/WebP con transparencia, sin marco ni fondo
+      const swatch = v.swatch;
       const cell = b ? null : (cells[i]?.[0] ?? null);
       return (
-        <label class:list={[chip, (image || v.color) && "p-1"]} title={v.value}>
+        <label class:list={[chip, (swatch || image || v.color) && "p-1"]} title={v.value}>
           <input
             type="radio"
             name={OPTION_FIELDS[0]}
@@ -67,7 +70,19 @@ const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tigh
             data-fam={fam(v.families)}
             class="sr-only"
           />
-          {image ? (
+          {swatch ? (
+            <Image
+              src={swatch}
+              alt=""
+              width={112}
+              height={112}
+              format="webp"
+              fit="contain"
+              loading="lazy"
+              decoding="async"
+              class="size-14 object-contain"
+            />
+          ) : image ? (
             <ProductImage
               src={image}
               alt=""
@@ -81,7 +96,9 @@ const twoLines = "line-clamp-2 min-h-[2lh] px-1 text-center text-xs leading-tigh
               aria-hidden="true"
             />
           ) : null}
-          <span class:list={[image || v.color ? twoLines : "my-auto text-center"]}>{v.value}</span>
+          <span class:list={[swatch || image || v.color ? twoLines : "my-auto text-center"]}>
+            {v.value}
+          </span>
           {!b && (
             <span
               class="text-xs font-normal tabular-nums"

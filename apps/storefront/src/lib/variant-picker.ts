@@ -17,6 +17,11 @@ import { familyKey, optionFamilies, valueFamilies } from "./option-families";
 export const MAX_VALUES = 20;
 /** Clave de metadata del valor de opción (Admin): color de la muestra, `#rrggbb`. */
 export const VALUE_COLOR_KEY = "color";
+/**
+ * Clave de metadata del valor de opción (fase 13, `images:import`): URL de la MUESTRA del valor
+ * (PNG/WebP con transparencia), compartida por todos los productos con ese valor.
+ */
+export const VALUE_SWATCH_KEY = "muestra";
 /** Clave de metadata del producto: opción cuyas fotos cambian la galería (catalog:import). */
 export const PHOTO_OPTION_KEY = "opcion_fotos";
 /** Campos del formulario (opción A y B). */
@@ -31,6 +36,8 @@ export interface PickerValue {
   field: string;
   /** Color de la muestra (metadata del valor), o null. */
   color: string | null;
+  /** Foto propia de la muestra (fase 13, metadata `muestra` del valor), o null. */
+  swatch: string | null;
   /** Fotos propias del valor (solo en la opción A con `opcion_fotos`). */
   images: string[];
   /**
@@ -66,6 +73,12 @@ const str = (v: unknown) => (typeof v === "string" ? v : null);
 function valueColor(v: { metadata?: Record<string, unknown> | null } | null | undefined) {
   const c = str(v?.metadata?.[VALUE_COLOR_KEY]);
   return c && HEX.test(c) ? c : null;
+}
+
+/** Muestra propia del valor: solo URLs http(s) (las sube images:import al bucket). */
+function valueSwatch(v: { metadata?: Record<string, unknown> | null } | null | undefined) {
+  const u = str(v?.metadata?.[VALUE_SWATCH_KEY]);
+  return u && /^https?:\/\//.test(u) ? u : null;
 }
 
 /** Valor de la variante en una opción (por id de opción o, si falta, por título). */
@@ -128,7 +141,9 @@ export function buildVariantPicker(product: StoreProduct): VariantPicker | null 
   const variants = (product.variants ?? []).filter((v): v is Variant => Boolean(v));
   const photoTitle = str(product.metadata?.[PHOTO_OPTION_KEY]);
   const photo = options.find((o) => o.title === photoTitle) ?? null;
-  const colored = options.find((o) => (o.values ?? []).some((v) => valueColor(v)));
+  const colored = options.find((o) =>
+    (o.values ?? []).some((v) => valueColor(v) || valueSwatch(v)),
+  );
   // Una opción: solo si sus valores tienen foto o color (si no, la tabla dice más: precio y stock)
   if (options.length === 1 && !photo && !colored) return null;
   const first = photo ?? colored ?? options.find((o) => !isSizeOption(o)) ?? (options[0] as Option);
@@ -154,6 +169,7 @@ export function buildVariantPicker(product: StoreProduct): VariantPicker | null 
         value: v!.value!,
         field: `${o.title}:${v!.value}`,
         color: valueColor(v),
+        swatch: valueSwatch(v),
         images: withImages ? (byValue.get(v!.value!) ?? []) : [],
         families: valueFamilies(v!.metadata, families).map((id) => familyKey(o.title ?? "", id)),
       })),

@@ -11,13 +11,20 @@ pnpm --filter backend catalog:import catalog/plantilla/selector-fotos
 pnpm --filter backend images:import catalog/plantilla/selector-fotos/fotos
 ```
 
-Fotos de esta carpeta: `arnes-colores_01.jpg` (general) y `arnes-colores--sea-foam_01.jpg`… (por color).
+Fotos de esta carpeta: `arnes-colores_01.jpg` (general), `arnes-colores--sea-foam_01.jpg`… (por color) y las
+**muestras** `arnes-colores--sea-foam_muestra.png` y `…--huckleberry_muestra.png` (fase 13).
 
 Fase O. Para productos con varias opciones (p. ej. un arnés con 9 estampados × 5 tallas = 45 filas, **un solo producto**):
 
 - **Selector**: con 2 opciones o más (o con una sola si sus valores tienen foto o color), la ficha enseña un grupo de muestras por opción en vez de la tabla de variantes. Funciona sin JS.
 - **Fotos por valor**: `opcion_fotos = Estampado` y las fotos `arnes-estampado--flores_01.jpg`, `arnes-estampado--flores_02.jpg`… (valor en minúsculas, sin tildes y con guiones). Se asocian a todas las variantes con ese valor; la galería enseña las del valor elegido. Las `handle_01.jpg` siguen siendo generales (salen siempre). También se pueden asociar en el Admin («Media» de la variante).
-- **Color de la muestra** (si el valor no tiene foto): en el Admin, `Opciones → Color → valor → Metadata`, clave `color` = `#c0392b`.
+- **Muestra propia del valor** (fase 13): `handle--valor_muestra.png` (o `.webp`), con **fondo transparente**, de la
+  opción `opcion_fotos`. En el selector, el botón del valor enseña la muestra (sin marco ni fondo) en vez de la foto de la
+  variante. `images:import` la sube a `muestras/` y la guarda en la metadata del **valor** (`muestra`): es **una por
+  valor, compartida** por todos los productos con ese valor (si dos productos suben una distinta, gana la última). No
+  va a la galería. Prepárala con `pnpm --filter tools-fotos preparar` (400 px, PNG; avisa si no tiene transparencia).
+- **Color de la muestra** (si el valor no tiene ni muestra ni foto): en el Admin, `Opciones → Color → valor → Metadata`,
+  clave `color` = `#c0392b`.
 - **No filtrable**: en el Admin, metadata de la **opción** (`Opciones → Mosquetón lado perro → Metadata`), clave `filtrable` = `false`. Sale de los filtros de la tienda; se sigue encontrando al buscar.
 - **Plantilla**: contenido común (cómo medir, consejos de uso…) en `apps/storefront/src/content/plantillas/<id>.md`. Se aplica sola a los productos de las categorías de su lista `categorias` (y de sus subcategorías), o a un producto con la columna `plantilla = <id>` (gana sobre la de la categoría; `-` = ninguna). Ejemplo: [`arnes.md`](../../../../storefront/src/content/plantillas/arnes.md).
 

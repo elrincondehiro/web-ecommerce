@@ -1,7 +1,8 @@
 # ARNESES DE PRUEBA (Fases O y FO) · catalog:import catalog/mock/arneses + images:import catalog/mock/arneses/fotos
 # prueba-arnes-estampado: 3 estampados × 5 tallas, fotos por estampado, guía marca-m-arnes-a. Agotadas: Rayas M y L, Huellas XS.
 # prueba-arnes-basico: 3 colores × 3 tallas, sin fotos por valor, guía marca-m-arnes-b. Agotada: Rojo L.
-# prueba-arnes-marca: colores con nombre de marca agrupados por familias (familias.csv de esta carpeta).
+# prueba-arnes-marca: colores con nombre de marca agrupados por familias (familias.csv de esta carpeta) y muestras de color
+# propias (fotos/prueba-arnes-marca--<valor>_muestra.png, fase 13).
 handle,titulo,subtitulo,descripcion,categorias,marca,opcion_fotos,guia_tallas,opcion:Estampado,opcion:Color,opcion:Talla,sku,precio,stock
 prueba-arnes-estampado,Arnés estampado,Marca M · Modelo A,Arnés acolchado con estampado. Producto de prueba (Fase O).,arneses-perro,Marca M,Estampado,marca-m-arnes-a,Flores,,XS,PRB-ARN-11,"24,95",5
 prueba-arnes-estampado,,,,,,,,Flores,,S,PRB-ARN-12,"24,95",5
@@ -27,5 +28,5 @@ prueba-arnes-basico,,,,,,,,,Rojo,L,PRB-ARB-23,"19,95",0
 prueba-arnes-basico,,,,,,,,,Azul,S,PRB-ARB-31,"19,95",4
 prueba-arnes-basico,,,,,,,,,Azul,M,PRB-ARB-32,"19,95",4
 prueba-arnes-basico,,,,,,,,,Azul,L,PRB-ARB-33,"19,95",4
-prueba-arnes-marca,Arnés de marca,Marca N · colores con nombre propio,"Colores con el nombre de la marca («Deep Teal», «Huckleberry»): en los filtros salen por su familia (Azul, Verde, Morado). Producto de prueba (Fase FO).",arneses-perro,Marca N,,,,Deep Teal,M,PRB-ARM-11,"22,95",4
+prueba-arnes-marca,Arnés de marca,Marca N · colores con nombre propio,"Colores con el nombre de la marca («Deep Teal», «Huckleberry»): en los filtros salen por su familia (Azul, Verde, Morado). Producto de prueba (Fase FO).",arneses-perro,Marca N,Color,,,Deep Teal,M,PRB-ARM-11,"22,95",4
 prueba-arnes-marca,,,,,,,,,Huckleberry,M,PRB-ARM-21,"22,95",4

@@ -2,6 +2,8 @@ packages:
   - "apps/*"
   - "packages/*"
   - "migracion/*"
+  # Herramientas internas de desarrollo (no van en las imágenes de backend ni storefront)
+  - "tools/*"
 
 # Versiones exactas al añadir dependencias (política README §4)
 saveExact: true

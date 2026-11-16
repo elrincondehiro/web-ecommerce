@@ -94,3 +94,18 @@ describe("JSON-LD de la ficha (offers, fase 13)", () => {
     });
   });
 });
+
+describe("JSON-LD: foto y descripción de cada variante (merchant listing)", () => {
+  it("foto propia de la variante (la que no comparten todas) o la del producto", () => {
+    const p = structuredClone(all.find((x) => (x.variants?.length ?? 0) > 1)!);
+    const img = (url: string, rank: number) => ({ id: url, url, rank });
+    p.variants = p.variants!.slice(0, 2);
+    p.variants[0]!.images = [img("/g.jpg", 0), img("/rojo.jpg", 1)] as never;
+    p.variants[1]!.images = [img("/g.jpg", 0)] as never;
+    const ld = productJsonLd(p, SITE, "/portada.jpg") as unknown as {
+      hasVariant: { image: string; description?: string }[];
+    };
+    expect(ld.hasVariant.map((v) => v.image)).toEqual([`${SITE}/rojo.jpg`, `${SITE}/portada.jpg`]);
+    if (p.description) expect(ld.hasVariant[0]!.description).toBeTruthy();
+  });
+});

@@ -15,16 +15,22 @@
  * - Fase O: `<handle>--<valor>_XX.jpg` = fotos de un valor de la opción `metadata.opcion_fotos`
  *   (p. ej. «Estampado»): van detrás de las generales y se asocian a TODAS las variantes con ese
  *   valor (`batchImageVariantsWorkflow`, Medusa ≥ 2.11.2). Un valor que no existe = aviso.
+ * - Fase 13: `<handle>--<valor>_muestra.png|webp` = muestra de color del valor (con
+ *   transparencia) para el selector de la ficha. Se sube a `muestras/` y se guarda en la metadata
+ *   del VALOR de la opción `opcion_fotos` (`muestra`): una por valor, compartida por todos los
+ *   productos con ese valor (la última que se sube gana). No va a la galería. Idempotente
+ *   (`muestra_fuente` = fichero y tamaño). Se prepara con `pnpm --filter tools-fotos preparar`.
  * - `dry-run`: solo informa, no sube ni modifica nada.
  * - La ruta de la carpeta es relativa a apps/backend (o absoluta).
  */
 import { UPLOAD_FOLDERS, withFolder } from "../lib/upload-folders";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import type { ExecArgs } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 import {
   batchImageVariantsWorkflow,
+  updateProductOptionValuesWorkflow,
   updateProductsWorkflow,
   uploadFilesWorkflow,
 } from "@medusajs/medusa/core-flows";
@@ -34,6 +40,9 @@ import {
   parseImageFileName,
   valueSlug,
   planProductImages,
+  planSwatches,
+  SWATCH_KEY,
+  SWATCH_SOURCE_KEY,
   sourceFileFromUrl,
   type ParsedImageFile,
   type ProductImagePlan,
@@ -69,6 +78,16 @@ export default async function importImages({ container, args }: ExecArgs) {
     .filter((e) => e.isFile())
     .map((e) => e.name);
   const plan = planProductImages(entries);
+  const swatchPlan = planSwatches(entries);
+  if (swatchPlan.duplicates.length) {
+    logger.warn(`Muestras repetidas (se usa la primera): ${swatchPlan.duplicates.join(", ")}`);
+  }
+  const handles = [
+    ...new Set([
+      ...plan.products.map((p) => p.handle),
+      ...swatchPlan.swatches.map((s) => s.handle),
+    ]),
+  ];
   if (plan.ignored.length) {
     logger.warn(`Ignorados ${plan.ignored.length} ficheros fuera de la convención handle_XX.jpg`);
   }
@@ -89,11 +108,15 @@ export default async function importImages({ container, args }: ExecArgs) {
       "variants.id",
       "variants.options.value",
       "variants.options.option.title",
+      "options.title",
+      "options.values.id",
+      "options.values.value",
+      "options.values.metadata",
     ],
-    filters: { handle: plan.products.map((p) => p.handle) },
+    filters: { handle: handles },
   });
   const byHandle = new Map(products.map((p) => [p.handle, p]));
-  const unknown = plan.products.filter((p) => !byHandle.has(p.handle));
+  const unknown = handles.filter((h) => !byHandle.has(h)).map((handle) => ({ handle }));
   if (unknown.length) {
     logger.warn(
       `Sin producto en Medusa (se omiten): ${unknown
@@ -103,7 +126,7 @@ export default async function importImages({ container, args }: ExecArgs) {
     );
   }
 
-  const stats = { products: 0, uploaded: 0, skipped: 0, linked: 0 };
+  const stats = { products: 0, uploaded: 0, skipped: 0, linked: 0, swatches: 0 };
 
   type Product = (typeof products)[number];
   /** Fase O: slug del valor → variantes con ese valor en la opción `metadata.opcion_fotos`. */
@@ -249,6 +272,52 @@ export default async function importImages({ container, args }: ExecArgs) {
     stats.uploaded += pending.length;
   }
 
+  /**
+   * Muestras (fase 13): al VALOR de la opción `opcion_fotos` del producto. Medusa fusiona la
+   * metadata (`updateProductOptionValuesWorkflow`, el mismo que usan las familias): las demás
+   * claves del valor (color, familias) se conservan.
+   */
+  for (const s of swatchPlan.swatches) {
+    const product = byHandle.get(s.handle);
+    if (!product) continue;
+    const optionTitle = product.metadata?.["opcion_fotos"];
+    const option = (product.options ?? []).find((o) => o?.title === optionTitle);
+    if (typeof optionTitle !== "string" || !option) {
+      logger.warn(`${s.file}: el producto no tiene \`opcion_fotos\` (se omite la muestra).`);
+      continue;
+    }
+    const value = (option.values ?? []).find((v) => v && valueSlug(v.value) === s.value);
+    if (!value) {
+      logger.warn(`${s.file}: ningún valor «${s.value}» en ${optionTitle} (se omite).`);
+      continue;
+    }
+    const fingerprint = `${s.file}:${(await stat(path.join(root, s.file))).size}`;
+    const meta = (value.metadata ?? {}) as Record<string, unknown>;
+    if (!replace && meta[SWATCH_SOURCE_KEY] === fingerprint && meta[SWATCH_KEY]) continue;
+    stats.swatches += 1;
+    if (dryRun) continue;
+    const { result } = await uploadFilesWorkflow(container).run({
+      input: {
+        files: [
+          {
+            filename: withFolder(UPLOAD_FOLDERS.swatch, s.file),
+            mimeType: MIME_BY_EXT[path.extname(s.file).toLowerCase()] ?? "image/png",
+            content: (await readFile(path.join(root, s.file))).toString("base64"),
+            access: "public" as const,
+          },
+        ],
+      },
+    });
+    await updateProductOptionValuesWorkflow(container).run({
+      input: {
+        id: value.id,
+        update: {
+          metadata: { [SWATCH_KEY]: result[0]!.url, [SWATCH_SOURCE_KEY]: fingerprint },
+        },
+      },
+    });
+  }
+
   const queue = [...plan.products];
   const total = queue.length;
   let done = 0;
@@ -265,6 +334,7 @@ export default async function importImages({ container, args }: ExecArgs) {
   logger.info(
     `${dryRun ? "[dry-run] " : ""}Imágenes: ${stats.uploaded} subidas en ${stats.products} productos, ` +
       `${stats.skipped} ya importadas, ${stats.linked} asociaciones nuevas a variantes, ` +
+      `${stats.swatches} muestras de color, ` +
       `${unknown.length} handles desconocidos.`,
   );
   if (!dryRun) await clearMedusaCache(container);

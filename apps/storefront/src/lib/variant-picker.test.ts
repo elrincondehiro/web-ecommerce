@@ -13,7 +13,7 @@ import {
 
 type Opt = {
   title: string;
-  values: (string | { value: string; color?: string; familias?: string[] })[];
+  values: (string | { value: string; color?: string; familias?: string[]; muestra?: string })[];
   metadata?: Record<string, unknown>;
 };
 /** Producto con las combinaciones de `opts`; `out` = títulos de variante agotados. */
@@ -39,6 +39,7 @@ function product(
             metadata: {
               ...(v.color ? { color: v.color } : {}),
               ...(v.familias ? { familias: v.familias } : {}),
+              ...(v.muestra ? { muestra: v.muestra } : {}),
             },
           },
     ),
@@ -142,6 +143,22 @@ describe("buildVariantPicker", () => {
     expect(p.a.values.map((v) => v.color)).toEqual([null, "#c0392b"]);
     expect(p.generalImages).toEqual(["a.jpg"]);
     expect(pickerColorCss(p)).toBe('.vp [data-sw="a2"]{--sw:#c0392b}');
+  });
+
+  it("muestra propia del valor (fase 13): una opción con muestras usa el selector", () => {
+    const color: Opt = {
+      title: "Color",
+      values: [
+        { value: "Rojo", muestra: "https://img.example/muestras/rojo.png" },
+        { value: "Azul", muestra: "javascript:alert(1)" },
+      ],
+    };
+    const p = buildVariantPicker(product([color]))!;
+    expect(p).not.toBeNull();
+    expect(p.a.values.map((v) => v.swatch)).toEqual([
+      null,
+      "https://img.example/muestras/rojo.png",
+    ]);
   });
 
   it("color no válido en la metadata: se ignora (va a un <style>)", () => {

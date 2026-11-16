@@ -79,6 +79,30 @@ function variantOffer(
   };
 }
 
+/**
+ * Foto propia de cada variante (la primera que no comparten todas: Medusa da a cada variante sus
+ * fotos MÁS las generales, Fase O). Sin foto propia, no está en el mapa (se usa la del producto).
+ */
+function variantImages(product: StoreProduct): Map<string, string> {
+  type Img = { url?: string | null; rank?: number | null } | null;
+  const lists = (product.variants ?? []).map((v) => ({
+    id: v.id,
+    urls: ((v as { images?: Img[] | null }).images ?? [])
+      .filter((i): i is { url: string; rank?: number | null } => Boolean(i?.url))
+      .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+      .map((i) => i.url),
+  }));
+  const shared = new Set(
+    (lists[0]?.urls ?? []).filter((u) => lists.every((l) => l.urls.includes(u))),
+  );
+  const out = new Map<string, string>();
+  for (const l of lists) {
+    const own = l.urls.find((u) => !shared.has(u));
+    if (own) out.set(l.id, own);
+  }
+  return out;
+}
+
 /** Valores de las opciones de una variante («Talla: M», «Color: Rojo»), sin «Formato: Única». */
 function variantOptions(variant: StoreVariant | undefined) {
   return (variant?.options ?? [])
@@ -131,6 +155,7 @@ export function productJsonLd(
   const currency = (pricing.currencyCode ?? "eur").toUpperCase();
   const variants = new Map((product.variants ?? []).map((v) => [v.id, v]));
   const priced = offers ? pricing.variants.filter((v) => v.amount !== null && v.amount > 0) : [];
+  const ownImage = variantImages(product);
 
   if (priced.length <= 1) {
     const v = priced[0];
@@ -157,11 +182,15 @@ export function productJsonLd(
         varies.add(`https://schema.org/${key}`);
       }
     }
+    // Google (merchant listing) exige `image` en CADA variante; recomienda `description`
+    const img = ownImage.get(v.id) ?? image;
     return {
       "@type": "Product",
       name: opts.length
         ? `${product.title} — ${opts.map((o) => o.value).join(" / ")}`
         : product.title,
+      ...(base.description ? { description: base.description } : {}),
+      ...(img ? { image: new URL(img, site).href } : {}),
       ...(variant?.sku ? { sku: variant.sku } : {}),
       ...props,
       offers: variantOffer(v, variant, currency, url),

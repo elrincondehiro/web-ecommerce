@@ -1,0 +1,20 @@
+{
+  "name": "tools-fotos",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Prepara las fotos del catálogo para images:import (sRGB, sin metadatos, tamaño y formato)",
+  "scripts": {
+    "preparar": "node src/preparar.ts",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@web-ecommerce/config": "workspace:*",
+    "typescript": "6.0.3"
+  },
+  "dependencies": {
+    "sharp": "0.35.5"
+  }
+}

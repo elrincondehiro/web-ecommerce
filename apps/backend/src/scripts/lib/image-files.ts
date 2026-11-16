@@ -5,6 +5,9 @@
  * Fotos de un valor de opción (Fase O): `<handle>--<valor>_<XX>.jpg`, con el valor de la opción
  * `metadata.opcion_fotos` del producto en minúsculas, sin tildes y con guiones (`valueSlug`):
  * se asocian a las variantes con ese valor. Van detrás de las generales.
+ * Muestras de color (fase 13): `<handle>--<valor>_muestra.png|webp` = la muestra del valor en el
+ * selector de la ficha (con transparencia). No van a la galería: se guardan en la metadata del
+ * VALOR de la opción (`muestra`), compartida por todos los productos con ese valor.
  * Funciones puras (sin I/O) para poder testearlas.
  */
 import path from "node:path";
@@ -37,7 +40,26 @@ export const valueSlug = (value: string) =>
 export const MIME_BY_EXT: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
 };
+
+/** Muestra de un valor (fase 13): `<handle>--<valor>_muestra.png|webp`. */
+export const SWATCH_FILE_RE =
+  /^([a-z0-9]+(?:-[a-z0-9]+)*?)--([a-z0-9]+(?:-[a-z0-9]+)*)_muestra\.(png|webp)$/;
+
+export interface ParsedSwatchFile {
+  file: string;
+  handle: string;
+  /** Slug del valor (`valueSlug`). */
+  value: string;
+}
+
+/** Muestra de color, o null si el nombre no es de muestra. */
+export function parseSwatchFileName(file: string): ParsedSwatchFile | null {
+  const match = SWATCH_FILE_RE.exec(path.basename(file).toLowerCase());
+  return match ? { file, handle: match[1] as string, value: match[2] as string } : null;
+}
 
 /** Analiza un nombre de fichero. `null` si no sigue la convención o la posición es 00. */
 export function parseImageFileName(file: string): ParsedImageFile | null {
@@ -76,7 +98,8 @@ export function planProductImages(files: string[]): {
   for (const file of files) {
     const parsed = parseImageFileName(file);
     if (!parsed) {
-      ignored.push(file);
+      // Las muestras (fase 13) van aparte (planSwatches), no son fotos de la galería
+      if (!parseSwatchFileName(file)) ignored.push(file);
       continue;
     }
     const positions = byHandle.get(parsed.handle) ?? new Map<string, ParsedImageFile>();
@@ -110,3 +133,32 @@ export function sourceFileFromUrl(url: string): string | null {
   const file = `${m[1]}${m[2]}`.toLowerCase();
   return parseImageFileName(file) ? file : null;
 }
+
+/**
+ * Muestras de la carpeta (fase 13), una por valor y producto. Dos ficheros del mismo valor y
+ * producto (`.png` y `.webp`) → el segundo, a `duplicates`.
+ */
+export function planSwatches(files: string[]): {
+  swatches: ParsedSwatchFile[];
+  duplicates: string[];
+} {
+  const seen = new Set<string>();
+  const swatches: ParsedSwatchFile[] = [];
+  const duplicates: string[] = [];
+  for (const file of [...files].sort()) {
+    const s = parseSwatchFileName(file);
+    if (!s) continue;
+    const key = `${s.handle}--${s.value}`;
+    if (seen.has(key)) duplicates.push(file);
+    else {
+      seen.add(key);
+      swatches.push(s);
+    }
+  }
+  return { swatches, duplicates };
+}
+
+/** Claves de la metadata del VALOR de opción (fase 13). */
+export const SWATCH_KEY = "muestra";
+/** `<fichero>:<bytes>`: con el mismo, no se vuelve a subir (idempotencia). */
+export const SWATCH_SOURCE_KEY = "muestra_fuente";

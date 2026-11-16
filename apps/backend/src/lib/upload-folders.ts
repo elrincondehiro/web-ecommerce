@@ -5,6 +5,7 @@
  * `images:import` y las mascotas).
  *
  *   productos/     fotos de productos y variantes (Admin, `images:import`)
+ *   muestras/      muestras de color de los valores de opción (`images:import`, fase 13)
  *   categorias/    foto propia de una categoría (widget)
  *   colecciones/   foto propia de una colección (widget)
  *   mascotas/      fotos de «Mis peques» (Fase M)
@@ -12,6 +13,7 @@
  */
 export const UPLOAD_FOLDERS = {
   product: "productos",
+  swatch: "muestras",
   category: "categorias",
   collection: "colecciones",
   pet: "mascotas",

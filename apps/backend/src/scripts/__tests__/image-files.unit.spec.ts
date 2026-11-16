@@ -4,6 +4,8 @@ import {
   sourceFileFromUrl,
   valueSlug,
   imageOrder,
+  parseSwatchFileName,
+  planSwatches,
 } from "../lib/image-files";
 
 describe("parseImageFileName", () => {
@@ -127,5 +129,34 @@ describe("fotos de un valor de opción (Fase O)", () => {
     expect(
       sourceFileFromUrl("http://x/medusa/arnes--flores_01-01M40RG1V4WNCNZFJ28778C6DT.jpg"),
     ).toBe("arnes--flores_01.jpg");
+  });
+});
+
+describe("muestras de color (fase 13)", () => {
+  it("handle--valor_muestra.png|webp; no son fotos de la galería ni «ignoradas»", () => {
+    expect(parseSwatchFileName("Arnes--Sea-Foam_muestra.PNG")).toEqual({
+      file: "Arnes--Sea-Foam_muestra.PNG",
+      handle: "arnes",
+      value: "sea-foam",
+    });
+    expect(parseSwatchFileName("arnes--rojo_muestra.webp")?.value).toBe("rojo");
+    for (const f of ["arnes_muestra.png", "arnes--rojo_muestra.jpg", "arnes--rojo_01.png"]) {
+      expect(parseSwatchFileName(f)).toBeNull();
+    }
+    const plan = planProductImages(["arnes_01.jpg", "arnes--rojo_muestra.png", "otra.txt"]);
+    expect(plan.ignored).toEqual(["otra.txt"]);
+    expect(plan.products[0]!.files.map((f) => f.file)).toEqual(["arnes_01.jpg"]);
+  });
+
+  it("una por producto y valor; la repetida, aparte", () => {
+    expect(
+      planSwatches(["b--rojo_muestra.webp", "a--azul_muestra.png", "b--rojo_muestra.png"]),
+    ).toEqual({
+      swatches: [
+        { file: "a--azul_muestra.png", handle: "a", value: "azul" },
+        { file: "b--rojo_muestra.png", handle: "b", value: "rojo" },
+      ],
+      duplicates: ["b--rojo_muestra.webp"],
+    });
   });
 });

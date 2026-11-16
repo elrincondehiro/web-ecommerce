@@ -396,6 +396,22 @@ importers:
         specifier: 5.1.0
         version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(jiti@1.21.7)(yaml@2.9.1))
 
+  tools/fotos:
+    dependencies:
+      sharp:
+        specifier: 0.35.5
+        version: 0.35.5(@types/node@24.19.2)
+    devDependencies:
+      '@types/node':
+        specifier: 24.19.2
+        version: 24.19.2
+      '@web-ecommerce/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+
 packages:
 
   '@adyen/api-library@32.2.0':

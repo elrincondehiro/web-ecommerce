@@ -80,9 +80,16 @@ Las descripciones de **productos y categorías** (hoja o Admin) y de **coleccion
 
 ## Fotos
 
+**Preparar las fotos antes** (herramienta interna, no va en la tienda): `pnpm --filter tools-fotos preparar <origen>
+<destino>` las deja en sRGB, giradas según el EXIF, **sin metadatos** (ni EXIF ni GPS), con el lado mayor en 2000 px y en
+JPEG calidad 88 (las muestras, 400 px en PNG). Avisa de las que no son cuadradas o son pequeñas y lista las que no siguen
+la convención de nombres. No toca los originales.
+
 Las fotos van **por producto**, con `images:import`: ficheros `handle_01.jpg`, `handle_02.jpg`… (dos cifras, de `01` a `99`, en el orden de la galería). `_01` es la miniatura y solo se admite JPG (`.jpg` o `.jpeg`). Fotos de un valor de opción (Fase O): `handle--valor_01.jpg`, ver [selector-fotos](./selector-fotos/LEEME.md). Se suben al bucket (SeaweedFS en dev, R2 en producción), a la carpeta `productos/`. Ya importadas se omiten; importar solo algunas (p. ej. una `_09` nueva) las añade en su posición sin tocar las demás; `replace` las sustituye todas.
 
-- **Tamaño**: la tienda genera AVIF/WebP del tamaño de cada sitio (tarjeta 240 px, galería hasta 720 px). Bastan unos **1500 px** de lado mayor; más solo alarga el build. **Cuadradas** (1:1) para que la rejilla no baile.
+- **Tamaño**: la tienda genera AVIF/WebP del tamaño de cada sitio (tarjeta 240 px, galería hasta 1200 px). Con el
+  script quedan en 2000 px de lado mayor. **Cuadradas** (1:1) para que la rejilla no baile: la tienda recorta al centro.
+- **Muestras de color** (`handle--valor_muestra.png`): ver [selector-fotos](./selector-fotos/LEEME.md).
 - Los cambios de fotos se ven tras un **rebuild** del storefront.
 
 ## Producción (VPS)

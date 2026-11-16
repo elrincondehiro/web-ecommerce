@@ -39,3 +39,19 @@ docker build -f apps/backend/Dockerfile -t ecommerce-backend:local . && docker i
 - `shippingDetails` y `hasMerchantReturnPolicy` en el JSON-LD (o a nivel de organización) cuando estén las condiciones definitivas.
 - Google Shopping: feed de Merchant Center (aparcado, PENDIENTES §3).
 - El Admin podría salir del `node_modules` de producción si Medusa lo separa en el futuro (~150 MB más).
+
+## 5. Fotos del catálogo y muestras de color (A, 16-nov-2026)
+
+- **`tools/fotos`** (paquete interno nuevo, workspace `tools/*`): `pnpm --filter tools-fotos preparar <origen> <destino>`
+  → sRGB, giradas según el EXIF, sin metadatos (ni EXIF ni GPS), 2000 px y JPEG 88 (mozjpeg); muestras 400 px en PNG.
+  Avisos (no cuadrada, pequeña, muestra sin transparencia), nombres fuera de la convención y colisiones. `sharp` 0.35.5
+  (decisión del usuario: herramientas internas sí, siempre que no afecten al backend ni al storefront). Probada con
+  fotos con EXIF/GPS y orientación 6, CMYK y PNG transparentes.
+- **Muestras de color propias del valor**: `handle--valor_muestra.png|webp` → `images:import` la sube a `muestras/` y la
+  guarda en la metadata del **valor** de la opción `opcion_fotos` (`muestra`, y `muestra_fuente` = fichero:bytes para
+  no repetir). **Una por valor, compartida** entre productos (decisión del usuario). No va a la galería. El selector
+  (`VariantPicker`) la enseña sin marco ni fondo (`<Image>` WebP `fit: contain`, conserva la transparencia); si no
+  hay, la foto de la variante o el color, como antes. Ejemplo en `plantilla/selector-fotos/fotos/` y prueba en
+  `mock/arneses` (`prueba-arnes-marca`). Tests: `image-files.unit.spec.ts`, `variant-picker.test.ts`, e2e `variantes`.
+- **JSON-LD** (tras la prueba de Google en el VPS): cada variante lleva `image` (crítico en «Fichas de comerciante») y
+  `description`. `review`/`aggregateRating` (avisos del producto) no aplican: la tienda no tiene reseñas.
