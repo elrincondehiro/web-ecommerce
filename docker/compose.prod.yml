@@ -187,7 +187,7 @@ services:
       COOKIE_SECURE: "true"
 
   postgres:
-    image: postgres:17.11-alpine
+    image: postgres:17.12-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?}
@@ -214,7 +214,7 @@ services:
       retries: 20
 
   meilisearch:
-    image: getmeili/meilisearch:v1.56.2
+    image: getmeili/meilisearch:v1.57.0
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?}
@@ -233,7 +233,7 @@ services:
   # Analítica Umami (Fase MK-E): BD `umami` y usuario propios en el mismo Postgres (los crea
   # umami-db-init si no existen), memoria limitada, solo red interna (Caddy: STATS_DOMAIN).
   umami-db-init:
-    image: postgres:17.11-alpine
+    image: postgres:17.12-alpine
     restart: "no"
     depends_on:
       postgres:
@@ -255,7 +255,7 @@ services:
         SQL
 
   umami:
-    image: ghcr.io/umami-software/umami:3.4.1
+    image: ghcr.io/umami-software/umami:3.5.0
     restart: unless-stopped
     init: true
     mem_limit: 512m

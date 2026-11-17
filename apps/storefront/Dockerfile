@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.28.0
+# syntax=docker/dockerfile:1.29.0
 # Imagen del storefront Astro (fase 10): HTML estático + servidor Node (@astrojs/node standalone)
 # para server islands y rutas on-demand. Contexto de build: la RAÍZ del monorepo.
 #
@@ -19,7 +19,7 @@
 # "Environment variables": el adapter no carga .env), context7 /pnpm/pnpm.io (docker, fetch,
 # deploy) y AGENTS §6.
 
-ARG NODE_IMAGE=node:24.22.2-alpine3.24
+ARG NODE_IMAGE=node:24.22.3-alpine3.24
 
 # ── base: Node + pnpm (versión de `packageManager`, vía corepack) ────────────────────────────────
 FROM ${NODE_IMAGE} AS base

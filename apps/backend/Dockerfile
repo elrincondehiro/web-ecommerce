@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.28.0
+# syntax=docker/dockerfile:1.29.0
 # Imagen del backend Medusa (fase 10). UNA imagen para `server` y `worker` (MEDUSA_WORKER_MODE);
 # solo `server` migra la BD al arrancar (start.sh). Contexto de build: la RAÍZ del monorepo.
 #
@@ -11,7 +11,7 @@
 # El Admin se compila SIN `admin.backendUrl` (MEDUSA_BACKEND_URL vacío en el build): usa el
 # origen del navegador, así la imagen no queda atada a un dominio.
 
-ARG NODE_IMAGE=node:24.22.2-alpine3.24
+ARG NODE_IMAGE=node:24.22.3-alpine3.24
 
 # ── base: Node + pnpm (versión de `packageManager`, vía corepack) ────────────────────────────────
 FROM ${NODE_IMAGE} AS base

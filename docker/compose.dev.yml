@@ -5,7 +5,7 @@ name: web-ecommerce-dev
 
 services:
   postgres:
-    image: postgres:17.11-alpine
+    image: postgres:17.12-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -36,7 +36,7 @@ services:
       retries: 20
 
   meilisearch:
-    image: getmeili/meilisearch:v1.56.2
+    image: getmeili/meilisearch:v1.57.0
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
@@ -61,7 +61,7 @@ services:
   # S3 local (imita Cloudflare R2). `weed mini` = master + volume + filer + S3 + admin UI.
   # Credenciales y bucket se crean al arrancar vía AWS_* / S3_BUCKET.
   seaweedfs:
-    image: chrislusf/seaweedfs:4.53
+    image: chrislusf/seaweedfs:4.54
     restart: unless-stopped
     command: ["mini", "-dir=/data", "-master.telemetry=false"]
     environment:
@@ -86,7 +86,7 @@ services:
 
   # Captura de emails en local (SMTP :1025, UI :8025)
   mailpit:
-    image: axllent/mailpit:v1.33.1
+    image: axllent/mailpit:v1.34.0
     restart: unless-stopped
     ports:
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
@@ -97,7 +97,7 @@ services:
   # El whsec_ para STRIPE_WEBHOOK_SECRET (apps/backend/.env):
   #   docker compose --env-file docker/.env -f docker/compose.dev.yml run --rm stripe-cli listen --print-secret
   stripe-cli:
-    image: stripe/stripe-cli:v1.55.10
+    image: stripe/stripe-cli:v1.55.11
     profiles: ["stripe"]
     command:
       - listen
@@ -116,7 +116,7 @@ services:
   # otros dispositivos de la red local. Primer acceso: admin / umami → cambiar la contraseña.
   # Variables: docs.umami.is/docs/environment-variables (context7 /websites/umami_is).
   umami-db-init:
-    image: postgres:17.11-alpine
+    image: postgres:17.12-alpine
     profiles: ["umami"]
     restart: "no"
     depends_on:
@@ -139,7 +139,7 @@ services:
         SQL
 
   umami:
-    image: ghcr.io/umami-software/umami:3.4.1
+    image: ghcr.io/umami-software/umami:3.5.0
     profiles: ["umami"]
     restart: unless-stopped
     init: true

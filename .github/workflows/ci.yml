@@ -111,10 +111,10 @@ jobs:
     # Margen para el runner del homelab (capacity 1, compartido con el rebuild del storefront).
     # Memoria: ver workerIdleMemoryLimit en apps/backend/jest.config.js.
     timeout-minutes: 40
-    container: node:24.22.2-trixie
+    container: node:24.22.3-trixie
     services:
       postgres-localhost:
-        image: postgres:17.11-alpine
+        image: postgres:17.12-alpine
         env:
           POSTGRES_USER: medusa
           POSTGRES_PASSWORD: medusa

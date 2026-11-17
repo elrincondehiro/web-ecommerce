@@ -2,10 +2,10 @@
   "name": "web-ecommerce",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.18.0",
+  "packageManager": "pnpm@12.21.0",
   "engines": {
-    "node": "24.22.2",
-    "pnpm": "12.18.0"
+    "node": "24.22.3",
+    "pnpm": "12.21.0"
   },
   "scripts": {
     "infra:up": "docker compose --env-file docker/.env -f docker/compose.dev.yml up -d --wait",
@@ -42,8 +42,8 @@
   "devDependencies": {
     "@types/node": "24.19.2",
     "@web-ecommerce/config": "workspace:*",
-    "eslint": "10.14.0",
-    "prettier": "3.9.10",
+    "eslint": "10.15.0",
+    "prettier": "3.10.1",
     "typescript": "6.0.3"
   }
 }
