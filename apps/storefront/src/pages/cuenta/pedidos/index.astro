@@ -11,7 +11,7 @@ import {
 import { buttonVariants } from "$lib/components/ui/button";
 import { accountPage, requireCustomer } from "$lib/account-page";
 import { formatPrice } from "$lib/format";
-import { listCustomerOrders } from "$lib/medusa";
+import { listAwaitingTransfer, listCustomerOrders } from "$lib/medusa";
 import AccountLayout from "../../../components/account/AccountLayout.astro";
 import AccountNotice from "../../../components/account/AccountNotice.astro";
 import { Badge } from "$lib/components/ui/badge";
@@ -25,10 +25,10 @@ const session = await requireCustomer(Astro);
 if (!session.ok) return session.redirect;
 const pageParam = Number.parseInt(Astro.url.searchParams.get("pagina") ?? "1", 10);
 const page = Number.isFinite(pageParam) && pageParam > 0 && pageParam < 1000 ? pageParam : 1;
-const { orders, count } = await listCustomerOrders(session.token, {
-  limit: PAGE_SIZE,
-  offset: (page - 1) * PAGE_SIZE,
-});
+const [{ orders, count }, awaiting] = await Promise.all([
+  listCustomerOrders(session.token, { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
+  listAwaitingTransfer(session.token),
+]);
 const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" });
 const units = (o: (typeof orders)[number]) => itemCount(o);
@@ -72,7 +72,7 @@ const claimOpen = Boolean(flash.code);
               {dateFmt.format(new Date(o.created_at))} · {units(o)}{" "}
               {units(o) === 1 ? "artículo" : "artículos"}
             </span>
-            <span class="text-right text-sm">{orderStatusLabel(o)}</span>
+            <span class="text-right text-sm">{orderStatusLabel(o, awaiting.has(o.id))}</span>
           </a>
         </li>
       ))}

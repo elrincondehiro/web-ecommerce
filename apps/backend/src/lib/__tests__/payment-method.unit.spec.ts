@@ -1,4 +1,9 @@
-import { paymentMethodInfo, paymentStatusLabel } from "../payment-method";
+import {
+  awaitingTransfer,
+  MANUAL_PROVIDER_ID,
+  paymentMethodInfo,
+  paymentStatusLabel,
+} from "../payment-method";
 
 const stripe = (pm: unknown, captured = false, types?: string[]) => ({
   provider_id: "pp_stripe_stripe",
@@ -37,5 +42,22 @@ describe("método de pago (Fase PG)", () => {
     );
     expect(paymentMethodInfo(null)).toBeNull();
     expect(paymentStatusLabel(null)).toBeNull();
+  });
+
+  it("esperando transferencia (fase 13): manual, sin cobrar ni cancelar", () => {
+    const order = (payments: object[], status = "pending") => ({
+      id: "o",
+      status,
+      payment_collections: [{ payments }],
+    });
+    const manual = { provider_id: MANUAL_PROVIDER_ID, captured_at: null };
+    expect(awaitingTransfer(order([manual]))).toBe(true);
+    expect(awaitingTransfer(order([{ ...manual, captured_at: "2026-11-18" }]))).toBe(false);
+    expect(awaitingTransfer(order([manual], "canceled"))).toBe(false);
+    expect(awaitingTransfer(order([{ provider_id: "pp_stripe_stripe", captured_at: null }]))).toBe(
+      false,
+    );
+    expect(awaitingTransfer(order([{ ...manual, canceled_at: "x" }]))).toBe(false);
+    expect(awaitingTransfer({ id: "o", status: "pending" })).toBe(false);
   });
 });

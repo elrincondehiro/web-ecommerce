@@ -275,12 +275,19 @@ medusaIntegrationTestRunner({
         concept: `Pedido ${order.display_id}`,
       });
       expect(transfer.amount).toMatch(/€/);
+      // «Mis pedidos» (fase 13 punto 5): esperando la transferencia (solo los del cliente).
+      expect(
+        (await api.get("/store/customers/me/orders/awaiting-transfer", auth)).data.order_ids,
+      ).toEqual([order.id]);
       // Otro cliente no lo ve.
       const other = await customerAuth("otro-transfer@example.com");
       const notMine = await api
         .get(`/store/customers/me/orders/${order.id}/transfer`, other)
         .catch(asRes);
       expect(notMine.status).toBe(404);
+      expect(
+        (await api.get("/store/customers/me/orders/awaiting-transfer", other)).data.order_ids,
+      ).toEqual([]);
 
       // Job: antes del último día nada; el último día recordatorio; después, cancelación.
       const created = new Date(order.created_at).getTime();
@@ -304,6 +311,9 @@ medusaIntegrationTestRunner({
       expect(
         (await api.get(`/store/customers/me/orders/${order.id}/transfer`, auth)).data.transfer,
       ).toBeNull();
+      expect(
+        (await api.get("/store/customers/me/orders/awaiting-transfer", auth)).data.order_ids,
+      ).toEqual([]);
       // Ya cancelado: el job no lo vuelve a tocar.
       expect(await processTransferOrders(container, new Date(created + 5 * day))).toEqual({
         reminded: 0,
@@ -329,6 +339,9 @@ medusaIntegrationTestRunner({
         ).map((ps) => ps.id),
       });
       await payments.capturePayment({ payment_id: payment!.id });
+      expect(
+        (await api.get("/store/customers/me/orders/awaiting-transfer", auth)).data.order_ids,
+      ).toEqual([]);
       const later = new Date(new Date(order.created_at).getTime() + 10 * 24 * 60 * 60 * 1000);
       expect(await processTransferOrders(container, later)).toEqual({ reminded: 0, canceled: 0 });
     });

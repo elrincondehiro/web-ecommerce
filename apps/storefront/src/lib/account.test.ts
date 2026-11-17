@@ -240,6 +240,11 @@ describe("utilidades", () => {
     expect(orderStatusLabel({ status: "canceled", fulfillment_status: "shipped" })).toBe(
       "Cancelado",
     );
+    // Fase 13: transferencia sin cobrar (si está cancelado, gana «Cancelado»)
+    expect(orderStatusLabel({ status: "pending", fulfillment_status: "not_fulfilled" }, true)).toBe(
+      "Esperando transferencia",
+    );
+    expect(orderStatusLabel({ status: "canceled" }, true)).toBe("Cancelado");
   });
 
   it("pedido añadido a la cuenta desde una compra como invitado (Fase G)", () => {

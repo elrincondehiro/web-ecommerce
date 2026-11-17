@@ -12,6 +12,7 @@ import {
   PROFILE_PATH,
   accountOrderPath,
   defaultAddress,
+  orderStatusLabel,
 } from "$lib/account";
 import { accountPage, requireCustomer } from "$lib/account-page";
 import { formatPrice } from "$lib/format";
@@ -20,6 +21,7 @@ import {
   getPointsSummary,
   getWishlist,
   getWishlistProducts,
+  listAwaitingTransfer,
   listCustomerOrders,
   listPets,
   listStockAlerts,
@@ -39,8 +41,10 @@ const flash = accountPage(Astro);
 const session = await requireCustomer(Astro);
 if (!session.ok) return session.redirect;
 const { customer, token } = session;
-const [{ orders }, points, pets, wishlist, alerts, comms] = await Promise.all([
+const [{ orders }, awaiting, points, pets, wishlist, alerts, comms] = await Promise.all([
   listCustomerOrders(token, { limit: 1, offset: 0 }),
+  // Fase 13: «Esperando transferencia» en el último pedido (vacío si falla).
+  listAwaitingTransfer(token),
   // Si falla, la tarjeta de puntos no muestra el saldo (el resto de la página sigue).
   getPointsSummary(token, { limit: 1, offset: 0 }).catch(() => null),
   // Mis peques (Fase M): igual, sin los nombres si falla.
@@ -170,7 +174,8 @@ const card = "flex flex-col gap-2 rounded-md border-2 border-line bg-card shadow
           <span class="text-muted-foreground">
             {" · "}
             {dateFmt.format(new Date(last.created_at))} ·{" "}
-            {formatPrice(last.total ?? 0, last.currency_code ?? "eur")}
+            {formatPrice(last.total ?? 0, last.currency_code ?? "eur")} ·{" "}
+            {orderStatusLabel(last, awaiting.has(last.id))}
           </span>
         </p>
       ) : (

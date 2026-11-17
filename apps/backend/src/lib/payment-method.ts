@@ -7,6 +7,7 @@
 export type PaymentLike = {
   provider_id?: string | null;
   captured_at?: string | Date | null;
+  canceled_at?: string | Date | null;
   data?: Record<string, unknown> | null;
 } | null;
 
@@ -54,4 +55,23 @@ export function paymentStatusLabel(info: PaymentMethodInfo | null): string | nul
   return info.transfer
     ? `${info.label} · pendiente de recibir`
     : `${info.label} · pendiente de capturar`;
+}
+
+export type OrderPaymentLike = {
+  id: string;
+  status?: string | null;
+  payment_collections?: ({ payments?: (PaymentLike | null)[] | null } | null)[] | null;
+};
+
+/**
+ * ¿Pedido esperando la transferencia (fase 13 punto 5)? Sin cancelar y con el último pago no
+ * cancelado por transferencia (proveedor manual) y sin cobrar.
+ */
+export function awaitingTransfer(order: OrderPaymentLike): boolean {
+  if (order.status === "canceled") return false;
+  const payments = (order.payment_collections ?? [])
+    .flatMap((c) => c?.payments ?? [])
+    .filter((p): p is NonNullable<PaymentLike> => Boolean(p) && !p!.canceled_at);
+  const last = payments[payments.length - 1];
+  return Boolean(last && last.provider_id === MANUAL_PROVIDER_ID && !last.captured_at);
 }

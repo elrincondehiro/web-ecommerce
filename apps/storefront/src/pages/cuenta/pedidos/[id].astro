@@ -64,7 +64,7 @@ const dateFmt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: 
   </a>
   <h1 class="mb-2 text-3xl font-semibold tracking-tight">Pedido #{order.display_id}</h1>
   <p class="mb-6 text-muted-foreground">
-    {dateFmt.format(new Date(order.created_at))} · {orderStatusLabel(order)}
+    {dateFmt.format(new Date(order.created_at))} · {orderStatusLabel(order, Boolean(transfer))}
   </p>
 
   <div class="flex max-w-2xl flex-col gap-6">

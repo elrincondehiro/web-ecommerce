@@ -550,9 +550,18 @@ export function wasLinkedToAccount(order: { metadata?: Record<string, unknown> |
   return typeof v?.at === "string";
 }
 
-/** Estado del pedido para el cliente (Medusa 2.21.2: `status` + `fulfillment_status`). */
-export function orderStatusLabel(order: OrderStatusLike): string {
+/** Texto del pedido pagado por transferencia y aún sin cobrar (fase 13 punto 5). */
+export const AWAITING_TRANSFER_LABEL = "Esperando transferencia";
+
+/**
+ * Estado del pedido para el cliente (Medusa 2.21.2: `status` + `fulfillment_status`).
+ * `awaitingTransfer`: pedido por transferencia sin cobrar (lo dice el backend,
+ * `GET /store/customers/me/orders/awaiting-transfer`); va antes que el envío porque no se prepara
+ * hasta cobrarlo.
+ */
+export function orderStatusLabel(order: OrderStatusLike, awaitingTransfer = false): string {
   if (order.status === "canceled") return "Cancelado";
+  if (awaitingTransfer) return AWAITING_TRANSFER_LABEL;
   switch (order.fulfillment_status) {
     case "delivered":
       return "Entregado";

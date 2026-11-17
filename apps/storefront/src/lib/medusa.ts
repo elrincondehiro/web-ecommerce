@@ -753,6 +753,22 @@ const ORDER_LIST_FIELDS =
   "id,display_id,status,created_at,currency_code,total,payment_status,fulfillment_status," +
   "metadata,items.id,items.quantity,*items.variant";
 
+/**
+ * Pedidos del cliente esperando la transferencia (fase 13 punto 5; ruta propia: la Store API no
+ * devuelve los pagos del pedido). Si falla, vacío: la página sigue con el estado normal.
+ */
+export async function listAwaitingTransfer(token: string): Promise<Set<string>> {
+  try {
+    const res = await cartSdk().client.fetch<{ order_ids: string[] }>(
+      "/store/customers/me/orders/awaiting-transfer",
+      { headers: bearer(token) },
+    );
+    return new Set(res.order_ids);
+  } catch {
+    return new Set();
+  }
+}
+
 /** Pedidos del cliente (Medusa filtra por el `actor_id` del token), del más reciente al más antiguo. */
 export async function listCustomerOrders(
   token: string,

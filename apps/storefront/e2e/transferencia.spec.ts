@@ -103,6 +103,17 @@ test.describe("transferencia sin JS", () => {
     await expect(
       page.getByRole("region", { name: "Pendiente de pago por transferencia" }),
     ).toContainText(concept);
+    // Fase 13 punto 5: el estado también en la ficha, en «Mis pedidos» y en «Mi cuenta»
+    await expect(page.getByText(/· Esperando transferencia$/)).toBeVisible();
+    const number = concept.replace("Pedido ", "");
+    await page.goto("/cuenta/pedidos/");
+    await expect(page.getByRole("link", { name: new RegExp(`Pedido #${number}`) })).toContainText(
+      "Esperando transferencia",
+    );
+    await page.goto("/cuenta/");
+    await expect(page.getByRole("region", { name: "Mis pedidos" })).toContainText(
+      "Esperando transferencia",
+    );
 
     const text = await mailText(page, email, /Concepto/);
     expect(text).toContain(concept);

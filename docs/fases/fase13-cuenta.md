@@ -13,6 +13,7 @@
       tienda tramitaba a mano (fase9 §7).
 - [x] **4. Limpieza de carritos de invitado con pago pendiente, carritos de cuenta y purga** de lo
       borrado en suave (fase10 §7).
+- [x] **5. «Esperando transferencia»** en «Mis pedidos», en la ficha del pedido y en «Mi cuenta».
 
 ## 2. Qué se ha hecho
 
@@ -77,6 +78,18 @@
 - Variables nuevas: `CART_EMPTY_DAYS`, `PURGE_DAYS`, `PURGE_CRON` (`.env.example`,
   `compose.prod.yml` y `.env.prod.example`). Script: `pnpm --filter backend purge:deleted`.
 
+### 2.3 «Esperando transferencia» (punto 5)
+
+- Backend: `GET /store/customers/me/orders/awaiting-transfer` → `{ order_ids }` (pedidos del cliente
+  sin cancelar con el último pago por transferencia y sin cobrar; `lib/payment-method.ts`
+  `awaitingTransfer`). Hace falta una ruta propia: `GET /store/orders` no devuelve los pagos (se
+  comprobó: `payment_collections.payments` no llega) y `payment_status` es «authorized» también con
+  una tarjeta sin capturar.
+- Storefront: `orderStatusLabel(order, awaitingTransfer)` → «Esperando transferencia» (antes que el
+  estado del envío; «Cancelado» gana). En la lista (`listAwaitingTransfer`, si falla se ve el
+  estado normal), en la ficha (con los datos de la transferencia, que ya se pedían) y en la tarjeta
+  «Mis pedidos» de «Mi cuenta». 0 JS.
+
 ## 3. Decisiones tomadas
 
 | Decisión                                                                                                                  | Motivo                                                                                                                                   | Fuente consultada                                                                                                                           |
@@ -114,6 +127,7 @@ TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules \
   pnpm --filter backend exec jest --silent --maxWorkers=1 --forceExit integration-tests/http/baja-cuenta.spec.ts   # 4
 TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules \
   pnpm --filter backend exec jest --silent --maxWorkers=1 --forceExit integration-tests/http/limpieza.spec.ts   # 3 (punto 4)
+# punto 5: pagos.spec.ts («transferencia…») y e2e transferencia.spec.ts
 pnpm --filter storefront exec vitest run src/lib/account.test.ts
 # e2e sin JS (backend con EMAIL_TRANSPORT=smtp): cuenta.spec.ts → «eliminar la cuenta…»
 pnpm --filter storefront exec playwright test cuenta --project escritorio
@@ -131,7 +145,8 @@ antiguo.
       sin JS.
 - [x] Limpieza de carritos (invitado con email, cuenta vaciada, clientes sin cuenta) y purga, con
       tests HTTP.
-- [ ] Puntos 5–8.
+- [x] «Esperando transferencia» (punto 5), con test HTTP y e2e.
+- [ ] Puntos 6–8.
 
 ## 7. Pendientes / riesgos
 
