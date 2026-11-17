@@ -57,7 +57,7 @@ import {
   latestCustomerCartId,
   loginCustomer,
   registerIdentity,
-  requestAccountDeletion,
+  deleteAccount,
   requestEmailVerification,
   requestPasswordReset,
   resetPassword,
@@ -448,7 +448,11 @@ export const account = {
     },
   }),
 
-  deleteRequest: defineAction({
+  /**
+   * Eliminar la cuenta (fase 13): frase + contraseña (el backend las vuelve a comprobar). Si se
+   * borra, se cierra la sesión y se quita el carrito de este navegador.
+   */
+  deleteAccount: defineAction({
     accept: "form",
     handler: async (form, ctx): Promise<AccountResult> => {
       const token = sessionOf(ctx);
@@ -460,17 +464,32 @@ export const account = {
           flash: { code: "invalid", errors: parsed.errors, values: parsed.values },
         };
       }
+      const values = { reason: parsed.data.reason, phrase: parsed.data.phrase };
       try {
-        await requestAccountDeletion(token, parsed.data.reason);
-        return { to: ACCOUNT_PATH, flash: { code: "delete_sent" } };
+        await deleteAccount(token, parsed.data);
       } catch (err) {
         if (isUnauthorized(err)) return expired(DELETE_PATH);
-        logError(ctx, "solicitud de baja", err);
-        return {
-          to: DELETE_PATH,
-          flash: { code: "error", values: { reason: parsed.data.reason } },
-        };
+        const message = err instanceof Error ? err.message : "";
+        if ((err as { status?: unknown } | null)?.status === 400) {
+          if (/pedidos en curso/.test(message)) {
+            return { to: DELETE_PATH, flash: { code: "delete_pending", values } };
+          }
+          const field = /contraseña/i.test(message) ? "password" : "phrase";
+          const text =
+            field === "password"
+              ? "La contraseña no es correcta."
+              : "Escribe la frase para confirmar.";
+          return {
+            to: DELETE_PATH,
+            flash: { code: "invalid", errors: { [field]: text }, values },
+          };
+        }
+        logError(ctx, "eliminar la cuenta", err);
+        return { to: DELETE_PATH, flash: { code: "error", values } };
       }
+      clearSession(ctx);
+      ctx.cookies.delete(CART_COOKIE, { path: "/" });
+      return { to: LOGIN_PATH, flash: { code: "account_deleted" } };
     },
   }),
 

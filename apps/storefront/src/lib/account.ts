@@ -46,7 +46,7 @@ export type AccountActionName =
   | "account.addressSave"
   | "account.addressDelete"
   | "account.addressDefault"
-  | "account.deleteRequest"
+  | "account.deleteAccount"
   | "account.claimOrder"
   | "account.acceptTransfer"
   | "account.declineTransfer"
@@ -99,8 +99,10 @@ export const ACCOUNT_NOTICES = {
   pet_photo_failed:
     "Hemos guardado los datos, pero no la foto. Prueba con otra imagen (JPG, PNG, WebP o AVIF de hasta 8 MB).",
   pet_limit: "Has llegado al máximo de fichas de mascotas por cuenta.",
-  delete_sent:
-    "Hemos recibido tu solicitud. Eliminaremos tu cuenta y te escribiremos en un plazo máximo de un mes.",
+  account_deleted:
+    "Hemos eliminado tu cuenta y tus datos personales. Te hemos enviado un email de confirmación.",
+  delete_pending:
+    "No podemos eliminar la cuenta mientras tengas pedidos en curso (sin enviar o con una devolución abierta). Podrás hacerlo cuando estén enviados.",
   logged_out: "Has cerrado la sesión.",
   session_expired: "Tu sesión ha caducado. Vuelve a entrar.",
   alert_login: "Entra en tu cuenta para que te avisemos cuando vuelva. Lo guardaremos al entrar.",
@@ -140,7 +142,7 @@ const SUCCESS = new Set<AccountNoticeCode>([
   "comms_saved",
   "pet_saved",
   "pet_deleted",
-  "delete_sent",
+  "account_deleted",
   "logged_out",
 ]);
 /**
@@ -383,19 +385,36 @@ export function parseProfileForm(form: FormData): ParseResult<ProfileData> {
   return { ok: true, data: { ...res.data, phone } };
 }
 
-/** Motivo opcional de la baja (texto plano, máx. 500). */
-export function parseDeleteForm(form: FormData): ParseResult<{ reason: string }> {
+/**
+ * Frase que hay que escribir para eliminar la cuenta (fase 13): no la rellena un gestor de
+ * contraseñas ni se envía con un clic sin querer. Igual en el backend
+ * (`apps/backend/src/lib/account-deletion.ts`), que la vuelve a comprobar.
+ */
+export const DELETE_PHRASE = "eliminar mi cuenta";
+
+export function isDeletePhrase(value: string): boolean {
+  return value.trim().replace(/\s+/g, " ").toLowerCase() === DELETE_PHRASE;
+}
+
+/** Baja de la cuenta: frase, contraseña y motivo opcional (texto plano, máx. 500). */
+export function parseDeleteForm(
+  form: FormData,
+): ParseResult<{ phrase: string; password: string; reason: string }> {
   const reason = get(form, "reason").trim();
-  const values = { reason: reason.slice(0, 300) };
-  if (get(form, "confirm") !== "on") {
-    return { ok: false, errors: { confirm: "Marca la casilla para confirmar." }, values };
-  }
-  if (reason.length > 500) {
-    return { ok: false, errors: { reason: "Máximo 500 caracteres." }, values };
-  }
+  const phrase = get(form, "phrase");
+  const password = get(form, "password");
+  // La contraseña nunca vuelve al formulario.
+  const values = { reason: reason.slice(0, 300), phrase: phrase.slice(0, 100) };
+  const errors: Record<string, string> = {};
+  if (!isDeletePhrase(phrase)) errors.phrase = `Escribe «${DELETE_PHRASE}» para confirmar.`;
+  if (!password || password.length > PASSWORD_MAX) errors.password = "Escribe tu contraseña.";
+  if (reason.length > 500) errors.reason = "Máximo 500 caracteres.";
+  if (Object.keys(errors).length) return { ok: false, errors, values };
   return {
     ok: true,
     data: {
+      phrase: phrase.trim(),
+      password,
       // eslint-disable-next-line no-control-regex -- sin caracteres de control (salvo \n)
       reason: reason.replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "").trim(),
     },

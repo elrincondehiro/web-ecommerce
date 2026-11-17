@@ -8,7 +8,7 @@ import {
   type MedusaRequest,
   type MedusaResponse,
 } from "@medusajs/framework/http";
-import { StoreDeletionRequestBody } from "./store/customers/me/deletion-request/route";
+import { StoreDeleteAccountBody } from "./store/customers/me/delete/route";
 import { StoreCorreasQuery } from "./store/correas/disponibilidad/route";
 import { StoreOfertasQuery } from "./store/ofertas/route";
 import { StoreAddWishlistItemBody } from "./store/customers/me/wishlist/items/route";
@@ -171,11 +171,11 @@ export default defineMiddlewares({
       methods: ["GET"],
       middlewares: [validateAndTransformQuery(StoreCorreasQuery, {})],
     },
-    // Solicitud de baja (fase 9). La autenticación la pone Medusa (`/store/customers/me*`).
+    // Baja de la cuenta (fase 13). La autenticación la pone Medusa (`/store/customers/me*`).
     {
-      matcher: "/store/customers/me/deletion-request",
+      matcher: "/store/customers/me/delete",
       methods: ["POST"],
-      middlewares: [validateAndTransformBody(StoreDeletionRequestBody)],
+      middlewares: [validateAndTransformBody(StoreDeleteAccountBody)],
     },
     // Códigos descuento (Fase P): solo por la ruta propia (ver blockStorePromotions).
     {

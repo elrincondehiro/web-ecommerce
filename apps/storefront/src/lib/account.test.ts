@@ -182,13 +182,32 @@ describe("formularios", () => {
     expect(!canarias.ok && canarias.errors.postal_code).toMatch(/Península y Baleares/);
   });
 
-  it("baja: exige confirmar; motivo opcional sin caracteres de control", () => {
-    expect(parseDeleteForm(form({ reason: "x" })).ok).toBe(false);
-    expect(parseDeleteForm(form({ confirm: "on", reason: " Me voy\u0007 \n bye " }))).toEqual({
+  it("baja: exige la frase y la contraseña; motivo opcional sin caracteres de control", () => {
+    const sin = parseDeleteForm(form({ reason: "x", password: "Secreta-123" }));
+    expect(!sin.ok && sin.errors.phrase).toMatch(/eliminar mi cuenta/);
+    const otra = parseDeleteForm(form({ phrase: "eliminar", password: "Secreta-123" }));
+    expect(otra.ok).toBe(false);
+    const nopass = parseDeleteForm(form({ phrase: "eliminar mi cuenta" }));
+    expect(!nopass.ok && nopass.errors.password).toBeTruthy();
+    // La contraseña nunca vuelve en los valores
+    expect(!nopass.ok && "password" in nopass.values).toBe(false);
+    expect(
+      parseDeleteForm(
+        form({
+          phrase: "  Eliminar   MI cuenta ",
+          password: "Secreta-123",
+          reason: " Me voy\u0007 \n bye ",
+        }),
+      ),
+    ).toEqual({
       ok: true,
-      data: { reason: "Me voy \n bye" },
+      data: { phrase: "Eliminar   MI cuenta", password: "Secreta-123", reason: "Me voy \n bye" },
     });
-    expect(parseDeleteForm(form({ confirm: "on", reason: "x".repeat(501) })).ok).toBe(false);
+    expect(
+      parseDeleteForm(
+        form({ phrase: "eliminar mi cuenta", password: "x", reason: "x".repeat(501) }),
+      ).ok,
+    ).toBe(false);
   });
 });
 

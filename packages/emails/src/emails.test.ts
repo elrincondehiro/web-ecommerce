@@ -117,16 +117,18 @@ describe("renderEmail", () => {
     expect(verify.text).toContain("/cuenta/verificar/?token=preview-token");
   });
 
-  it("bienvenida y baja: enlace a la cuenta y datos de la solicitud", async () => {
+  it("bienvenida y baja: enlace a la cuenta, despedida y aviso a la tienda", async () => {
     const welcome = await renderEmail("welcome", previewProps("welcome"));
     expect(welcome.text).toContain("/cuenta/");
-    const baja = await renderEmail(
-      "account-deletion-request",
-      previewProps("account-deletion-request"),
-    );
-    expect(baja.subject).toBe("Solicitud de baja de cuenta: ana@example.com");
-    expect(baja.text).toContain("cus_01PREVIEW");
-    expect(baja.text).toContain("Ya no voy a comprar más.");
+    const bye = await renderEmail("account-deleted", previewProps("account-deleted"));
+    expect(bye.subject).toBe("Hemos eliminado tu cuenta");
+    expect(bye.text).toContain("HASTA PRONTO, ANA");
+    expect(bye.text).not.toContain("/cuenta/");
+    const shop = await renderEmail("account-deleted-shop", previewProps("account-deleted-shop"));
+    expect(shop.subject).toBe("Un cliente ha eliminado su cuenta");
+    expect(shop.text).toContain("cus_01PREVIEW");
+    expect(shop.text).toContain("Ya no voy a comprar más.");
+    expect(shop.text).toContain("desde «Mi cuenta»");
   });
 
   it("pedido nuevo para la tienda (Fase M): total, mascotas con su salud y enlace al Admin", async () => {

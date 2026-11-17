@@ -8,12 +8,10 @@ import {
   createSalesChannelsWorkflow,
   linkSalesChannelsToApiKeyWorkflow,
 } from "@medusajs/medusa/core-flows";
-import { ACCOUNT_DELETION_REQUESTED } from "../../src/workflows/request-account-deletion";
 
 /**
  * Cuenta de cliente (fase 9):
  * - Con `authVerificationsPerActor.customer`, no se puede iniciar sesión sin verificar el email.
- * - POST /store/customers/me/deletion-request: solo con sesión; emite el evento de baja.
  * - GET /store/customers/me/carts: último carrito sin completar y con artículos del cliente.
  */
 jest.setTimeout(120 * 1000);
@@ -177,43 +175,6 @@ medusaIntegrationTestRunner({
         const res = await api.get("/store/customers/me/carts", auth);
         expect(res.status).toBe(200);
         expect(res.data.cart_id).toBe(cartId);
-      });
-    });
-
-    describe("POST /store/customers/me/deletion-request", () => {
-      it("401 sin sesión", async () => {
-        const res = await api
-          .post("/store/customers/me/deletion-request", {}, { headers })
-          .catch(asRes);
-        expect(res.status).toBe(401);
-      });
-
-      it("con sesión: 202 y emite el evento con el id del cliente del token", async () => {
-        const token = await verifiedCustomerToken();
-        const auth = { headers: { ...headers, authorization: `Bearer ${token}` } };
-        const me = await api.get("/store/customers/me", auth);
-
-        // Campos fuera del esquema (p. ej. otro customer_id) → 400 (Medusa los rechaza).
-        const extra = await api
-          .post("/store/customers/me/deletion-request", { customer_id: "cus_otro" }, auth)
-          .catch(asRes);
-        expect(extra.status).toBe(400);
-        const long = await api
-          .post("/store/customers/me/deletion-request", { reason: "x".repeat(501) }, auth)
-          .catch(asRes);
-        expect(long.status).toBe(400);
-
-        const res = await api.post(
-          "/store/customers/me/deletion-request",
-          { reason: "Ya no compro" },
-          auth,
-        );
-        expect(res.status).toBe(202);
-        const data = await waitEvent(ACCOUNT_DELETION_REQUESTED);
-        expect(data.customer_id).toBe((me.data.customer as { id: string }).id);
-        expect(data.reason).toBe("Ya no compro");
-        // La bienvenida sale al crear el cliente con cuenta.
-        expect(events.some((e) => e.name === "customer.created")).toBe(true);
       });
     });
   },

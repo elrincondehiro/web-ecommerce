@@ -876,12 +876,22 @@ export async function answerCaja(
   });
 }
 
-/** Solicitud de baja (ruta propia del backend, fase 9). */
-export async function requestAccountDeletion(token: string, reason: string): Promise<void> {
-  await cartSdk().client.fetch("/store/customers/me/deletion-request", {
+/**
+ * Eliminar la cuenta (ruta propia del backend, fase 13). 400 con el motivo (frase, contraseña o
+ * pedidos en curso) sin borrar nada.
+ */
+export async function deleteAccount(
+  token: string,
+  data: { phrase: string; password: string; reason: string },
+): Promise<void> {
+  await cartSdk().client.fetch("/store/customers/me/delete", {
     method: "POST",
     headers: bearer(token),
-    body: reason ? { reason } : {},
+    body: {
+      phrase: data.phrase,
+      password: data.password,
+      ...(data.reason ? { reason: data.reason } : {}),
+    },
   });
 }
 

@@ -192,6 +192,34 @@ test.describe("cuenta sin JS", () => {
     await expect(page2.getByText(/clicker/i).first()).toBeVisible();
     await other.close();
   });
+
+  test("eliminar la cuenta: frase y contraseña; después no se puede entrar (fase 13)", async ({
+    page,
+  }) => {
+    await login(page, email, "Nueva-4567");
+    await page.goto("/cuenta/eliminar/");
+    // Sin la frase (o con otra) no se borra nada.
+    await page.getByLabel(/Para confirmar, escribe/).fill("borrar");
+    await page.getByLabel("Tu contraseña").fill("Nueva-4567");
+    await page.getByRole("button", { name: "Eliminar mi cuenta" }).click();
+    await expect(page.getByText("Escribe «eliminar mi cuenta» para confirmar.")).toBeVisible();
+    // Contraseña incorrecta: tampoco.
+    await page.getByLabel(/Para confirmar, escribe/).fill("Eliminar mi cuenta");
+    await page.getByLabel("Tu contraseña").fill("Otra-12345");
+    await page.getByRole("button", { name: "Eliminar mi cuenta" }).click();
+    await expect(page.getByText("La contraseña no es correcta.")).toBeVisible();
+
+    await page.getByLabel("¿Por qué te vas?").fill("Prueba e2e");
+    await page.getByLabel(/Para confirmar, escribe/).fill("eliminar mi cuenta");
+    await page.getByLabel("Tu contraseña").fill("Nueva-4567");
+    await page.getByRole("button", { name: "Eliminar mi cuenta" }).click();
+    await expect(page).toHaveURL(/\/cuenta\/entrar\/$/);
+    await expect(page.getByText("Hemos eliminado tu cuenta y tus datos personales.")).toBeVisible();
+
+    await login(page, email, "Nueva-4567");
+    await expect(page).toHaveURL(/\/cuenta\/entrar\/$/);
+    await expect(page.getByRole("heading", { level: 1 })).not.toHaveText("Mi cuenta");
+  });
 });
 
 test.describe("cuenta con JS", () => {

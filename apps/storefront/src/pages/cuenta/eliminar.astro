@@ -1,11 +1,15 @@
 ---
-// Eliminar mi cuenta (fase 9): por ahora es una SOLICITUD (llega un email a la tienda, que la
-// tramita desde el Admin en el plazo del RGPD). Sin JS; exige marcar la casilla.
+// Eliminar mi cuenta (fase 13): la baja es inmediata (workflow `delete-account` del backend).
+// Sin JS. Para que no se borre sin querer (un clic, un gestor de contraseñas que rellena el
+// formulario) hay que ESCRIBIR la frase y la contraseña; el backend vuelve a comprobar las dos.
+// Con pedidos en curso no se borra nada y se explica.
 import { buttonVariants } from "$lib/components/ui/button";
-import { ACCOUNT_PATH, DELETE_PATH, accountActionUrl } from "$lib/account";
+import { ACCOUNT_PATH, DELETE_PATH, DELETE_PHRASE, accountActionUrl } from "$lib/account";
 import { accountPage, requireCustomer } from "$lib/account-page";
 import AccountLayout from "../../components/account/AccountLayout.astro";
 import AccountNotice from "../../components/account/AccountNotice.astro";
+import Field from "../../components/checkout/Field.astro";
+import PasswordField from "../../components/account/PasswordField.astro";
 
 export const prerender = false;
 
@@ -20,15 +24,19 @@ const errors = flash.errors ?? {};
   <AccountNotice code={flash.code} />
   <div class="flex max-w-xl flex-col gap-4 text-sm">
     <p>
-      Si eliminas tu cuenta, borraremos tus datos personales y tus direcciones guardadas y ya no
-      podrás entrar. Conservaremos los datos de tus pedidos el tiempo que exige la normativa fiscal.
+      Si eliminas tu cuenta, la borraremos <strong>en el momento</strong> y ya no podrás entrar.
+      Borraremos tus datos personales, tus direcciones, las fichas de tus mascotas, tu lista de
+      deseos, tus avisos de stock y tus preferencias de comunicaciones.{" "}
+      <strong>Perderás el saldo de puntos</strong> que tengas.
     </p>
     <p>
-      Recibiremos tu solicitud y te confirmaremos la baja por email en un plazo máximo de un mes.
+      Conservaremos los datos de tus pedidos el tiempo que exige la normativa fiscal. No se puede
+      eliminar la cuenta mientras haya pedidos en curso (sin enviar o con una devolución abierta).
     </p>
     <form
       method="post"
-      action={accountActionUrl(DELETE_PATH, "account.deleteRequest")}
+      action={accountActionUrl(DELETE_PATH, "account.deleteAccount")}
+      autocomplete="off"
       class="mt-2 flex flex-col gap-4 rounded-md border-2 border-line bg-card shadow-sm p-4 sm:p-6"
     >
       <div class="flex flex-col gap-1">
@@ -50,27 +58,28 @@ const errors = flash.errors ?? {};
           </p>
         )}
       </div>
-      <div class="flex flex-col gap-1">
-        <label class="flex items-start gap-2">
-          <input
-            type="checkbox"
-            name="confirm"
-            required
-            class="mt-0.5 size-4"
-            aria-invalid={errors.confirm ? "true" : undefined}
-            aria-describedby={errors.confirm ? "f-confirm-error" : undefined}
-          />
-          Quiero eliminar mi cuenta y mis datos personales.
-        </label>
-        {errors.confirm && (
-          <p id="f-confirm-error" class="text-destructive">
-            {errors.confirm}
-          </p>
-        )}
-      </div>
+      <Field
+        name="phrase"
+        label={`Para confirmar, escribe «${DELETE_PHRASE}»`}
+        required
+        maxlength={100}
+        autocomplete="off"
+        autocapitalize="none"
+        spellcheck="false"
+        data-1p-ignore
+        data-lpignore="true"
+        data-bwignore
+        value={flash.values?.phrase ?? ""}
+        error={errors.phrase}
+      />
+      <PasswordField
+        autocomplete="current-password"
+        label="Tu contraseña"
+        error={errors.password}
+      />
       <div class="flex flex-wrap items-center gap-4">
         <button type="submit" class={buttonVariants({ variant: "destructive" })}>
-          Solicitar la baja
+          Eliminar mi cuenta
         </button>
         <a href={ACCOUNT_PATH} class="underline underline-offset-4">
           Cancelar

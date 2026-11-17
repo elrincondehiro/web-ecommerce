@@ -588,7 +588,7 @@ Fuentes: context7 `/medusajs/medusa` (guía _wishlist_, compartir; _protected-ro
 
 **Catálogo:** columna **`sin_puntos`** (sí/no) en `productos.csv` → `metadata.sin_puntos` (Fase CS: ahora **`genera_puntos`** → `metadata.genera_puntos = false`), con tests en `catalog-import.unit.spec.ts` y documentada en la plantilla y su LEEME.
 
-**Baja (G6):** `pnpm --filter backend points:close-account <cus_…>` hace un cargo `account_deleted` por todo el saldo y conserva los movimientos. Se ejecuta al tramitar la baja, que sigue siendo manual (fase 9).
+**Baja (G6):** (desde la fase 13 lo hace el workflow `delete-account` al eliminar la cuenta; el script `points:close-account` ya no existe) hace un cargo `account_deleted` por todo el saldo y conserva los movimientos. Se ejecuta al tramitar la baja, que sigue siendo manual (fase 9).
 
 **Variables nuevas:** `POINTS_ACCRUE_CRON` y `POINTS_CONSOLIDATE_DAYS`, en `apps/backend/.env.example`, `docker/compose.prod.yml` (bloque común de server y worker) y `docker/.env.prod.example`.
 

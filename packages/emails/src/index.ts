@@ -5,7 +5,8 @@ import * as orderShipped from "./order-shipped";
 import * as passwordReset from "./password-reset";
 import * as verifyEmail from "./verify-email";
 import * as welcome from "./welcome";
-import * as accountDeletionRequest from "./account-deletion-request";
+import * as accountDeleted from "./account-deleted";
+import * as accountDeletedShop from "./account-deleted-shop";
 import * as orderTransfer from "./order-transfer";
 import * as orderReceivedShop from "./order-received-shop";
 import * as transferReminder from "./transfer-reminder";
@@ -22,7 +23,8 @@ export type { OrderShippedProps, TrackingInfo } from "./order-shipped";
 export type { PasswordResetProps } from "./password-reset";
 export type { VerifyEmailProps } from "./verify-email";
 export type { WelcomeProps } from "./welcome";
-export type { AccountDeletionRequestProps } from "./account-deletion-request";
+export type { AccountDeletedProps } from "./account-deleted";
+export type { AccountDeletedShopProps } from "./account-deleted-shop";
 export type { OrderTransferProps } from "./order-transfer";
 export type { OrderReceivedShopProps, ShopPet } from "./order-received-shop";
 export type { TransferReminderProps } from "./transfer-reminder";
@@ -39,7 +41,8 @@ const templates = {
   "password-reset": passwordReset,
   "verify-email": verifyEmail,
   welcome,
-  "account-deletion-request": accountDeletionRequest,
+  "account-deleted": accountDeleted,
+  "account-deleted-shop": accountDeletedShop,
   "order-transfer": orderTransfer,
   "order-received-shop": orderReceivedShop,
   "transfer-reminder": transferReminder,
@@ -57,7 +60,8 @@ export type TemplateProps = {
   "password-reset": passwordReset.PasswordResetProps;
   "verify-email": verifyEmail.VerifyEmailProps;
   welcome: welcome.WelcomeProps;
-  "account-deletion-request": accountDeletionRequest.AccountDeletionRequestProps;
+  "account-deleted": accountDeleted.AccountDeletedProps;
+  "account-deleted-shop": accountDeletedShop.AccountDeletedShopProps;
   "order-transfer": orderTransfer.OrderTransferProps;
   "order-received-shop": orderReceivedShop.OrderReceivedShopProps;
   "transfer-reminder": transferReminder.TransferReminderProps;

@@ -46,7 +46,7 @@ Otros comportamientos verificados en el código instalado:
 ### 2.2 Backend (`apps/backend`)
 
 - `medusa-config.ts`: `http.jwtExpiresIn: "7d"` (también el Admin) y `authVerificationsPerActor.customer`.
-- `src/workflows/request-account-deletion.ts`: comprueba que el cliente existe (`useQueryGraphStep`) y emite `customer.deletion_requested` (no borra nada).
+- (Sustituido en la fase 13 por la baja automática, fase13-cuenta.md.) `src/workflows/request-account-deletion.ts`: comprueba que el cliente existe (`useQueryGraphStep`) y emite `customer.deletion_requested` (no borra nada).
 - `src/api/store/customers/me/deletion-request/route.ts` → `POST` (202). La sesión la exige Medusa (`/store/customers/me*`); el id sale del token. Body `{ reason?: string ≤ 500 }` validado en `src/api/middlewares.ts`.
 - `src/api/store/customers/me/carts/route.ts` → `GET` `{ cart_id }`: el carrito sin completar **más reciente con artículos** del cliente (últimos 10 por `updated_at`; filtra por los canales de la publishable key). Medusa 2.21.2 no tiene ruta de la Store API para listar los carritos de un cliente.
 - Subscribers:
