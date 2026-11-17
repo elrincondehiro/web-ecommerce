@@ -295,7 +295,10 @@ test("URL no canónica → 301; JS: carrito + común + SearchLive + ScrollDrag (
   expect(res.headers()["location"]).toBe("/buscar/?q=abrijo&categoria=ropa-perro&opcion=Talla%3AM");
 
   const html = await (await page.request.get("/buscar/?q=abrijo")).text();
-  const scripts = [...html.matchAll(/<script[^>]*src="([^"]+)"/g)].map((m) => m[1]);
+  // Sin el script de Umami (MK-E: solo si el build lo lleva; lo comprueba analitica.spec.ts)
+  const scripts = [...html.matchAll(/<script(?![^>]*data-website-id)[^>]*src="([^"]+)"/g)].map(
+    (m) => m[1],
+  );
   // Fase F: + ScrollDrag (fila de chips con scroll horizontal, aprobado por el usuario)
   expect(scripts).toHaveLength(4);
   const drag = scripts.find((s) => /\/_astro\/ScrollDrag\.[^/]+\.js$/.test(s!));

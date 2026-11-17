@@ -82,3 +82,8 @@ audit:
     # de @medusajs/utils (@graphql-codegen v4/v5 → utils ^10, sin 10.x arreglada; Medusa 2.22.0
     # igual). Solo genera tipos al compilar: Medusa no expone GraphQL.
     - GHSA-c4qx-w738-7hr3
+    # picomatch (ReDoS con patrones extglob repetidos, 19-oct-2026; sin versión arreglada: afecta
+    # a todas hasta la 4.0.7, la última). Solo es explotable si el ATACANTE elige el patrón: aquí
+    # los patrones son fijos (Vite, Tailwind, Jest, MikroORM CLI, glob de contenido; en runtime,
+    # `remotePatterns`/caché de astro.config.mjs). Ningún código propio usa picomatch.
+    - GHSA-fc5q-39xc-vjpf

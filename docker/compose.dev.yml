@@ -139,7 +139,7 @@ services:
         SQL
 
   umami:
-    image: ghcr.io/umami-software/umami:3.5.0
+    image: ghcr.io/umami-software/umami:3.4.1
     profiles: ["umami"]
     restart: unless-stopped
     init: true

@@ -64,6 +64,12 @@
       ]
     },
     {
+      "description": "Umami fijado a 3.4.x: el script.js de 3.5.0 pesa 4,15 KB gzip y la excepción aprobada (MK-E) es de ≤ 3 KB. Revisar cada versión nueva (docs/PENDIENTES.md, «Umami: tamaño del script») y subir este límite solo si cabe",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/umami-software/umami"],
+      "allowedVersions": "<3.5.0"
+    },
+    {
       "description": "Node y TypeScript: majors solo manualmente (compatibilidad Astro/Medusa)",
       "matchPackageNames": ["node", "typescript", "@types/node"],
       "matchUpdateTypes": ["major"],

@@ -43,6 +43,23 @@ printf 'services:\n  meilisearch:\n    environment:\n      MEILI_UPGRADE_DB: "tr
 
 Si algo falla: volver a la versión anterior en `compose.prod.yml` y restaurar el `.tgz` en el volumen.
 
+### Umami: tamaño del script (revisar cada mes, o al salir una versión nueva)
+
+Renovate tiene Umami fijado a `<3.5.0` (`renovate.json`): el `script.js` de 3.5.0 pesa **4,15 KB gzip** (añade
+la captura de errores, aunque esté apagada) y la excepción aprobada es de **≤ 3 KB** (AGENTS §3.4, MK-E; 3.4.1:
+2,3 KB). Comprobar la última versión (cambiar la etiqueta):
+
+```bash
+docker run --rm --entrypoint cat ghcr.io/umami-software/umami:3.5.0 /app/public/script.js | gzip -9 | wc -c
+```
+
+Si cabe (≤ 3072 B), subir `allowedVersions` en `renovate.json`. El e2e `analitica.spec.ts` lo vuelve a medir.
+
+**Bajada 3.5.0 → 3.4.1** (17-nov-2026, `chore/umami-341`): 3.5.0 creó 3 tablas vacías de errores
+(`error_issue`, `error_event`, `error_rate_limit`, migración `27_add_error_tracking`); 3.4.1 arranca igual sobre
+esa BD (Prisma: «No pending migrations») y se dejan. Probado en dev. En el VPS: subir el `compose.prod.yml` y
+`./dc up -d umami`.
+
 ## 2. 🔴 Antes de abrir la tienda de verdad (fase «producción definitiva»)
 
 **Infra y cuentas** (fase11 §7, fase10 §7):

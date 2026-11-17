@@ -177,7 +177,10 @@ test.describe("sin JS", () => {
 
 test("/carrito/: JS = común + CartLive ≤ 1 KB (sin CartClient ni otros)", async ({ page }) => {
   const html = await (await page.request.get("/carrito/")).text();
-  const scripts = [...html.matchAll(/<script[^>]*src="([^"]+)"/g)].map((m) => m[1]!);
+  // Sin el script de Umami (MK-E: solo si el build lo lleva; lo comprueba analitica.spec.ts)
+  const scripts = [...html.matchAll(/<script(?![^>]*data-website-id)[^>]*src="([^"]+)"/g)].map(
+    (m) => m[1]!,
+  );
   expect(scripts).toHaveLength(2);
   expect(scripts.some((s) => /\/_astro\/SiteClient\.[^/]+\.js$/.test(s))).toBe(true);
   const live = scripts.find((s) => /\/_astro\/CartLive\.[^/]+\.js$/.test(s));
