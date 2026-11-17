@@ -276,7 +276,7 @@ CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup
 - **Fase 11**: build real del storefront contra la API del VPS (CI con la publishable key como secret o build en el VPS), R2, Origin CA, Cloudflare y primer deploy con datos mock.
 - Con `NODE_ENV=production` no se pueden probar los emails con Mailpit; hace falta Resend (§4.4).
 - `docker compose build` del storefront en el VPS necesita llegar a la API por su URL pública (`STOREFRONT_BUILD_BACKEND_URL`).
-- **Carritos de «invitado con email»** (137 en dev): no se limpian. Medusa crea un cliente sin cuenta al poner el email en el checkout y todos tienen un pago de Stripe **pendiente**. Para limpiarlos habría que cancelar antes el pago (`cancelPaymentCollection`/sesiones) y decidir qué hacer con ese cliente sin cuenta. Los carritos de clientes con cuenta tampoco se tocan (fase9.md §7: «más tiempo o vaciarlos»).
-- **Purgado definitivo** de los carritos borrados en suave: más adelante, si la tabla crece mucho (p. ej. borrar de verdad los que lleven > 90 días con `deleted_at`).
+- **Carritos de «invitado con email»** (137 en dev): resuelto en la fase 13 (fase13-cuenta.md §2.2). Antes: no se limpian. Medusa crea un cliente sin cuenta al poner el email en el checkout y todos tienen un pago de Stripe **pendiente**. Para limpiarlos habría que cancelar antes el pago (`cancelPaymentCollection`/sesiones) y decidir qué hacer con ese cliente sin cuenta. Los carritos de clientes con cuenta tampoco se tocan (fase9.md §7: «más tiempo o vaciarlos»).
+- **Purgado definitivo**: hecho en la fase 13 (job `purge-deleted`). Antes: más adelante, si la tabla crece mucho (p. ej. borrar de verdad los que lleven > 90 días con `deleted_at`).
 - `CART_CLEANUP_DAYS=5` es para las pruebas: subir a 30 (o quitar la variable) antes de abrir la tienda.
 - Imagen del backend de 1 GB (644 MB de `node_modules` de producción de Medusa). Revisar si conviene adelgazarla más adelante.

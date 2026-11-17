@@ -12,7 +12,8 @@ import { deleteStaleCarts } from "../../src/lib/stale-carts";
 
 /**
  * Limpieza de carritos caducados (fase 10-4): `deleteStaleCarts` (lo que ejecuta el job
- * `delete-stale-carts`). Las fechas se retrasan con SQL directo SOLO en el test.
+ * `delete-stale-carts`). Las fechas se retrasan con SQL directo SOLO en el test. Los casos de la
+ * fase 13 (invitado con email, cuenta vaciada, purga) están en limpieza.spec.ts.
  */
 jest.setTimeout(120 * 1000);
 
@@ -69,11 +70,12 @@ medusaIntegrationTestRunner({
       const {
         result: [customer],
       } = await createCustomersWorkflow(container).run({
-        input: { customersData: [{ email: "cliente@example.com" }] },
+        input: { customersData: [{ email: "cliente@example.com", has_account: true }] },
       });
       customerId = customer!.id;
     });
 
+    // Fase 13: también los de clientes SIN cuenta (limpieza.spec.ts); los de cuenta se conservan.
     it("borra (suave) solo los carritos sin cliente, sin completar e inactivos", async () => {
       const viejo = await newCart();
       const viejoConLinea = await newCart();

@@ -1,6 +1,9 @@
 import {
   CART_CLEANUP_DEFAULT_DAYS,
+  CART_EMPTY_DEFAULT_DAYS,
+  cartAction,
   cleanupDays,
+  paymentSessionIds,
   cutoffDate,
   isStale,
   lastActivity,
@@ -75,5 +78,43 @@ describe("isStale", () => {
 
   it("sin fecha → se conserva", () => {
     expect(isStale({ id: "c", updated_at: null }, cutoff)).toBe(false);
+  });
+});
+
+describe("fase 13: qué se hace con cada carrito caducado", () => {
+  it("sin cliente o de invitado con email → borrar; con cuenta → vaciar", () => {
+    expect(cartAction({ id: "c", updated_at: null })).toBe("delete");
+    expect(
+      cartAction({
+        id: "c",
+        updated_at: null,
+        customer_id: "cus_1",
+        customer: { has_account: false },
+      }),
+    ).toBe("delete");
+    expect(
+      cartAction({
+        id: "c",
+        updated_at: null,
+        customer_id: "cus_1",
+        customer: { has_account: true },
+      }),
+    ).toBe("empty");
+  });
+
+  it("sesiones de pago del carrito", () => {
+    expect(paymentSessionIds({ id: "c", updated_at: null })).toEqual([]);
+    expect(
+      paymentSessionIds({
+        id: "c",
+        updated_at: null,
+        payment_collection: { payment_sessions: [{ id: "ps_1" }, null, { id: "ps_2" }] },
+      }),
+    ).toEqual(["ps_1", "ps_2"]);
+  });
+
+  it("CART_EMPTY_DAYS: 90 por defecto", () => {
+    expect(cleanupDays(undefined, CART_EMPTY_DEFAULT_DAYS)).toBe(90);
+    expect(cleanupDays("120", CART_EMPTY_DEFAULT_DAYS)).toBe(120);
   });
 });

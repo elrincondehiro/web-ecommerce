@@ -84,7 +84,7 @@ esa BD (Prisma: «No pending migrations») y se dejan. Probado en dev. En el VPS
 **Funcional**:
 
 - [x] ~~🔴 **Pedidos de invitado → cuenta**~~: hecho en la [Fase G](./fases/faseG-invitados.md) (mismo email automático, reclamar con otro email, asignación manual `orders:assign`).
-- [ ] Carritos de «invitado con email» con pago de Stripe pendiente: no se limpian (fase10 §7). Purgado definitivo de los borrados en suave.
+- [x] ~~Carritos de «invitado con email» con pago de Stripe pendiente; purgado definitivo~~ ✅ (fase13-cuenta.md §2.2: 30 días, cuenta vaciada a los 90, purga a los 90).
 - [x] ~~Baja de cuenta automática~~ ✅ (fase13-cuenta.md: frase + contraseña, bloqueada con pedidos en curso, también desde el Admin).
 
 **👤 Gestoría** (todos los textos son provisionales):

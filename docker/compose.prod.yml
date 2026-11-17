@@ -61,7 +61,11 @@ x-backend: &backend
     MEDUSA_CACHE_TTL: ${MEDUSA_CACHE_TTL:-60}
     # Limpieza de carritos (fase 10-4): el job solo corre en el worker
     CART_CLEANUP_DAYS: ${CART_CLEANUP_DAYS:-30}
+    CART_EMPTY_DAYS: ${CART_EMPTY_DAYS:-90}
     CART_CLEANUP_CRON: ${CART_CLEANUP_CRON:-0 3 * * *}
+    # Purga definitiva (fase 13): semanal, lo borrado en suave hace más de PURGE_DAYS
+    PURGE_DAYS: ${PURGE_DAYS:-90}
+    PURGE_CRON: ${PURGE_CRON:-0 4 * * 0}
     # Puntos (Fase L-2): abono diario (job del worker) a los N días del último envío
     POINTS_ACCRUE_CRON: ${POINTS_ACCRUE_CRON:-0 4 * * *}
     POINTS_CONSOLIDATE_DAYS: ${POINTS_CONSOLIDATE_DAYS:-14}

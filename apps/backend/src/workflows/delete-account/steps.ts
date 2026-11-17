@@ -78,7 +78,7 @@ export const pointsBalanceStep = createStep(
   },
 );
 
-type CustomerSnapshot = {
+export type CustomerSnapshot = {
   id: string;
   email: string | null;
   first_name: string | null;
@@ -91,57 +91,88 @@ type CustomerSnapshot = {
 
 /**
  * Anonimiza la ficha (email `borrado-<id>@invalid`, sin nombre, teléfono, empresa ni metadata)
- * y BORRA sus direcciones (el borrado suave del cliente las dejaría con los datos).
- * Compensación: los datos y las direcciones de antes (con ids nuevos).
+ * y BORRA sus direcciones (el borrado suave del cliente las dejaría con los datos). Devuelve lo
+ * que había, para deshacerlo con `restoreCustomer`. También la usa la limpieza de clientes sin
+ * cuenta (`workflows/delete-stale-carts`).
  */
+export async function anonymizeCustomer(
+  container: MedusaContainer,
+  customerId: string,
+): Promise<CustomerSnapshot> {
+  const svc = customers(container);
+  const c = await svc.retrieveCustomer(customerId, { relations: ["addresses"] });
+  const snapshot: CustomerSnapshot = {
+    id: c.id,
+    email: c.email ?? null,
+    first_name: c.first_name ?? null,
+    last_name: c.last_name ?? null,
+    phone: c.phone ?? null,
+    company_name: c.company_name ?? null,
+    metadata: (c.metadata as Record<string, unknown> | null) ?? null,
+    addresses: c.addresses ?? [],
+  };
+  if (snapshot.addresses.length) {
+    await svc.deleteCustomerAddresses(snapshot.addresses.map((a) => a.id));
+  }
+  await svc.updateCustomers(c.id, {
+    email: anonymizedEmail(c.id),
+    first_name: null,
+    last_name: null,
+    phone: null,
+    company_name: null,
+    metadata: null,
+  });
+  return snapshot;
+}
+
+/** Deshace `anonymizeCustomer`: los datos de antes y las direcciones (con ids nuevos). */
+export async function restoreCustomer(
+  container: MedusaContainer,
+  snapshot: CustomerSnapshot,
+): Promise<void> {
+  const svc = customers(container);
+  await svc.updateCustomers(snapshot.id, {
+    email: snapshot.email,
+    first_name: snapshot.first_name,
+    last_name: snapshot.last_name,
+    phone: snapshot.phone,
+    company_name: snapshot.company_name,
+    metadata: snapshot.metadata,
+  });
+  if (snapshot.addresses.length) {
+    await svc.createCustomerAddresses(
+      snapshot.addresses.map((a) => {
+        const { id, created_at, ...rest } = a;
+        void id;
+        void created_at;
+        return { ...rest, customer_id: snapshot.id };
+      }) as never,
+    );
+  }
+}
+
 export const anonymizeCustomerStep = createStep(
   "anonymize-customer",
   async (input: { customer_id: string }, { container }) => {
-    const svc = customers(container);
-    const c = await svc.retrieveCustomer(input.customer_id, { relations: ["addresses"] });
-    const snapshot: CustomerSnapshot = {
-      id: c.id,
-      email: c.email ?? null,
-      first_name: c.first_name ?? null,
-      last_name: c.last_name ?? null,
-      phone: c.phone ?? null,
-      company_name: c.company_name ?? null,
-      metadata: (c.metadata as Record<string, unknown> | null) ?? null,
-      addresses: c.addresses ?? [],
-    };
-    if (snapshot.addresses.length) {
-      await svc.deleteCustomerAddresses(snapshot.addresses.map((a) => a.id));
-    }
-    await svc.updateCustomers(c.id, {
-      email: anonymizedEmail(c.id),
-      first_name: null,
-      last_name: null,
-      phone: null,
-      company_name: null,
-      metadata: null,
-    });
+    const snapshot = await anonymizeCustomer(container as MedusaContainer, input.customer_id);
     return new StepResponse(undefined, snapshot);
   },
   async (snapshot, { container }) => {
-    if (!snapshot) return;
-    const svc = customers(container);
-    await svc.updateCustomers(snapshot.id, {
-      email: snapshot.email,
-      first_name: snapshot.first_name,
-      last_name: snapshot.last_name,
-      phone: snapshot.phone,
-      company_name: snapshot.company_name,
-      metadata: snapshot.metadata,
-    });
-    if (snapshot.addresses.length) {
-      await svc.createCustomerAddresses(
-        snapshot.addresses.map((a) => {
-          const { id, created_at, ...rest } = a;
-          void id;
-          void created_at;
-          return { ...rest, customer_id: snapshot.id };
-        }) as never,
-      );
+    if (snapshot) await restoreCustomer(container as MedusaContainer, snapshot);
+  },
+);
+
+/** Varias fichas (limpieza de clientes sin cuenta). Compensación: todas las anonimizadas. */
+export const anonymizeCustomersStep = createStep(
+  "anonymize-customers",
+  async (ids: string[], { container }) => {
+    const done: CustomerSnapshot[] = [];
+    for (const id of ids) done.push(await anonymizeCustomer(container as MedusaContainer, id));
+    return new StepResponse(ids, done);
+  },
+  async (done, { container }) => {
+    for (const snapshot of done ?? []) {
+      await restoreCustomer(container as MedusaContainer, snapshot);
     }
   },
 );

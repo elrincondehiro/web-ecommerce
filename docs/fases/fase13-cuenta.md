@@ -1,7 +1,7 @@
 # Fase 13 — Cuenta: baja automática (y lo que sigue)
 
-> **Estado:** 🚧 en curso · punto 3 (baja de la cuenta) hecho
-> **Rama/PR:** `feat/baja-cuenta`
+> **Estado:** 🚧 en curso · puntos 3 (baja de la cuenta) y 4 (limpieza y purga) hechos
+> **Rama/PR:** `feat/baja-cuenta` (3) · `feat/limpieza-carritos` (4, sobre la 3)
 > **Anterior:** [fase13-optimizacion.md](./fase13-optimizacion.md) · **Plan de puntos:** 3 baja de
 > la cuenta → 4 limpieza de carritos de invitado con pago pendiente y purga de borrados → 5
 > «Esperando transferencia» en «Mis pedidos» → 6 puntos canjeados en devoluciones → 7 Admin:
@@ -11,6 +11,8 @@
 
 - [x] **3. Baja de la cuenta automática** (RGPD, art. 17): antes era una solicitud por email que la
       tienda tramitaba a mano (fase9 §7).
+- [x] **4. Limpieza de carritos de invitado con pago pendiente, carritos de cuenta y purga** de lo
+      borrado en suave (fase10 §7).
 
 ## 2. Qué se ha hecho
 
@@ -56,17 +58,42 @@
 - **Se conserva**: pedidos (con su email, nombre y dirección: normativa fiscal), movimientos de
   puntos, contadores anónimos de búsquedas. Con el mismo email se puede crear una cuenta nueva.
 
+### 2.2 Limpieza de carritos y purga (punto 4)
+
+- **Job diario `delete-stale-carts`** (`lib/stale-carts.ts`, `CART_CLEANUP_CRON`):
+  1. Carritos sin completar ni pedido e inactivos más de `CART_CLEANUP_DAYS` (30) **sin cliente o
+     de invitado con email** (cliente sin cuenta): antes se borran sus **sesiones de pago**
+     (`deletePaymentSessionsWorkflow`; Stripe cancela el PaymentIntent) y luego el carrito
+     (suave). Un workflow por carrito con sesiones: si Stripe falla, ese carrito se salta y se
+     reintenta al día siguiente (`skipped` en el log).
+  2. Carritos de clientes **con cuenta**: no se borran; a los `CART_EMPTY_DAYS` (90) sin actividad
+     se **vacían** (líneas y método de envío en suave, sesiones de pago borradas); el carrito queda.
+  3. **Clientes sin cuenta** de esos carritos que se quedan sin pedidos ni carritos: ficha
+     anonimizada (mismo paso que la baja) y `deleteCustomersWorkflow` (emite `customer.deleted`).
+- **Job semanal `purge-deleted`** (`lib/purge.ts`, `PURGE_CRON`, domingos 4:00): borra **de verdad**
+  lo borrado en suave hace más de `PURGE_DAYS` (90): carritos (líneas, envíos… por cascada de la
+  BD), sus direcciones y filas de enlace (cobro, promociones); promociones `PTS-` sin usar; fichas
+  anonimizadas (`borrado-<id>@invalid`) **sin** pedidos ni cuenta de puntos.
+- Variables nuevas: `CART_EMPTY_DAYS`, `PURGE_DAYS`, `PURGE_CRON` (`.env.example`,
+  `compose.prod.yml` y `.env.prod.example`). Script: `pnpm --filter backend purge:deleted`.
+
 ## 3. Decisiones tomadas
 
-| Decisión                                                                                                                  | Motivo                                                                                                                          | Fuente consultada                                                                                                                           |
-| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Baja inmediata con frase escrita + contraseña, sin email de confirmación                                                  | Usuario: menos pasos que un email, pero sin clics sin querer ni gestores de contraseñas que rellenen el formulario              | —                                                                                                                                           |
-| Bloquear con pedidos en curso (sin enviar o devolución abierta)                                                           | Usuario (recomendación aceptada): no quedan pedidos sin a quién avisar. «Enviado» basta: la tienda no siempre marca «entregado» | código de @medusajs/order 2.22.7 (`shipped_quantity`, `ReturnStatus`)                                                                       |
-| Anonimizar la ficha además del borrado suave de Medusa                                                                    | `removeCustomerAccountWorkflow` deja nombre, email y teléfono en la fila (`deleted_at`)                                         | código de @medusajs/core-flows 2.22.7 (`deleteCustomersStep` = `softDeleteCustomers`)                                                       |
-| El Admin hace la misma baja (ruta propia `DELETE /admin/customers/:id`)                                                   | Usuario. Un hook no basta: `customersDeleted` corre después del borrado y no puede bloquearlo                                   | context7 `/medusajs/medusa` (RoutesLoader: la ruta registrada después sustituye); `@medusajs/medusa` 2.22.7 `admin/customers/[id]/route.js` |
-| Anonimizar el historial de emails (`notification`)                                                                        | Usuario (recomendación aceptada)                                                                                                | tipos de `@medusajs/notification` 2.22.7 (`listNotifications`/`updateNotifications`)                                                        |
-| Identidad de acceso: la borra `removeCustomerAccountWorkflow` (o solo quita el `customer_id` si es también de otro actor) | Patrón oficial                                                                                                                  | context7 `/medusajs/medusa` («Delete User of Actor Type», `deleteAuthIdentityStep`, `setAuthAppMetadataStep`)                               |
-| Emails en subscribers, no en el workflow                                                                                  | AGENTS §4: nada de trabajo pesado en la petición                                                                                | —                                                                                                                                           |
+| Decisión                                                                                                                  | Motivo                                                                                                                                   | Fuente consultada                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Baja inmediata con frase escrita + contraseña, sin email de confirmación                                                  | Usuario: menos pasos que un email, pero sin clics sin querer ni gestores de contraseñas que rellenen el formulario                       | —                                                                                                                                           |
+| Bloquear con pedidos en curso (sin enviar o devolución abierta)                                                           | Usuario (recomendación aceptada): no quedan pedidos sin a quién avisar. «Enviado» basta: la tienda no siempre marca «entregado»          | código de @medusajs/order 2.22.7 (`shipped_quantity`, `ReturnStatus`)                                                                       |
+| Anonimizar la ficha además del borrado suave de Medusa                                                                    | `removeCustomerAccountWorkflow` deja nombre, email y teléfono en la fila (`deleted_at`)                                                  | código de @medusajs/core-flows 2.22.7 (`deleteCustomersStep` = `softDeleteCustomers`)                                                       |
+| El Admin hace la misma baja (ruta propia `DELETE /admin/customers/:id`)                                                   | Usuario. Un hook no basta: `customersDeleted` corre después del borrado y no puede bloquearlo                                            | context7 `/medusajs/medusa` (RoutesLoader: la ruta registrada después sustituye); `@medusajs/medusa` 2.22.7 `admin/customers/[id]/route.js` |
+| Anonimizar el historial de emails (`notification`)                                                                        | Usuario (recomendación aceptada)                                                                                                         | tipos de `@medusajs/notification` 2.22.7 (`listNotifications`/`updateNotifications`)                                                        |
+| Identidad de acceso: la borra `removeCustomerAccountWorkflow` (o solo quita el `customer_id` si es también de otro actor) | Patrón oficial                                                                                                                           | context7 `/medusajs/medusa` («Delete User of Actor Type», `deleteAuthIdentityStep`, `setAuthAppMetadataStep`)                               |
+| Emails en subscribers, no en el workflow                                                                                  | AGENTS §4: nada de trabajo pesado en la petición                                                                                         | —                                                                                                                                           |
+| Carritos de invitado con email: mismo plazo que los sin cliente (30 días)                                                 | Usuario                                                                                                                                  | —                                                                                                                                           |
+| Antes de borrar el carrito, borrar sus sesiones de pago                                                                   | Stripe cancela el PaymentIntent al borrar la sesión; `deletePaymentSessionsWorkflow` falla si alguna no se borra (el carrito no se toca) | código de @medusajs/core-flows y @medusajs/payment-stripe 2.22.7                                                                            |
+| Carritos de cuenta: vaciar a los 90 días                                                                                  | Usuario: si no han comprado en 90 días, precios y stock habrán cambiado                                                                  | —                                                                                                                                           |
+| Purga definitiva a los 90 días de borrado                                                                                 | Usuario                                                                                                                                  | —                                                                                                                                           |
+| Borrar (anonimizada) la ficha del cliente sin cuenta sin pedidos ni carritos                                              | Usuario (recomendación aceptada): guarda el email del checkout                                                                           | —                                                                                                                                           |
+| Filas de enlace de carritos borradas por SQL en la purga                                                                  | `link.dismiss` también es suave; son tablas de enlace sin lógica                                                                         | código de @medusajs/link-modules 2.22.7                                                                                                     |
 
 ## 4. Cómo usarlo
 
@@ -75,12 +102,18 @@
   el motivo y no borra nada.
 - Ver las bajas: `select id, deleted_at from customer where email like 'borrado-%';`.
 
+- Limpieza a mano: `CART_CLEANUP_DAYS=30 pnpm --filter backend carts:cleanup`; purga:
+  `pnpm --filter backend purge:deleted`. **Ojo en dev:** la limpieza cancela los PaymentIntents de
+  la cuenta de test de Stripe de cada carrito de invitado (en la BD de dev hay cientos).
+
 ## 5. Cómo testear esta fase
 
 ```bash
 pnpm --filter backend exec jest --silent src/lib/__tests__/account-deletion.unit.spec.ts   # 3
 TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules \
   pnpm --filter backend exec jest --silent --maxWorkers=1 --forceExit integration-tests/http/baja-cuenta.spec.ts   # 4
+TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules \
+  pnpm --filter backend exec jest --silent --maxWorkers=1 --forceExit integration-tests/http/limpieza.spec.ts   # 3 (punto 4)
 pnpm --filter storefront exec vitest run src/lib/account.test.ts
 # e2e sin JS (backend con EMAIL_TRANSPORT=smtp): cuenta.spec.ts → «eliminar la cuenta…»
 pnpm --filter storefront exec playwright test cuenta --project escritorio
@@ -96,7 +129,9 @@ antiguo.
 
 - [x] Baja desde la cuenta y desde el Admin, bloqueada con pedidos en curso, con tests HTTP y e2e
       sin JS.
-- [ ] Puntos 4–8.
+- [x] Limpieza de carritos (invitado con email, cuenta vaciada, clientes sin cuenta) y purga, con
+      tests HTTP.
+- [ ] Puntos 5–8.
 
 ## 7. Pendientes / riesgos
 
