@@ -22,6 +22,26 @@ Queda:
 - [x] ~~Umami (`stats.`, Access y Website ID en Gitea), temporizador del rebuild, agentes de monitorización, monitores de Kuma (publicación, temporizador y Umami) y limpieza~~ (13–15-nov-2026).
 - [x] ~~Copiar el `docker/backup/backup.sh` nuevo al VPS~~ (15-nov-2026) (`/opt/ecommerce/backup/`): copia también la BD de Umami y `dc-storefront`. Comprobar el siguiente backup (`umami-….dump.age` en R2).
 - [ ] Repetir la tanda B de la prueba de carga (fase 11) en el VPS.
+- [x] ~~`v0.3.2` desplegada~~ (17-nov-2026): fotos y muestras, JSON-LD por variante y Renovate #95. Incidencia:
+      Meilisearch 1.56.2 → 1.57.0 no arrancaba (base de otra versión) y dejaba backend y Umami en «Created». Desde entonces
+      Renovate propone Meilisearch en **su propio PR** (etiqueta `requiere-upgrade-db`, `renovate.json`).
+
+### Subir Meilisearch en el VPS
+
+Con datos de otra versión, Meilisearch no arranca (y backend y Umami, que dependen de él, se quedan en «Created»).
+Antes de `./dc up -d` con la versión nueva (fuente: meilisearch-docs, «Dumpless upgrade»: snapshot antes, no es atómico):
+
+```bash
+cd /opt/ecommerce
+./dc stop meilisearch
+docker run --rm --entrypoint tar -v web-ecommerce_meilidata:/data:ro -v "$PWD":/backup \
+  postgres:17.12-alpine czf /backup/meili-$(date +%F).tgz -C /data .
+printf 'services:\n  meilisearch:\n    environment:\n      MEILI_UPGRADE_DB: "true"\n' > /tmp/meili-upgrade.yml
+./dc -f /tmp/meili-upgrade.yml up -d meilisearch && ./dc logs -f meilisearch   # hasta healthy
+./dc up -d && ./dc ps && rm /tmp/meili-upgrade.yml   # sin la variable; borrar el .tgz si todo va bien
+```
+
+Si algo falla: volver a la versión anterior en `compose.prod.yml` y restaurar el `.tgz` en el volumen.
 
 ## 2. 🔴 Antes de abrir la tienda de verdad (fase «producción definitiva»)
 
