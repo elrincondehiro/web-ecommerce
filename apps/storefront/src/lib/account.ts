@@ -17,6 +17,8 @@ export const REGISTER_PATH = "/cuenta/registro/";
 export const RECOVER_PATH = "/cuenta/recuperar/";
 export const RESET_PATH = "/cuenta/restablecer/";
 export const VERIFY_PATH = "/cuenta/verificar/";
+/** Confirmar el email nuevo de la cuenta (fase 13): destino del enlace del email. */
+export const EMAIL_CHANGE_PATH = "/cuenta/email/";
 export const PROFILE_PATH = "/cuenta/datos/";
 export const ADDRESSES_PATH = "/cuenta/direcciones/";
 export const ORDERS_PATH = "/cuenta/pedidos/";
@@ -43,6 +45,8 @@ export type AccountActionName =
   | "account.verify"
   | "account.profile"
   | "account.password"
+  | "account.emailChange"
+  | "account.emailConfirm"
   | "account.addressSave"
   | "account.addressDelete"
   | "account.addressDefault"
@@ -90,6 +94,11 @@ export const ACCOUNT_NOTICES = {
   reset_done: "Contraseña cambiada. Ya puedes entrar con la nueva.",
   reset_failed: "El enlace no es válido o ha caducado. Pide otro.",
   password_sent: "Te hemos enviado un email con un enlace para cambiar la contraseña.",
+  email_change_sent:
+    "Te hemos enviado un email al nuevo email con un enlace para confirmarlo (caduca en 24 horas). Hasta entonces, tu cuenta sigue con el email de siempre.",
+  email_changed: "¡Email cambiado! A partir de ahora entra con el nuevo.",
+  email_change_failed:
+    "El enlace no es válido o ha caducado. Vuelve a pedir el cambio desde «Mis datos».",
   saved: "Cambios guardados.",
   address_saved: "Dirección guardada.",
   address_deleted: "Dirección eliminada.",
@@ -136,6 +145,8 @@ const SUCCESS = new Set<AccountNoticeCode>([
   "recover_sent",
   "reset_done",
   "password_sent",
+  "email_change_sent",
+  "email_changed",
   "saved",
   "address_saved",
   "address_deleted",
@@ -383,6 +394,22 @@ export function parseProfileForm(form: FormData): ParseResult<ProfileData> {
     return { ok: false, errors, values };
   }
   return { ok: true, data: { ...res.data, phone } };
+}
+
+/** Cambiar el email (fase 13): email nuevo + contraseña (el backend comprueba que esté libre). */
+export function parseEmailChangeForm(
+  form: FormData,
+): ParseResult<{ email: string; password: string }> {
+  const raw = get(form, "new_email");
+  const password = get(form, "password");
+  // La contraseña nunca vuelve al formulario.
+  const values = { new_email: raw.slice(0, 254) };
+  const errors: Record<string, string> = {};
+  const email = parseEmail(raw);
+  if (!email) errors.new_email = "Escribe un email válido.";
+  if (!password || password.length > PASSWORD_MAX) errors.password = "Escribe tu contraseña.";
+  if (Object.keys(errors).length || !email) return { ok: false, errors, values };
+  return { ok: true, data: { email, password } };
 }
 
 /**

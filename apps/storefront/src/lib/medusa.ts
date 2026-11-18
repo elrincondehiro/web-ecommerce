@@ -893,6 +893,25 @@ export async function answerCaja(
 }
 
 /**
+ * Cambio de email (rutas propias del backend, fase 13): pedirlo (sesión + contraseña; 400 con el
+ * motivo) y confirmarlo con el token del enlace (sin sesión).
+ */
+export async function requestEmailChange(
+  token: string,
+  data: { email: string; password: string },
+): Promise<void> {
+  await cartSdk().client.fetch("/store/customers/me/email", {
+    method: "POST",
+    headers: bearer(token),
+    body: data,
+  });
+}
+
+export async function confirmEmailChange(token: string): Promise<void> {
+  await cartSdk().client.fetch("/store/email-change", { method: "POST", body: { token } });
+}
+
+/**
  * Eliminar la cuenta (ruta propia del backend, fase 13). 400 con el motivo (frase, contraseña o
  * pedidos en curso) sin borrar nada.
  */

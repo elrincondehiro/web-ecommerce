@@ -29,6 +29,7 @@ import {
   loginRedirect,
   parseClaimForm,
   parseDeleteForm,
+  parseEmailChangeForm,
   parseEmail,
   parseLoginForm,
   parseProfileForm,
@@ -58,6 +59,8 @@ import {
   loginCustomer,
   registerIdentity,
   deleteAccount,
+  confirmEmailChange,
+  requestEmailChange,
   requestEmailVerification,
   requestPasswordReset,
   resetPassword,
@@ -361,6 +364,65 @@ export const account = {
         if (isUnauthorized(err)) return expired(PROFILE_PATH);
         logError(ctx, "cambiar contraseña", err);
         return { to: PROFILE_PATH, flash: { code: "error" } };
+      }
+    },
+  }),
+
+  /**
+   * Cambiar el email (fase 13): email nuevo + contraseña → el backend envía un enlace al nuevo. El
+   * cambio se hace al confirmarlo (`emailConfirm`).
+   */
+  emailChange: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<AccountResult> => {
+      const token = sessionOf(ctx);
+      if (!token) return expired(PROFILE_PATH);
+      const back = `${PROFILE_PATH}#email`;
+      const parsed = parseEmailChangeForm(form);
+      if (!parsed.ok) {
+        return {
+          to: back,
+          flash: { code: "invalid", errors: parsed.errors, values: parsed.values },
+        };
+      }
+      const values = { new_email: parsed.data.email };
+      try {
+        await requestEmailChange(token, parsed.data);
+        return { to: back, flash: { code: "email_change_sent" } };
+      } catch (err) {
+        if (isUnauthorized(err)) return expired(PROFILE_PATH);
+        if ((err as { status?: unknown } | null)?.status === 400) {
+          const message = err instanceof Error ? err.message : "";
+          const field = /contraseña/i.test(message) ? "password" : "new_email";
+          return {
+            to: back,
+            flash: { code: "invalid", errors: { [field]: message }, values },
+          };
+        }
+        logError(ctx, "cambiar el email", err);
+        return { to: back, flash: { code: "error", values } };
+      }
+    },
+  }),
+
+  /** Confirmar el email nuevo con el token del enlace (sin sesión; botón, no al abrir el enlace). */
+  emailConfirm: defineAction({
+    accept: "form",
+    handler: async (form, ctx): Promise<AccountResult> => {
+      const code = form.get("token");
+      if (typeof code !== "string" || code.length < 10 || code.length > 200) {
+        return { to: LOGIN_PATH, flash: { code: "email_change_failed" } };
+      }
+      try {
+        await confirmEmailChange(code);
+        return {
+          to: ctx.locals.customerToken ? PROFILE_PATH : LOGIN_PATH,
+          flash: { code: "email_changed" },
+        };
+      } catch (err) {
+        if ((err as { status?: unknown } | null)?.status !== 400)
+          logError(ctx, "confirmar email", err);
+        return { to: LOGIN_PATH, flash: { code: "email_change_failed" } };
       }
     },
   }),

@@ -1,6 +1,6 @@
 # Fase 13 — Cuenta: baja automática (y lo que sigue)
 
-> **Estado:** 🚧 en curso · puntos 3 (baja de la cuenta) y 4 (limpieza y purga) hechos
+> **Estado:** ✅ puntos 3–8 hechos (18-nov-2026)
 > **Rama/PR:** `feat/baja-cuenta` (3) · `feat/limpieza-carritos` (4, sobre la 3)
 > **Anterior:** [fase13-optimizacion.md](./fase13-optimizacion.md) · **Plan de puntos:** 3 baja de
 > la cuenta → 4 limpieza de carritos de invitado con pago pendiente y purga de borrados → 5
@@ -16,6 +16,7 @@
 - [x] **5. «Esperando transferencia»** en «Mis pedidos», en la ficha del pedido y en «Mi cuenta».
 - [x] **6. Devolver los puntos canjeados en las devoluciones** (automático; interruptor activo).
 - [x] **7. Admin: pasar un pedido de invitado a una cuenta** desde la ficha del pedido.
+- [x] **8. Cambiar el email** desde «Mis datos», con confirmación en el email nuevo.
 
 ## 2. Qué se ha hecho
 
@@ -129,6 +130,32 @@
 - Con el reparto de Medusa al céntimo, el ejemplo del plan (10 € en 30 + 70 €; devuelvo los 70 €)
   devuelve 7 € y, con la segunda devolución, los 10 €.
 
+### 2.6 Cambiar el email (punto 8)
+
+- **«Mis datos»** (sin JS): sección «Email» → `<details>` «Cambiar email» con el email nuevo y la
+  contraseña → «Enviar enlace de confirmación». Action `account.emailChange`.
+- `POST /store/customers/me/email` (sesión): comprueba la contraseña (como la baja), que el email
+  sea distinto y que no lo use otra identidad `emailpass` (400 con el motivo). Workflow
+  `request-email-change`: anula las solicitudes anteriores del cliente y guarda la nueva en el
+  módulo propio `emailChange` (tabla `email_change`: email nuevo, **hash** del token, caduca a las
+  24 h, `used_at`). Evento `customer.email_change_requested` → email `email-change` al **nuevo**
+  con el enlace `/cuenta/email/?token=…`.
+- `/cuenta/email/` (sin sesión, sin JS): botón «Confirmar mi nuevo email» (POST; abrir el enlace
+  no cambia nada). `POST /store/email-change { token }` → workflow `confirm-email-change`, con
+  compensación en cada paso:
+  1. la solicitud existe, sin usar ni caducar; el cliente tiene cuenta y el email sigue libre;
+  2. un solo uso (`used_at`);
+  3. **email de acceso**: `entity_id` de la identidad `emailpass` (`updateProviderIdentities`) y
+     una verificación **confirmada** para el email nuevo (Medusa exige al entrar una verificación
+     con `verified_at` del `entity_id` actual; si ese email ya tuvo una, se marca);
+  4. email del cliente;
+  5. email de los **pedidos en curso** (los ya enviados se quedan con el suyo) con
+     `updateOrderWorkflow` de Medusa (queda en el historial del pedido);
+  6. evento `customer.email_changed` → aviso `email-changed` al email **antiguo** (con el nuevo
+     enmascarado).
+- La sesión abierta sigue valiendo (el token lleva el id, no el email). Consentimientos, avisos de
+  stock, puntos… van por cliente: no cambian.
+
 ## 3. Decisiones tomadas
 
 | Decisión                                                                                                                  | Motivo                                                                                                                                   | Fuente consultada                                                                                                                           |
@@ -145,6 +172,9 @@
 | Carritos de cuenta: vaciar a los 90 días                                                                                  | Usuario: si no han comprado en 90 días, precios y stock habrán cambiado                                                                  | —                                                                                                                                           |
 | Purga definitiva a los 90 días de borrado                                                                                 | Usuario                                                                                                                                  | —                                                                                                                                           |
 | Borrar (anonimizada) la ficha del cliente sin cuenta sin pedidos ni carritos                                              | Usuario (recomendación aceptada): guarda el email del checkout                                                                           | —                                                                                                                                           |
+| Cambio de email: solo los pedidos en curso                                                                                | Usuario: los terminados conservan el email con el que se hicieron                                                                        | —                                                                                                                                           |
+| Enlace del cambio de email: 24 h                                                                                          | Usuario: quien lo cambia tiene acceso a los dos emails en ese momento                                                                    | —                                                                                                                                           |
+| Email nuevo verificado con una `auth_verification` propia (`code_provider: email-change`)                                 | El enlace al email nuevo ya lo verifica; sin ella Medusa pediría verificar al entrar                                                     | código de @medusajs/medusa 2.22.7 (`validate-verification`, `generate-jwt-token`)                                                           |
 | Filas de enlace de carritos borradas por SQL en la purga                                                                  | `link.dismiss` también es suave; son tablas de enlace sin lógica                                                                         | código de @medusajs/link-modules 2.22.7                                                                                                     |
 
 ## 4. Cómo usarlo
@@ -169,6 +199,7 @@ TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules \
 # punto 5: pagos.spec.ts («transferencia…») y e2e transferencia.spec.ts
 # punto 7: invitados.spec.ts («fase 13 punto 7…»); el widget, a mano en el Admin
 # punto 6: puntos.spec.ts («fase 13 (P2)…») y points.unit.spec.ts
+# punto 8: cambiar-email.spec.ts (HTTP, 5) y e2e cuenta.spec.ts («cambiar el email…», sin JS)
 pnpm --filter storefront exec vitest run src/lib/account.test.ts
 # e2e sin JS (backend con EMAIL_TRANSPORT=smtp): cuenta.spec.ts → «eliminar la cuenta…»
 pnpm --filter storefront exec playwright test cuenta --project escritorio
@@ -189,7 +220,7 @@ antiguo.
 - [x] «Esperando transferencia» (punto 5), con test HTTP y e2e.
 - [x] Admin: pasar un pedido de invitado a una cuenta (punto 7), con test HTTP y prueba en el Admin.
 - [x] Puntos canjeados en las devoluciones (punto 6) y ajustes versionados, con tests HTTP.
-- [ ] Punto 8.
+- [x] Cambiar el email (punto 8), con tests HTTP y e2e sin JS.
 
 ## 7. Pendientes / riesgos
 

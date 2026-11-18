@@ -12,7 +12,9 @@ const PASSWORD = "Secreta-123";
  * más antiguo). Cada solicitud de verificación genera un código nuevo e invalida el anterior.
  */
 async function mailLink(page: Page, to: string, path: string, minCount = 1): Promise<string> {
-  const re = new RegExp(`${path.replace(/\//g, "\\/")}\\?token=([\\w.-]+)`);
+  // Tokens de Medusa (con «.») y base64url propios (fase 13, con «-» y «_»: \w ya incluye «_»;
+  // el texto plano puede partir la URL con «=» de los saltos de línea, así que hasta un espacio).
+  const re = new RegExp(`${path.replace(/\//g, "\\/")}\\?token=([\\w.~-]+)`);
   for (let i = 0; i < 20; i++) {
     const res = await page.request.get(
       `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`,
@@ -191,6 +193,48 @@ test.describe("cuenta sin JS", () => {
     await page2.goto("/carrito/");
     await expect(page2.getByText(/clicker/i).first()).toBeVisible();
     await other.close();
+  });
+
+  test("cambiar el email: enlace al nuevo, confirmar y entrar con él (fase 13)", async ({
+    page,
+  }) => {
+    const nuevo = testEmail("e2e-nuevo");
+    await login(page, email, "Nueva-4567");
+    await page.goto("/cuenta/datos/");
+    await page.getByText("Cambiar email", { exact: true }).click();
+    await page.getByLabel("Email nuevo").fill(nuevo);
+    await page.getByLabel("Tu contraseña").fill("Otra-12345");
+    await page.getByRole("button", { name: "Enviar enlace de confirmación" }).click();
+    await expect(page.getByText("La contraseña no es correcta.")).toBeVisible();
+    await page.getByLabel("Tu contraseña").fill("Nueva-4567");
+    await page.getByRole("button", { name: "Enviar enlace de confirmación" }).click();
+    await expect(page.getByText(/Te hemos enviado un email al nuevo email/)).toBeVisible();
+
+    // Abrir el enlace no cambia nada: se confirma con el botón (otro navegador, sin sesión).
+    const link = await mailLink(page, nuevo, "/cuenta/email/");
+    await page.context().clearCookies();
+    await page.goto(link);
+    await page.getByRole("button", { name: "Confirmar mi nuevo email" }).click();
+    await expect(page.getByText("¡Email cambiado!")).toBeVisible();
+
+    await login(page, email, "Nueva-4567");
+    await expect(page).toHaveURL(/\/cuenta\/entrar\/$/);
+    await login(page, nuevo, "Nueva-4567");
+    await expect(page).toHaveURL(/\/cuenta\/$/);
+    // El aviso al email antiguo
+    const res = await page.request.get(
+      `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${email} subject:"ha cambiado"`)}`,
+    );
+    expect(((await res.json()) as { messages: unknown[] }).messages.length).toBeGreaterThan(0);
+    // Vuelve el email de antes, para el test de la baja (comparten la cuenta)
+    await page.goto("/cuenta/datos/");
+    await page.getByText("Cambiar email", { exact: true }).click();
+    await page.getByLabel("Email nuevo").fill(email);
+    await page.getByLabel("Tu contraseña").fill("Nueva-4567");
+    await page.getByRole("button", { name: "Enviar enlace de confirmación" }).click();
+    await page.goto(await mailLink(page, email, "/cuenta/email/"));
+    await page.getByRole("button", { name: "Confirmar mi nuevo email" }).click();
+    await expect(page.getByText("¡Email cambiado!")).toBeVisible();
   });
 
   test("eliminar la cuenta: frase y contraseña; después no se puede entrar (fase 13)", async ({

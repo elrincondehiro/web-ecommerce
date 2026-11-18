@@ -9,6 +9,8 @@ import {
   type MedusaResponse,
 } from "@medusajs/framework/http";
 import { StoreDeleteAccountBody } from "./store/customers/me/delete/route";
+import { StoreEmailChangeBody } from "./store/customers/me/email/route";
+import { StoreEmailChangeConfirmBody } from "./store/email-change/route";
 import { StoreCorreasQuery } from "./store/correas/disponibilidad/route";
 import { StoreOfertasQuery } from "./store/ofertas/route";
 import { StoreAddWishlistItemBody } from "./store/customers/me/wishlist/items/route";
@@ -177,6 +179,17 @@ export default defineMiddlewares({
       matcher: "/store/customers/me/delete",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(StoreDeleteAccountBody)],
+    },
+    // Cambio de email (fase 13 punto 8): pedirlo (sesión) y confirmarlo con el token (sin sesión).
+    {
+      matcher: "/store/customers/me/email",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreEmailChangeBody)],
+    },
+    {
+      matcher: "/store/email-change",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(StoreEmailChangeConfirmBody)],
     },
     // Códigos descuento (Fase P): solo por la ruta propia (ver blockStorePromotions).
     {

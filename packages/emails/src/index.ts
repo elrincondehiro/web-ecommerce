@@ -7,6 +7,8 @@ import * as verifyEmail from "./verify-email";
 import * as welcome from "./welcome";
 import * as accountDeleted from "./account-deleted";
 import * as accountDeletedShop from "./account-deleted-shop";
+import * as emailChange from "./email-change";
+import * as emailChanged from "./email-changed";
 import * as orderTransfer from "./order-transfer";
 import * as orderReceivedShop from "./order-received-shop";
 import * as transferReminder from "./transfer-reminder";
@@ -25,6 +27,8 @@ export type { VerifyEmailProps } from "./verify-email";
 export type { WelcomeProps } from "./welcome";
 export type { AccountDeletedProps } from "./account-deleted";
 export type { AccountDeletedShopProps } from "./account-deleted-shop";
+export type { EmailChangeProps } from "./email-change";
+export type { EmailChangedProps } from "./email-changed";
 export type { OrderTransferProps } from "./order-transfer";
 export type { OrderReceivedShopProps, ShopPet } from "./order-received-shop";
 export type { TransferReminderProps } from "./transfer-reminder";
@@ -43,6 +47,8 @@ const templates = {
   welcome,
   "account-deleted": accountDeleted,
   "account-deleted-shop": accountDeletedShop,
+  "email-change": emailChange,
+  "email-changed": emailChanged,
   "order-transfer": orderTransfer,
   "order-received-shop": orderReceivedShop,
   "transfer-reminder": transferReminder,
@@ -62,6 +68,8 @@ export type TemplateProps = {
   welcome: welcome.WelcomeProps;
   "account-deleted": accountDeleted.AccountDeletedProps;
   "account-deleted-shop": accountDeletedShop.AccountDeletedShopProps;
+  "email-change": emailChange.EmailChangeProps;
+  "email-changed": emailChanged.EmailChangedProps;
   "order-transfer": orderTransfer.OrderTransferProps;
   "order-received-shop": orderReceivedShop.OrderReceivedShopProps;
   "transfer-reminder": transferReminder.TransferReminderProps;

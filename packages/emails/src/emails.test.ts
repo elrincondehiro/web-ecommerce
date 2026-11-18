@@ -131,6 +131,16 @@ describe("renderEmail", () => {
     expect(shop.text).toContain("desde «Mi cuenta»");
   });
 
+  it("cambio de email (fase 13): enlace al nuevo y aviso al antiguo enmascarado", async () => {
+    const change = await renderEmail("email-change", previewProps("email-change"));
+    expect(change.subject).toBe("Confirma tu nuevo email");
+    expect(change.text).toContain("/cuenta/email/?token=preview-token");
+    expect(change.text).toContain("24 horas");
+    const changed = await renderEmail("email-changed", previewProps("email-changed"));
+    expect(changed.subject).toBe("El email de tu cuenta ha cambiado");
+    expect(changed.text).toContain("a***@example.com");
+  });
+
   it("pedido nuevo para la tienda (Fase M): total, mascotas con su salud y enlace al Admin", async () => {
     const { subject, text } = await renderEmail(
       "order-received-shop",

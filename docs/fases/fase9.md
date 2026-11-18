@@ -156,7 +156,7 @@ pnpm --filter storefront exec playwright test e2e/cuenta.spec.ts   # 10 (escrito
 - **Lista de deseos**: alternativa a una "lista de carritos" (no se hace; un carrito por cuenta).
 - La baja es manual: automatizar el borrado/anonimizado (workflow con compensación; los pedidos se conservan por obligación fiscal).
 - El JWT no se puede revocar: tras «salir», un token robado vale hasta 7 días. Mitigación: cookie httpOnly + `SameSite=Lax` + `Secure`; en el futuro, una lista de revocación o sesiones de Medusa.
-- Cambiar el email de la cuenta: no está (exigiría verificar el nuevo).
+- ~~Cambiar el email de la cuenta~~: hecho en la fase 13 (fase13-cuenta.md §2.6).
 - Rate limiting de entrar, registro y recuperar en Caddy/Cloudflare (AGENTS §10, fase 11).
 - `SHOP_NOTIFY_EMAIL`, las variables de email y la verificación también en el **worker** (fases 10/11).
 - ~~Los 5 e2e que fallaban en `main`~~ → resuelto (entorno), ver la auditoría pre-fase 10.

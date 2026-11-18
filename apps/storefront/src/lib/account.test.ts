@@ -13,6 +13,7 @@ import {
   parseClaimForm,
   wasLinkedToAccount,
   parseDeleteForm,
+  parseEmailChangeForm,
   parseLoginForm,
   parseProfileForm,
   parseRegisterForm,
@@ -180,6 +181,20 @@ describe("formularios", () => {
     });
     const canarias = parseSavedAddressForm(form({ ...base, postal_code: "35001" }));
     expect(!canarias.ok && canarias.errors.postal_code).toMatch(/Península y Baleares/);
+  });
+
+  it("cambio de email (fase 13): email válido y contraseña; la contraseña no vuelve", () => {
+    const bad = parseEmailChangeForm(form({ new_email: "no-es-email", password: "x" }));
+    expect(!bad.ok && bad.errors.new_email).toBeTruthy();
+    const nopass = parseEmailChangeForm(form({ new_email: "a@b.es" }));
+    expect(!nopass.ok && nopass.errors.password).toBeTruthy();
+    expect(!nopass.ok && "password" in nopass.values).toBe(false);
+    expect(
+      parseEmailChangeForm(form({ new_email: " Ana@Ejemplo.ES ", password: "Secreta-1" })),
+    ).toEqual({
+      ok: true,
+      data: { email: "ana@ejemplo.es", password: "Secreta-1" },
+    });
   });
 
   it("baja: exige la frase y la contraseña; motivo opcional sin caracteres de control", () => {

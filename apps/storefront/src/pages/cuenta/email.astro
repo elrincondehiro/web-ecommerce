@@ -1,0 +1,53 @@
+---
+// Confirmar el email nuevo de la cuenta (fase 13 punto 8): destino del enlace del email
+// (`?token=<token>`, de un solo uso, 24 h). No pide sesión: el token demuestra que el email nuevo
+// es suyo. Se confirma al pulsar el botón (POST), no al abrir la página: los antivirus y las
+// vistas previas de correo abren los enlaces y gastarían el token (como /cuenta/verificar/).
+// Referrer-Policy same-origin: el token no sale a otros sitios. 0 JS.
+import { buttonVariants } from "$lib/components/ui/button";
+import { EMAIL_CHANGE_PATH, LOGIN_PATH, accountActionUrl } from "$lib/account";
+import { accountPage } from "$lib/account-page";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AccountNotice from "../../components/account/AccountNotice.astro";
+import AuthCard from "../../components/account/AuthCard.astro";
+
+export const prerender = false;
+
+const flash = accountPage(Astro);
+Astro.response.headers.set("Referrer-Policy", "same-origin");
+const token = Astro.url.searchParams.get("token") ?? "";
+const valid = token.length >= 10 && token.length <= 200;
+---
+
+<BaseLayout
+  title="Confirmar el nuevo email"
+  description="Confirma el nuevo email de tu cuenta."
+  noindex
+>
+  <AuthCard title="Confirma tu nuevo email">
+    <AccountNotice code={flash.code} />
+    {valid ? (
+      <form
+        method="post"
+        action={accountActionUrl(EMAIL_CHANGE_PATH, "account.emailConfirm")}
+        class="flex flex-col gap-4"
+      >
+        <input type="hidden" name="token" value={token} />
+        <p class="text-sm text-muted-foreground">
+          Pulsa el botón para usar este email en tu cuenta. Después entrarás con él y te enviaremos
+          aquí los avisos de tus pedidos en curso.
+        </p>
+        <button type="submit" class={buttonVariants()}>
+          Confirmar mi nuevo email
+        </button>
+      </form>
+    ) : (
+      <p class="text-sm text-muted-foreground">
+        El enlace no es válido. Vuelve a pedir el cambio desde «Mis datos».
+      </p>
+    )}
+    <a href={LOGIN_PATH} class="text-sm underline underline-offset-4">
+      Ir a «Entrar»
+    </a>
+  </AuthCard>
+</BaseLayout>

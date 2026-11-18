@@ -222,6 +222,8 @@ module.exports = defineConfig({
     { resolve: "./src/modules/stock-alert" },
     // Búsquedas de la tienda: contadores anónimos por término y semana (Fase MK-E2).
     { resolve: "./src/modules/search-log" },
+    // Cambio de email de la cuenta (fase 13 punto 8)
+    { resolve: "./src/modules/email-change" },
     // Publicar el catálogo en la tienda: estado del rebuild del storefront (fase 13).
     { resolve: "./src/modules/storefront-publish" },
     // Caché de consultas (Fase R-2, docs/fases/faseR-rendimiento.md): solo actúa con el feature flag
