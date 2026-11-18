@@ -77,6 +77,9 @@ x-backend: &backend
     # Fase G-2: caducidad de las solicitudes de transferencia de pedidos (job del worker)
     ORDER_TRANSFER_TTL_DAYS: ${ORDER_TRANSFER_TTL_DAYS:-7}
     ORDER_TRANSFER_EXPIRE_CRON: ${ORDER_TRANSFER_EXPIRE_CRON:-15 4 * * *}
+    # Errores a Bugsink (fase 12-B, homelab por WireGuard). Vacía = sin envío.
+    SENTRY_DSN: ${SENTRY_DSN_BACKEND:-}
+    SENTRY_RELEASE: ${IMAGE_TAG:-}
     # Emails
     EMAIL_TRANSPORT: ${EMAIL_TRANSPORT:?}
     EMAIL_FROM: ${EMAIL_FROM:?}
@@ -191,6 +194,9 @@ services:
       MEDUSA_PUBLISHABLE_KEY: ${MEDUSA_PUBLISHABLE_KEY:?}
       PUBLIC_STRIPE_PUBLISHABLE_KEY: ${PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
       COOKIE_SECURE: "true"
+      # Errores a Bugsink (fase 12-B): proyecto propio. Vacía = sin envío.
+      SENTRY_DSN: ${SENTRY_DSN_STOREFRONT:-}
+      SENTRY_RELEASE: ${STOREFRONT_IMAGE_TAG:-}
 
   postgres:
     image: postgres:17.12-alpine

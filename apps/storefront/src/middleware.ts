@@ -15,6 +15,7 @@
 // JSON). Sin sesión: 303 a «Entrar» con el aviso en la cookie flash de la cuenta (o, con JS,
 // `login` en el JSON y CartClient navega). Avisos de stock (Fase MK-B): `stockAlert.*`, igual.
 import type { APIContext, MiddlewareNext } from "astro";
+import { captureException } from "@sentry/node";
 import { getActionContext } from "astro:actions";
 import { COOKIE_SECURE } from "astro:env/server";
 import { defineMiddleware } from "astro:middleware";
@@ -62,7 +63,16 @@ function toResult(result: { data?: unknown; error?: { code?: string } | undefine
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const response = await handle(context, next);
+  let response: Response;
+  try {
+    response = await handle(context, next);
+  } catch (err) {
+    // Errores del servidor (página on-demand, island, action) a Bugsink (fase 12-B,
+    // instrument.mjs). Se relanza: Astro responde como siempre (500). Sin SENTRY_DSN, el SDK no
+    // está iniciado y `captureException` no hace nada.
+    captureException(err);
+    throw err;
+  }
   // Rutas por usuario (carrito, checkout, pedido, cuenta, actions): `private, no-store` en TODA
   // respuesta, también en las redirecciones. Un 303 sin Cache-Control lo cachea Cloudflare
   // 20 min por defecto (cache/how-to/configure-cache-status-code) y serviría la redirección de

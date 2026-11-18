@@ -40,6 +40,7 @@
     "@medusajs/framework": "2.22.7",
     "@medusajs/medusa": "2.22.7",
     "@rokmohar/medusa-plugin-meilisearch": "2.4.0",
+    "@sentry/node": "11.13.0",
     "emails": "workspace:*",
     "resend": "6.38.1"
   },

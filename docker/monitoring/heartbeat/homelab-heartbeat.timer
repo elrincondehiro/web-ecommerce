@@ -1,0 +1,10 @@
+# Cada 5 minutos (el check de Healthchecks.io: periodo 5 min, gracia 10 min).
+[Unit]
+Description=Latido del homelab a Healthchecks.io (cada 5 min)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

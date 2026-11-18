@@ -246,7 +246,7 @@ Excepción aprobada en la Fase FO (FO-6): las fichas cuyo **selector de opciones
 
 - Modelo híbrido: **paneles, histórico y alertas en el homelab**; en el VPS Hetzner **solo agentes** (`beszel-agent`, `dozzle` en modo agent). No añadas herramientas de monitorización pesadas al VPS.
 - Los agentes del VPS **no publican puertos a Internet**: Beszel conecta saliente por WebSocket; Dozzle agent solo escucha en la red privada (Tailscale/WireGuard).
-- SDK de errores (Sentry → GlitchTip) **solo en servidor** (Medusa y Astro SSR). Nunca en el bundle de cliente.
+- SDK de errores (`@sentry/node` → **Bugsink** en el homelab, fase 12) **solo en servidor** (Medusa y el SSR del storefront con `node --import ./instrument.mjs`; no `@sentry/astro`, que cambia el build). Nunca en el bundle de cliente. Opciones y filtro de datos personales en `lib/error-reporting.ts` (idéntico en backend y storefront).
 - Todo servicio nuevo expone un `/health` y se añade a Uptime Kuma; todo job programado crítico (backups) envía un heartbeat.
 - Nunca registres datos personales ni secretos en logs o eventos de error (scrubbing activado).
 

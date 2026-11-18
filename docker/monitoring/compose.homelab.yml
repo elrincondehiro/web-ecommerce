@@ -12,6 +12,9 @@
 #   el hub conecta a 10.77.0.1:45876 por el túnel).
 # - Dozzle (:8080): logs de los contenedores del VPS (agente en 10.77.0.1:7007, TLS con
 #   certificado propio en ./dozzle-certs) y de esta VM (socket local).
+# - Bugsink (:8000, fase 12-B): errores de la aplicación (Medusa y el SSR del storefront, SDK de
+#   Sentry). El VPS los envía por el túnel (http://10.77.0.3:8000); panel en la LAN. SQLite en el
+#   volumen `bugsink`. Alertas por email (Resend, SMTP) y ntfy (webhook «Custom»).
 # Tags fijos (AGENTS §6). Fuentes: context7 /louislam/uptime-kuma-wiki (How-to-Install: /app/data),
 # /henrygd/beszel-docs (hub-installation, agent-installation, security), /amir20/dozzle (agent:
 # DOZZLE_REMOTE_AGENT, certificados). docs/fases/fase11.md §4.9.
@@ -77,6 +80,41 @@ services:
       - source: dozzle_key
         target: /dozzle_key.pem
 
+  # Errores de la aplicación (fase 12-B, docs/fases/fase12.md). Un solo contenedor (web + tareas,
+  # `monofy` de la imagen), SQLite en /data. Solo LAN y túnel: nada en Internet, así que sin HTTPS
+  # (BEHIND_HTTPS_PROXY=false). Fuente: context7 /websites/bugsink (docker-install, settings,
+  # alerts) y bugsink_conf.py de la imagen 2.6.3.
+  bugsink:
+    image: bugsink/bugsink:2.6.3
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      SECRET_KEY: ${BUGSINK_SECRET_KEY:?}
+      # Solo crea el usuario si aún no hay ninguno (primer arranque).
+      CREATE_SUPERUSER: ${BUGSINK_SUPERUSER:?}
+      BASE_URL: http://10.0.10.230:8000
+      SITE_TITLE: Errores · El Rincón de Hiro
+      TIME_ZONE: Europe/Madrid
+      # Un usuario y un equipo: sin registro abierto.
+      SINGLE_USER: "true"
+      SINGLE_TEAM: "true"
+      # Alertas por email con Resend (SMTP: smtp.resend.com:465, usuario «resend», la API key).
+      EMAIL_HOST: smtp.resend.com
+      EMAIL_PORT: "465"
+      EMAIL_USE_SSL: "true"
+      EMAIL_HOST_USER: resend
+      EMAIL_HOST_PASSWORD: ${BUGSINK_RESEND_API_KEY:?}
+      DEFAULT_FROM_EMAIL: ${BUGSINK_FROM_EMAIL:?}
+      # Tope de eventos (protege el disco si algo entra en bucle); 2 procesos web.
+      MAX_EVENTS_PER_PROJECT_PER_HOUR: "1000"
+      MAX_EVENT_AGE_DAYS: "90"
+      GUNICORN_CMD_ARGS: --workers=2
+    ports:
+      - "10.0.10.230:8000:8000"
+      - "10.77.0.3:8000:8000"
+    volumes:
+      - bugsink:/data
+
 secrets:
   dozzle_cert:
     file: ./dozzle-certs/dozzle_cert.pem
@@ -84,6 +122,7 @@ secrets:
     file: ./dozzle-certs/dozzle_key.pem
 
 volumes:
+  bugsink:
   kuma:
   beszel:
   beszel-socket:

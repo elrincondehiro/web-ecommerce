@@ -7,13 +7,13 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "node --env-file-if-exists=.env ./dist/server/entry.mjs",
+    "preview": "node --env-file-if-exists=.env --import ./instrument.mjs ./dist/server/entry.mjs",
     "astro": "astro",
     "typecheck": "astro sync && astro check",
     "test": "vitest run",
     "check:budget": "node ./scripts/check-js-budget.mjs",
     "fixtures:update": "node ./scripts/update-fixtures.mjs",
-    "start": "HOST=0.0.0.0 PORT=4321 node --env-file-if-exists=.env ./dist/server/entry.mjs",
+    "start": "HOST=0.0.0.0 PORT=4321 node --env-file-if-exists=.env --import ./instrument.mjs ./dist/server/entry.mjs",
     "test:e2e": "playwright test",
     "lhci": "lhci autorun",
     "lhci:remote": "lhci autorun --config=./lighthouserc.remote.cjs"
@@ -26,6 +26,7 @@
     "@astrojs/sitemap": "3.7.5",
     "@medusajs/js-sdk": "2.22.7",
     "@medusajs/types": "2.22.7",
+    "@sentry/node": "11.13.0",
     "@stripe/stripe-js": "9.17.0",
     "@tailwindcss/vite": "4.3.5",
     "astro": "7.4.12",

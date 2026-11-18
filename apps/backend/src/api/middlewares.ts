@@ -1,7 +1,10 @@
+import * as Sentry from "@sentry/node";
 import {
   authenticate,
   configureStoreSearch,
   defineMiddlewares,
+  errorHandler,
+  getHttpResponseFromError,
   validateAndTransformBody,
   validateAndTransformQuery,
   type MedusaNextFunction,
@@ -156,7 +159,26 @@ const guardTransferSession = (
  * `product`, Medusa añade los filtros de `status = published` y del canal de venta de la
  * publishable key (ver `src/search/product.ts`).
  */
+/**
+ * Errores 5xx de las rutas API a Bugsink (fase 12-B; instrumentation.ts). Los 4xx (validación, 404,
+ * sin sesión…) son respuestas normales y no se envían. Después, el manejador de Medusa responde
+ * como siempre. Sin SENTRY_DSN, `captureException` no hace nada. Fuente: context7 /medusajs/medusa
+ * (integrations/guides/sentry, «Customize Medusa error handler»); `getHttpResponseFromError` de
+ * @medusajs/framework 2.22.7 (el mismo cálculo del código que usa el manejador).
+ */
+const medusaErrorHandler = errorHandler();
+function reportingErrorHandler(
+  err: unknown,
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction,
+) {
+  if (getHttpResponseFromError(err).statusCode >= 500) Sentry.captureException(err);
+  return medusaErrorHandler(err, req, res, next);
+}
+
 export default defineMiddlewares({
+  errorHandler: reportingErrorHandler,
   routes: [
     {
       matcher: "/store/search",

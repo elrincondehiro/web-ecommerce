@@ -2,21 +2,21 @@
 
 E-commerce **autoalojado**, pensado para ir a **máxima velocidad**: todo lo posible en estático, islas de servidor cuando hace falta y el mínimo JavaScript en el cliente.
 
-| Capa                         | Tecnología                                                                                                                    |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Backend / commerce engine    | **Medusa v2** (Node, TypeScript) + Admin                                                                                      |
-| Tienda (storefront)          | **Astro 7** + **Tailwind CSS v4** (clases de shadcn «vega» con `tailwind-variants`); JS de cliente con `<script>` de Astro    |
-| Base de datos                | **PostgreSQL**                                                                                                                |
-| Colas, eventos, caché, locks | **Redis**                                                                                                                     |
-| Búsqueda                     | **Meilisearch**                                                                                                               |
-| Pagos                        | **Stripe** (Payment Element + webhooks)                                                                                       |
-| Imágenes / ficheros          | **Cloudflare R2** (compatible S3; **SeaweedFS** en local)                                                                     |
-| Emails transaccionales       | **Resend** + **React Email**                                                                                                  |
-| Borde / proxy                | **Cloudflare** (DNS, CDN, WAF) → **Caddy** (TLS de origen, reverse proxy, compresión, caché de estáticos)                     |
-| Monitorización               | **Híbrida autoalojada en 2 máquinas**: homelab (Uptime Kuma, Beszel hub, Dozzle, GlitchTip) + VPS Hetzner (agentes) — ver §12 |
-| Control de versiones / CI    | **Gitea** autoalojado (SSH puerto 2222) y/o **GitHub** — Gitea Actions / GitHub Actions                                       |
-| Registro de imágenes         | Registro de contenedores de Gitea y/o **GHCR**                                                                                |
-| Tooling                      | **pnpm** (nunca npm/yarn) · **fnm** (nunca nvm) · Docker + Docker Compose                                                     |
+| Capa                         | Tecnología                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend / commerce engine    | **Medusa v2** (Node, TypeScript) + Admin                                                                                                               |
+| Tienda (storefront)          | **Astro 7** + **Tailwind CSS v4** (clases de shadcn «vega» con `tailwind-variants`); JS de cliente con `<script>` de Astro                             |
+| Base de datos                | **PostgreSQL**                                                                                                                                         |
+| Colas, eventos, caché, locks | **Redis**                                                                                                                                              |
+| Búsqueda                     | **Meilisearch**                                                                                                                                        |
+| Pagos                        | **Stripe** (Payment Element + webhooks)                                                                                                                |
+| Imágenes / ficheros          | **Cloudflare R2** (compatible S3; **SeaweedFS** en local)                                                                                              |
+| Emails transaccionales       | **Resend** + **React Email**                                                                                                                           |
+| Borde / proxy                | **Cloudflare** (DNS, CDN, WAF) → **Caddy** (TLS de origen, reverse proxy, compresión, caché de estáticos)                                              |
+| Monitorización               | **Híbrida autoalojada**: homelab (Uptime Kuma, Beszel hub, Dozzle, Bugsink) + VPS Hetzner (agentes) + UptimeRobot y Healthchecks.io externos — ver §12 |
+| Control de versiones / CI    | **Gitea** autoalojado (SSH puerto 2222) y/o **GitHub** — Gitea Actions / GitHub Actions                                                                |
+| Registro de imágenes         | Registro de contenedores de Gitea y/o **GHCR**                                                                                                         |
+| Tooling                      | **pnpm** (nunca npm/yarn) · **fnm** (nunca nvm) · Docker + Docker Compose                                                                              |
 
 > Las directrices para agentes de IA están en [`AGENTS.md`](./AGENTS.md). Léelas antes de tocar código. Resumen del estado actual: [`docs/ESTADO.md`](./docs/ESTADO.md).
 >
@@ -200,7 +200,7 @@ Política:
 | Beszel agent                                        | `henrygd/beszel-agent:0.21.1`        | monitorización · VPS Hetzner (y homelab)                                      |
 | Dozzle                                              | `amir20/dozzle:v11.4.0`              | logs · homelab (UI) + VPS (modo agent)                                        |
 | k6                                                  | `grafana/k6:2.3.0`                   | prueba de carga (`loadtest/`, fase 11-10) · desde la VM del homelab           |
-| GlitchTip _(propuesto)_                             | `glitchtip/glitchtip:6.2.6`          | errores de aplicación · homelab                                               |
+| Bugsink                                             | `bugsink/bugsink:2.6.3`              | errores de aplicación · homelab (fase 12)                                     |
 | cloudflared _(descartado en la fase 11: WireGuard)_ | `cloudflare/cloudflared:2026.9.3`    | —                                                                             |
 
 > MinIO se descarta: ha dejado de publicar imágenes en Docker Hub.
@@ -247,8 +247,7 @@ Política:
 | `@swc/core` / `@swc/jest`                                                                                                 | 1.16.22 / 0.2.39          | backend                                                                                                                           |
 | `jest` / `@types/jest`                                                                                                    | 29.7.0 / 29.5.14          | backend (tests de Medusa)                                                                                                         |
 | `ts-node`                                                                                                                 | 10.9.2                    | backend                                                                                                                           |
-| `@sentry/node` _(propuesto, fase 12)_                                                                                     | 11.1.0                    | backend → envía errores a GlitchTip                                                                                               |
-| `@sentry/astro` _(propuesto, fase 12)_                                                                                    | 11.1.0                    | storefront, **solo servidor** (sin JS de cliente)                                                                                 |
+| `@sentry/node`                                                                                                            | 11.13.0                   | backend y storefront (**solo servidor**) → errores a Bugsink (fase 12)                                                            |
 
 > **TypeScript 7 no se usa todavía**: Astro declara `typescript ^5 \|\| ^6`. **Medusa** documenta `^5.6.2`; en la fase 2 se probó **6.0.3** y `typecheck`/`build`/tests pasan (si diera problemas: 5.9.3 solo en `apps/backend`).
 > **Astro 7** requiere `@astrojs/node` ≥ 11 (9.x es para Astro 6).
@@ -602,47 +601,36 @@ Detalle completo, comandos y decisiones: [fase11.md](./docs/fases/fase11.md) (de
 
 ## 12. Monitorización
 
-Modelo **híbrido autoalojado en dos máquinas**: el VPS de la tienda solo ejecuta **agentes ligeros**; los paneles, el histórico y las **alertas viven en el homelab**. Así, si el VPS cae, el homelab lo detecta y avisa (un monitor en la misma máquina que vigila no sirve).
+Modelo **híbrido autoalojado**: el VPS de la tienda solo ejecuta **agentes ligeros** y el SDK de errores dentro de sus procesos; los paneles, el histórico y las **alertas viven en el homelab** (VM `monitor-kbd`). Un servicio externo gratuito vigila desde fuera y avisa si se cae el homelab. Detalle y puesta en marcha: [fase11.md](./docs/fases/fase11.md) §4.9 (Kuma, Beszel, Dozzle) y [fase12.md](./docs/fases/fase12.md) (UptimeRobot, Healthchecks.io, Bugsink).
 
 ```
-  HOMELAB (junto a Gitea)                                  VPS HETZNER (ecommerce)
- ┌───────────────────────────────────────┐              ┌────────────────────────────────────┐
- │ Uptime Kuma ── HTTP/keyword/TLS ─────────────────────────▶ tienda / api / admin (vía Cloudflare)│
- │ Beszel hub   ◀── WebSocket (saliente) ─────────────── beszel-agent (host + contenedores)  │
- │ Dozzle (UI)  ─── red privada (Tailscale/WireGuard) ──▶ dozzle agent (logs Docker)          │
- │ GlitchTip    ◀── HTTPS (túnel Cloudflare) ─────────── Medusa + Astro SSR (SDK Sentry)     │
- │   └ Postgres + Valkey propios          │              │                                      │
- │ Alertas → Telegram / email            │              │ /health de Medusa y storefront      │
- └───────────────────────────────────────┘              └────────────────────────────────────┘
-        ▲ vigilante externo del homelab: UptimeRobot / Healthchecks.io (gratis) → ¿quién vigila al vigilante?
+  HOMELAB: VM monitor-kbd (10.0.10.230 · 10.77.0.3)            VPS HETZNER (10.77.0.1)
+ ┌─────────────────────────────────────────────┐            ┌──────────────────────────────────┐
+ │ Uptime Kuma ── HTTPS por Cloudflare ──────────────────────▶ tienda / admin / api           │
+ │ Beszel hub  ── SSH por WireGuard ─────────────────────────▶ beszel-agent                   │
+ │ Dozzle      ── TLS por WireGuard ─────────────────────────▶ dozzle agent                   │
+ │ Bugsink     ◀── errores (SDK de Sentry) por WireGuard ──── Medusa + SSR del storefront     │
+ │ Kuma (push) ◀── latido del backup ────────────────────────  backup.sh                      │
+ │ Alertas → email (Resend) y ntfy             │            └──────────────────────────────────┘
+ └─────────────────────────────────────────────┘
+        │ latido cada 5 min (si Kuma responde)
+        ▼
+  Healthchecks.io (gratis): avisa si no llega el latido → «¿quién vigila al vigilante?»
+  UptimeRobot (gratis): vigila https://api.<dominio>/health desde fuera
 ```
 
-| Necesidad                                                                                | Herramienta                                     | Dónde                                     | RAM aprox.                |
-| ---------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------- | ------------------------- |
-| Disponibilidad (tienda, API, admin, certificado, tiempo de respuesta) + página de estado | **Uptime Kuma** 2.5.6                           | homelab                                   | ~150 MB                   |
-| Métricas de host y contenedores (CPU, RAM, disco, red), histórico y alertas              | **Beszel** 0.21.0 (hub + agent)                 | hub: homelab · agent: VPS y homelab       | hub ~50 MB · agent ~15 MB |
-| Logs de contenedores en vivo                                                             | **Dozzle** v11.3.4                              | UI: homelab · agent: VPS                  | ~30 MB por nodo           |
-| Errores de aplicación (traza, release, usuario afectado)                                 | **GlitchTip** 6.2.6 (API compatible con Sentry) | homelab (con su propio Postgres + Valkey) | ~500 MB–1 GB              |
-| Heartbeats de jobs (backup diario, rebuild)                                              | Uptime Kuma (monitor _push_)                    | homelab                                   | —                         |
-| Vigilar al homelab                                                                       | UptimeRobot o Healthchecks.io (free)            | externo                                   | —                         |
+| Necesidad                                                                          | Herramienta                                   | Dónde                               | RAM aprox.                |
+| ---------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------- | ------------------------- |
+| Disponibilidad (tienda, API, admin, certificado), heartbeats (backup, publicación) | **Uptime Kuma** 2.5.11                        | homelab                             | ~150 MB                   |
+| Métricas de host y contenedores (CPU, RAM, disco, red), histórico y alertas        | **Beszel** 0.21.2 (hub + agent)               | hub: homelab · agent: VPS y homelab | hub ~50 MB · agent ~15 MB |
+| Logs de contenedores en vivo                                                       | **Dozzle** v11.4.3                            | UI: homelab · agent: VPS            | ~30 MB por nodo           |
+| Errores de aplicación (traza, ruta, versión)                                       | **Bugsink** 2.6.3 (compatible con Sentry SDK) | homelab (SQLite)                    | ~210 MB                   |
+| Vigilar la tienda desde fuera                                                      | **UptimeRobot** (gratis, monitor HTTP)        | externo                             | —                         |
+| Vigilar al homelab (latido cada 5 min)                                             | **Healthchecks.io** (gratis)                  | externo                             | —                         |
 
-**Impacto en el VPS Hetzner: ~50 MB de RAM** (beszel-agent + dozzle agent). Nada se publica a Internet desde el VPS por la monitorización.
+**Impacto en el VPS Hetzner: ~50 MB de RAM** (beszel-agent + dozzle agent) y el SDK `@sentry/node` en los procesos de Medusa y del storefront. Nada se publica a Internet desde el VPS por la monitorización: todo va por **WireGuard** (fase 11-8), sin `cloudflared`.
 
-### 12.1 Conectividad entre homelab y VPS
-
-El homelab está detrás de un router doméstico (DuckDNS). Dos necesidades:
-
-1. **VPS → homelab** (Beszel agent y SDK de errores empujan datos): exponer **Beszel hub** y **GlitchTip** con **Cloudflare Tunnel** (`cloudflared`, sin abrir puertos en el router) en subdominios propios (p. ej. `status.`, `errors.`, `metrics.`), protegidos con **Cloudflare Access** salvo los endpoints de ingesta.
-2. **Homelab → VPS** (Dozzle UI lee logs del agente): **red privada** entre ambas máquinas — **Tailscale** (más simple) o **WireGuard** (sin terceros). El agente de Dozzle solo escucha en la interfaz privada.
-
-> **Hecho en la fase 11-8** ([fase11.md](./docs/fases/fase11.md) §4.9): **WireGuard** (sin terceros) y sin `cloudflared`. El hub de Beszel conecta por SSH al agente del VPS (no al revés) y el heartbeat del backup llega a Kuma por el túnel: no hace falta exponer nada del homelab. Lo que queda para la fase 12: GlitchTip + SDK de errores y el vigilante externo del homelab.
-
-### 12.2 Integración con la aplicación
-
-- Medusa y el storefront exponen endpoints de salud (`/health`) que vigila Uptime Kuma.
-- Errores: `@sentry/node` en Medusa y `@sentry/astro` en el storefront **solo en servidor** (no se envía SDK al navegador para no romper el presupuesto de 0 KB JS). DSN apuntando a GlitchTip. _(Dependencias propuestas; requieren aprobación al llegar a la fase.)_
-- Alertas: Telegram (bot) y email (Resend/SMTP) desde Uptime Kuma, Beszel y GlitchTip.
-- Ficheros: `docker/monitoring/compose.homelab.yml` (Kuma, Beszel hub, Dozzle, GlitchTip, cloudflared) y servicios `beszel-agent` + `dozzle-agent` dentro de `compose.prod.yml`.
+**Integración con la aplicación** (fase 12): `/health` de Medusa y del storefront; errores con `@sentry/node` **solo en servidor** (Medusa: `instrumentation.ts` + `errorHandler` con los 5xx; storefront: `instrument.mjs` con `node --import` + el middleware), sin datos personales (`lib/error-reporting.ts`) y sin nada en el navegador ni en el build. Sin `SENTRY_DSN`, desactivado.
 
 ## 13. Plan de trabajo (roadmap)
 
@@ -693,6 +681,7 @@ Versiones publicadas (tags; las crea el usuario): **`v0.1.0`** (fase 11, primer 
 | MK Marketing respetuoso (A–E2)                                  | [faseMK-marketing.md](./docs/fases/faseMK-marketing.md)                                          | ✅     |
 | 13 Rebuild automático del storefront                            | [fase13-rebuild.md](./docs/fases/fase13-rebuild.md)                                              | ✅     |
 | 13 Optimización (JSON-LD, imagen, sin Svelte, view transitions) | [fase13-optimizacion.md](./docs/fases/fase13-optimizacion.md)                                    | ✅     |
+| 12 Monitorización (UptimeRobot, Bugsink)                        | [fase12.md](./docs/fases/fase12.md)                                                              | 🚧     |
 | 12 … 13                                                         | `faseN.md` (se crea al iniciar cada fase, a partir de [PLANTILLA.md](./docs/fases/PLANTILLA.md)) | ⏳     |
 
 ### 13.1 Vista general
@@ -743,24 +732,24 @@ gantt
 
 **Tiempo** = días de trabajo efectivo (1 desarrollador + agente de IA) **incluyendo tests**. No incluye tiempos de revisión/espera del usuario. Son estimaciones.
 
-| #   | Fase                         | Qué hace                                                                                                                                                                                                                                                                   | Tiempo    | Test / criterio de salida                                                                           | Coste servicios                                      |
-| --- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 0   | **Fundaciones**              | Monorepo pnpm, `.node-version`, `.npmrc`, `compose.dev.yml` (Postgres, Redis, Meilisearch, SeaweedFS, Mailpit, Stripe CLI), bucket local, ESLint/Prettier/TS compartidos, Renovate, `.gitignore`, remotos Gitea+GitHub, primer push                                        | 1–2 d     | `pnpm infra:up` + `pnpm install` limpios; push en ambos remotos                                     | 0 €                                                  |
-| 1   | **CI básico (PR)**           | `ci.yml`: install `--frozen-lockfile` → lint → typecheck → test → build. Runner de Gitea (`gitea-runner`) en el homelab + GitHub Actions + Renovate autoalojado. Añadir los checks como obligatorios en Gitea y en el ruleset de GitHub                                    | 1 d       | Un PR de prueba bloqueado si falla un check y mergeable si pasa, en **ambas** plataformas           | 0 €                                                  |
-| 2   | **Backend base**             | Medusa 2.21.2, módulos Redis (event bus, workflow engine, locking, caché), admin, región EUR, canal, publishable key, seed                                                                                                                                                 | 1–2 d     | Admin operativo; Store API responde; CI verde                                                       | 0 €                                                  |
-| 3   | **Storefront base**          | Astro 7 + Svelte 5 + Tailwind 4 + shadcn-svelte (Svelte quitado en la fase 13), layout, home, listado y ficha **estáticos**, precio/stock en server island, SEO (meta, JSON-LD, sitemap), fuentes e imágenes                                                               | 4–6 d     | Lighthouse móvil ≥ 95; **0 KB JS** propio en ficha                                                  | 0 €                                                  |
-| 4   | **Carrito**                  | Cookie `cart_id` httpOnly, Astro Actions sin JS (añadir/actualizar/quitar), contador en server island, mejora progresiva                                                                                                                                                   | 3–4 d     | Playwright **con JS desactivado**                                                                   | 0 €                                                  |
-| 5   | **Checkout + Stripe**        | Checkout on-demand, direcciones, envío, Payment Element (`<script>` de Astro, sin isla), webhooks idempotentes, creación de pedido                                                                                                                                         | 4–6 d     | Pago test extremo a extremo; reenvío de webhook sin duplicados                                      | 0 € (test)                                           |
-| 6   | **Ficheros R2**              | `file-s3` con SeaweedFS (local) / R2 (prod), dominio público de imágenes, `astro:assets` AVIF/WebP                                                                                                                                                                         | 1–2 d     | Subida desde Admin visible en tienda optimizada                                                     | R2: 10 GB gratis, luego $0.015/GB-mes, egress gratis |
-| 7   | **Búsqueda**                 | Search Module de Medusa + proveedor Meilisearch, `POST /store/search`, `/buscar` SSR sin JS + sugerencias con JS bajo demanda                                                                                                                                              | 3–4 d     | < 50 ms; funciona sin JS                                                                            | 0 €                                                  |
-| 8   | **Emails**                   | `packages/emails` (React Email), provider Resend, pedido / envío / reset password, texto plano                                                                                                                                                                             | 2–3 d     | Preview + envío test (Mailpit/Resend)                                                               | Resend Free (100/día, 3.000/mes) → Pro ≈ $20/mes     |
-| 9   | **Cuenta de cliente**        | Registro, login, pedidos, direcciones (on-demand, cookies httpOnly)                                                                                                                                                                                                        | 3–4 d     | e2e de registro/login/pedidos                                                                       | 0 €                                                  |
-| 10  | **CD: imágenes + Docker**    | Dockerfiles multi-stage (backend, storefront), `images.yml` (`sha-xxxxxxx` en main, `x.y.z` en tag), registro Gitea/GHCR, presupuesto de JS y Lighthouse CI en `ci.yml`                                                                                                    | 3–4 d     | Merge → `:sha-*`; tag → `:1.2.3` en el registro                                                     | 0 €                                                  |
-| 11  | **Producción (Hetzner)**     | `compose.prod.yml`, Caddyfile, Cloudflare (Full strict, Origin CA, WAF, rate limit), firewall Hetzner, backups `pg_dump` → R2, `deploy.yml` opcional, `v1.0.0`                                                                                                             | 3–4 d     | Despliegue desde tag; **restauración de backup probada**                                            | VPS + dominio                                        |
-| 12  | **Monitorización (híbrida)** | Homelab: Uptime Kuma, Beszel hub, Dozzle, GlitchTip (+Postgres/Valkey), cloudflared. VPS: beszel-agent, dozzle agent. Red privada (Tailscale/WireGuard), SDK de errores en server, `/health`, heartbeats de backups, alertas Telegram/email, vigilante externo del homelab | **3–4 d** | Alerta de prueba recibida por cada fuente (caída web, CPU/disco, error de app, backup no ejecutado) | 0 € (homelab + capas gratuitas)                      |
-| 13  | **Optimización continua**    | Rebuild del storefront por webhook de catálogo, Speculation Rules + view transitions CSS, Partytown, auditorías                                                                                                                                                            | continua  | Core Web Vitals en verde                                                                            | —                                                    |
+| #   | Fase                         | Qué hace                                                                                                                                                                                                                                 | Tiempo    | Test / criterio de salida                                                                           | Coste servicios                                      |
+| --- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 0   | **Fundaciones**              | Monorepo pnpm, `.node-version`, `.npmrc`, `compose.dev.yml` (Postgres, Redis, Meilisearch, SeaweedFS, Mailpit, Stripe CLI), bucket local, ESLint/Prettier/TS compartidos, Renovate, `.gitignore`, remotos Gitea+GitHub, primer push      | 1–2 d     | `pnpm infra:up` + `pnpm install` limpios; push en ambos remotos                                     | 0 €                                                  |
+| 1   | **CI básico (PR)**           | `ci.yml`: install `--frozen-lockfile` → lint → typecheck → test → build. Runner de Gitea (`gitea-runner`) en el homelab + GitHub Actions + Renovate autoalojado. Añadir los checks como obligatorios en Gitea y en el ruleset de GitHub  | 1 d       | Un PR de prueba bloqueado si falla un check y mergeable si pasa, en **ambas** plataformas           | 0 €                                                  |
+| 2   | **Backend base**             | Medusa 2.21.2, módulos Redis (event bus, workflow engine, locking, caché), admin, región EUR, canal, publishable key, seed                                                                                                               | 1–2 d     | Admin operativo; Store API responde; CI verde                                                       | 0 €                                                  |
+| 3   | **Storefront base**          | Astro 7 + Svelte 5 + Tailwind 4 + shadcn-svelte (Svelte quitado en la fase 13), layout, home, listado y ficha **estáticos**, precio/stock en server island, SEO (meta, JSON-LD, sitemap), fuentes e imágenes                             | 4–6 d     | Lighthouse móvil ≥ 95; **0 KB JS** propio en ficha                                                  | 0 €                                                  |
+| 4   | **Carrito**                  | Cookie `cart_id` httpOnly, Astro Actions sin JS (añadir/actualizar/quitar), contador en server island, mejora progresiva                                                                                                                 | 3–4 d     | Playwright **con JS desactivado**                                                                   | 0 €                                                  |
+| 5   | **Checkout + Stripe**        | Checkout on-demand, direcciones, envío, Payment Element (`<script>` de Astro, sin isla), webhooks idempotentes, creación de pedido                                                                                                       | 4–6 d     | Pago test extremo a extremo; reenvío de webhook sin duplicados                                      | 0 € (test)                                           |
+| 6   | **Ficheros R2**              | `file-s3` con SeaweedFS (local) / R2 (prod), dominio público de imágenes, `astro:assets` AVIF/WebP                                                                                                                                       | 1–2 d     | Subida desde Admin visible en tienda optimizada                                                     | R2: 10 GB gratis, luego $0.015/GB-mes, egress gratis |
+| 7   | **Búsqueda**                 | Search Module de Medusa + proveedor Meilisearch, `POST /store/search`, `/buscar` SSR sin JS + sugerencias con JS bajo demanda                                                                                                            | 3–4 d     | < 50 ms; funciona sin JS                                                                            | 0 €                                                  |
+| 8   | **Emails**                   | `packages/emails` (React Email), provider Resend, pedido / envío / reset password, texto plano                                                                                                                                           | 2–3 d     | Preview + envío test (Mailpit/Resend)                                                               | Resend Free (100/día, 3.000/mes) → Pro ≈ $20/mes     |
+| 9   | **Cuenta de cliente**        | Registro, login, pedidos, direcciones (on-demand, cookies httpOnly)                                                                                                                                                                      | 3–4 d     | e2e de registro/login/pedidos                                                                       | 0 €                                                  |
+| 10  | **CD: imágenes + Docker**    | Dockerfiles multi-stage (backend, storefront), `images.yml` (`sha-xxxxxxx` en main, `x.y.z` en tag), registro Gitea/GHCR, presupuesto de JS y Lighthouse CI en `ci.yml`                                                                  | 3–4 d     | Merge → `:sha-*`; tag → `:1.2.3` en el registro                                                     | 0 €                                                  |
+| 11  | **Producción (Hetzner)**     | `compose.prod.yml`, Caddyfile, Cloudflare (Full strict, Origin CA, WAF, rate limit), firewall Hetzner, backups `pg_dump` → R2, `deploy.yml` opcional, `v1.0.0`                                                                           | 3–4 d     | Despliegue desde tag; **restauración de backup probada**                                            | VPS + dominio                                        |
+| 12  | **Monitorización (híbrida)** | Homelab: Uptime Kuma, Beszel hub, Dozzle, Bugsink. VPS: beszel-agent, dozzle agent. Red privada (Tailscale/WireGuard), SDK de errores en server, `/health`, heartbeats de backups, alertas Telegram/email, vigilante externo del homelab | **3–4 d** | Alerta de prueba recibida por cada fuente (caída web, CPU/disco, error de app, backup no ejecutado) | 0 € (homelab + capas gratuitas)                      |
+| 13  | **Optimización continua**    | Rebuild del storefront por webhook de catálogo, Speculation Rules + view transitions CSS, Partytown, auditorías                                                                                                                          | continua  | Core Web Vitals en verde                                                                            | —                                                    |
 
-**Total hasta `v1.0.0` con monitorización: ~34–52 días efectivos ≈ 8–11 semanas** a tiempo completo. La monitorización híbrida en dos máquinas añade ~2 días respecto a una solución en un solo servidor (túnel, red privada, GlitchTip con su BD, alertas y vigilante externo).
+**Total hasta `v1.0.0` con monitorización: ~34–52 días efectivos ≈ 8–11 semanas** a tiempo completo. La monitorización híbrida en dos máquinas añade ~2 días respecto a una solución en un solo servidor (túnel, red privada, servidor de errores, alertas y vigilante externo).
 
 ### 13.3 Coste mensual estimado en producción
 
@@ -826,7 +815,7 @@ ADMIN_URL=                           # origen del Admin para el enlace del aviso
 
 STOREFRONT_REBUILD_WEBHOOK=          # opcional: dispara rebuild del storefront
 
-SENTRY_DSN=                          # fase 12: DSN del proyecto en GlitchTip (vacío = desactivado)
+SENTRY_DSN=                          # fase 12: DSN del proyecto en Bugsink (vacío = desactivado)
 ```
 
 **apps/storefront/.env** (ver `apps/storefront/.env.example`; las de Medusa son de **servidor** vía `astro:env`, no llegan al navegador)

@@ -1,0 +1,17 @@
+# VM de monitorización (homelab): latido a Healthchecks.io si Kuma responde (fase 12-A).
+[Unit]
+Description=Latido del homelab a Healthchecks.io
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Usuario temporal sin privilegios; el .env (600, de root) le llega como credencial de systemd
+# ($CREDENTIALS_DIRECTORY/env), sin hacerlo legible para nadie más.
+DynamicUser=yes
+LoadCredential=env:/etc/homelab-heartbeat.env
+ExecStart=/usr/local/bin/homelab-heartbeat.sh
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes

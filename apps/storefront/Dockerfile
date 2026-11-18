@@ -81,9 +81,12 @@ WORKDIR /app
 COPY --from=build --chown=node:node /prod/storefront/package.json ./package.json
 COPY --from=build --chown=node:node /prod/storefront/node_modules ./node_modules
 COPY --from=build --chown=node:node /repo/apps/storefront/dist ./dist
+# Errores a Bugsink (fase 12-B): se carga antes del servidor; sin SENTRY_DSN no hace nada.
+COPY --from=build --chown=node:node /repo/apps/storefront/instrument.mjs ./instrument.mjs
+COPY --from=build --chown=node:node /repo/apps/storefront/src/lib/error-reporting.ts ./src/lib/error-reporting.ts
 USER node
 EXPOSE 4321
 # /health/ (src/pages/health.ts): solo comprueba que el proceso responde.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
     CMD wget -qO- "http://127.0.0.1:${PORT}/health/" >/dev/null || exit 1
-CMD ["node", "./dist/server/entry.mjs"]
+CMD ["node", "--import", "./instrument.mjs", "./dist/server/entry.mjs"]
