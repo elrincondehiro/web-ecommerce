@@ -14,6 +14,7 @@ import { StoreOfertasQuery } from "./store/ofertas/route";
 import { StoreAddWishlistItemBody } from "./store/customers/me/wishlist/items/route";
 import { StoreApplyPointsBody } from "./store/carts/[id]/points/route";
 import { AdminAdjustPointsBody } from "./admin/customers/[id]/points/route";
+import { AdminAssignOrderBody } from "./admin/orders/[id]/assign/route";
 import { AdminOptionFamiliesBody } from "./admin/option-families/[id]/route";
 import { AdminFillCajaBody } from "./admin/orders/[id]/cajas/[lineId]/route";
 import { StoreCajaAnswerBody, StoreCajaQuery } from "./store/cajas/[lineId]/route";
@@ -217,6 +218,12 @@ export default defineMiddlewares({
       matcher: "/admin/customers/:id/points",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(AdminAdjustPointsBody)],
+    },
+    // Pasar un pedido de invitado a una cuenta desde el widget del pedido (fase 13 punto 7)
+    {
+      matcher: "/admin/orders/:id/assign",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(AdminAssignOrderBody)],
     },
     // Familias de una opción desde el widget del Admin (Fase FO-5)
     {

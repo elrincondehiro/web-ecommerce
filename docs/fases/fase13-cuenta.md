@@ -14,6 +14,7 @@
 - [x] **4. Limpieza de carritos de invitado con pago pendiente, carritos de cuenta y purga** de lo
       borrado en suave (fase10 §7).
 - [x] **5. «Esperando transferencia»** en «Mis pedidos», en la ficha del pedido y en «Mi cuenta».
+- [x] **7. Admin: pasar un pedido de invitado a una cuenta** desde la ficha del pedido.
 
 ## 2. Qué se ha hecho
 
@@ -90,6 +91,20 @@
   estado normal), en la ficha (con los datos de la transferencia, que ya se pedían) y en la tarjeta
   «Mis pedidos» de «Mi cuenta». 0 JS.
 
+### 2.4 Admin: pasar un pedido de invitado a una cuenta (punto 7)
+
+- Widget `order-assign.tsx` (zona `order.details.side.after`): solo si el pedido es de un cliente
+  **sin cuenta** y no está cancelado (el Admin ya carga `*customer` del pedido). Email de la cuenta
+  (o `cus_…`) + motivo obligatorio → «Pasar a la cuenta»; recarga la página al terminar y enseña el
+  error del backend si falla.
+- `POST /admin/orders/:id/assign` (`{ account, note }`, zod): el mismo workflow que
+  `orders:assign` (G-3, `linkOrderToAccountWorkflow`): transferencia oficial de Medusa, motivo en
+  la nota interna del historial, el pedido pasa al email de la cuenta. Cuenta inexistente → 404;
+  pedido cancelado, de otra cuenta o ya de esa → 400. Para deshacerlo: «Transferir a invitado»
+  del Admin. El script `orders:assign` se mantiene.
+- Probado en el Admin (Playwright contra `/app`): el widget sale en un pedido de invitado (error
+  «No hay ninguna cuenta con ese email.») y no en uno de cuenta.
+
 ## 3. Decisiones tomadas
 
 | Decisión                                                                                                                  | Motivo                                                                                                                                   | Fuente consultada                                                                                                                           |
@@ -128,6 +143,7 @@ TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules \
 TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules \
   pnpm --filter backend exec jest --silent --maxWorkers=1 --forceExit integration-tests/http/limpieza.spec.ts   # 3 (punto 4)
 # punto 5: pagos.spec.ts («transferencia…») y e2e transferencia.spec.ts
+# punto 7: invitados.spec.ts («fase 13 punto 7…»); el widget, a mano en el Admin
 pnpm --filter storefront exec vitest run src/lib/account.test.ts
 # e2e sin JS (backend con EMAIL_TRANSPORT=smtp): cuenta.spec.ts → «eliminar la cuenta…»
 pnpm --filter storefront exec playwright test cuenta --project escritorio
@@ -146,7 +162,8 @@ antiguo.
 - [x] Limpieza de carritos (invitado con email, cuenta vaciada, clientes sin cuenta) y purga, con
       tests HTTP.
 - [x] «Esperando transferencia» (punto 5), con test HTTP y e2e.
-- [ ] Puntos 6–8.
+- [x] Admin: pasar un pedido de invitado a una cuenta (punto 7), con test HTTP y prueba en el Admin.
+- [ ] Puntos 6 y 8.
 
 ## 7. Pendientes / riesgos
 

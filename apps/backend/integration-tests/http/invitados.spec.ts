@@ -441,6 +441,62 @@ medusaIntegrationTestRunner({
       expect((await orderOwner(ofLuis)).customer_id).toBe(luis.id);
     });
 
+    it("fase 13 punto 7: POST /admin/orders/:id/assign (widget del pedido) hace lo mismo que G-3", async () => {
+      const email = `admin-g3-${Date.now()}@example.com`;
+      const password = "Admin-123456";
+      const user = await container.resolve(Modules.USER).createUsers({ email });
+      const authModule = container.resolve(Modules.AUTH);
+      const { authIdentity } = await authModule.register("emailpass", {
+        body: { email, password },
+      } as never);
+      await authModule.updateAuthIdentities({
+        id: authIdentity!.id,
+        app_metadata: { user_id: user.id },
+      });
+      const admin = {
+        headers: {
+          authorization: `Bearer ${(await api.post("/auth/user/emailpass", { email, password })).data.token}`,
+        },
+      };
+      const relay = await placeOrder("perdido-admin@privaterelay.example");
+      const ana = await account("ana-admin@example.com");
+      const luis = await account("luis-admin@example.com");
+      const ofLuis = await placeOrder("luis-admin@example.com", luis.auth);
+      const assign = (orderId: string, body: Record<string, unknown>, auth: Auth = admin) =>
+        api.post(`/admin/orders/${orderId}/assign`, body, auth).catch(asRes);
+
+      // Sin sesión del Admin, sin motivo, cuenta que no existe
+      expect(
+        (await assign(relay, { account: ana.id, note: "x y z" }, { headers: {} })).status,
+      ).toBe(401);
+      expect((await assign(relay, { account: "ana-admin@example.com" })).status).toBe(400);
+      const missing = await assign(relay, { account: "nadie@example.com", note: "Comprobado" });
+      expect(missing.status).toBe(404);
+      expect(missing.data.message).toMatch(/ninguna cuenta/);
+
+      const ok = await assign(relay, { account: "ANA-admin@example.com", note: "Por teléfono" });
+      expect(ok.data).toEqual({ order_id: relay, customer_id: ana.id });
+      expect(await orderOwner(relay)).toMatchObject({
+        customer_id: ana.id,
+        email: "ana-admin@example.com",
+      });
+      const { data: changes } = await query().graph({
+        entity: "order_change",
+        fields: ["description", "internal_note"],
+        filters: { order_id: relay },
+      });
+      expect(changes[0]).toMatchObject({
+        description: AUTO_TRANSFER.manual,
+        internal_note: "Por teléfono",
+      });
+
+      // De otra cuenta, o ya de la misma: no
+      const other = await assign(ofLuis, { account: ana.id, note: "No debería" });
+      expect(other.status).toBe(400);
+      expect(other.data.message).toMatch(/otra cuenta/);
+      expect((await orderOwner(ofLuis)).customer_id).toBe(luis.id);
+    });
+
     describe("G-2: reclamar un pedido hecho con otro email", () => {
       const displayIdOf = async (orderId: string) => {
         const { data } = await query().graph({

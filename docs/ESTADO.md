@@ -120,7 +120,7 @@ pnpm --filter backend purge:deleted                        # purga definitiva de
 pnpm --filter backend points:accrue                        # abono de puntos a mano (el job lo hace a las 4:00, Fase L)
 pnpm --filter backend points:adjust <email|cus_…> <credit|debit> <importe> <motivo>   # ajuste manual
 pnpm --filter backend orders:link-guests [dry-run]         # pedidos de invitado con el email de una cuenta → a la cuenta (Fase G)
-pnpm --filter backend orders:assign <nº> <email|cus_…> <motivo> [dry-run]   # asignación manual de un pedido de invitado (G-3)
+pnpm --filter backend orders:assign <nº> <email|cus_…> <motivo> [dry-run]   # asignación manual de un pedido de invitado (G-3; también desde el Admin: widget del pedido, fase 13)
 # relacionados (Fase R): columna `relacionados` de productos.csv (handles separados por |)
 pnpm --filter backend codes:create <CODIGO> <pct|eur> <valor> [usos_total] [por_cliente]   # código de prueba (Fase P; lo normal: Admin → Promociones)
 pnpm --filter backend catalog:import <carpeta> [dry-run]   # categorias.csv + productos.csv (plantilla en apps/backend/catalog/plantilla)
