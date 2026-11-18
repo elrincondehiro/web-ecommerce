@@ -1,6 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
-import { REF, pointsDiscount } from "../lib/points";
+import { ORDER_ADJUSTMENT_FIELDS, REF, pointsDiscount } from "../lib/points";
 import { pointsMovementWorkflow } from "../workflows/points";
 
 /**
@@ -18,7 +18,7 @@ export default async function pointsOrderPlaced({
     data: [order],
   } = await query.graph({
     entity: "order",
-    fields: ["id", "customer_id", "items.adjustments.code", "items.adjustments.amount"],
+    fields: ["id", "customer_id", ...ORDER_ADJUSTMENT_FIELDS],
     filters: { id: data.id },
   });
   if (!order?.customer_id) return;

@@ -82,8 +82,8 @@ export const ORDER_EMAIL_FIELDS = [
   // Cuenta del cliente (fase 9): solo si tiene cuenta se enlaza el pedido en "Mi cuenta".
   "customer.has_account",
   // Puntos (Fase L-3): descuento de puntos (ajustes PTS-) y productos `genera_puntos: false`.
-  "items.adjustments.code",
-  "items.adjustments.amount",
+  // Fase 13: `items.adjustments.*`, solo la versión actual (lib/points.ts ORDER_ADJUSTMENT_FIELDS).
+  "items.adjustments.*",
   "items.product.metadata",
   // Método de pago (Fase PG): «Bizum · cobrado», «Tarjeta · pendiente de capturar»…
   "payment_collections.payments.provider_id",
@@ -116,7 +116,8 @@ type ItemLike = {
   } | null;
   metadata?: Record<string, unknown> | null;
   product?: { metadata?: Record<string, unknown> | null } | null;
-  adjustments?: ({ code?: string | null; amount?: Numeric } | null)[] | null;
+  adjustments?:
+    ({ code?: string | null; amount?: Numeric; version?: number | null } | null)[] | null;
 };
 
 type ShippingMethodLike = {

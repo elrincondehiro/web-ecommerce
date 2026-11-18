@@ -46,7 +46,8 @@ const REFERENCE_LABELS: Record<string, string> = {
   order: "Puntos del pedido",
   order_redeem: "Usados en el pedido",
   order_canceled: "Devueltos por cancelar el pedido",
-  return: "Retirados por una devolución",
+  return: "Retirados por una devolución del pedido",
+  return_redeem: "Devueltos por una devolución del pedido",
   adjustment: "Ajuste",
   account_deleted: "Baja de la cuenta",
 };
@@ -56,9 +57,8 @@ export function transactionLabel(
   t: Pick<PointsTransaction, "reference" | "order_display_id">,
 ): string {
   const base = REFERENCE_LABELS[t.reference] ?? "Movimiento";
-  return t.order_display_id && t.reference.startsWith("order")
-    ? `${base} #${t.order_display_id}`
-    : base;
+  // Con número de pedido: los del pedido y, desde la fase 13, los de sus devoluciones.
+  return t.order_display_id ? `${base} #${t.order_display_id}` : base;
 }
 
 type AdjustmentLike = { code?: string | null; amount?: number | null } | null;

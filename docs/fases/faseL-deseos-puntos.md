@@ -611,6 +611,8 @@ Fuentes: context7 `/medusajs/medusa` (guía _wishlist_, compartir; _protected-ro
 
 ### Plan para automatizar los puntos canjeados en pedidos devueltos (P2)
 
+> ✅ Hecho en la fase 13 (fase13-cuenta.md §2.5), con el interruptor activo.
+
 Hoy se hace a mano (widget del Admin → «Abonar», con nota). Propuesta para cuando se quiera automatizar (subfase propia, con aprobación):
 
 1. **Regla:** al recibir una devolución, devolver la parte proporcional de lo canjeado: `canjeado × (importe devuelto de los productos / productos del pedido)`, redondeado al céntimo hacia abajo. Si se devuelve todo, se devuelve todo lo canjeado.

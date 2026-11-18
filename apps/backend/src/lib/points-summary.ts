@@ -57,18 +57,32 @@ export async function pointsSummary(
     ? await service.listAndCountPointsTransactions(
         { account_id: account.id },
         {
-          select: ["id", "type", "amount", "reference", "reference_id", "note", "created_at"],
+          select: [
+            "id",
+            "type",
+            "amount",
+            "reference",
+            "reference_id",
+            "note",
+            "created_at",
+            "metadata",
+          ],
           order: { created_at: "DESC" },
           take: page.limit,
           skip: page.offset,
         },
       )
     : [[], 0];
+  // Pedido del movimiento: el de las referencias `order*`, o `metadata.order_id` en las
+  // devoluciones (`return`, `return_redeem`, fase 13).
+  const orderOf = (t: { reference: string; reference_id: string; metadata?: unknown }) => {
+    if (t.reference.startsWith("order")) return t.reference_id;
+    const id = (t.metadata as { order_id?: unknown } | null)?.order_id;
+    return typeof id === "string" ? id : null;
+  };
   // Número visible del pedido («Pedido #123» en «Mi cuenta», L-3).
   const orderIds = [
-    ...new Set(
-      transactions.filter((t) => t.reference.startsWith("order")).map((t) => t.reference_id),
-    ),
+    ...new Set(transactions.map(orderOf).filter((id): id is string => Boolean(id))),
   ];
   const displayIds = new Map<string, number>();
   if (orderIds.length) {
@@ -90,8 +104,8 @@ export async function pointsSummary(
       amount: toNumber(t.amount as never),
       reference: t.reference,
       // El pedido sí (enlace en «Mi cuenta»); otras referencias, no.
-      order_id: t.reference.startsWith("order") ? t.reference_id : null,
-      order_display_id: displayIds.get(t.reference_id) ?? null,
+      order_id: orderOf(t),
+      order_display_id: displayIds.get(orderOf(t) ?? "") ?? null,
       note: t.note,
       created_at: t.created_at,
     })),

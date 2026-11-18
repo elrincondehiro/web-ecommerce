@@ -11,6 +11,7 @@ import {
 } from "@medusajs/medusa/core-flows";
 import seedStore, { PRODUCT_TYPE_IVA_REDUCIDO } from "../../src/scripts/seed";
 import { accruePoints } from "../../src/lib/points-accrue";
+import { ORDER_ADJUSTMENT_FIELDS, pointsDiscount } from "../../src/lib/points";
 import { deleteStalePointsPromotions } from "../../src/lib/stale-carts";
 import { POINTS_MODULE } from "../../src/modules/points";
 import type PointsModuleService from "../../src/modules/points/service";
@@ -243,6 +244,63 @@ medusaIntegrationTestRunner({
     const balance = async (auth: { headers: Record<string, string> }) =>
       (await api.get("/store/customers/me/points", auth)).data.balance as number;
 
+    /**
+     * Devolución recibida de esas líneas y el evento `order.return_received` (lo emite el flujo
+     * del Admin, confirm-receive-return-request, con este payload; los workflows de aquí no).
+     * Devuelve el return_id.
+     */
+    const returnLines = async (orderId: string, items: { id: string; quantity: number }[]) => {
+      // La BD se recrea en cada test: se busca (o crea) la opción cada vez.
+      let returnOptionId = (
+        await container.resolve(Modules.FULFILLMENT).listShippingOptions({ name: "Devolución" })
+      )[0]?.id;
+      if (!returnOptionId) {
+        // El seed no tiene opción de devolución: una de 0 € solo para el test.
+        const fulfillment = container.resolve(Modules.FULFILLMENT);
+        const [zone] = await fulfillment.listServiceZones({});
+        const [profile] = await fulfillment.listShippingProfiles({ type: "default" });
+        const {
+          result: [option],
+        } = await createShippingOptionsWorkflow(container).run({
+          input: [
+            {
+              name: "Devolución",
+              price_type: "flat",
+              provider_id: "manual_manual",
+              service_zone_id: zone!.id,
+              shipping_profile_id: profile!.id,
+              type: { label: "Devolución", description: "Devolución", code: "return" },
+              prices: [{ region_id: regionId, amount: 0 }],
+              rules: [
+                { attribute: "enabled_in_store", value: "true", operator: "eq" },
+                { attribute: "is_return", value: "true", operator: "eq" },
+              ],
+            },
+          ],
+        });
+        returnOptionId = option!.id;
+      }
+      const [loc] = await container.resolve(Modules.STOCK_LOCATION).listStockLocations({});
+      const m = events.length;
+      // En dos pasos: con `receive_now`, core-flows 2.21.2 recibe TODAS las líneas del pedido.
+      const { result: ret } = await createAndCompleteReturnOrderWorkflow(container).run({
+        input: {
+          order_id: orderId,
+          items,
+          return_shipping: { option_id: returnOptionId, price: 0 },
+          location_id: loc!.id,
+        },
+      });
+      await receiveAndCompleteReturnOrderWorkflow(container).run({
+        input: { return_id: ret.id, items },
+      });
+      await container
+        .resolve(Modules.EVENT_BUS)
+        .emit({ name: "order.return_received", data: { order_id: orderId, return_id: ret.id } });
+      await waitEvent("order.return_received", m);
+      return ret.id as string;
+    };
+
     it("canje: baja el IVA, topes, sustituir, quitar y carrito ajeno", async () => {
       const ana = await customer("ana@example.com");
       const luis = await customer("luis@example.com");
@@ -469,49 +527,7 @@ medusaIntegrationTestRunner({
         filters: { id: o2 },
       });
       const line = data[0]!.items!.find((i) => i!.variant_id === v10)!;
-      // El seed no tiene opción de devolución: una de 0 € solo para el test.
-      const fulfillment = container.resolve(Modules.FULFILLMENT);
-      const [zone] = await fulfillment.listServiceZones({});
-      const [profile] = await fulfillment.listShippingProfiles({ type: "default" });
-      const {
-        result: [returnOption],
-      } = await createShippingOptionsWorkflow(container).run({
-        input: [
-          {
-            name: "Devolución",
-            price_type: "flat",
-            provider_id: "manual_manual",
-            service_zone_id: zone!.id,
-            shipping_profile_id: profile!.id,
-            type: { label: "Devolución", description: "Devolución", code: "return" },
-            prices: [{ region_id: regionId, amount: 0 }],
-            rules: [
-              { attribute: "enabled_in_store", value: "true", operator: "eq" },
-              { attribute: "is_return", value: "true", operator: "eq" },
-            ],
-          },
-        ],
-      });
-      const [loc] = await container.resolve(Modules.STOCK_LOCATION).listStockLocations({});
-      const m = events.length;
-      // En dos pasos: con `receive_now`, core-flows 2.21.2 recibe TODAS las líneas del pedido.
-      const { result: ret } = await createAndCompleteReturnOrderWorkflow(container).run({
-        input: {
-          order_id: o2,
-          items: [{ id: line.id, quantity: 1 }],
-          return_shipping: { option_id: returnOption!.id, price: 0 },
-          location_id: loc!.id,
-        },
-      });
-      await receiveAndCompleteReturnOrderWorkflow(container).run({
-        input: { return_id: ret.id, items: [{ id: line.id, quantity: 1 }] },
-      });
-      // Este workflow no emite el evento (lo emite el flujo del Admin, confirm-receive-return-
-      // request, con este mismo payload): se emite aquí para probar el subscriber.
-      await container
-        .resolve(Modules.EVENT_BUS)
-        .emit({ name: "order.return_received", data: { order_id: o2, return_id: ret.id } });
-      await waitEvent("order.return_received", m);
+      const ret = await returnLines(o2, [{ id: line.id, quantity: 1 }]);
 
       for (let i = 0; i < 50 && (await balance(ana.auth)) !== 4.24; i++) {
         await new Promise((r) => setTimeout(r, 100));
@@ -520,9 +536,91 @@ medusaIntegrationTestRunner({
       // La misma devolución otra vez: idempotente.
       await container
         .resolve(Modules.EVENT_BUS)
-        .emit({ name: "order.return_received", data: { order_id: o2, return_id: ret.id } });
+        .emit({ name: "order.return_received", data: { order_id: o2, return_id: ret } });
       await new Promise((r) => setTimeout(r, 1000));
       expect(await balance(ana.auth)).toBe(4.24);
+    });
+
+    it("fase 13 (P2): la devolución devuelve la parte canjeada (proporcional; todo al final)", async () => {
+      const ana = await customer("devuelve-canje@example.com");
+      await credit(ana.id, 10);
+      // 10 € canjeados en 100 € de productos (30 € y 70 €), como el plan de faseL §6.4
+      const cartId = await newCart(ana.auth, [
+        [v21, 1],
+        [v10, 1],
+      ]);
+      await api.post(`/store/carts/${cartId}/points`, { amount: 10 }, ana.auth);
+      const orderId = ((await pay(cartId, ana.auth)).data as { order: { id: string } }).order.id;
+      for (let i = 0; i < 50 && (await balance(ana.auth)) !== 0; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(await balance(ana.auth)).toBe(0);
+      // El envío sube la versión del pedido: Medusa duplica los ajustes (uno por versión) y
+      // Query los devuelve todos; ORDER_ADJUSTMENT_FIELDS + pointsDiscount solo cuentan la última.
+      await ship(orderId, 1);
+      const { data } = await query().graph({
+        entity: "order",
+        fields: ["items.id", "items.variant_id", ...ORDER_ADJUSTMENT_FIELDS],
+        filters: { id: orderId },
+      });
+      const items = data[0]!.items!;
+      const of = (variant: string) => items.find((i) => i!.variant_id === variant)!;
+      const share = (variant: string) => pointsDiscount([of(variant)] as never).amount;
+      expect(pointsDiscount(items as never).amount).toBe(10);
+
+      // Devuelvo la línea de 70 € → se devuelve su parte (7 €)
+      const r1 = await returnLines(orderId, [{ id: of(v10).id, quantity: 1 }]);
+      for (let i = 0; i < 50 && (await balance(ana.auth)) === 0; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(await balance(ana.auth)).toBe(share(v10));
+      // Repetido: idempotente
+      await container
+        .resolve(Modules.EVENT_BUS)
+        .emit({ name: "order.return_received", data: { order_id: orderId, return_id: r1 } });
+      await new Promise((r) => setTimeout(r, 1000));
+      expect(await balance(ana.auth)).toBe(share(v10));
+
+      // Devuelvo el resto → se completan los 10 €
+      await returnLines(orderId, [{ id: of(v21).id, quantity: 1 }]);
+      for (let i = 0; i < 50 && (await balance(ana.auth)) !== 10; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(await balance(ana.auth)).toBe(10);
+      const moves = (await movements(ana.id)).filter((m) => m.reference === "return_redeem");
+      expect(moves).toHaveLength(2);
+      // «Mi cuenta» los enseña con el número del pedido
+      const summary = (await api.get("/store/customers/me/points", ana.auth)).data as {
+        transactions: { reference: string; order_id: string | null }[];
+      };
+      expect(
+        summary.transactions.filter((t) => t.reference === "return_redeem").map((t) => t.order_id),
+      ).toEqual([orderId, orderId]);
+    });
+
+    it("fase 13 (P2): con POINTS_REFUND_REDEEMED_ON_RETURN=false no se devuelve nada", async () => {
+      process.env.POINTS_REFUND_REDEEMED_ON_RETURN = "false";
+      try {
+        const ana = await customer("no-devuelve-canje@example.com");
+        await credit(ana.id, 5);
+        const cartId = await newCart(ana.auth, [[v21, 1]]);
+        await api.post(`/store/carts/${cartId}/points`, { amount: 5 }, ana.auth);
+        const orderId = ((await pay(cartId, ana.auth)).data as { order: { id: string } }).order.id;
+        for (let i = 0; i < 50 && (await balance(ana.auth)) !== 0; i++) {
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        await ship(orderId, 1);
+        const { data } = await query().graph({
+          entity: "order",
+          fields: ["items.id"],
+          filters: { id: orderId },
+        });
+        await returnLines(orderId, [{ id: data[0]!.items![0]!.id, quantity: 1 }]);
+        await new Promise((r) => setTimeout(r, 1000));
+        expect(await balance(ana.auth)).toBe(0);
+      } finally {
+        delete process.env.POINTS_REFUND_REDEEMED_ON_RETURN;
+      }
     });
 
     it("admin: ajuste con nota (cargo recortado al saldo) e informe", async () => {

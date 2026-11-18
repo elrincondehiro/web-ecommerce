@@ -72,6 +72,8 @@ x-backend: &backend
     # Fase G: ventana del abono y puntos de los pedidos de invitado pasados a la cuenta
     POINTS_ACCRUE_LOOKBACK_DAYS: ${POINTS_ACCRUE_LOOKBACK_DAYS:-120}
     POINTS_RETROACTIVE: ${POINTS_RETROACTIVE:-true}
+    # Fase 13: devolver la parte canjeada al recibir una devolución
+    POINTS_REFUND_REDEEMED_ON_RETURN: ${POINTS_REFUND_REDEEMED_ON_RETURN:-true}
     # Fase G-2: caducidad de las solicitudes de transferencia de pedidos (job del worker)
     ORDER_TRANSFER_TTL_DAYS: ${ORDER_TRANSFER_TTL_DAYS:-7}
     ORDER_TRANSFER_EXPIRE_CRON: ${ORDER_TRANSFER_EXPIRE_CRON:-15 4 * * *}

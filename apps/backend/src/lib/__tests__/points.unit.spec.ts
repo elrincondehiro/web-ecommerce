@@ -8,6 +8,8 @@ import {
   maxRedeemable,
   pointsDiscount,
   pointsFor,
+  redeemedForReturned,
+  refundRedeemedOnReturn,
 } from "../points";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -111,5 +113,62 @@ describe("puntos: canje", () => {
     ];
     expect(pointsDiscount(items)).toEqual({ code: "PTS-1", amount: 3.93 });
     expect(pointsDiscount([])).toEqual({ code: null, amount: 0 });
+  });
+});
+
+describe("ajustes versionados del pedido (fase 13)", () => {
+  it("de cada línea solo cuenta la última versión (Query devuelve todas)", () => {
+    const items = [
+      {
+        adjustments: [
+          { code: "PTS-1", amount: 7, version: 1 },
+          { code: "PTS-1", amount: 7, version: 2 },
+        ],
+      },
+      {
+        adjustments: [
+          { code: "PTS-1", amount: 3, version: 1 },
+          { code: "PTS-1", amount: 3, version: 2 },
+        ],
+      },
+    ];
+    expect(pointsDiscount(items)).toEqual({ code: "PTS-1", amount: 10 });
+    // Sin versión (carrito o una sola): todas
+    expect(pointsDiscount([{ adjustments: [{ code: "PTS-1", amount: 2 }] }]).amount).toBe(2);
+  });
+});
+
+describe("devolución de lo canjeado (fase 13, P2)", () => {
+  // 10 € canjeados en 150 € de productos: el descuento se reparte por línea (Medusa).
+  const line = (qty: number, received: number, points: number) => ({
+    quantity: qty,
+    detail: { return_received_quantity: received },
+    adjustments: [{ code: "PTS-1", amount: points }],
+  });
+
+  it("proporcional a lo recibido; al céntimo hacia abajo", () => {
+    // Medusa reparte el descuento por línea al céntimo: 70 € → 4,67 y 80 € → 5,33
+    expect(redeemedForReturned([line(1, 1, 4.67), line(1, 0, 5.33)])).toBe(4.67);
+    // 3 unidades con 10 € de puntos, devuelta 1 → 3,33 (hacia abajo)
+    expect(redeemedForReturned([line(3, 1, 10)])).toBe(3.33);
+    // Mitad de una línea de 2 unidades
+    expect(redeemedForReturned([line(2, 1, 3), line(1, 0, 7)])).toBe(1.5);
+  });
+
+  it("todo devuelto → todo lo canjeado; nada devuelto o sin puntos → 0", () => {
+    expect(redeemedForReturned([line(1, 1, 4.67), line(1, 1, 5.33)])).toBe(10);
+    expect(redeemedForReturned([line(1, 0, 10)])).toBe(0);
+    expect(
+      redeemedForReturned([
+        { quantity: 1, detail: { return_received_quantity: 1 }, adjustments: [] },
+      ]),
+    ).toBe(0);
+    expect(redeemedForReturned(null)).toBe(0);
+  });
+
+  it("interruptor POINTS_REFUND_REDEEMED_ON_RETURN: activo salvo «false»", () => {
+    expect(refundRedeemedOnReturn(undefined)).toBe(true);
+    expect(refundRedeemedOnReturn("true")).toBe(true);
+    expect(refundRedeemedOnReturn("false")).toBe(false);
   });
 });

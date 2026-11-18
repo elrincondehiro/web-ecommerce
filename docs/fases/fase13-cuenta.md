@@ -14,6 +14,7 @@
 - [x] **4. Limpieza de carritos de invitado con pago pendiente, carritos de cuenta y purga** de lo
       borrado en suave (fase10 §7).
 - [x] **5. «Esperando transferencia»** en «Mis pedidos», en la ficha del pedido y en «Mi cuenta».
+- [x] **6. Devolver los puntos canjeados en las devoluciones** (automático; interruptor activo).
 - [x] **7. Admin: pasar un pedido de invitado a una cuenta** desde la ficha del pedido.
 
 ## 2. Qué se ha hecho
@@ -105,6 +106,29 @@
 - Probado en el Admin (Playwright contra `/app`): el widget sale en un pedido de invitado (error
   «No hay ninguna cuenta con ese email.») y no en uno de cuenta.
 
+### 2.5 Puntos canjeados en las devoluciones (punto 6) y ajustes versionados
+
+- Subscriber `points-return-received`: además de retirar lo abonado de más (L-2), devuelve la parte
+  canjeada que corresponde a lo devuelto: por línea, su descuento de puntos × unidades recibidas /
+  unidades, al céntimo hacia abajo; si se devuelve todo, todo lo canjeado (`redeemedForReturned`).
+  Menos lo ya devuelto en devoluciones anteriores, nunca más de lo canjeado. Abono `return_redeem`
+  - return_id (idempotente) con `metadata.order_id`. Interruptor
+    `POINTS_REFUND_REDEEMED_ON_RETURN` (activo salvo `false`; decisión del usuario).
+- «Mi cuenta» y el Admin: «Devueltos por una devolución del pedido #N» / «Devolución de puntos
+  canjeados»; los movimientos de devolución enlazan su pedido (`metadata.order_id`).
+- **Fallo encontrado (ya en `main`):** Medusa 2.22.7 versiona los ajustes de las líneas del pedido
+  (un envío o una devolución sube la versión y los copia) y Query, con campos sueltos
+  (`items.adjustments.code`), devuelve los de **todas** las versiones: tras el envío, 10 € de
+  puntos se leían como 20 €. Afectaba a los emails de envío y de transferencia (puntos usados y
+  «Otros descuentos») y a la anulación de códigos al cancelar. Arreglo: `items.adjustments.*` en
+  las consultas de pedidos (solo la versión actual, `ORDER_ADJUSTMENT_FIELDS`) y `pointsDiscount`
+  cuenta solo la última versión de cada línea. Con `items.detail.*` en la misma consulta falla
+  («Item version is required»): el subscriber de devoluciones lee los ajustes aparte
+  (`orderAdjustments`). Fuente: código de @medusajs/order 2.22.7 (`base-repository-find`,
+  `loadItemAdjustments`) y context7 /medusajs/medusa (order versioning, adjustment versioning).
+- Con el reparto de Medusa al céntimo, el ejemplo del plan (10 € en 30 + 70 €; devuelvo los 70 €)
+  devuelve 7 € y, con la segunda devolución, los 10 €.
+
 ## 3. Decisiones tomadas
 
 | Decisión                                                                                                                  | Motivo                                                                                                                                   | Fuente consultada                                                                                                                           |
@@ -144,6 +168,7 @@ TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules \
   pnpm --filter backend exec jest --silent --maxWorkers=1 --forceExit integration-tests/http/limpieza.spec.ts   # 3 (punto 4)
 # punto 5: pagos.spec.ts («transferencia…») y e2e transferencia.spec.ts
 # punto 7: invitados.spec.ts («fase 13 punto 7…»); el widget, a mano en el Admin
+# punto 6: puntos.spec.ts («fase 13 (P2)…») y points.unit.spec.ts
 pnpm --filter storefront exec vitest run src/lib/account.test.ts
 # e2e sin JS (backend con EMAIL_TRANSPORT=smtp): cuenta.spec.ts → «eliminar la cuenta…»
 pnpm --filter storefront exec playwright test cuenta --project escritorio
@@ -163,7 +188,8 @@ antiguo.
       tests HTTP.
 - [x] «Esperando transferencia» (punto 5), con test HTTP y e2e.
 - [x] Admin: pasar un pedido de invitado a una cuenta (punto 7), con test HTTP y prueba en el Admin.
-- [ ] Puntos 6 y 8.
+- [x] Puntos canjeados en las devoluciones (punto 6) y ajustes versionados, con tests HTTP.
+- [ ] Punto 8.
 
 ## 7. Pendientes / riesgos
 

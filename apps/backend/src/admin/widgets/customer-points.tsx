@@ -28,6 +28,7 @@ const LABELS: Record<string, string> = {
   order_redeem: "Canje en pedido",
   order_canceled: "Devolución por cancelación",
   return: "Devolución de productos",
+  return_redeem: "Devolución de puntos canjeados",
   adjustment: "Ajuste manual",
   account_deleted: "Baja de la cuenta",
 };

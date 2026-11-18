@@ -21,8 +21,8 @@ export default async function codesOrderCanceled({
       "email",
       "customer_id",
       "metadata",
-      "items.adjustments.code",
-      "items.adjustments.amount",
+      // Fase 13: solo los de la versión actual (lib/points.ts ORDER_ADJUSTMENT_FIELDS).
+      "items.adjustments.*",
     ],
     filters: { id: data.id },
   });

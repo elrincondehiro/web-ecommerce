@@ -10,6 +10,13 @@ describe("puntos (L-3)", () => {
       "Usados en el pedido #7",
     );
     expect(transactionLabel({ reference: "adjustment", order_display_id: null })).toBe("Ajuste");
+    // Fase 13: devoluciones con su pedido
+    expect(transactionLabel({ reference: "return_redeem", order_display_id: 9 })).toBe(
+      "Devueltos por una devolución del pedido #9",
+    );
+    expect(transactionLabel({ reference: "return", order_display_id: 9 })).toBe(
+      "Retirados por una devolución del pedido #9",
+    );
     expect(transactionLabel({ reference: "otra", order_display_id: null })).toBe("Movimiento");
   });
 
