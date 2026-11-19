@@ -120,8 +120,31 @@ Kuma sigue esperando un 403 en la raíz de `api.` (fase11 §4.9): no cambia.
    → «🐛 Error en backend», con el error y su enlace. **Test** para probarlo.
 5. En el VPS (`/opt/ecommerce/.env.prod`): `SENTRY_DSN_BACKEND` y `SENTRY_DSN_STOREFRONT`, y
    `./dc up -d backend-server backend-worker storefront` (con el `compose.prod.yml` nuevo).
-6. Comprobar desde el VPS que llega: `curl -s -o /dev/null -w '%{http_code}\n' http://10.77.0.3:8000/`
-   (302). Un error de prueba: en Bugsink, cada proyecto tiene un ejemplo para enviar uno.
+6. Prueba desde cada contenedor del VPS (`cd /opt/ecommerce`), con el SDK y su DSN:
+
+   ```bash
+   ./dc exec backend-server node -e 'if(!process.env.SENTRY_DSN){console.log("FALTA SENTRY_DSN");process.exit(1)} const S=require("@sentry/node"); S.init({dsn:process.env.SENTRY_DSN,debug:true}); S.captureException(new Error("Prueba de Bugsink (backend)")); S.flush(10000)' 2>&1 | grep -E "FALTA|status code|Captured"
+   # igual con backend-worker; storefront (ESM):
+   ./dc exec storefront node --input-type=module -e 'if(!process.env.SENTRY_DSN){console.log("FALTA SENTRY_DSN");process.exit(1)} const S=await import("@sentry/node"); S.init({dsn:process.env.SENTRY_DSN,debug:true}); S.captureException(new Error("Prueba de Bugsink (storefront)")); await S.flush(10000)' 2>&1 | grep -E "FALTA|status code|Captured"
+   ```
+
+   Solo «Captured error event» = enviado; el error aparece en Bugsink y llegan el email y ntfy.
+   **Ojo:** `flush()` devuelve `true` aunque Bugsink conteste un error, por eso se mira el log de
+   `debug`. Si sale `status code 400`, Bugsink no acepta el nombre del host: `ALLOWED_HOSTS` en el
+   compose de la VM (debe incluir `10.77.0.3`). «FALTA SENTRY_DSN»: el contenedor no tiene la
+   variable (`compose.prod.yml` nuevo en el VPS y `./dc up -d`; `./dc config | grep -c SENTRY_DSN`
+   da 4).
+   Sin desplegar nada, con `curl` desde la LAN:
+
+   ```bash
+   KEY=<clave>; ID=<id>
+   curl -s -X POST "http://10.0.10.230:8000/api/$ID/store/" \
+     -H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=$KEY" -H "Content-Type: application/json" \
+     -d "{\"event_id\":\"$(openssl rand -hex 16)\",\"level\":\"error\",\"platform\":\"other\",\"timestamp\":$(date +%s),\"message\":\"Prueba de Bugsink con curl\"}"
+   ```
+
+   Bugsink agrupa los errores iguales: repetir la misma prueba no vuelve a avisar (para otro aviso,
+   resolver el error antes). Al terminar, resolver o borrar las pruebas.
 
 ### 4.4 Qué mirar en cada herramienta
 

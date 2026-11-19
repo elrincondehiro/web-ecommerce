@@ -93,6 +93,10 @@ services:
       # Solo crea el usuario si aún no hay ninguno (primer arranque).
       CREATE_SUPERUSER: ${BUGSINK_SUPERUSER:?}
       BASE_URL: http://10.0.10.230:8000
+      # Nombres con los que se le llama: la LAN (panel) y el túnel (el SDK del VPS envía a
+      # 10.77.0.3). Sin esto Bugsink los deduce de BASE_URL y responde 400 a 10.77.0.3, y el SDK
+      # lo da por enviado (bugsink_conf.py 2.6.3: ALLOWED_HOSTS separados por comas).
+      ALLOWED_HOSTS: 10.0.10.230,10.77.0.3,localhost,127.0.0.1
       SITE_TITLE: Errores · El Rincón de Hiro
       TIME_ZONE: Europe/Madrid
       # Un usuario y un equipo: sin registro abierto.
