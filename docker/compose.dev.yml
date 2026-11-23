@@ -61,7 +61,7 @@ services:
   # S3 local (imita Cloudflare R2). `weed mini` = master + volume + filer + S3 + admin UI.
   # Credenciales y bucket se crean al arrancar vía AWS_* / S3_BUCKET.
   seaweedfs:
-    image: chrislusf/seaweedfs:4.54
+    image: chrislusf/seaweedfs:4.55
     restart: unless-stopped
     command: ["mini", "-dir=/data", "-master.telemetry=false"]
     environment:
@@ -97,7 +97,7 @@ services:
   # El whsec_ para STRIPE_WEBHOOK_SECRET (apps/backend/.env):
   #   docker compose --env-file docker/.env -f docker/compose.dev.yml run --rm stripe-cli listen --print-secret
   stripe-cli:
-    image: stripe/stripe-cli:v1.55.11
+    image: stripe/stripe-cli:v1.55.14
     profiles: ["stripe"]
     command:
       - listen
