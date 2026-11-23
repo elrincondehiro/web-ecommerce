@@ -5,6 +5,11 @@
   "labels": ["dependencies"],
   "timezone": "Europe/Madrid",
   "schedule": ["before 7am on monday"],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "dependencyDashboardApproval": false,
+    "labels": ["dependencies", "seguridad"]
+  },
   "docker-compose": {
     "digest": {
       "enabled": false
@@ -53,11 +58,23 @@
       "groupSlug": "all-non-major"
     },
     {
-      "description": "Meilisearch en su propio PR (después de la regla de no-major, que la sustituye): con datos de otra versión no arranca. En el VPS: snapshot + arrancar una vez con MEILI_UPGRADE_DB (PENDIENTES §1, v0.3.2)",
+      "description": "Medusa fuera del PR semanal (después de la regla de no-major, que la sustituye): una minor de Medusa puede traer cambios incompatibles (2.23: Express 5, React 19 en el Admin, BullMQ 6) y sin vuelta atrás sobre el mismo Redis. Solo con aprobación en el Dependency Dashboard, en su propio PR; se revisa cada 3–6 meses (o antes con un aviso de seguridad)",
+      "matchPackageNames": ["@medusajs/**", "create-medusa-app"],
+      "groupName": "medusa",
+      "groupSlug": "medusa",
+      "dependencyDashboardApproval": true,
+      "labels": ["dependencies", "medusa"],
+      "prBodyNotes": [
+        "⚠️ **Actualización de Medusa: revisar sus notas de versión** (cambios incompatibles en minors) y seguir docs/PENDIENTES.md, «Subir Medusa»: React del Admin, widgets en el navegador, copia de Redis y server + worker a la vez."
+      ]
+    },
+    {
+      "description": "Meilisearch en su propio PR y solo con aprobación en el Dependency Dashboard (después de la regla de no-major, que la sustituye; se revisa cada 3–6 meses con Medusa): con datos de otra versión no arranca. En el VPS: snapshot + arrancar una vez con MEILI_UPGRADE_DB (PENDIENTES §1, v0.3.2)",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["getmeili/meilisearch"],
       "groupName": "meilisearch",
       "groupSlug": "meilisearch",
+      "dependencyDashboardApproval": true,
       "labels": ["dependencies", "requiere-upgrade-db"],
       "prBodyNotes": [
         "⚠️ **Meilisearch cambia de versión: no arranca con la base de la versión anterior.** En el VPS, antes de `./dc up -d`: `./dc stop meilisearch`, copia del volumen `web-ecommerce_meilidata` y arrancarlo **una vez** con `MEILI_UPGRADE_DB=true` (pasos en `docs/PENDIENTES.md`, «Subir Meilisearch en el VPS»). En dev ya lleva `MEILI_UPGRADE_DB=true`."

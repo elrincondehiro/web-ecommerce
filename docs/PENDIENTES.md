@@ -43,6 +43,33 @@ printf 'services:\n  meilisearch:\n    environment:\n      MEILI_UPGRADE_DB: "tr
 
 Si algo falla: volver a la versión anterior en `compose.prod.yml` y restaurar el `.tgz` en el volumen.
 
+### Subir Medusa (PR propio de Renovate, con aprobación)
+
+**Política (23-nov-2026, decisión del usuario):** Medusa y Meilisearch **fijos** (2.22.7 y 1.57.0)
+hasta después de abrir; se proponen solo con aprobación en el Dependency Dashboard y se revisan
+**cada 3–6 meses** en una ventana tranquila (fuera de temporada alta), o antes si hay un aviso de
+seguridad. El resto sigue en el PR semanal, sin obligación de integrarlo cada semana. Próxima
+revisión: **feb–may 2027**.
+
+Avisos de seguridad: `pnpm audit` en cada PR (CI) y Renovate con `osvVulnerabilityAlerts` (base de
+datos OSV; `vulnerabilityAlerts` a secas solo funciona en GitHub): PR inmediato con la etiqueta
+`seguridad`, **sin** esperar al lunes ni a la aprobación del Dashboard (también para Medusa y
+Meilisearch). Solo dependencias **directas** de npm; las imágenes Docker no. Si llega uno de Medusa,
+revisar si la versión arreglada es otra minor (con sus cambios incompatibles) o un parche.
+
+Medusa va fuera del PR semanal (`renovate.json`): sus minors traen cambios incompatibles. Pendiente:
+**2.23.0** (Express 5, React 19/Vite 8/Tailwind 4 en el Admin, BullMQ 6/ioredis 6; notas en GitHub,
+release v2.23.0). Probado en local (23-nov-2026) sobre el PR de Renovate: build y tests unitarios
+pasan arreglando el tipo del `errorHandler` (`void`, src/api/middlewares.ts). Antes de integrarla:
+
+- backend: `react`/`react-dom` → 19.3.x y `@types/react`/`@types/react-dom` → 19.3.x (con React 18
+  hay dos copias y los widgets fallan **en el navegador**, sin error en el build);
+- Tailwind 4 en los widgets: `rounded` → `rounded-sm` (el resto de clases, igual);
+- revisar a mano cada widget del Admin y pasar los tests HTTP (en la prueba fallaron todos al crear
+  la BD de test: investigar);
+- despliegue: copia de Redis, server y worker **a la vez** (BullMQ 6 migra los trabajos
+  programados) y **sin vuelta atrás** a 2.22 sobre el mismo Redis.
+
 ### Umami: tamaño del script (revisar cada mes, o al salir una versión nueva)
 
 Renovate tiene Umami fijado a `<3.5.0` (`renovate.json`): el `script.js` de 3.5.0 pesa **4,15 KB gzip** (añade
