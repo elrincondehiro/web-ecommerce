@@ -1,0 +1,8 @@
+# STOCK · pnpm --filter backend stock:import catalog/plantilla/stock/stock.csv [fijar] [dry-run] (instrucciones: LEEME.md de esta carpeta).
+# Una fila por variante: sku O ean O handle (handle solo si el producto tiene UNA variante). stock: entero (granel: gramos).
+# modo (opcional): sumar (repone) o fijar (cuadra con el recuento). Vacío = el de la orden: sumar, o fijar si la pasas.
+sku,ean,handle,stock,modo
+COL-NYL-S-AZU,,,5,
+COL-NYL-L-AZU,,,12,fijar
+,8400000000024,,3,
+,,taza-logo,20,fijar

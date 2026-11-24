@@ -78,3 +78,17 @@ docker build -f apps/backend/Dockerfile -t ecommerce-backend:local . && docker i
 = "…,-variants"`): el widget las pide aparte. Sin dependencias (sin arrastrar). Probado en el Admin con Playwright.
   `lib/value-order.ts` idéntico en backend y storefront (test).
 - La tienda lo enseña tras la siguiente publicación (el cambio de variante dispara el rebuild).
+
+## 7. `stock:import`: stock en masa (23-nov-2026)
+
+- `pnpm --filter backend stock:import <hoja.csv> [fijar] [dry-run]` (`src/scripts/stock-import.ts`; hoja y plan puros en
+  `lib/stock-import.ts`). Plantilla y LEEME: `catalog/plantilla/stock/`.
+- **Columnas**: `sku`, `ean` o `handle` (uno por fila; el handle solo con productos de una variante; si hay varios,
+  manda el SKU y se avisa) + `stock` (entero; granel en gramos) + `modo` opcional **por fila** (`sumar`/`fijar`; vacío =
+  el de la orden). **Por defecto `sumar`** (reponer), `fijar` como opción (decisiones del usuario, modo híbrido).
+- Respeta lo reservado (avisa al fijar por debajo); la misma variante dos veces se aplica en orden; productos sin control
+  de stock → error; con cualquier error no escribe nada. `updateInventoryLevelsWorkflow` (como `stock:mock`) y
+  `clearMedusaCache`; la búsqueda se pone al día con `search-stock-sync` (≤ 5 min).
+- Tests: unit (`stock-import.unit.spec.ts`, la plantilla en `catalog-templates`) y HTTP (`stock-import.spec.ts`: la
+  hoja de ejemplo, `fijar`, `dry-run`, errores, reservas y granel). Probado en dev con `dry-run` (informe
+  `antes → después` y errores por línea).

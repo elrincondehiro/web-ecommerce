@@ -473,6 +473,7 @@ pnpm --filter backend exec medusa db:migrate
 pnpm backend:seed                                         # región ES, IVA, envíos, publishable key, Collection destacados
 pnpm backend:mock:load [1000] [fotos]                     # catálogo de desarrollo completo (apps/backend/catalog/mock/LEEME.md), idempotente
 pnpm backend:stock:mock                                   # repone stock libre de los mock (los e2e de checkout lo gastan)
+pnpm --filter backend stock:import <hoja.csv> [fijar] [dry-run]  # stock en masa (catalog/plantilla/stock/)
 pnpm backend:orders:cancel [dry-run]                      # cancela los pedidos de prueba (@example.com): libera su stock reservado
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup  # limpieza de carritos a mano (fase 10-4 y fase 13)
 pnpm --filter backend purge:deleted                       # purga definitiva de lo borrado en suave (fase 13)

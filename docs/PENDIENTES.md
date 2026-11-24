@@ -155,7 +155,7 @@ esa BD (Prisma: «No pending migrations») y se dejan. Probado en dev. En el VPS
 ## 5. Pendientes técnicos menores 🟢
 
 - **Búsqueda** (fase7 §7): normalizar la URL de `/buscar/` para la caché; desfase del índice con precios (evento); `min_price` no tiene en cuenta las Price Lists; recuentos de facetas con las correas (faseE).
-- **Catálogo** (faseC, faseS): `stock:import` para reponer en masa; el Admin muestra el granel en pasos (extensión o aviso en el albarán); ~~variantes sin `variant_rank` (S, L, M)~~ ✅ fase13-optimizacion.md §6; reindexar al cambiar una categoría de padre.
+- **Catálogo** (faseC, faseS): ~~`stock:import` para reponer en masa~~ ✅ fase13-optimizacion.md §7; el Admin muestra el granel en pasos (extensión o aviso en el albarán); ~~variantes sin `variant_rank` (S, L, M)~~ ✅ fase13-optimizacion.md §6; reindexar al cambiar una categoría de padre.
 - **Correas** (faseE): fotos de mosquetones (rejilla), plazo de fabricación provisional, ofertas en correas (rompen el build a propósito).
 - **Puntos** (faseL §8): devolución automática de puntos canjeados en devoluciones (plan en §6.4); revisar el widget del Admin; unificar con la tienda física (`channel: "tienda"`).
 - **Códigos** (faseP): no crear códigos sobre el envío ni promociones automáticas sin revisar `checkCodes`.

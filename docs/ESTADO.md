@@ -114,6 +114,7 @@ pnpm backend:seed            # idempotente
 pnpm backend:mock:load [1000] [fotos]             # catálogo de desarrollo completo: mocks, arneses, correas, caja (catalog/mock/LEEME.md)
 pnpm --filter backend catalog:import <carpeta>    # carga real: plantillas por caso en catalog/plantilla/LEEME.md
 pnpm backend:stock:mock      # idempotente: repone stock libre de los mock (los e2e de checkout lo gastan)
+pnpm --filter backend stock:import <hoja.csv> [fijar] [dry-run]   # stock en masa: sumar (por defecto) o fijar, por fila; sku, ean o handle (catalog/plantilla/stock/)
 pnpm backend:orders:cancel [dry-run]  # cancela los pedidos de prueba (@example.com) y libera su stock reservado (solo desarrollo)
 CART_CLEANUP_DAYS=5 pnpm --filter backend carts:cleanup   # limpieza de carritos a mano (fase 10-4 y fase 13: invitados con email, cuentas vaciadas a los 90 días)
 pnpm --filter backend purge:deleted                        # purga definitiva de lo borrado en suave > PURGE_DAYS (fase 13)

@@ -20,6 +20,7 @@ catálogo real, copia las que necesites a una carpeta tuya (`apps/backend/catalo
 | 3     | [`familias/`](./familias/LEEME.md)                       | Familias de los valores de una opción para los filtros (después de los productos)     | `catalog:import`                   |
 | 3     | [`descatalogado/`](./descatalogado/LEEME.md)             | Retirar un producto sin borrarlo, con sustituto                                       | `catalog:import`                   |
 | 4     | fotos                                                    | `handle_01.jpg`, `handle--valor_01.jpg` ([Fotos](#fotos))                             | `images:import`                    |
+| 5     | [`stock/`](./stock/LEEME.md)                             | Stock en masa: reponer (sumar) o cuadrar (fijar), por sku, ean o handle               | `stock:import`                     |
 
 ```bash
 # Tu carga: una carpeta con categorias.csv, productos.csv (todas las filas de los casos que uses, con las columnas

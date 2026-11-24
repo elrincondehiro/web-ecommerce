@@ -4,6 +4,7 @@ import { readCategories, readProducts } from "../lib/catalog-sheet";
 import { readCorreaSheets } from "../lib/correas-sheet";
 import { decodeUtf8, parseCsv } from "../lib/csv";
 import { readFamilies } from "../lib/families-sheet";
+import { readStockSheet } from "../lib/stock-import";
 
 /**
  * Las hojas de `catalog/plantilla/` (una carpeta por caso) y de `catalog/mock/` se leen sin
@@ -36,6 +37,11 @@ describe.each(["plantilla", "mock"])("catalog/%s", (base) => {
     }
     if (existsSync(file("familias.csv"))) {
       expect(readFamilies(sheet(file("familias.csv"))).errors).toEqual([]);
+    }
+    if (existsSync(file("stock.csv"))) {
+      const r = readStockSheet(decodeUtf8(readFileSync(file("stock.csv"))));
+      expect(r.errors).toEqual([]);
+      expect(r.rows.length).toBeGreaterThan(0);
     }
     if (existsSync(file("correas.csv"))) {
       const names = ["correas", "largos", "mosquetones", "piezas", "ajustes"];
