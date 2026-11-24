@@ -171,6 +171,7 @@ async function loadSnapshot(
         "variants.height",
         "variants.metadata",
         "variants.manage_inventory",
+        "variants.variant_rank",
         "variants.inventory_items.required_quantity",
         "variants.options.value",
         "variants.options.option_id",
@@ -305,6 +306,7 @@ function toDbProduct(p: Row): DbProduct {
       metadata: (v.metadata as Record<string, unknown> | null) ?? {},
       requiredQuantity: num(((v.inventory_items as Row[] | null) ?? [])[0]?.required_quantity),
       manageInventory: v.manage_inventory !== false,
+      rank: num(v.variant_rank),
     })),
   };
 }
@@ -856,7 +858,13 @@ export default async function importCatalog({ container, args }: ExecArgs) {
           await batchProductVariantsWorkflow(container).run({
             input: {
               create: u.newVariants.map((v) =>
-                variantCreateInput(v, product, itemFor, u.sheet.noStock),
+                variantCreateInput(
+                  v,
+                  product,
+                  itemFor,
+                  u.sheet.noStock,
+                  u.sheet.variants.indexOf(v),
+                ),
               ),
               update: u.variants.map((v) => variantUpdateInput(v, product, u.sheet.noStock)),
             },

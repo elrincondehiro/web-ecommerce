@@ -1,6 +1,7 @@
 // Funciones puras sobre productos de la Store API (sin I/O): testeables con Vitest.
 import type { HttpTypes } from "@medusajs/types";
 import { richTextPlain } from "./rich-text";
+import { compareVariants } from "./value-order";
 import {
   bulkInStock,
   bulkRule,
@@ -156,8 +157,25 @@ function bulkVariant(v: StoreVariant, rule: BulkRule): VariantAvailability {
   };
 }
 
+/**
+ * Variantes en su orden de presentación (`variant_rank` y, con el mismo, el orden natural de sus
+ * valores; lib/value-order.ts). La Store API las devuelve en orden de creación.
+ */
+export function sortedVariants(product: StoreProduct): StoreVariant[] {
+  const optionIds = (product.options ?? []).map((o) => o?.id);
+  const values = (v: StoreVariant) =>
+    optionIds.map(
+      (id) => (v.options ?? []).find((ov) => ov?.option_id === id)?.value ?? v.title ?? "",
+    );
+  return (product.variants ?? [])
+    .filter((v): v is StoreVariant => Boolean(v))
+    .map((v) => ({ v, key: { variant_rank: v.variant_rank, values: values(v) } }))
+    .sort((a, b) => compareVariants(a.key, b.key))
+    .map((x) => x.v);
+}
+
 export function getProductPricing(product: StoreProduct): ProductPricing {
-  const variants = (product.variants ?? []).map((v): VariantAvailability => {
+  const variants = sortedVariants(product).map((v): VariantAvailability => {
     const rule = bulkRule(v.metadata);
     if (rule) return bulkVariant(v, rule);
     const amount = variantAmount(v);

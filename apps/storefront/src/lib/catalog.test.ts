@@ -5,6 +5,7 @@ import {
   discountPercent,
   dryMatter,
   getProductPricing,
+  sortedVariants,
   isDiscontinued,
   isVariantInStock,
   metaDescription,
@@ -65,6 +66,44 @@ describe("getProductPricing", () => {
   it("sin precios calculados (catálogo de build)", () => {
     const p = getProductPricing({ ...byHandle("mock-clicker-esencial-018"), variants: [] });
     expect(p).toMatchObject({ fromAmount: null, currencyCode: null, inStock: false });
+  });
+});
+
+describe("orden de las variantes (fase 13)", () => {
+  const variant = (id: string, values: string[], rank?: number) => ({
+    id,
+    title: values.join(" / "),
+    ...(rank !== undefined ? { variant_rank: rank } : {}),
+    options: values.map((value, i) => ({ option_id: `opt_${i}`, value })),
+  });
+  const product = (variants: ReturnType<typeof variant>[]) =>
+    ({
+      options: [{ id: "opt_0" }, { id: "opt_1" }],
+      variants,
+    }) as unknown as Parameters<typeof sortedVariants>[0];
+
+  it("sin rango: orden natural (tallas, cantidades y alfabético), opción a opción", () => {
+    const p = product([
+      variant("a", ["L", "Rojo"]),
+      variant("b", ["S", "Verde"]),
+      variant("c", ["M", "Azul"]),
+      variant("d", ["S", "Azul"]),
+    ]);
+    expect(sortedVariants(p).map((v) => v.id)).toEqual(["d", "b", "c", "a"]);
+  });
+
+  it("el rango manda; con el mismo rango, el orden natural", () => {
+    const p = product([
+      variant("s", ["S", "Rojo"], 1),
+      variant("l", ["L", "Rojo"], 0),
+      variant("m", ["M", "Rojo"], 1),
+    ]);
+    expect(sortedVariants(p).map((v) => v.id)).toEqual(["l", "s", "m"]);
+  });
+
+  it("getProductPricing usa ese orden", () => {
+    const p = product([variant("x", ["XL", "A"]), variant("y", ["XS", "A"])]);
+    expect(getProductPricing(p).variants.map((v) => v.id)).toEqual(["y", "x"]);
   });
 });
 

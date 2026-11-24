@@ -17,4 +17,10 @@ pnpm --filter backend catalog:import catalog/plantilla/producto-variantes
 - Cada producto rellena **solo sus opciones**, y **todas** sus variantes llevan valor en ellas. Dos variantes del mismo producto no pueden repetir combinación.
 - **Producto sin variantes**: una sola fila, sin opciones. Se crea con la variante «Única» (opción «Formato»), que la tienda no muestra ni usa como filtro.
 - **En la ficha**: con **una** opción, una tabla con precio y stock por variante; con **dos o más** (o una con fotos o color por valor), el [selector de muestras](../selector-fotos/LEEME.md). Cada opción con más de un producto sale como **filtro** en la tienda (salvo las marcadas como no filtrables).
+- **Orden de las variantes en la tienda** (fase 13): el de las **filas** de la hoja. Al cargar, cada variante guarda su
+  posición (`variant_rank` 0, 1, 2…); si cambias el orden de las filas y vuelves a cargar, cambia también en la tienda.
+  También se puede ordenar en el Admin (widget «Orden de las variantes en la tienda» de la ficha del producto, con ↑/↓
+  y «Orden natural»): manda lo último que se guarde. Sin orden propio (o con el mismo), la tienda usa el **natural**:
+  tallas XXS→XXXL, cantidades por su magnitud (500 g antes que 1 kg) y el resto alfabético con números. Ojo con la
+  herencia de precio y peso al reordenar: es de la fila de arriba.
 - A un producto ya creado no se le pueden añadir ni quitar opciones desde la hoja; eso se hace en el Admin. Sí se pueden añadir variantes nuevas o valores nuevos.

@@ -59,3 +59,22 @@ docker build -f apps/backend/Dockerfile -t ecommerce-backend:local . && docker i
   `--runInBand`, cada fichero arranca un Medusa y el heap crecía hasta ~3 GB (el LXC del runner tiene 4 GB). Ahora va
   `--maxWorkers=1` + `workerIdleMemoryLimit: "1GB"` (`jest.config.js`; context7 `/jestjs/jest`): el worker se recicla
   y el pico queda en ~1,3 GB, con el mismo tiempo (~10 min). Límite del job: 40 min.
+
+## 6. Variantes ordenadas (23-nov-2026)
+
+- **Problema**: todas las variantes tenían `variant_rank = 0` y la Store API las devuelve en orden de creación: la
+  tabla de tallas de una ficha salía «S, L, M»; los filtros de peso, «3 kg, 12 kg, 400 g, 800 g».
+- **Storefront**: `sortedVariants` (lib/catalog.ts, en `getProductPricing`: tabla, preselección, carrito, JSON-LD…) por
+  `variant_rank` y, con el mismo rango, el **orden natural** de sus valores opción a opción (`lib/value-order.ts`:
+  tallas XXS→XXXL, cantidades con unidad por su magnitud —g/kg, ml/l, mm/cm/m—, el resto alfabético con números). El
+  mismo `compareValues` ordena el selector y los filtros. 0 JS. Comparado el HTML con `main`: cambian 219 páginas y solo
+  en el orden (87 solo reordenan filtros, 97 el JSON-LD de las variantes, 35 fichas con su tabla; p. ej.
+  `mock-cama-esencial-147` S, L, M → S, M, L), con la misma variante preseleccionada.
+- **`catalog:import`**: la hoja manda (decisión del usuario): `variant_rank` = posición de la fila dentro del producto,
+  al crear y al actualizar (cambio «orden» en el informe). Test unitario y HTTP (`catalogo.spec.ts`).
+- **Admin**: widget «Orden de las variantes en la tienda» (`product-variant-order.tsx`, `product.details.after`) con
+  ↑/↓, «Orden natural» y «Guardar orden» → `POST /admin/products/:id/variants/batch` (ruta estándar, `variant_rank`).
+  El Admin 2.22.7 solo deja ordenar al crear el producto, y su ficha se carga sin variantes (`PRODUCT_DETAIL_FIELDS
+= "…,-variants"`): el widget las pide aparte. Sin dependencias (sin arrastrar). Probado en el Admin con Playwright.
+  `lib/value-order.ts` idéntico en backend y storefront (test).
+- La tienda lo enseña tras la siguiente publicación (el cambio de variante dispara el rebuild).

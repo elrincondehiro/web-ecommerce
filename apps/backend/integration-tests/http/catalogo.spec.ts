@@ -370,6 +370,78 @@ medusaIntegrationTestRunner({
       expect(value(await optionOf("Color"), "Rojo")).toEqual({});
     });
 
+    it("orden de las variantes (fase 13): el de las filas; al reordenar la hoja, cambia", async () => {
+      await run();
+      const ranks = async () => {
+        const { data } = await container.resolve(ContainerRegistrationKeys.QUERY).graph({
+          entity: "product_variant",
+          fields: ["sku", "variant_rank"],
+          filters: { sku: ["COL-NYL-S-ROJ", "COL-NYL-S-AZU", "COL-NYL-L-ROJ", "COL-NYL-L-AZU"] },
+        });
+        return Object.fromEntries(data.map((v) => [v.sku, v.variant_rank]));
+      };
+      expect(await ranks()).toEqual({
+        "COL-NYL-S-ROJ": 0,
+        "COL-NYL-S-AZU": 1,
+        "COL-NYL-L-ROJ": 2,
+        "COL-NYL-L-AZU": 3,
+      });
+
+      // Las filas del collar al revés (la 1.ª sigue siendo la del producto: se intercambian datos)
+      const file = path.join(dir, "productos.csv");
+      const [head, ...rows] = parseCsv(await readFile(file, "utf8")).rows.map((r) => r.cells);
+      const sku = head!.indexOf("sku");
+      const mine = rows.filter((r) => r[sku]!.startsWith("COL-NYL-"));
+      const others = rows.filter((r) => !r[sku]!.startsWith("COL-NYL-"));
+      const productCols = [
+        "titulo",
+        "subtitulo",
+        "descripcion",
+        "categorias",
+        "etiquetas",
+        "iva",
+        "estado",
+        "material",
+        "marca",
+        "relacionados",
+      ]
+        .map((c) => head!.indexOf(c))
+        .filter((i) => i >= 0);
+      const reversed = [...mine].reverse().map((r) => [...r]);
+      for (const i of productCols) {
+        reversed[0]![i] = mine[0]![i]!;
+        for (const r of reversed.slice(1)) r[i] = "";
+      }
+      // Precio, oferta y peso explícitos en cada fila (la herencia es de la fila de arriba)
+      const inherit = ["precio", "precio_oferta", "peso_g", "largo_mm", "ancho_mm", "alto_mm"]
+        .map((c) => head!.indexOf(c))
+        .filter((i) => i >= 0);
+      let last: string[] = [];
+      for (const r of mine) {
+        for (const i of inherit) if (!r[i]) r[i] = last[i] ?? "";
+        last = r;
+      }
+      for (const [k, r] of reversed.entries()) {
+        const src = mine.find((m) => m[sku] === r[sku])!;
+        for (const i of inherit) reversed[k]![i] = src[i]!;
+      }
+      const q = (v: string) => (/[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+      await writeFile(
+        file,
+        [head!, ...reversed, ...others].map((r) => r.map(q).join(",")).join("\n"),
+      );
+      await run();
+      expect(await ranks()).toEqual({
+        "COL-NYL-L-AZU": 0,
+        "COL-NYL-L-ROJ": 1,
+        "COL-NYL-S-AZU": 2,
+        "COL-NYL-S-ROJ": 3,
+      });
+      // Otra carga igual: sin cambios de orden
+      await run();
+      expect((await ranks())["COL-NYL-L-AZU"]).toBe(0);
+    });
+
     it("una hoja con errores no escribe nada", async () => {
       await editSheet({ "PIE-POL-AD-3KG": { categorias: "no-existe" } });
       await expect(run()).rejects.toThrow(/errores en las hojas/);

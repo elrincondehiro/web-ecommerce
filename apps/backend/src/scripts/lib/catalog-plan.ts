@@ -76,6 +76,8 @@ export interface DbVariant {
   requiredQuantity: number | null;
   /** Fase CS: false = sin control de stock (columna `sin_stock`). */
   manageInventory: boolean;
+  /** Orden de la variante (`variant_rank`; la hoja manda: posición de su fila en el producto). */
+  rank?: number | null;
 }
 
 export interface DbProduct {
@@ -154,6 +156,8 @@ export interface VariantUpdate {
   sheet: VariantSheet;
   db: DbVariant;
   changes: string[];
+  /** Posición de la fila dentro del producto en la hoja (`variant_rank`). */
+  rank: number;
 }
 
 export interface ProductUpdate {
@@ -534,7 +538,9 @@ export function planCatalog(
       if (numChanged(v.height, dbv.height)) vc.push("alto");
       const vm = variantMetadata(v);
       if (Object.keys(vm).some((k) => metaChanged(vm[k], dbv.metadata[k]))) vc.push("neto/granel");
-      if (vc.length) variants.push({ sheet: v, db: dbv, changes: vc });
+      // La hoja manda en el orden: la posición de la fila dentro del producto (0, 1, 2…).
+      if ((dbv.rank ?? 0) !== p.variants.indexOf(v)) vc.push("orden");
+      if (vc.length) variants.push({ sheet: v, db: dbv, changes: vc, rank: p.variants.indexOf(v) });
     }
     if (errors.length > before) continue;
     if (changes.length || newVariants.length || variants.length) {
@@ -759,6 +765,8 @@ export function productCreateInput(
     variants: p.variants.map((v, i) => {
       const values = resolved[i] as Record<string, string>;
       return {
+        // La hoja manda en el orden (fase 13): la posición de la fila dentro del producto.
+        variant_rank: i,
         title: variantTitle(
           options.map((o) => o.title),
           values,
@@ -798,10 +806,12 @@ export function variantCreateInput(
   product: DbProduct,
   inventoryItemId?: (sku: string) => string,
   noStock = false,
+  rank?: number,
 ) {
   const values = productValues(v.values, product);
   return {
     product_id: product.id,
+    ...(rank !== undefined ? { variant_rank: rank } : {}),
     title: variantTitle(
       product.options.map((o) => o.title),
       values,
@@ -844,6 +854,7 @@ export function variantUpdateInput(u: VariantUpdate, product: DbProduct, noStock
     ...(u.changes.includes("sin stock") ? { manage_inventory: !noStock } : {}),
     ...measures(u.sheet),
     ...(u.changes.includes("neto/granel") ? { metadata: variantMetadata(u.sheet) } : {}),
+    ...(u.changes.includes("orden") ? { variant_rank: u.rank } : {}),
     ...(u.changes.includes("precio")
       ? {
           prices: [

@@ -429,6 +429,61 @@ describe("plan", () => {
     expect(plan3.products.update).toEqual([]);
   });
 
+  it("orden de las variantes (fase 13): la posición de la fila en la hoja manda", () => {
+    const db = emptyDb({
+      categories: [
+        {
+          id: "c1",
+          handle: "ropa",
+          name: "Ropa",
+          description: null,
+          rank: 0,
+          is_active: true,
+          parent_category_id: null,
+          metadata: {},
+        },
+      ],
+      tags: ["novedad"],
+      options: [{ id: "opt_talla", title: "Talla", values: [{ id: "v_s", value: "S" }] }],
+      products: [dbProduct()],
+      skuOwners: { "CAM-S": "camiseta" },
+    });
+    // M antes que S en la hoja: S pasa a la posición 1 y M se crea en la 0.
+    const reordered = sheet();
+    reordered[0]!.variants.reverse();
+    const u = planCatalog({ categories: [], products: reordered }, db).products.update[0]!;
+    const vu = u.variants[0]!;
+    expect(vu.changes).toEqual(["orden"]);
+    expect(variantUpdateInput(vu, dbProduct()).variant_rank).toBe(1);
+    expect(u.sheet.variants.indexOf(u.newVariants[0]!)).toBe(0);
+    // Ya en su sitio: sin cambios
+    const inPlace = dbProduct();
+    inPlace.variants[0]!.rank = 1;
+    const again = planCatalog(
+      { categories: [], products: reordered },
+      { ...db, products: [inPlace] },
+    ).products.update[0]!;
+    expect(again.variants).toEqual([]);
+    // Producto nuevo: variant_rank = posición de la fila
+    const created = productCreateInput(sheet()[0]!, {
+      shippingProfileId: "sp",
+      salesChannelId: "sc",
+      categoryId: (h: string) => "cat_" + h,
+      tagId: (t: string) => "tag_" + t,
+      option: (t: string) => ({
+        id: "opt_" + t,
+        title: t,
+        values: [
+          { id: "v_s", value: "S" },
+          { id: "v_m", value: "M" },
+        ],
+      }),
+    } as unknown as Parameters<typeof productCreateInput>[1]);
+    expect(created.variants.map((v) => (v as { variant_rank?: number }).variant_rank)).toEqual([
+      0, 1,
+    ]);
+  });
+
   it("producto existente con otras opciones = error; SKU de otro producto = error", () => {
     const db = emptyDb({
       categories: [

@@ -211,7 +211,7 @@ Fixtures de CI: `set -a; . ./.env; set +a; node scripts/update-fixtures.mjs` en 
 - Admin de Medusa: la cantidad de una línea a granel se ve en **pasos** (50 = 250 g). Pendiente: una extensión de Admin o un aviso en la plantilla del albarán.
 - El máximo de 5 kg solo lo aplica el storefront. Por la Store API directa se podría pedir más: el stock sigue protegido.
 - Si una categoría **cambia de padre**, el Search Module solo reindexa sus productos directos: los de sus subcategorías conservan los ancestros viejos en `category_tree_handles` hasta que se reimporten (o se reconstruya el índice).
-- `/store/products` no ordena las variantes por `variant_rank` (todas a 0): en el panel «Talla» sale S, L, M. Queda como issue.
+- ~~`/store/products` no ordena las variantes por `variant_rank`~~: resuelto en la fase 13 (fase13-optimizacion.md §6).
 - Granel: si se cambia `min_g` de una variante, las líneas ya en carritos siguen valiendo; el hook del backend lo comprueba al tocar la línea. Ofertas de granel: el tachado del carrito es por kilo (`compare_at_unit_price` × 1000 / paso).
 - `stock:mock` repone el granel en tramos de 250 g: si los e2e de checkout llegan a gastarlo, `pnpm --filter backend stock:mock`.
 - Tamaño del build: más páginas de categoría (37 en la hoja real) × paginación; vigilar tiempo de build y `dist/`.

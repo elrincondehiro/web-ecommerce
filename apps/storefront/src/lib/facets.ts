@@ -7,6 +7,7 @@
 // facetas llegan del motor con recuentos en vivo.
 // Funciones PURAS (Vitest).
 import { dryMatter, getProductPricing, type StoreProduct } from "./catalog";
+import { compareValues } from "./value-order";
 import { dryMatterFilters, type DryMatterKey, type FacetValue } from "./search";
 import { familyKey, optionFamilies, valueFamilies, type OptionFamily } from "./option-families";
 
@@ -104,15 +105,8 @@ const intRange = (lo: number, hi: number) =>
 /** Clave de metadata de cada filtro (contrato de catalog:import). */
 const MS_META: Record<DryMatterKey, string> = { proteina: "proteina_pct", grasa: "grasa_pct" };
 
-const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
-
-/** Orden de presentación: tallas en su orden natural; el resto alfabético con números. */
-export function compareValues(a: string, b: string): number {
-  const ia = SIZE_ORDER.indexOf(a.toUpperCase());
-  const ib = SIZE_ORDER.indexOf(b.toUpperCase());
-  if (ia !== -1 && ib !== -1) return ia - ib;
-  return a.localeCompare(b, "es", { numeric: true, sensitivity: "base" });
-}
+/** Orden de presentación (lib/value-order.ts, compartido con la ficha y el Admin). */
+export { compareValues };
 
 function addCount(map: Map<string, Set<string>>, key: string, productId: string) {
   const set = map.get(key) ?? new Set<string>();

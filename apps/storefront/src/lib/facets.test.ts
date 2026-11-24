@@ -65,7 +65,8 @@ describe("opciones no filtrables (Fase O)", () => {
 describe("compareValues", () => {
   it("tallas en orden natural, el resto alfabético con números", () => {
     expect(["XL", "S", "M", "L"].sort(compareValues)).toEqual(["S", "M", "L", "XL"]);
-    expect(["500 g", "250 g", "1 kg"].sort(compareValues)).toEqual(["1 kg", "250 g", "500 g"]);
+    // Fase 13: cantidades por su magnitud (antes, alfabético: «1 kg» delante de «250 g»)
+    expect(["500 g", "250 g", "1 kg"].sort(compareValues)).toEqual(["250 g", "500 g", "1 kg"]);
   });
 });
 
